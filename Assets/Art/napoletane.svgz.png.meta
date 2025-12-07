@@ -1,0 +1,1060 @@
+fileFormatVersion: 2
+guid: 7c63ca9c3a5a497448179fb17d73ee8d
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 9
+  spritePivot: {x: 0.03917373, y: 0.8968438}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 117, y: 719, z: 1268, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: 0
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: napoletane.svgz_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 78804bef75e190f42aa7d2a0de1f627c
+      internalID: -1883071797
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_1
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b299855a4ca939e4296c4bbacf2b38cb
+      internalID: 1579125541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_2
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fd844bd02b791e54f9752592150e7a95
+      internalID: -91611621
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_3
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 29079795f6abf384fb8c3075f60bec1e
+      internalID: -1898648055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_4
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 094e3adba90009043899f6b412ccce63
+      internalID: 2063002732
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_5
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 577411fe9d808e349a4c2dc372e2b955
+      internalID: -1018157814
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_6
+      rect:
+        serializedVersion: 2
+        x: 690
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c284f33a666d9ce45865a19fc5df78d1
+      internalID: -1862389769
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_10
+      rect:
+        serializedVersion: 2
+        x: 1150
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 97496f73437257f44b7ab9a9530a22f3
+      internalID: -817728032
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_11
+      rect:
+        serializedVersion: 2
+        x: 1265
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5562aba4cb8b8b3409ff6888b7b0e932
+      internalID: 719556926
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_12
+      rect:
+        serializedVersion: 2
+        x: 1380
+        y: 718.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 100b653b95085494199eea6f8976cfec
+      internalID: 2107152457
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_13
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1ec8123d580f517468152a0a457df4c5
+      internalID: -1792221150
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_14
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d80576b67a561cc4f874eea6a0089003
+      internalID: -324113553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_15
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e539af95cc445124a8dfc7caeb02104e
+      internalID: -1610970410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_16
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e32f93ec6baf55f4c85acdb6b094f950
+      internalID: -56467929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_17
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 567665d9adeb2144ebd872e27287b490
+      internalID: 1636401066
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_18
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 258f414423144b34ba0c0970169f0741
+      internalID: 404894614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_19
+      rect:
+        serializedVersion: 2
+        x: 690
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 14c5d59acb765f448ad7bea6de03391f
+      internalID: -54054148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_23
+      rect:
+        serializedVersion: 2
+        x: 1150
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a4b1759cd4f669d40b691f6d9a80107b
+      internalID: -1248998402
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_24
+      rect:
+        serializedVersion: 2
+        x: 1265
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b5882dc56b33a364dad6d6b2c35563f5
+      internalID: 378672996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_25
+      rect:
+        serializedVersion: 2
+        x: 1380
+        y: 539.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: efa75e02d4fe4b4488c3ae90916e395a
+      internalID: -1308894750
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_26
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 84bf35b5424b0284c956bee66422cafa
+      internalID: 1987288774
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_27
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 146851f1c588474488e0f2fbd6e539b7
+      internalID: -241471044
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_28
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 554fb3021af2a414e987feae756ebe21
+      internalID: -1540524543
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_29
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 56edda0d8d44ead498e2b27209365318
+      internalID: -325813076
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_30
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c75f0d48d0c86fb4e9995dd2659785bf
+      internalID: 189066721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_31
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a365f6ea489309f4fadf41be2dcace58
+      internalID: -1563003313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_32
+      rect:
+        serializedVersion: 2
+        x: 690
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f6372b1cd4f821d4ea798f09cb9cfaf3
+      internalID: 1675508324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_36
+      rect:
+        serializedVersion: 2
+        x: 1150
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 875cb15c95fc00e46bc8f57e33128619
+      internalID: 205132684
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_37
+      rect:
+        serializedVersion: 2
+        x: 1265
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d6729adad25be8c4fba4583b540eb0ba
+      internalID: 1651608490
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_38
+      rect:
+        serializedVersion: 2
+        x: 1380
+        y: 360.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d444dcbc129193d498a9154eb82ea822
+      internalID: -569665370
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_39
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7cb57cd1f47958946be46ec2ba173193
+      internalID: -892138655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_40
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aabe53919f5af18469b23943778d37a6
+      internalID: -713183486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_41
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 170df624dfa25914c8af2c15b290cb3a
+      internalID: -420889353
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_42
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 96b64872d7029b245aa66794fc039610
+      internalID: 1266779142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_43
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0cfc03286e7f9124ca7ad208b44cea77
+      internalID: 646449169
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_44
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 995b36a7c611b0e4faa2d5e728b1e345
+      internalID: -630162832
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_45
+      rect:
+        serializedVersion: 2
+        x: 690
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1e9ce9073a58a624386b05ac1101c9b2
+      internalID: 616392544
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_49
+      rect:
+        serializedVersion: 2
+        x: 1150
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 73789f875e3cccc4698b30a1312dbcb3
+      internalID: -2029494957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_50
+      rect:
+        serializedVersion: 2
+        x: 1265
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 866f2a44694d69046baee872a134d11f
+      internalID: 1320558122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_51
+      rect:
+        serializedVersion: 2
+        x: 1380
+        y: 181.4
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6d25aa87a8900014284f750ec54eb49f
+      internalID: 1500496210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: napoletane.svgz_54
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 2.399994
+        width: 115.38461
+        height: 179.6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3c8f3b0e44d3de843b5267e8c6973cbb
+      internalID: 499053320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline:
+    - - {x: -750, y: 449}
+      - {x: -750, y: -276}
+      - {x: -633, y: -270}
+      - {x: -515, y: -267}
+      - {x: -404, y: -264}
+      - {x: 750, y: -273}
+      - {x: 750, y: 449}
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 1537655665
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      napoletane.svgz_0: -1883071797
+      napoletane.svgz_1: 1579125541
+      napoletane.svgz_10: -817728032
+      napoletane.svgz_11: 719556926
+      napoletane.svgz_12: 2107152457
+      napoletane.svgz_13: -1792221150
+      napoletane.svgz_14: -324113553
+      napoletane.svgz_15: -1610970410
+      napoletane.svgz_16: -56467929
+      napoletane.svgz_17: 1636401066
+      napoletane.svgz_18: 404894614
+      napoletane.svgz_19: -54054148
+      napoletane.svgz_2: -91611621
+      napoletane.svgz_20: -1891907405
+      napoletane.svgz_21: -860607122
+      napoletane.svgz_22: -1747938102
+      napoletane.svgz_23: -1248998402
+      napoletane.svgz_24: 378672996
+      napoletane.svgz_25: -1308894750
+      napoletane.svgz_26: 1987288774
+      napoletane.svgz_27: -241471044
+      napoletane.svgz_28: -1540524543
+      napoletane.svgz_29: -325813076
+      napoletane.svgz_3: -1898648055
+      napoletane.svgz_30: 189066721
+      napoletane.svgz_31: -1563003313
+      napoletane.svgz_32: 1675508324
+      napoletane.svgz_33: 1767743167
+      napoletane.svgz_34: -1483181074
+      napoletane.svgz_35: 1199559969
+      napoletane.svgz_36: 205132684
+      napoletane.svgz_37: 1651608490
+      napoletane.svgz_38: -569665370
+      napoletane.svgz_39: -892138655
+      napoletane.svgz_4: 2063002732
+      napoletane.svgz_40: -713183486
+      napoletane.svgz_41: -420889353
+      napoletane.svgz_42: 1266779142
+      napoletane.svgz_43: 646449169
+      napoletane.svgz_44: -630162832
+      napoletane.svgz_45: 616392544
+      napoletane.svgz_46: -1898381748
+      napoletane.svgz_47: 1390343883
+      napoletane.svgz_48: -339132566
+      napoletane.svgz_49: -2029494957
+      napoletane.svgz_5: -1018157814
+      napoletane.svgz_50: 1320558122
+      napoletane.svgz_51: 1500496210
+      napoletane.svgz_52: 2077420350
+      napoletane.svgz_53: 1049253845
+      napoletane.svgz_54: 499053320
+      napoletane.svgz_55: -1770164134
+      napoletane.svgz_56: -1061320921
+      napoletane.svgz_57: 124054758
+      napoletane.svgz_58: 1739513108
+      napoletane.svgz_59: -1076648404
+      napoletane.svgz_6: -1862389769
+      napoletane.svgz_60: -338192796
+      napoletane.svgz_61: -1610183869
+      napoletane.svgz_62: -1857343283
+      napoletane.svgz_63: 1074521776
+      napoletane.svgz_64: -1113203348
+      napoletane.svgz_7: -1456569617
+      napoletane.svgz_8: 1856497957
+      napoletane.svgz_9: 1523710588
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

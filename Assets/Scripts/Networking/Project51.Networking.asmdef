@@ -1,0 +1,28 @@
+{
+"name": "Project51.Networking",
+"rootNamespace": "Project51.Networking",
+    "references": [
+        "GUID:75469ad4d38634e559750d17036d5f7c",
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+        "GUID:29c7f71d74863444a8c62b223a0e1131",
+        "GUID:57c32fc907df0f54e8e6e8f0d2488336",
+        "GUID:831409e8f9d13b5479a3baef9822ad34",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:cdb9411aad6e40c9971afe88435baaf2"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.textmeshpro",
+            "expression": "",
+            "define": "TMP_PRESENT"
+        }
+    ],
+    "noEngineReferences": false
+}
