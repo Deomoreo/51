@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spriteRenderer: {fileID: 0}
-  defaultCardBack: {fileID: 0}
+  defaultCardBack: {fileID: 21300000, guid: 00c4d72a9d1fb694bb699f53c25fe852, type: 2}
   raiseAmount: 0.35
   selectionSortingBoost: 100
   selectionAnimDuration: 0.12

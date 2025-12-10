@@ -13,14 +13,31 @@ namespace Project51.Unity
     {
         [Header("UI")]
         [SerializeField] private MoveSelectionUI moveSelectionUI;
+        [SerializeField] private RoundEndPanel roundEndPanel;
+        
+        [Header("Managers (Optional - Auto-Find)")]
+        [SerializeField] private CardViewManager cardViewManager;
+        [SerializeField] private CapturedPileManager capturedPileManager;
+        
+        /// <summary>
+        /// Sets the CardViewManager reference at runtime. Useful for tests.
+        /// </summary>
+        public void SetCardViewManager(CardViewManager manager)
+        {
+            cardViewManager = manager;
+        }
+        
         [Header("Game Settings")]
-        [SerializeField] private bool autoStartGame = true;
+        [SerializeField] private bool autoStartGame = false;
+        
         [Header("AI Settings")]
         [SerializeField] private float aiMoveDelay = 2.0f;
+        [SerializeField] private AIDifficulty aiDifficulty = AIDifficulty.Medium;
 
         private GameState gameState;
         private List<Move> currentValidMoves;
         private RoundManager roundManager;
+        private CirullaAI cirullaAI;
         
         /// <summary>
         /// Event fired quando un player esegue una mossa.
@@ -36,82 +53,52 @@ namespace Project51.Unity
 
         public GameState GameState => gameState;
         public int CurrentPlayerIndex => gameState?.CurrentPlayerIndex ?? -1;
+        
+        /// <summary>
+        /// Check if current player is a human player using GameModeService.
+        /// </summary>
         public bool IsHumanPlayerTurn
         {
             get
             {
                 if (CurrentPlayerIndex < 0) return false;
-
-                // Use reflection to avoid assembly dependency
-                var gameManagerType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-                if (gameManagerType == null)
-                {
-                    // Fallback: single-player mode
-                    return CurrentPlayerIndex == 0;
-                }
-
-                // Prefer instance-free check to avoid early getter usage
-                var isMultiplayerProp = gameManagerType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                bool isMultiplayer = false;
-                if (isMultiplayerProp != null)
-                {
-                    var val = isMultiplayerProp.GetValue(null);
-                    if (val is bool b) isMultiplayer = b;
-                }
-
-                var instanceProp = gameManagerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var gameManager = instanceProp?.GetValue(null);
-                if (gameManager != null)
-                {
-                    // Call IsHumanPlayer(CurrentPlayerIndex)
-                    var isHumanMethod = gameManagerType.GetMethod("IsHumanPlayer");
-                    if (isHumanMethod != null)
-                    {
-                        return (bool)isHumanMethod.Invoke(gameManager, new object[] { CurrentPlayerIndex });
-                    }
-                }
-
-                return CurrentPlayerIndex == 0;
+                return GameModeService.Current.IsHumanPlayer(CurrentPlayerIndex);
             }
         }
 
         private void Start()
         {
-            // In multiplayer mode, check if we should auto-start
-            // We use reflection to avoid assembly dependency on Project51.Networking
-            var gameManagerType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gameManagerType != null)
+            // Cache manager references if not assigned
+            if (cardViewManager == null)
             {
-                // Use static, instance-free property to detect multiplayer
-                var isMultiplayerProp = gameManagerType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                bool isMultiplayer = false;
-                if (isMultiplayerProp != null)
+                cardViewManager = FindObjectOfType<CardViewManager>();
+            }
+            
+            if (capturedPileManager == null)
+            {
+                capturedPileManager = FindObjectOfType<CapturedPileManager>();
+            }
+            
+            // Initialize AI
+            if (cirullaAI == null)
+            {
+                cirullaAI = new CirullaAI(aiDifficulty);
+            }
+            
+            var provider = GameModeService.Current;
+            
+            if (provider.IsMultiplayer)
+            {
+                if (provider.IsMasterClient)
                 {
-                    var val = isMultiplayerProp.GetValue(null);
-                    if (val is bool b) isMultiplayer = b;
+                    Debug.Log("<color=cyan>[MP] Master Client starting game...</color>");
+                    StartNewGame();
                 }
-
-                if (isMultiplayer)
+                else
                 {
-                    // In multiplayer, check if we're Master Client
-                    var photonNetworkType = System.Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking");
-                    if (photonNetworkType != null)
-                    {
-                        var isMasterProp = photonNetworkType.GetProperty("IsMasterClient", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        bool isMaster = (bool)isMasterProp.GetValue(null);
-                        
-                        if (isMaster)
-                        {
-                            Debug.Log("<color=cyan>[MP] Master Client starting game...</color>");
-                            StartNewGame();
-                        }
-                        else
-                        {
-                            Debug.Log("<color=cyan>[MP] Waiting for Master Client to start game...</color>");
-                        }
-                        return;
-                    }
+                    Debug.Log("<color=cyan>[MP] Waiting for Master Client to start game...</color>");
                 }
+                return;
             }
             
             // Single-player or no GameManager found
@@ -166,6 +153,15 @@ namespace Project51.Unity
     /// </summary>
     public void StartNewGame()
     {
+        // Reset GameState to ensure consistent initialization
+        gameState = null;
+
+        // Initialize AI if not already done
+        if (cirullaAI == null)
+        {
+            cirullaAI = new CirullaAI(aiDifficulty);
+        }
+        
         // starting new game
         gameState = Rules51.CreateNewGame();
         roundManager = new RoundManager(gameState);
@@ -179,7 +175,6 @@ namespace Project51.Unity
         // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
         // This ensures dealer 15/30 accuso (which removes table cards) happens BEFORE rendering
         // Otherwise cards might be visible for 0.5 seconds before disappearing
-        var cardViewManager = FindObjectOfType<CardViewManager>();
         if (cardViewManager != null)
         {
             cardViewManager.ForceRefresh();
@@ -189,51 +184,24 @@ namespace Project51.Unity
         // In multiplayer, only Master Client will perform declaration and sync via RPC
         StartCoroutine(DeclareInitialAccusiWithDelay());
 
-        // game started: dealer and first to act
-        // table cards info
-
-        // NOTE: CheckAndDeclareAccusiForAllPlayers is now called via OnInitialHandsDealt event
-        // This happens BEFORE dealer 15/30 accuso, so all players can declare Cirulla/Decino
-
         // Compute valid moves for the current player
         RefreshValidMoves();
 
         // MULTIPLAYER: If we're Master Client, send GameState to all clients
-        var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-        if (gmType != null)
+        var provider = GameModeService.Current;
+        if (provider.IsMultiplayer && provider.IsMasterClient)
         {
-            var isMultiplayerProp = gmType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            bool isMultiplayer = false;
-            if (isMultiplayerProp != null)
+            // Find NetworkGameController and send GameState via reflection (to avoid circular dependency)
+            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Project51.Networking");
+            if (netControllerType != null)
             {
-                var val = isMultiplayerProp.GetValue(null);
-                if (val is bool b) isMultiplayer = b;
-            }
-
-            if (isMultiplayer)
-            {
-                var photonNetworkType = System.Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking");
-                if (photonNetworkType != null)
+                var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                var netController = netInstanceProp?.GetValue(null);
+                if (netController != null)
                 {
-                    var isMasterProp = photonNetworkType.GetProperty("IsMasterClient", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    bool isMaster = (bool)isMasterProp.GetValue(null);
-
-                    if (isMaster)
-                    {
-                        // Find NetworkGameController and send GameState
-                        var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Project51.Networking");
-                        if (netControllerType != null)
-                        {
-                            var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                            var netController = netInstanceProp?.GetValue(null);
-                            if (netController != null)
-                            {
-                                var sendMethod = netControllerType.GetMethod("SendInitialGameState");
-                                sendMethod?.Invoke(netController, new object[] { gameState });
-                                Debug.Log("<color=cyan>[MP] Master sent initial GameState to all clients</color>");
-                            }
-                        }
-                    }
+                    var sendMethod = netControllerType.GetMethod("SendInitialGameState");
+                    sendMethod?.Invoke(netController, new object[] { gameState });
+                    Debug.Log("<color=cyan>[MP] Master sent initial GameState to all clients</color>");
                 }
             }
         }
@@ -254,28 +222,12 @@ namespace Project51.Unity
             // Small delay for UI stabilization
             yield return new UnityEngine.WaitForSeconds(0.25f);
 
+            var provider = GameModeService.Current;
+            
             // In multiplayer, ensure only Master executes initial accusi
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            bool isMultiplayer = false;
-            if (gmType != null)
+            if (provider.IsMultiplayer && !provider.IsMasterClient)
             {
-                var isMultiplayerProp = gmType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var val = isMultiplayerProp?.GetValue(null);
-                if (val is bool b) isMultiplayer = b;
-            }
-
-            if (isMultiplayer)
-            {
-                var photonNetworkType = System.Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking");
-                if (photonNetworkType != null)
-                {
-                    var isMasterProp = photonNetworkType.GetProperty("IsMasterClient", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    bool isMaster = (bool)isMasterProp.GetValue(null);
-                    if (!isMaster)
-                    {
-                        yield break;
-                    }
-                }
+                yield break;
             }
 
             CheckAndDeclareAccusiForAllPlayers();
@@ -310,71 +262,34 @@ namespace Project51.Unity
                 return;
             }
 
+            var provider = GameModeService.Current;
+
             // Multiplayer: check if this move needs to be sent via network
             // SKIP if this call is already from network to prevent infinite loop!
-            if (!fromNetwork)
+            if (!fromNetwork && provider.IsMultiplayer)
             {
-                var gameManagerType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-                if (gameManagerType != null)
+                bool isLocalPlayer = provider.IsLocalPlayer(move.PlayerIndex);
+                bool isHuman = provider.IsHumanPlayer(move.PlayerIndex);
+                bool isBot = provider.IsBotPlayer(move.PlayerIndex);
+
+                if (isLocalPlayer && isHuman)
                 {
-                    // Use static detection to avoid NRE during early access
-                    var isMultiplayerProp = gameManagerType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    bool isMultiplayer = false;
-                    if (isMultiplayerProp != null)
+                    // Local human player - trigger event for NetworkGameController
+                    OnLocalPlayerMoveRequested?.Invoke(move);
+                    return; // Network controller will call ExecuteMove again via RPC
+                }
+
+                if (isBot)
+                {
+                    if (!provider.IsMasterClient)
                     {
-                        var val = isMultiplayerProp.GetValue(null);
-                        if (val is bool b) isMultiplayer = b;
+                        Debug.LogWarning("Non-master client tried to execute bot move - ignoring.");
+                        return;
                     }
-
-                    if (isMultiplayer)
-                    {
-                        // Check if this is a local player move
-                        var instanceProp = gameManagerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        var gameManager = instanceProp?.GetValue(null);
-                        bool isLocalPlayer = false, isHuman = false;
-                        if (gameManager != null)
-                        {
-                            var isLocalPlayerMethod = gameManagerType.GetMethod("IsLocalPlayer");
-                            var isHumanMethod = gameManagerType.GetMethod("IsHumanPlayer");
-                            if (isLocalPlayerMethod != null) isLocalPlayer = (bool)isLocalPlayerMethod.Invoke(gameManager, new object[] { move.PlayerIndex });
-                            if (isHumanMethod != null) isHuman = (bool)isHumanMethod.Invoke(gameManager, new object[] { move.PlayerIndex });
-                        }
-
-                        if (isLocalPlayer && isHuman)
-                        {
-                            // Local human player - trigger event for NetworkGameController
-                            OnLocalPlayerMoveRequested?.Invoke(move);
-                            return; // Network controller will call ExecuteMove again via RPC
-                        }
-
-                        // For bot moves, check if we're Master Client
-                        var isBotMethod = gameManagerType.GetMethod("IsBotPlayer");
-                        bool isBot = false;
-                        if (isBotMethod != null && gameManager != null)
-                        {
-                            isBot = (bool)isBotMethod.Invoke(gameManager, new object[] { move.PlayerIndex });
-                        }
-                        
-                        if (isBot)
-                        {
-                            var photonNetworkType = System.Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking");
-                            if (photonNetworkType != null)
-                            {
-                                var isMasterProp = photonNetworkType.GetProperty("IsMasterClient", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                                bool isMaster = (bool)isMasterProp.GetValue(null);
-                                
-                                if (!isMaster)
-                                {
-                                    Debug.LogWarning("Non-master client tried to execute bot move - ignoring.");
-                                    return;
-                                }
-                                
-                                // Master Client executes bot move and triggers event
-                                OnLocalPlayerMoveRequested?.Invoke(move);
-                                return; // Network controller will call ExecuteMove again via RPC
-                            }
-                        }
-                    }
+                    
+                    // Master Client executes bot move and triggers event
+                    OnLocalPlayerMoveRequested?.Invoke(move);
+                    return; // Network controller will call ExecuteMove again via RPC
                 }
             }
 
@@ -392,8 +307,8 @@ namespace Project51.Unity
             if (!currentValidMoves.Contains(move))
             {
                 bool allowForcedHumanPlayOnly = move.Type == MoveType.PlayOnly
-                    && move.PlayerIndex == 0
-                    && gameState.Players[0].Hand.Contains(move.PlayedCard);
+                    && move.PlayerIndex == provider.LocalPlayerIndex
+                    && gameState.Players[move.PlayerIndex].Hand.Contains(move.PlayedCard);
 
                 if (!allowForcedHumanPlayOnly)
                 {
@@ -413,13 +328,19 @@ namespace Project51.Unity
             }
             roundManager.ApplyMove(move);
             // Refresh captured piles visuals after move
-            var pileMgr = FindObjectOfType<CapturedPileManager>();
-            pileMgr?.ForceRefresh();
+            if (capturedPileManager != null)
+            {
+                capturedPileManager.ForceRefresh();
+            }
             // Notify listeners (e.g. UI) that a move was executed so they can animate
             OnMoveExecuted?.Invoke(move);
 
             // If RoundManager set RoundEnded, handle end
-            if (gameState.RoundEnded) { return; }
+            if (gameState.RoundEnded) 
+            { 
+                ShowRoundEndPanel();
+                return; 
+            }
 
             // Refresh valid moves for the next player
             RefreshValidMoves();
@@ -428,32 +349,7 @@ namespace Project51.Unity
             // In multiplayer, only Master Client executes AI turns
             if (!IsHumanPlayerTurn)
             {
-                bool shouldExecuteAI = true;
-                
-                // Check multiplayer
-                var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-                if (gmType != null)
-                {
-                    var isMultiplayerProp = gmType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    bool isMultiplayer = false;
-                    if (isMultiplayerProp != null)
-                    {
-                        var val = isMultiplayerProp.GetValue(null);
-                        if (val is bool b) isMultiplayer = b;
-                    }
-
-                    if (isMultiplayer)
-                    {
-                        // Only Master Client executes AI
-                        var photonNetworkType = System.Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking");
-                        if (photonNetworkType != null)
-                        {
-                            var isMasterProp = photonNetworkType.GetProperty("IsMasterClient", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                            bool isMaster = (bool)isMasterProp.GetValue(null);
-                            shouldExecuteAI = isMaster;
-                        }
-                    }
-                }
+                bool shouldExecuteAI = !provider.IsMultiplayer || provider.IsMasterClient;
 
                 if (shouldExecuteAI)
                 {
@@ -523,30 +419,27 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Simple AI logic: picks the first valid move with captures, or a random PlayOnly if none.
+        /// AI uses CirullaAI for strategic move selection.
         /// Executes the move with a delay to show the played card before capture.
         /// </summary>
         private void ExecuteAITurn()
         {
-            if (currentValidMoves.Count == 0)
+            if (currentValidMoves == null || currentValidMoves.Count == 0)
             {
                 // AI no valid moves
                 return;
             }
 
-            // Prefer captures over play-only
-            var captureMoves = currentValidMoves.Where(m => m.Type != MoveType.PlayOnly).ToList();
-            Move chosenMove;
-
-            if (captureMoves.Count > 0)
+            // Use strategic AI to choose move
+            Move chosenMove = cirullaAI?.ChooseMove(gameState, gameState.CurrentPlayerIndex, currentValidMoves);
+            
+            // Fallback if AI returns null
+            if (chosenMove == null)
             {
-                // Pick a random capture move (can be improved with smarter heuristics)
-                chosenMove = captureMoves[Random.Range(0, captureMoves.Count)];
-            }
-            else
-            {
-                // No captures available, pick a random play-only
-                chosenMove = currentValidMoves[Random.Range(0, currentValidMoves.Count)];
+                var captureMoves = currentValidMoves.Where(m => m.Type != MoveType.PlayOnly).ToList();
+                chosenMove = captureMoves.Count > 0 
+                    ? captureMoves[Random.Range(0, captureMoves.Count)]
+                    : currentValidMoves[Random.Range(0, currentValidMoves.Count)];
             }
 
             // If the move involves a capture, execute in two phases:
@@ -626,23 +519,23 @@ namespace Project51.Unity
                 }
             }
             // Refresh piles to show accusi badges/updates
-            var pileMgr = FindObjectOfType<CapturedPileManager>();
-            pileMgr?.ForceRefresh();
+            if (capturedPileManager != null)
+            {
+                capturedPileManager.ForceRefresh();
+            }
+            // Force card view refresh so hands with accuso are shown face-up
+            if (cardViewManager != null)
+            {
+                cardViewManager.ForceRefresh();
+            }
         }
 
         private void TrySendAccusoSync(int playerIndex, AccusoType type)
         {
-            // Use reflection to call NetworkGameController.SendAccuso if available
-            var isMultiplayer = false;
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gmType != null)
-            {
-                var isMpProp = gmType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var val = isMpProp?.GetValue(null);
-                if (val is bool b) isMultiplayer = b;
-            }
-            if (!isMultiplayer) return;
+            var provider = GameModeService.Current;
+            if (!provider.IsMultiplayer) return;
 
+            // Use reflection to call NetworkGameController.SendAccuso (to avoid circular dependency)
             var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Project51.Networking");
             if (netControllerType != null)
             {
@@ -662,6 +555,54 @@ namespace Project51.Unity
         public List<Move> GetCurrentValidMoves()
         {
             return currentValidMoves ?? new List<Move>();
+        }
+
+        /// <summary>
+        /// Shows the round end panel with scores.
+        /// </summary>
+        private void ShowRoundEndPanel()
+        {
+            if (roundEndPanel != null)
+            {
+                roundEndPanel.OnContinueClicked += OnRoundEndContinue;
+                roundEndPanel.OnMainMenuClicked += OnRoundEndMainMenu;
+                roundEndPanel.Show(gameState);
+            }
+            else
+            {
+                // Fallback: log scores to console
+                var scores = PunteggioManager.CalculateSmazzataScores(gameState);
+                for (int i = 0; i < gameState.NumPlayers; i++)
+                {
+                    Debug.Log($"Player {i}: {scores[i]} points (Scope: {gameState.Players[i].ScopaCount})");
+                }
+            }
+        }
+
+        private void OnRoundEndContinue()
+        {
+            if (roundEndPanel != null)
+            {
+                roundEndPanel.OnContinueClicked -= OnRoundEndContinue;
+                roundEndPanel.OnMainMenuClicked -= OnRoundEndMainMenu;
+                roundEndPanel.Hide();
+            }
+            
+            // Start a new round (new smazzata)
+            StartNewGame();
+        }
+
+        private void OnRoundEndMainMenu()
+        {
+            if (roundEndPanel != null)
+            {
+                roundEndPanel.OnContinueClicked -= OnRoundEndContinue;
+                roundEndPanel.OnMainMenuClicked -= OnRoundEndMainMenu;
+                roundEndPanel.Hide();
+            }
+            
+            // Load main menu scene
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
 
         /// <summary>
@@ -700,9 +641,14 @@ namespace Project51.Unity
             Time.timeScale = 1f;
 
             // Notify UI to refresh views immediately
-            var vm = FindObjectOfType<Project51.Unity.CardViewManager>();
-            if (vm != null) vm.ForceRefresh();
-            else OnMoveExecuted?.Invoke(null);
+            if (cardViewManager != null)
+            {
+                cardViewManager.ForceRefresh();
+            }
+            else
+            {
+                OnMoveExecuted?.Invoke(null);
+            }
         }
 
         /// <summary>
@@ -784,3 +730,4 @@ namespace Project51.Unity
         }
     }
 }
+

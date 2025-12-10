@@ -13,10 +13,6 @@ namespace Project51.Core
         Dealer30
     }
 
-    /// <summary>
-    /// Manages a single smazzata (deal): dealing, initial accusi, enforcing turn order, end of smazzata.
-    /// Core logic only, no UI.
-    /// </summary>
     public class RoundManager
     {
         private readonly GameState state;
@@ -48,18 +44,13 @@ namespace Project51.Core
 
         public void StartSmazzata()
         {
-            // Prepare deck and deal (Rules51.DealInitialCards handles redeal on double aces)
             Rules51.DealInitialCards(state);
 
-            // Reset accusi points
             foreach (var p in state.Players)
                 p.AccusiPoints = 0;
 
-            // IMPORTANT: Allow all players to declare Cirulla/Decino BEFORE dealer accuso is processed
-            // This ensures accusi are checked with original hand, not after dealer removes table cards
             OnInitialHandsDealt?.Invoke();
 
-            // Handle dealer initial accusi (sum 15 or 30) - this happens AFTER player accusi
             ProcessDealerInitialAccuso();
         }
 
@@ -69,7 +60,6 @@ namespace Project51.Core
             var table = state.Table;
             if (table == null || table.Count == 0) return;
 
-            // Check if any assignment of matta values (7 of coppe) allows sum 15 or 30
             bool hasMatta = table.Any(c => c.IsMatta);
 
             int baseSum = table.Sum(c => c.IsMatta ? 0 : c.Value);
@@ -159,10 +149,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsCirulla(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += 3;
-                    
-                    // Raise event for UI to handle animation
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Cirulla, new List<Card>(hand));
-                    
                     return true;
                 }
                 return false;
@@ -173,10 +160,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsDecino(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += 10;
-                    
-                    // Raise event for UI to handle animation
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Decino, new List<Card>(hand));
-                    
                     return true;
                 }
                 return false;

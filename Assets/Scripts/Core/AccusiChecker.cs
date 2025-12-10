@@ -5,8 +5,6 @@ namespace Project51.Core
 {
     public static class AccusiChecker
     {
-        // Cirulla: if sum of 3 hand cards <= 9 -> +3
-        // Matta (7 di Coppe) counts automatically as Ace (1) for this evaluation
         public static bool IsCirulla(List<Card> hand)
         {
             if (hand == null || hand.Count != 3) return false;
@@ -18,8 +16,6 @@ namespace Project51.Core
             return sum <= 9;
         }
 
-        // Decino: three of a kind -> +10
-        // Matta (7 di Coppe) automatically takes the value of the existing pair (X,X,7C -> trio di X)
         public static bool IsDecino(List<Card> hand)
         {
             if (hand == null || hand.Count != 3) return false;

@@ -6,12 +6,22 @@ using System.Collections.Generic;
 
 namespace Project51.Unity
 {
+    /// <summary>
+    /// UI for displaying move selection options when multiple moves are available.
+    /// Uses TextMeshPro for text display.
+    /// </summary>
     public class MoveSelectionUI : MonoBehaviour
     {
+        [Header("Container")]
         [SerializeField] private RectTransform container;
         [SerializeField] private GameObject buttonPrefab;
-        [SerializeField] private Text titleText;
-        [SerializeField] private Text messageText;
+        
+        [Header("Text (TextMeshPro)")]
+        [SerializeField] private TMP_Text titleText;
+        [SerializeField] private TMP_Text messageText;
+        
+        [Header("Colors")]
+        [SerializeField] private Color invalidMessageColor = new Color(1f, 0.3f, 0.3f);
 
         private List<GameObject> buttons = new List<GameObject>();
 
@@ -63,17 +73,7 @@ namespace Project51.Unity
             if (titleText != null)
             {
                 titleText.gameObject.SetActive(true);
-                titleText.text = moveDescriptions.Count == 1 ? "Choose move" : "Multiple moves available";
-            }
-            else
-            {
-                // Try TMP title if present
-                var tmpTitle = container != null ? container.GetComponentInParent<TextMeshProUGUI>() : null;
-                if (tmpTitle != null)
-                {
-                    tmpTitle.gameObject.SetActive(true);
-                    tmpTitle.text = moveDescriptions.Count == 1 ? "Choose move" : "Multiple moves available";
-                }
+                titleText.text = moveDescriptions.Count == 1 ? "Scegli mossa" : "Più mosse disponibili";
             }
 
             for (int i = 0; i < moveDescriptions.Count; i++)
@@ -82,35 +82,48 @@ namespace Project51.Unity
                 var index = i;
                 var btnObj = Instantiate(buttonPrefab, container);
                 var btn = btnObj.GetComponent<Button>();
-                var txt = btnObj.GetComponentInChildren<Text>();
-                if (txt != null) txt.text = desc;
+                
+                // Try to find TMP_Text first, fallback to legacy Text
+                var tmpText = btnObj.GetComponentInChildren<TMP_Text>();
+                if (tmpText != null)
+                {
+                    tmpText.text = desc;
+                }
                 else
                 {
-                    var tmp = btnObj.GetComponentInChildren<TextMeshProUGUI>();
-                    if (tmp != null) tmp.text = desc;
+                    var legacyText = btnObj.GetComponentInChildren<Text>();
+                    if (legacyText != null) legacyText.text = desc;
                 }
-                btn.onClick.AddListener(() => { Debug.Log($"MoveSelectionUI: button {index} clicked"); onChoose?.Invoke(index); if (autoHideOnChoose) Hide(); });
+                
+                btn.onClick.AddListener(() => 
+                { 
+                    Debug.Log($"MoveSelectionUI: button {index} clicked"); 
+                    onChoose?.Invoke(index); 
+                    if (autoHideOnChoose) Hide(); 
+                });
+                
                 // Add hover callbacks if requested
                 if (onHover != null)
                 {
-                    var trigger = btnObj.GetComponent<UnityEngine.EventSystems.EventTrigger>();
-                    if (trigger == null) trigger = btnObj.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+                    var trigger = btnObj.GetComponent<EventTrigger>();
+                    if (trigger == null) trigger = btnObj.AddComponent<EventTrigger>();
 
-                    var entryEnter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+                    var entryEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
                     entryEnter.callback.AddListener((ev) => { onHover(index); });
                     trigger.triggers.Add(entryEnter);
 
-                    var entryExit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+                    var entryExit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
                     entryExit.callback.AddListener((ev) => { onHover(-1); });
                     trigger.triggers.Add(entryExit);
                 }
 
-                // set icon if provided and prefab contains an Image named "Icon"
+                // Set icon if provided and prefab contains an Image named "Icon"
                 if (icons != null && i < icons.Count && icons[i] != null)
                 {
                     var img = btnObj.transform.Find("Icon")?.GetComponent<Image>();
                     if (img != null) img.sprite = icons[i];
                 }
+                
                 Debug.Log($"MoveSelectionUI: created button #{index} '{desc}'");
                 buttons.Add(btnObj);
             }
@@ -126,38 +139,24 @@ namespace Project51.Unity
                 return;
             }
 
-            if (messageText == null)
+            if (messageText != null)
             {
-                // try TMP fallback
-                var tmp = container != null ? container.GetComponentInParent<TextMeshProUGUI>() : null;
-                if (tmp == null)
-                {
-                    Debug.LogWarning("No messageText or TMP fallback assigned to MoveSelectionUI to show invalid selection.");
-                    return;
-                }
-                tmp.gameObject.SetActive(true);
-                tmp.text = message;
+                messageText.gameObject.SetActive(true);
+                messageText.text = message;
+                messageText.color = invalidMessageColor;
                 StopAllCoroutines();
-                StartCoroutine(HideMessageAfterDelayTMP(tmp, duration));
-                return;
+                StartCoroutine(HideMessageAfterDelay(duration));
             }
-
-            messageText.gameObject.SetActive(true);
-            messageText.text = message;
-            StopAllCoroutines();
-            StartCoroutine(HideMessageAfterDelay(duration));
+            else
+            {
+                Debug.LogWarning("No messageText assigned to MoveSelectionUI to show invalid selection.");
+            }
         }
 
         private System.Collections.IEnumerator HideMessageAfterDelay(float t)
         {
             yield return new WaitForSeconds(t);
             if (messageText != null) messageText.gameObject.SetActive(false);
-        }
-
-        private System.Collections.IEnumerator HideMessageAfterDelayTMP(TextMeshProUGUI tmp, float t)
-        {
-            yield return new WaitForSeconds(t);
-            if (tmp != null) tmp.gameObject.SetActive(false);
         }
 
         public void Hide()

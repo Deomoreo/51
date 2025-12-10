@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System;
 using Project51.Core;
 using System.Collections;
@@ -11,24 +12,29 @@ namespace Project51.Unity
     /// <summary>
     /// Controls the Accuso Panel UI that displays accuso animations.
     /// Shows the cards involved in the accuso with special handling for matta (7 di coppe).
+    /// Uses TextMeshPro for text display.
     /// </summary>
     public class AccusoPanelController : MonoBehaviour
     {
         [Header("UI References")]
         [SerializeField] private GameObject panelRoot;
-        [SerializeField] private Text titleText;
-        [SerializeField] private Text descriptionText;
+        [SerializeField] private TMP_Text titleText;
+        [SerializeField] private TMP_Text descriptionText;
         [SerializeField] private AccusoCardSlot[] cardSlots; // 3 slots expected
         
         [Header("Animation Settings")]
-        [SerializeField] private float initialDisplayDuration = 1.0f; // How long to show the "special value" representation
-        [SerializeField] private float flipDuration = 0.5f; // Duration of the flip animation
-        [SerializeField] private float finalDisplayDuration = 1.5f; // How long to show after flip completes
+        [SerializeField] private float initialDisplayDuration = 1.0f;
+        [SerializeField] private float flipDuration = 0.5f;
+        [SerializeField] private float finalDisplayDuration = 1.5f;
         [SerializeField] private float panelFadeDuration = 0.3f;
         
         [Header("Sprites")]
-        [SerializeField] private Sprite[] cardSprites; // Same array as CardViewManager for consistency
-        [SerializeField] private Sprite specialValueMarker; // Optional: a star or badge to mark special values
+        [Tooltip("Reference to CardViewManager to share sprites. If null, will try to find it automatically.")]
+        [SerializeField] private CardViewManager cardViewManager;
+        [Tooltip("Fallback: direct sprite array (only used if CardViewManager is not available)")]
+        [SerializeField] private Sprite[] cardSprites;
+        [Tooltip("Small badge/star sprite shown on cards with 'special' value (e.g., when Matta acts as another rank). Can be left empty.")]
+        [SerializeField] private Sprite specialValueMarker;
         
         [Header("Audio (Optional)")]
         [SerializeField] private AudioClip accusoSound;
@@ -65,7 +71,13 @@ namespace Project51.Unity
                 panelRoot.SetActive(false);
             }
             
-            // Build local cache from provided sprites (previous behavior)
+            // Try to find CardViewManager if not assigned
+            if (cardViewManager == null)
+            {
+                cardViewManager = FindObjectOfType<CardViewManager>();
+            }
+            
+            // Build local cache from provided sprites (fallback if CardViewManager not available)
             if (cardSprites != null && cardSprites.Length >= 40)
             {
                 PopulateCardSpriteCache();
@@ -388,20 +400,28 @@ namespace Project51.Unity
         }
         
         /// <summary>
-        /// Gets the sprite for a specific card from the cache or sprite array.
+        /// Gets the sprite for a specific card.
+        /// Uses CardViewManager if available, otherwise falls back to local cache.
         /// </summary>
         private Sprite GetSpriteForCard(Card card)
         {
+            // Try CardViewManager first
+            if (cardViewManager != null)
+            {
+                var sprite = cardViewManager.GetSpriteForCard(card);
+                if (sprite != null) return sprite;
+            }
+            
+            // Fallback to local cache
             if (cardSpriteCache.TryGetValue(card, out var cached))
             {
                 return cached;
             }
             
-            // Fallback: calculate index from suit and rank
-            // Assuming sprites are ordered: Denari 1-10, Coppe 1-10, Bastoni 1-10, Spade 1-10
+            // Last resort: calculate index from suit and rank
             if (cardSprites != null && cardSprites.Length >= 40)
             {
-                int suitIndex = (int)card.Suit; // Relies on enum order: Denari=0, Coppe=1, Bastoni=2, Spade=3
+                int suitIndex = (int)card.Suit;
                 int index = suitIndex * 10 + (card.Rank - 1);
                 
                 if (index >= 0 && index < cardSprites.Length)
@@ -414,23 +434,14 @@ namespace Project51.Unity
         }
         
         /// <summary>
-        /// Gets a sprite for a specific rank, using the same suit as the original card.
+        /// Gets a sprite for a specific rank and suit.
         /// Used to show the "effective value" of the matta.
         /// </summary>
         private Sprite GetSpriteForRank(int rank, Suit suit)
         {
-            if (cardSprites != null && cardSprites.Length >= 40)
-            {
-                int suitIndex = (int)suit;
-                int index = suitIndex * 10 + (rank - 1);
-                
-                if (index >= 0 && index < cardSprites.Length)
-                {
-                    return cardSprites[index];
-                }
-            }
-            
-            return null;
+            // Create a temporary card to use the same lookup logic
+            var tempCard = new Card(suit, rank);
+            return GetSpriteForCard(tempCard);
         }
         
         /// <summary>

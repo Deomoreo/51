@@ -6,9 +6,6 @@ namespace Project51.Core
 {
     public static class PunteggioManager
     {
-        // Calculate scores at end of smazzata. Returns list of points per player (same index order).
-        // Implements: Scopa (1 each), Sette Bello (7 of Denari), Primiera (1), Denari majority (1),
-        // Carte majority (1), Grande (5), Piccola (3 + extras), ties result in no point for that category.
         public static int[] CalculateSmazzataScores(GameState state)
         {
             int n = state.NumPlayers;
@@ -27,37 +24,56 @@ namespace Project51.Core
                     points[i] += 1;
             }
 
-            // Denari majority (player with strictly most denari, and at least 6 denari)
+            // Denari majority (player with strictly most denari wins 1 point)
+            // No points awarded if there's a tie, even if someone has >= 6
             int[] denariCount = new int[n];
             for (int i = 0; i < n; i++)
                 denariCount[i] = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
             int maxDenari = denariCount.Max();
-            if (maxDenari >= 6 && denariCount.Count(x => x == maxDenari) == 1)
+            // Only award point if there's a clear winner (no tie)
+            if (denariCount.Count(x => x == maxDenari) == 1)
             {
                 var winner = Array.IndexOf(denariCount, maxDenari);
-                points[winner] += 1;
+                // Only award the point if the winner has at least 6 denari
+                if (denariCount[winner] >= 6)
+                    points[winner] += 1;
             }
 
-            // Cards majority (player with strictly most captured cards, at least 21)
+            // Cards majority (player with strictly most captured cards wins 1 point)
+            // No points awarded if there's a tie, even if someone has >= 21
             int[] cardCounts = new int[n];
             for (int i = 0; i < n; i++)
                 cardCounts[i] = state.Players[i].CapturedCards.Count;
             int maxCards = cardCounts.Max();
-            if (maxCards >= 21 && cardCounts.Count(x => x == maxCards) == 1)
+            // Only award point if there's a clear winner (no tie)
+            if (cardCounts.Count(x => x == maxCards) == 1)
             {
                 var winner = Array.IndexOf(cardCounts, maxCards);
-                points[winner] += 1;
+                // Only award the point if the winner has at least 21 cards
+                if (cardCounts[winner] >= 21)
+                    points[winner] += 1;
             }
 
-            // Primiera: for each player compute best primiera sum (one per suit)
             // Primiera: compute best primiera for each player; unique highest gets +1
+            // Player must have at least one card of each suit to be eligible for primiera
             int[] primieraScores = new int[n];
+            bool[] hasAllSuits = new bool[n];
             for (int i = 0; i < n; i++)
             {
-                primieraScores[i] = ComputePrimieraScore(state.Players[i].CapturedCards);
+                var playerSuits = state.Players[i].CapturedCards.Select(c => c.Suit).Distinct().Count();
+                hasAllSuits[i] = (playerSuits == 4);
+                if (hasAllSuits[i])
+                {
+                    primieraScores[i] = ComputePrimieraScore(state.Players[i].CapturedCards);
+                }
+                else
+                {
+                    primieraScores[i] = -1; // Mark as ineligible
+                }
             }
             int maxPrimiera = primieraScores.Max();
-            if (primieraScores.Count(x => x == maxPrimiera) == 1)
+            // Only award if max score is valid (>= 0) and unique
+            if (maxPrimiera >= 0 && primieraScores.Count(x => x == maxPrimiera) == 1)
             {
                 var winner = Array.IndexOf(primieraScores, maxPrimiera);
                 points[winner] += 1;
@@ -86,8 +102,6 @@ namespace Project51.Core
 
         private static int ComputePrimieraScore(List<Card> cards)
         {
-            // Need one card per suit maximizing PrimieraValue sum
-            // For each suit pick highest PrimieraValue
             var suits = System.Enum.GetValues(typeof(Suit)).Cast<Suit>();
             int total = 0;
             foreach (var s in suits)

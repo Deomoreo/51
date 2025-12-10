@@ -4,9 +4,6 @@ using System.Linq;
 
 namespace Project51.Core
 {
-    /// <summary>
-    /// Core rules engine for Cirulla/51. Contains all game logic, no Unity dependencies.
-    /// </summary>
     public static class Rules51
     {
         private static readonly Random Rng = new Random();
@@ -14,8 +11,6 @@ namespace Project51.Core
         #region Game Creation & Deck Initialization
 
         /// <summary>
-        /// Creates a new 4-player Cirulla game with a shuffled deck.
-        /// </summary>
         public static GameState CreateNewGame()
         {
             var state = new GameState(4);
@@ -26,9 +21,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Create a new game with a specified number of players and perform the initial deal.
-        /// Useful for tests to create deterministic player counts.
-        /// </summary>
         public static GameState CreateNewGame(int numPlayers)
         {
             var state = new GameState(numPlayers);
@@ -39,9 +31,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Create a new game using a provided deck ordering (useful for tests). The provided deck
-        /// will be copied and shuffled each attempt to avoid invalid initial table (e.g., two aces).
-        /// </summary>
         public static GameState CreateNewGame(int numPlayers, List<Card> providedDeck)
         {
             var state = new GameState(numPlayers);
@@ -88,9 +77,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Initializes a standard 40-card Italian deck.
-        /// Ranks: 1 (Ace), 2-7, 8 (Jack), 9 (Horse), 10 (King) for each suit.
-        /// </summary>
         private static void InitializeDeck(GameState state)
         {
             state.Deck.Clear();
@@ -124,11 +110,6 @@ namespace Project51.Core
         #region Player Selection Helper
 
         /// <summary>
-        /// Given a played card and a (possibly empty) selection of table cards, determine whether this
-        /// constitutes a valid move for the specified player. If valid, returns true and outputs the
-        /// corresponding Move object. This is intended to be used by UI/player logic to validate
-        /// manual selections rather than reimplementing rules logic.
-        /// </summary>
         public static bool TryGetMoveFromSelection(GameState state, int playerIndex, Card playedCard, List<Card> selectedTableCards, out Move move)
         {
             move = null;
@@ -173,10 +154,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Returns all valid moves that match the provided played card and the selected table cards.
-        /// Useful when multiple equivalent captures exist (e.g., matta assignments) so the UI
-        /// can present alternatives to the player.
-        /// </summary>
         public static List<Move> GetMatchingMovesFromSelection(GameState state, int playerIndex, Card playedCard, List<Card> selectedTableCards)
         {
             var matches = new List<Move>();
@@ -249,9 +226,6 @@ namespace Project51.Core
         #region Initial Deal & Two-Aces Check
 
         /// <summary>
-        /// Deals the initial 3 cards to each player and 4 cards to the table.
-        /// If the table contains two or more Aces, redeal from scratch.
-        /// </summary>
         public static void DealInitialCards(GameState state)
         {
             bool validDeal = false;
@@ -302,8 +276,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Draws a card from the top of the deck.
-        /// </summary>
         private static Card DrawCard(GameState state)
         {
             if (state.Deck.Count == 0)
@@ -319,9 +291,6 @@ namespace Project51.Core
         #region Valid Moves Generation
 
         /// <summary>
-        /// Returns all valid moves for the specified player.
-        /// Enforces the forced-capture rule: if any capture is possible, PlayOnly is not allowed.
-        /// </summary>
         public static List<Move> GetValidMoves(GameState state, int playerIndex)
         {
             var player = state.Players[playerIndex];
@@ -329,32 +298,17 @@ namespace Project51.Core
 
             foreach (var card in player.Hand)
             {
-                // Matta (7 di Coppe) can act as a wildcard for captures.
-                // Generate captures for all possible values when Matta is played.
-                if (card.IsMatta)
+                // Matta (7 di Coppe) is played as a normal 7 - the special visual is only for accuso hints
+                // It does NOT act as a wildcard during play
+                if (card.IsAce)
                 {
-                    // Matta can capture any single card on the table (equal-value capture for each table card)
-                    foreach (var tableCard in state.Table)
-                    {
-                        validMoves.Add(new Move(playerIndex, card, MoveType.CaptureEqual, new List<Card> { tableCard }));
-                    }
-
-                    // Matta as Ace (1) for Ace capture rules
-                    var aceMoves = GetAceCaptureMoves(state, playerIndex, card);
-                    validMoves.AddRange(aceMoves);
-
-                    // Matta as Ace (1) for sum-to-15 captures
-                    var sum15AsAce = GetSumTo15CapturesWithEffectiveValue(state, playerIndex, card, effectivePlayedValue: 1);
-                    validMoves.AddRange(sum15AsAce);
-                }
-                // Check for Ace special rules
-                else if (card.IsAce)
-                {
+                    // Check for Ace special rules
                     var aceMoves = GetAceCaptureMoves(state, playerIndex, card);
                     validMoves.AddRange(aceMoves);
                 }
                 else
                 {
+                    // Normal card logic (including Matta which plays as a 7)
                     // Equal value captures
                     var equalMoves = GetEqualValueCaptures(state, playerIndex, card);
                     validMoves.AddRange(equalMoves);
@@ -382,8 +336,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Returns moves for capturing exactly one card of equal value.
-        /// </summary>
         private static List<Move> GetEqualValueCaptures(GameState state, int playerIndex, Card playedCard)
         {
             var moves = new List<Move>();
@@ -398,8 +350,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Sum-to-15 variant that uses an effective played card value (e.g., Matta counting as 1).
-        /// </summary>
         private static List<Move> GetSumTo15CapturesWithEffectiveValue(GameState state, int playerIndex, Card playedCard, int effectivePlayedValue)
         {
             var moves = new List<Move>();
@@ -423,8 +373,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Returns moves for capturing cards whose sum equals the played card's value (not including played card).
-        /// </summary>
         private static List<Move> GetSumToValueCaptures(GameState state, int playerIndex, Card playedCard)
         {
             var moves = new List<Move>();
@@ -447,8 +395,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Returns moves for capturing cards whose sum + played card value = 15.
-        /// </summary>
         private static List<Move> GetSumTo15Captures(GameState state, int playerIndex, Card playedCard)
         {
             var moves = new List<Move>();
@@ -472,11 +418,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Returns moves for Ace capture special rules:
-        /// - If there's at least one Ace on the table, capture ONE Ace.
-        /// - If no Aces on table but there are other cards, capture ALL cards.
-        /// - If table is empty, PlayOnly (no capture).
-        /// </summary>
         private static List<Move> GetAceCaptureMoves(GameState state, int playerIndex, Card playedCard)
         {
             var moves = new List<Move>();
@@ -505,8 +446,6 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Generates all non-empty subsets of a list.
-        /// </summary>
         private static List<List<Card>> GetAllSubsets(List<Card> cards)
         {
             var subsets = new List<List<Card>>();
@@ -534,8 +473,6 @@ namespace Project51.Core
         #region Apply Move
 
         /// <summary>
-        /// Applies the chosen move to the game state, updating hands, table, captured cards, and Scopa count.
-        /// </summary>
         public static void ApplyMove(GameState state, Move move)
         {
             var player = state.Players[move.PlayerIndex];

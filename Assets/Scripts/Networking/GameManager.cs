@@ -6,11 +6,8 @@ using System.Collections.Generic;
 
 namespace Project51.Unity
 {
-    /// <summary>
-    /// Main game manager che gestisce sia single-player che multiplayer.
-    /// Wrappa TurnController e gestisce l'inizializzazione in base alla modalità.
-    /// </summary>
-    public class GameManager : MonoBehaviour
+    // Main game manager for single-player and multiplayer. Implements IGameModeProvider.
+    public class GameManager : MonoBehaviour, IGameModeProvider
     {
         #region Singleton
 
@@ -49,11 +46,8 @@ namespace Project51.Unity
         { 
             get 
             {
-                // Se non siamo ancora inizializzati, rileva al volo
                 if (!_isInitialized)
                 {
-                    // Rilevamento rapido senza logging
-                    // Assume single-player se non possiamo verificare Photon
                     return IsInPhotonRoomSafe() ? GameMode.Multiplayer : GameMode.SinglePlayer;
                 }
                 return _currentGameMode;
@@ -82,7 +76,6 @@ namespace Project51.Unity
             }
             catch
             {
-                // Catch absolutely everything (including non-Exception throwables)
                 return false;
             }
         }
@@ -104,7 +97,7 @@ namespace Project51.Unity
         [SerializeField] private TurnController turnController;
 
         [Header("Debug")]
-        [SerializeField] private bool logMultiplayerInfo = true;
+        [SerializeField] private bool logMultiplayerInfo = false;
 
         #endregion
 
@@ -116,7 +109,37 @@ namespace Project51.Unity
         /// Index del player locale in modalità multiplayer.
         /// In single-player è sempre 0.
         /// </summary>
-        public int LocalPlayerIndex => _localPlayerIndex;
+        public int LocalPlayerIndex => _localPlayerIndex >= 0 ? _localPlayerIndex : 0;
+
+        #endregion
+
+        #region IGameModeProvider Implementation
+
+        /// <summary>
+        /// True if the game is running in multiplayer mode.
+        /// </summary>
+        bool IGameModeProvider.IsMultiplayer => CurrentGameMode == GameMode.Multiplayer;
+
+        /// <summary>
+        /// True if the local client is the Photon Master Client (or always true in single-player).
+        /// </summary>
+        public bool IsMasterClient
+        {
+            get
+            {
+                if (CurrentGameMode == GameMode.SinglePlayer)
+                    return true;
+                
+                try
+                {
+                    return PhotonNetwork.IsMasterClient;
+                }
+                catch
+                {
+                    return true;
+                }
+            }
+        }
 
         #endregion
 
@@ -131,19 +154,25 @@ namespace Project51.Unity
             }
 
             _instance = this;
-
-            // Find TurnController if not assigned
+            
+            GameModeService.Current = this;
             if (turnController == null)
             {
                 turnController = FindObjectOfType<TurnController>();
             }
         }
+        
+        private void OnDestroy()
+        {
+            if (GameModeService.Current == this as IGameModeProvider)
+            {
+                GameModeService.Reset();
+            }
+        }
 
         private void Start()
         {
-            // Auto-detect modalità di gioco
             DetectGameMode();
-
             if (CurrentGameMode == GameMode.Multiplayer)
             {
                 InitializeMultiplayer();
@@ -160,24 +189,14 @@ namespace Project51.Unity
 
         private void DetectGameMode()
         {
-            // Se siamo in una room Photon, è multiplayer
             if (IsInPhotonRoomSafe())
             {
                 CurrentGameMode = GameMode.Multiplayer;
-                if (logMultiplayerInfo)
-                {
-                    Debug.Log("<color=cyan>=== MULTIPLAYER MODE ===</color>");
-                }
             }
             else
             {
                 CurrentGameMode = GameMode.SinglePlayer;
-                if (logMultiplayerInfo)
-                {
-                    Debug.Log("=== SINGLE PLAYER MODE ===");
-                }
             }
-            
             _isInitialized = true;
         }
 
@@ -193,57 +212,25 @@ namespace Project51.Unity
                 Debug.LogError("RoomManager not found! Cannot initialize multiplayer game.");
                 return;
             }
-
             var slots = roomManager.PlayerSlots;
             int playerCount = roomManager.FilledSlotsCount;
             int localSlot = roomManager.GetLocalPlayerSlot();
-
             if (playerCount < 2)
             {
                 Debug.LogError("Need at least 2 players to start multiplayer game!");
                 return;
             }
-
             if (localSlot < 0)
             {
                 Debug.LogError("Local player not assigned to a slot!");
                 return;
             }
-
             _localPlayerIndex = localSlot;
-
-            if (logMultiplayerInfo)
-            {
-                LogMultiplayerSetup(slots, playerCount, localSlot);
-            }
-
-            // TODO: Modificare TurnController per supportare multiplayer
-            // Per ora il TurnController parte automaticamente in autoStartGame
-            // In futuro, disabilitare autoStartGame e controllare il flow da qui
-            
-            Debug.LogWarning("Multiplayer game initialization detected, but TurnController is not yet multiplayer-aware!");
-            Debug.LogWarning("See Assets/Networking/GAMEMANAGER_INTEGRATION.md for next steps.");
         }
 
         private void LogMultiplayerSetup(NetworkPlayerInfo[] slots, int playerCount, int localSlot)
         {
-            Debug.Log("<color=yellow>=== MULTIPLAYER GAME SETUP ===</color>");
-            Debug.Log($"  Human players: {RoomManager.Instance.HumanPlayersCount}");
-            Debug.Log($"  Bot players: {RoomManager.Instance.BotPlayersCount}");
-            Debug.Log($"  Total players: {playerCount}");
-
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (!slots[i].IsEmpty)
-                {
-                    string playerType = slots[i].IsHuman ? "Human" : "Bot";
-                    string isLocal = (i == localSlot) ? " (YOU)" : "";
-                    Debug.Log($"  Slot {i}: {slots[i].NickName} ({playerType}){isLocal}");
-                }
-            }
-
-            Debug.Log($"  <color=cyan>Local player is in slot: {localSlot}</color>");
-            Debug.Log("<color=yellow>==============================</color>");
+            // Removed verbose multiplayer setup logs
         }
 
         #endregion
@@ -252,10 +239,7 @@ namespace Project51.Unity
 
         private void InitializeSinglePlayer()
         {
-            _localPlayerIndex = 0; // In single-player, player 0 è sempre locale
-
-            // TurnController già gestisce single-player con autoStartGame
-            Debug.Log("Single-player mode: TurnController will auto-start game.");
+            _localPlayerIndex = 0;
         }
 
         #endregion
@@ -269,7 +253,6 @@ namespace Project51.Unity
         {
             if (CurrentGameMode == GameMode.SinglePlayer)
                 return playerIndex == 0;
-
             return playerIndex == _localPlayerIndex;
         }
 

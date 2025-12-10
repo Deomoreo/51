@@ -62,6 +62,8 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Gameplay\MoveSelectionUI.cs" />
     <Compile Include="Assets\Scripts\Gameplay\TurnController.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\PlayerScoreRow.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\RoundEndPanel.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerCapturedPileView.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardView.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardViewManager.cs" />

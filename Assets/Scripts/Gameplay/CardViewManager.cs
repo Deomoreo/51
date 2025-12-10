@@ -6,15 +6,30 @@ using System.Linq;
 
 namespace Project51.Unity
 {
-    /// <summary>
-    /// Manages the visual representation of all cards in the game.
-    /// Creates, positions, and destroys CardView instances based on GameState.
-    /// </summary>
+    // Manages the visual representation of all cards in the game.
     public class CardViewManager : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private TurnController turnController;
         [SerializeField] private GameObject cardViewPrefab;
+        
+        /// <summary>
+        /// Sets the card view prefab at runtime. Useful for tests.
+        /// </summary>
+        public void SetCardViewPrefab(GameObject prefab)
+        {
+            cardViewPrefab = prefab;
+            // Set prefab at runtime
+        }
+        
+        /// <summary>
+        /// Sets the turn controller reference at runtime. Useful for tests.
+        /// </summary>
+        public void SetTurnController(TurnController controller)
+        {
+            turnController = controller;
+            // Set controller at runtime
+        }
 
         [Header("Layout Settings")]
         [SerializeField] private Transform tableCardContainer;
@@ -41,6 +56,14 @@ namespace Project51.Unity
         private Dictionary<(Suit suit, int rank), Sprite> explicitMapCache = new Dictionary<(Suit, int), Sprite>();
 
         private Dictionary<Card, CardView> activeCardViews = new Dictionary<Card, CardView>();
+
+        /// <summary>
+        /// Gets all currently active CardViews. Useful for tests.
+        /// </summary>
+        public IEnumerable<CardView> GetActiveCardViews()
+        {
+            return activeCardViews.Values.Where(v => v != null);
+        }
 
         // Selection mode state: when human selects a card to play and chooses table cards
         private bool isSelecting = false;
@@ -121,6 +144,14 @@ namespace Project51.Unity
                     }
 
                     var cardView = activeCardViews[card];
+                    // FORZA il flip a face-up se il giocatore ha dichiarato accuso
+                    if (faceUp && cardView != null)
+                    {
+                        var faceSprite = GetSpriteForCard(card);
+                        if (faceSprite != null)
+                            cardView.FlipToFaceUp(faceSprite);
+                    }
+
                     Vector3 basePos = tableCardContainer != null ? tableCardContainer.position : Vector3.zero;
                     Vector3 position;
                     float baseRotation = 0f;
@@ -176,7 +207,10 @@ namespace Project51.Unity
             }
         }
 
-        private Sprite GetSpriteForCard(Card card)
+        /// <summary>
+        /// Gets the sprite for a specific card. Public for use by other UI components.
+        /// </summary>
+        public Sprite GetSpriteForCard(Card card)
         {
             // 1) Do NOT rely on array index ordering; many packs are unordered.
             // Prefer explicit mappings or name-based resolution.
@@ -292,10 +326,16 @@ namespace Project51.Unity
 
         private void Start()
         {
+            // Cache TurnController reference if not assigned in Inspector
             if (turnController == null)
             {
                 turnController = FindObjectOfType<TurnController>();
+                if (turnController == null)
+                {
+                    Debug.LogWarning("CardViewManager: TurnController not found. Please assign it in the Inspector or ensure TurnController exists in the scene.");
+                }
             }
+            
             if (turnController != null)
             {
                 turnController.OnMoveExecuted += HandleMoveExecuted;
@@ -332,6 +372,12 @@ namespace Project51.Unity
             BuildExplicitMapCache();
 
             // No global provider usage; mapping handled locally
+
+            // Log prefab status for debugging
+            if (cardViewPrefab == null)
+            {
+                Debug.LogWarning("CardViewManager.Start: cardViewPrefab is null after Start(). Cards will not be rendered.");
+            }
 
             // Subscribe to game state changes (in a real implementation, use events)
             InvokeRepeating(nameof(RefreshCardViews), 0.5f, 0.5f);
@@ -397,10 +443,21 @@ namespace Project51.Unity
         /// </summary>
         private void RefreshCardViews()
         {
-            if (turnController == null || turnController.GameState == null)
+            if (turnController == null)
+            {
+                Debug.LogWarning("CardViewManager.RefreshCardViews: turnController is null");
                 return;
+            }
+            
+            if (turnController.GameState == null)
+            {
+                // GameState not yet initialized - this is normal before StartNewGame
+                return;
+            }
 
             var state = turnController.GameState;
+            
+            // Refresh card views
 
             // Clear old views that are no longer in the game
             CleanupOldViews(state);
@@ -453,6 +510,7 @@ namespace Project51.Unity
         // Allow external callers (e.g., context menus) to force an immediate UI refresh
         public void ForceRefresh()
         {
+            // Force refresh
             RefreshCardViews();
         }
 
@@ -721,6 +779,69 @@ namespace Project51.Unity
             }
         }
 
+        /// <summary>
+        /// Shows sequential bounce animation on all valid capture options.
+        /// Used when player makes an invalid selection to show them what cards can be captured.
+        /// </summary>
+        /// <param name="moves">List of valid moves to highlight</param>
+        /// <param name="delayBetweenMoves">Delay between showing each move option</param>
+        public void ShowSequentialCaptureHints(List<Move> moves, float delayBetweenMoves = 0.6f)
+        {
+            if (moves == null || moves.Count == 0) return;
+
+            // Stop any existing hint animations
+            StopAllHintAnimations();
+
+            // Get unique capture sets
+            var seenSets = new HashSet<string>();
+            var uniqueMoves = new List<Move>();
+            
+            foreach (var move in moves.Where(m => m.Type != MoveType.PlayOnly))
+            {
+                var setKey = string.Join("|", (move.CapturedCards ?? new List<Card>())
+                    .Select(c => c.ToString()).OrderBy(s => s));
+                
+                if (!seenSets.Contains(setKey))
+                {
+                    seenSets.Add(setKey);
+                    uniqueMoves.Add(move);
+                }
+            }
+
+            // Play bounce animations with sequential delays
+            float currentDelay = 0f;
+            foreach (var move in uniqueMoves)
+            {
+                if (move.CapturedCards == null) continue;
+                
+                foreach (var card in move.CapturedCards)
+                {
+                    if (activeCardViews.TryGetValue(card, out var view))
+                    {
+                        view.PlayHintBounce(currentDelay, 2);
+                    }
+                }
+                
+                currentDelay += delayBetweenMoves;
+            }
+        }
+
+        /// <summary>
+        /// Stops all hint bounce animations on table cards.
+        /// </summary>
+        public void StopAllHintAnimations()
+        {
+            if (turnController?.GameState?.Table == null) return;
+            
+            foreach (var card in turnController.GameState.Table)
+            {
+                if (activeCardViews.TryGetValue(card, out var view))
+                {
+                    view.StopHintBounce();
+                }
+            }
+        }
+
         private GameObject CreateMarkerAt(Vector3 pos)
         {
             var canvas = FindObjectOfType<Canvas>();
@@ -793,14 +914,22 @@ namespace Project51.Unity
 
         private void ClearArrowsAndHighlights()
         {
-            foreach (var m in currentMarkers) if (m != null) Destroy(m);
+            foreach (var m in currentMarkers)
+            {
+                if (m == null) continue;
+                try { Destroy(m); } catch { }
+            }
             currentMarkers.Clear();
             foreach (var c in currentlyHighlightedCards)
             {
                 if (activeCardViews.TryGetValue(c, out var v)) v.SetSelected(false);
             }
             currentlyHighlightedCards.Clear();
-            foreach (var t in currentTooltips) if (t != null) Destroy(t);
+            foreach (var t in currentTooltips)
+            {
+                if (t == null) continue;
+                try { Destroy(t); } catch { }
+            }
             currentTooltips.Clear();
         }
 
@@ -809,6 +938,12 @@ namespace Project51.Unity
         /// </summary>
         private void RenderHumanHand(List<Card> handCards)
         {
+            if (handCards == null || handCards.Count == 0)
+            {
+                Debug.LogWarning($"CardViewManager.RenderHumanHand: No cards to render (handCards is null or empty)");
+                return;
+            }
+            
             for (int i = 0; i < handCards.Count; i++)
             {
                 var card = handCards[i];
@@ -832,7 +967,7 @@ namespace Project51.Unity
                     }
                     else
                     {
-                        // silent: failed to create view for human hand card
+                        // CreateCardView returned null - prefab might be missing
                         continue;
                     }
                 }
@@ -842,6 +977,13 @@ namespace Project51.Unity
                 cardView.IsClickable = turnController.IsHumanPlayerTurn;
                 // ALWAYS enable hover (for Matta visual hints to work)
                 cardView.EnableHover = true;
+
+                // Ensure face sprite is correct in case the view was created before sprites were loaded
+                var face = GetSpriteForCard(card);
+                if (face != null)
+                {
+                    cardView.FlipToFaceUp(face);
+                }
 
                 // Calculate position with fan layout
                 Vector3 basePos = humanHandContainer != null ? humanHandContainer.position : Vector3.down * 3f;
@@ -1015,11 +1157,14 @@ namespace Project51.Unity
         {
             if (cardViewPrefab == null)
             {
-                // silent: prefab not assigned
+                Debug.LogWarning($"CardViewManager.CreateCardView: cardViewPrefab is null, cannot create CardView for {card}");
                 return null;
             }
 
             var viewObj = Instantiate(cardViewPrefab, transform);
+            // Hide runtime objects from Hierarchy/selection to avoid editor inspector errors when destroyed
+            // But don't hide completely to allow FindObjectsOfType to work in tests
+            viewObj.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
             viewObj.SetActive(true);
             viewObj.transform.localScale = Vector3.one;
             // Name the instance for easier identification in Hierarchy using human-readable rank
@@ -1042,6 +1187,16 @@ namespace Project51.Unity
             Sprite cardSprite = GetSpriteForCard(card);
 
             view.Initialize(card, cardSprite, faceUp);
+
+            // If created face-up and we didn't have the sprite at init time, try to set it now
+            if (faceUp && cardSprite == null)
+            {
+                var resolved = GetSpriteForCard(card);
+                if (resolved != null)
+                {
+                    view.FlipToFaceUp(resolved);
+                }
+            }
             view.IsClickable = clickable;
 
             return view;
@@ -1092,6 +1247,7 @@ namespace Project51.Unity
             }
 
             var temp = new GameObject($"CardAnim_{move.PlayedCard.Suit}_{move.PlayedCard.Rank}");
+            temp.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild | HideFlags.DontUnloadUnusedAsset;
             var tempSr = temp.AddComponent<SpriteRenderer>();
             tempSr.sprite = sprite ?? defaultCardBack;
             temp.transform.position = startPos;
@@ -1135,6 +1291,7 @@ namespace Project51.Unity
 
         /// <summary>
         /// Handles human player clicking a card in their hand.
+        /// Uses unified logic for all cards.
         /// </summary>
         private void OnHumanCardClicked(CardView clickedCardView)
         {
@@ -1165,35 +1322,31 @@ namespace Project51.Unity
                 return;
             }
 
-            // If any capture moves exist, decide whether to auto-execute or enter manual selection
+            // If any capture moves exist, decide whether to auto-execute or show options
             var captureMoves = movesForCard.Where(m => m.Type != MoveType.PlayOnly).ToList();
             if (captureMoves.Count > 0)
             {
-                // If the played card is the Matta in hand, the player must choose how to assign it.
-                // Do not auto-resolve captures when the played card is the matta: force manual selection.
-                if (clickedCardView.Card.IsMatta)
-                {
-                    EnterSelectionMode(clickedCardView);
-                    return;
-                }
-                // If there's exactly one distinct set of captured cards among the capture moves, treat as a single option
+                // Group captures by the set of cards they capture (order-independent)
                 var setKeys = captureMoves.Select(m =>
                 {
                     var keys = (m.CapturedCards ?? new List<Card>()).Select(c => c.ToString()).OrderBy(s => s);
                     return string.Join("|", keys);
                 }).Distinct().ToList();
 
+                // ONLY auto-execute if there is exactly ONE distinct capture set
+                // This ensures player ALWAYS chooses when multiple different captures exist
+                // (e.g., CaptureSum {7,3} vs Capture15 {5} - player must choose!)
                 if (setKeys.Count == 1)
                 {
-                    // choose preferred move among those with same captured set, by priority
                     Move chosen = null;
                     var priority = new[] { MoveType.CaptureEqual, MoveType.Capture15, MoveType.CaptureSum, MoveType.AceCapture };
                     foreach (var p in priority)
                     {
-                        chosen = captureMoves.FirstOrDefault(m => m.Type == p && ((m.CapturedCards ?? new List<Card>()).Count == 0 ? "" : string.Join("|", (m.CapturedCards ?? new List<Card>()).Select(c => c.ToString()).OrderBy(s => s))) == setKeys[0]);
+                        chosen = captureMoves.FirstOrDefault(m => m.Type == p && 
+                            ((m.CapturedCards ?? new List<Card>()).Count == 0 ? "" : 
+                            string.Join("|", (m.CapturedCards ?? new List<Card>()).Select(c => c.ToString()).OrderBy(s => s))) == setKeys[0]);
                         if (chosen != null) break;
                     }
-                    // fallback to first
                     if (chosen == null) chosen = captureMoves[0];
 
                     turnController.ExecuteMove(chosen);
@@ -1202,30 +1355,9 @@ namespace Project51.Unity
                     return;
                 }
 
-                // Multiple distinct capture sets -> try to prefer the move that captures the most cards
-                // (e.g. when one option captures both available table cards it should be preferred)
-                int maxCaptured = captureMoves.Max(m => (m.CapturedCards == null ? 0 : m.CapturedCards.Count));
-                var supersetMoves = captureMoves.Where(m => (m.CapturedCards == null ? 0 : m.CapturedCards.Count) == maxCaptured).ToList();
-                if (supersetMoves.Count == 1)
-                {
-                    // choose preferred move among those with largest capture set, by priority
-                    Move chosen = null;
-                    var priority = new[] { MoveType.CaptureEqual, MoveType.Capture15, MoveType.CaptureSum, MoveType.AceCapture };
-                    foreach (var p in priority)
-                    {
-                        chosen = supersetMoves.FirstOrDefault(m => m.Type == p);
-                        if (chosen != null) break;
-                    }
-                    if (chosen == null) chosen = supersetMoves[0];
-
-                    turnController.ExecuteMove(chosen);
-                    foreach (var kv in activeCardViews)
-                        kv.Value?.SetSelected(false);
-                    return;
-                }
-
-                // Fallback: enter manual selection mode
-                EnterSelectionMode(clickedCardView);
+                // Multiple distinct capture options exist - let the player choose
+                // NO superset logic - player must ALWAYS choose when different card sets are available
+                ShowCaptureOptions(clickedCardView.Card, captureMoves);
                 return;
             }
 
@@ -1233,6 +1365,108 @@ namespace Project51.Unity
             turnController.ExecuteMove(movesForCard[0]);
             foreach (var kv in activeCardViews)
                 kv.Value?.SetSelected(false);
+        }
+
+        /// <summary>
+        /// Shows capture options to the player when multiple distinct captures are available.
+        /// Does not use Confirm/Cancel - player simply clicks on the desired option.
+        /// </summary>
+        private void ShowCaptureOptions(Card playedCard, List<Move> captureMoves)
+        {
+            // Group moves by their captured card set to avoid duplicates
+            var uniqueMoves = new List<Move>();
+            var seenSets = new HashSet<string>();
+            
+            // Priority order for move types
+            var priority = new[] { MoveType.CaptureEqual, MoveType.Capture15, MoveType.CaptureSum, MoveType.AceCapture };
+            
+            foreach (var moveType in priority)
+            {
+                foreach (var move in captureMoves.Where(m => m.Type == moveType))
+                {
+                    var setKey = string.Join("|", (move.CapturedCards ?? new List<Card>())
+                        .Select(c => c.ToString()).OrderBy(s => s));
+                    
+                    if (!seenSets.Contains(setKey))
+                    {
+                        seenSets.Add(setKey);
+                        uniqueMoves.Add(move);
+                    }
+                }
+            }
+
+            if (uniqueMoves.Count == 0)
+            {
+                uniqueMoves = captureMoves;
+            }
+
+            // Show UI with move options
+            if (moveSelectionUI != null)
+            {
+                var descriptions = uniqueMoves.Select(m => FormatMoveDescription(m)).ToList();
+                moveSelectionUI.ShowMoves(descriptions, idx =>
+                {
+                    if (idx >= 0 && idx < uniqueMoves.Count)
+                    {
+                        turnController.ExecuteMove(uniqueMoves[idx]);
+                    }
+                    // Clear selection state
+                    foreach (var kv in activeCardViews)
+                        kv.Value?.SetSelected(false);
+                }, autoHideOnChoose: true, onHover: hoveredIndex => HighlightAlternative(uniqueMoves, hoveredIndex, null));
+            }
+            else
+            {
+                // No UI available, execute first move
+                turnController.ExecuteMove(uniqueMoves[0]);
+                foreach (var kv in activeCardViews)
+                    kv.Value?.SetSelected(false);
+            }
+        }
+
+        /// <summary>
+        /// Formats a move description for display in the UI.
+        /// </summary>
+        private string FormatMoveDescription(Move move)
+        {
+            if (move.CapturedCards == null || move.CapturedCards.Count == 0)
+            {
+                return "Play only";
+            }
+
+            var cardNames = move.CapturedCards.Select(c => 
+            {
+                string rankName = c.Rank switch
+                {
+                    1 => "A",
+                    8 => "J",
+                    9 => "Q", 
+                    10 => "K",
+                    _ => c.Rank.ToString()
+                };
+                string suitName = c.Suit switch
+                {
+                    Suit.Denari => "?",
+                    Suit.Coppe => "?",
+                    Suit.Bastoni => "?",
+                    Suit.Spade => "?",
+                    _ => c.Suit.ToString()
+                };
+                return $"{rankName}{suitName}";
+            }).ToList();
+
+            string captureDesc = string.Join(" + ", cardNames);
+            
+            string typeDesc = move.Type switch
+            {
+                MoveType.CaptureEqual => "=",
+                MoveType.Capture15 => "?15",
+                MoveType.CaptureSum => "?",
+                MoveType.AceCapture => "A?",
+                _ => ""
+            };
+
+            return $"{captureDesc} {typeDesc}";
         }
 
         private void EnterSelectionMode(CardView clickedCardView)

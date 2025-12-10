@@ -1,6 +1,9 @@
 using UnityEngine;
 using Project51.Core;
 using System;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Project51.Unity
 {
@@ -43,6 +46,19 @@ namespace Project51.Unity
             set => enableHover = value;
         }
 
+        /// <summary>
+        /// True se la carta è attualmente scoperta (face-up), false se mostra il dorso.
+        /// </summary>
+        public bool IsFaceUp
+        {
+            get
+            {
+                if (spriteRenderer == null) return false;
+                // Considera la carta scoperta se la sprite NON è il dorso
+                return spriteRenderer.sprite != null && spriteRenderer.sprite != defaultCardBack;
+            }
+        }
+
         public event Action<CardView> OnCardClicked;
         public event Action<CardView> OnCardDoubleClicked;
         public event Action<CardView, Vector3> OnDragReleased;
@@ -67,15 +83,15 @@ namespace Project51.Unity
 
             if (spriteRenderer != null)
             {
-                // Prefer an explicit face sprite when provided. If missing, fall back to the card back
-                // so the card is still visible. As a last resort generate a simple placeholder sprite
-                // so running the scene without inspector setup still shows something.
+                // Face-up cards must NEVER show the back. If a face sprite is missing,
+                // use a placeholder so the player can still see the card.
                 if (faceUp)
                 {
-                    spriteRenderer.sprite = cardSprite ?? defaultCardBack ?? GetPlaceholderSprite();
+                    spriteRenderer.sprite = cardSprite ?? GetPlaceholderSprite();
                 }
                 else
                 {
+                    // Face-down cards: prefer back, then fallback to any available sprite
                     spriteRenderer.sprite = defaultCardBack ?? cardSprite ?? GetPlaceholderSprite();
                 }
                 spriteRenderer.enabled = true;
@@ -247,20 +263,27 @@ namespace Project51.Unity
         private bool IsLocalPlayersTurn()
         {
             // Check via GameManager reflection to avoid hard assembly refs
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gmType != null)
+            try
             {
-                var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var gm = instanceProp?.GetValue(null);
-                if (gm != null)
+                var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
+                if (gmType != null)
                 {
-                    var isLocalTurnMethod = gmType.GetMethod("IsLocalPlayerTurn", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (isLocalTurnMethod != null)
+                    var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    var gm = instanceProp?.GetValue(null);
+                    if (gm != null)
                     {
-                        var res = isLocalTurnMethod.Invoke(gm, null);
-                        if (res is bool b) return b;
+                        var isLocalTurnMethod = gmType.GetMethod("IsLocalPlayerTurn", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (isLocalTurnMethod != null)
+                        {
+                            var res = isLocalTurnMethod.Invoke(gm, null);
+                            if (res is bool b) return b;
+                        }
                     }
                 }
+            }
+            catch
+            {
+                // ignore reflection errors in editor
             }
             // Default to true in single-player or if GM not found
             return true;
@@ -353,15 +376,86 @@ namespace Project51.Unity
         /// </summary>
         public void DestroyView()
         {
-            // Use UnityEngine.Object.Destroy to remove the GameObject
-            UnityEngine.Object.Destroy(gameObject);
+#if UNITY_EDITOR
+            EnsureDeselected(gameObject);
+#endif
+            // Use DestroyImmediate in edit mode to avoid Editor holding null targets
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(gameObject);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
         }
 
+#if UNITY_EDITOR
+        private static void EnsureDeselected(GameObject target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            bool selectionChanged = false;
+
+            if (Selection.activeObject != null)
+            {
+                if (Selection.activeObject == target)
+                {
+                    Selection.activeObject = null;
+                    selectionChanged = true;
+                }
+                else if (Selection.activeObject is Component activeComponent && activeComponent != null && activeComponent.gameObject == target)
+                {
+                    Selection.activeObject = null;
+                    selectionChanged = true;
+                }
+            }
+
+            var currentSelection = Selection.objects;
+            if (currentSelection == null || currentSelection.Length == 0)
+            {
+                return;
+            }
+
+            var trimmed = new System.Collections.Generic.List<UnityEngine.Object>(currentSelection.Length);
+            foreach (var obj in currentSelection)
+            {
+                if (obj == null)
+                {
+                    selectionChanged = true;
+                    continue;
+                }
+
+                if (obj == target)
+                {
+                    selectionChanged = true;
+                    continue;
+                }
+
+                if (obj is Component component && component != null && component.gameObject == target)
+                {
+                    selectionChanged = true;
+                    continue;
+                }
+
+                trimmed.Add(obj);
+            }
+
+            if (selectionChanged)
+            {
+                Selection.objects = trimmed.ToArray();
+            }
+        }
+#endif
         private void EnsureMarkerRenderer()
         {
             if (markerRenderer != null) return;
             var child = new GameObject("CardMarkerOverlay");
             child.transform.SetParent(transform, false);
+            child.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild | HideFlags.DontUnloadUnusedAsset;
             child.transform.localPosition = new Vector3(0f, 0.6f, 0f);
             markerRenderer = child.AddComponent<SpriteRenderer>();
             markerRenderer.sortingLayerName = spriteRenderer != null ? spriteRenderer.sortingLayerName : "Default";
@@ -449,6 +543,92 @@ namespace Project51.Unity
             // Update to face-up sprite
             spriteRenderer.sprite = faceSprite;
             originalFaceSprite = faceSprite;
+        }
+
+        /// <summary>
+        /// Plays a bounce animation to indicate this card can be captured.
+        /// Used when player makes an invalid selection to suggest valid captures.
+        /// </summary>
+        /// <param name="delay">Delay before starting the animation (for sequential hints)</param>
+        /// <param name="bounceCount">Number of bounces</param>
+        public void PlayHintBounce(float delay = 0f, int bounceCount = 2)
+        {
+            if (hintBounceCoroutine != null)
+            {
+                StopCoroutine(hintBounceCoroutine);
+            }
+            hintBounceCoroutine = StartCoroutine(HintBounceCoroutine(delay, bounceCount));
+        }
+
+        /// <summary>
+        /// Stops any active hint bounce animation.
+        /// </summary>
+        public void StopHintBounce()
+        {
+            if (hintBounceCoroutine != null)
+            {
+                StopCoroutine(hintBounceCoroutine);
+                hintBounceCoroutine = null;
+            }
+            // Reset to original position if not selected
+            if (!isSelected)
+            {
+                transform.position = originalPosition;
+                transform.localScale = Vector3.one;
+            }
+        }
+
+        private Coroutine hintBounceCoroutine;
+
+        private System.Collections.IEnumerator HintBounceCoroutine(float delay, int bounceCount)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            float bounceHeight = 0.15f;
+            float bounceDuration = 0.15f;
+            Vector3 startPos = transform.position;
+            Vector3 startScale = transform.localScale;
+
+            for (int i = 0; i < bounceCount; i++)
+            {
+                // Bounce up
+                float elapsed = 0f;
+                while (elapsed < bounceDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / bounceDuration;
+                    float easeOut = 1f - (1f - t) * (1f - t);
+                    transform.position = startPos + Vector3.up * bounceHeight * easeOut;
+                    transform.localScale = Vector3.Lerp(startScale, startScale * 1.1f, easeOut);
+                    yield return null;
+                }
+
+                // Bounce down
+                elapsed = 0f;
+                while (elapsed < bounceDuration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / bounceDuration;
+                    float easeIn = t * t;
+                    transform.position = startPos + Vector3.up * bounceHeight * (1f - easeIn);
+                    transform.localScale = Vector3.Lerp(startScale * 1.1f, startScale, easeIn);
+                    yield return null;
+                }
+
+                transform.position = startPos;
+                transform.localScale = startScale;
+
+                // Small pause between bounces
+                if (i < bounceCount - 1)
+                {
+                    yield return new WaitForSeconds(0.05f);
+                }
+            }
+
+            hintBounceCoroutine = null;
         }
     }
 }

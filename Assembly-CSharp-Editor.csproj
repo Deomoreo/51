@@ -62,13 +62,17 @@
   <ItemGroup>
     <Compile Include="Assets\Tests\Editor\Rules51ValidMovesTests.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51RestoredTests.cs" />
+    <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAndAccusiRulesTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAccusiCombinationsTests.cs" />
     <Compile Include="Assets\Tests\Editor\AceAndCaptureRulesTests.cs" />
     <Compile Include="Assets\Editor\Tools\FixGameManagerScenes.cs" />
+    <Compile Include="Assets\Tests\Editor\CirullaAITests.cs" />
     <Compile Include="Assets\Editor\SceneSetup\CreateCirullaScene.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51IntegrationTests.cs" />
+    <Compile Include="Assets\Tests\Editor\AccusiAndPunteggioComprehensiveTests.cs" />
+    <Compile Include="Assets\Tests\Editor\Rules51CoreTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerEdgeTests.cs" />
     <Compile Include="Assets\Tests\Editor\PunteggioManagerTests.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiCheckerTests.cs" />

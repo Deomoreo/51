@@ -2,29 +2,15 @@ using System.Collections.Generic;
 
 namespace Project51.Core
 {
-    /// <summary>
-    /// Represents a single move a player can make during their turn.
-    /// </summary>
+    // Represents a single move a player can make during their turn.
     public class Move
     {
-        /// <summary>
-        /// Index of the player making the move.
-        /// </summary>
         public int PlayerIndex { get; }
 
-        /// <summary>
-        /// The card the player plays from their hand.
-        /// </summary>
         public Card PlayedCard { get; }
 
-        /// <summary>
-        /// The type of move.
-        /// </summary>
         public MoveType Type { get; }
 
-        /// <summary>
-        /// Cards captured from the table (empty if PlayOnly).
-        /// </summary>
         public List<Card> CapturedCards { get; }
 
         public Move(int playerIndex, Card playedCard, MoveType type, List<Card> capturedCards = null)
@@ -89,8 +75,7 @@ namespace Project51.Core
         {
             if (Type == MoveType.PlayOnly)
                 return $"Player {PlayerIndex} plays {PlayedCard} (no capture)";
-            else
-                return $"Player {PlayerIndex} plays {PlayedCard} and captures {CapturedCards.Count} card(s) [{Type}]";
+            return $"Player {PlayerIndex} plays {PlayedCard} and captures {CapturedCards.Count} card(s) [{Type}]";
         }
     }
 }
