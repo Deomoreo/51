@@ -295,6 +295,7 @@ namespace Project51.Core
         {
             var player = state.Players[playerIndex];
             var validMoves = new List<Move>();
+            var cardsWithCaptures = new HashSet<Card>(); // Track which cards have captures
 
             foreach (var card in player.Hand)
             {
@@ -305,6 +306,11 @@ namespace Project51.Core
                     // Check for Ace special rules
                     var aceMoves = GetAceCaptureMoves(state, playerIndex, card);
                     validMoves.AddRange(aceMoves);
+                    // Track if this ace has capture moves (not just PlayOnly)
+                    if (aceMoves.Any(m => m.Type != MoveType.PlayOnly))
+                    {
+                        cardsWithCaptures.Add(card);
+                    }
                 }
                 else
                 {
@@ -320,15 +326,33 @@ namespace Project51.Core
                     // Sum to 15 with card captures
                     var sum15Moves = GetSumTo15Captures(state, playerIndex, card);
                     validMoves.AddRange(sum15Moves);
+                    
+                    // Track if this card has any captures
+                    if (equalMoves.Count > 0 || sumMoves.Count > 0 || sum15Moves.Count > 0)
+                    {
+                        cardsWithCaptures.Add(card);
+                    }
                 }
             }
 
-            // If no captures are possible, allow PlayOnly for each card
-            if (validMoves.Count == 0)
+            // If no captures are possible for ANY card, allow PlayOnly for each card
+            if (cardsWithCaptures.Count == 0)
             {
                 foreach (var card in player.Hand)
                 {
                     validMoves.Add(new Move(playerIndex, card, MoveType.PlayOnly));
+                }
+            }
+            else
+            {
+                // Some cards can capture - add PlayOnly only for cards that CAN'T capture
+                // This allows the player to choose to play non-capturing cards
+                foreach (var card in player.Hand)
+                {
+                    if (!cardsWithCaptures.Contains(card))
+                    {
+                        validMoves.Add(new Move(playerIndex, card, MoveType.PlayOnly));
+                    }
                 }
             }
 

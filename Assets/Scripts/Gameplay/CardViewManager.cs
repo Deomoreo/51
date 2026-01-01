@@ -71,7 +71,6 @@ namespace Project51.Unity
         private List<Card> selectionTableCards = new List<Card>();
         // Visual helpers for alternative highlighting
         private List<GameObject> currentMarkers = new List<GameObject>();
-        private List<GameObject> currentTooltips = new List<GameObject>();
         private List<Card> currentlyHighlightedCards = new List<Card>();
         private bool helpShownForCurrentSelection = false;
 
@@ -758,25 +757,7 @@ namespace Project51.Unity
                 if (marker != null) currentMarkers.Add(marker);
             }
 
-            // Create a tooltip summarizing the move near the first captured card
-            if (m.CapturedCards != null && m.CapturedCards.Count > 0)
-            {
-                var first = m.CapturedCards[0];
-                if (activeCardViews.TryGetValue(first, out var fv))
-                {
-                    var expr = string.Join(" + ", m.CapturedCards.Select(x => x.Value.ToString()));
-                    string tip = expr;
-                    if (m.Type == MoveType.Capture15) tip = expr + " = 15";
-                    else if (m.Type == MoveType.CaptureEqual && m.CapturedCards.Count == 1) tip = expr;
-                    var tgo = CreateTooltip(tip, fv.transform.position);
-                    if (tgo != null)
-                    {
-                        // ensure tooltip/marker on top of UI
-                        if (tgo.transform is RectTransform) tgo.transform.SetAsLastSibling();
-                        currentTooltips.Add(tgo);
-                    }
-                }
-            }
+            // Tooltips removed - we rely on bounce animation for visual feedback
         }
 
         /// <summary>
@@ -880,37 +861,8 @@ namespace Project51.Unity
             return go;
         }
 
-        private GameObject CreateTooltip(string text, Vector3 position)
-        {
-            var go = new GameObject("Tooltip");
-            go.transform.position = position + Vector3.up * 0.6f;
-            // Use a World Space UI Text for better readability if Canvas present
-            var canvas = FindObjectOfType<Canvas>();
-            if (canvas != null)
-            {
-                var ui = new GameObject("TooltipUI");
-                ui.transform.SetParent(canvas.transform, false);
-                var rt = ui.AddComponent<RectTransform>();
-                Vector2 screen = Camera.main.WorldToScreenPoint(position + Vector3.up * 0.6f);
-                rt.anchoredPosition = screen;
-                var txt = ui.AddComponent<UnityEngine.UI.Text>();
-                txt.text = text;
-                // Use LegacyRuntime.ttf as Arial is no longer builtin in newer Unity
-                txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                txt.color = Color.white;
-                txt.alignment = TextAnchor.MiddleCenter;
-                txt.fontSize = 20;
-                return ui;
-            }
-
-            var tm = go.AddComponent<TextMesh>();
-            tm.text = text;
-            tm.fontSize = 48;
-            tm.color = Color.white;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.characterSize = 0.02f;
-            return go;
-        }
+        // CreateTooltip method removed - tooltips caused memory leaks and visual clutter
+        // We now rely on card bounce animations for visual feedback
 
         private void ClearArrowsAndHighlights()
         {
@@ -925,12 +877,6 @@ namespace Project51.Unity
                 if (activeCardViews.TryGetValue(c, out var v)) v.SetSelected(false);
             }
             currentlyHighlightedCards.Clear();
-            foreach (var t in currentTooltips)
-            {
-                if (t == null) continue;
-                try { Destroy(t); } catch { }
-            }
-            currentTooltips.Clear();
         }
 
         /// <summary>
@@ -938,9 +884,9 @@ namespace Project51.Unity
         /// </summary>
         private void RenderHumanHand(List<Card> handCards)
         {
+            // Empty hand is normal when waiting for network GameState or between deals
             if (handCards == null || handCards.Count == 0)
             {
-                Debug.LogWarning($"CardViewManager.RenderHumanHand: No cards to render (handCards is null or empty)");
                 return;
             }
             
@@ -1231,19 +1177,47 @@ namespace Project51.Unity
             Sprite sprite = null;
             Vector3 startPos = Vector3.zero;
             Vector3 startScale = Vector3.one;
-            int baseOrder = 0;
+            int baseOrder = 100;
+            
             if (originalView != null)
             {
                 var sr = originalView.GetComponent<SpriteRenderer>();
                 if (sr != null) sprite = sr.sprite;
                 startPos = originalView.transform.position;
                 startScale = originalView.transform.localScale;
-                baseOrder = sr != null ? sr.sortingOrder : 0;
+                baseOrder = sr != null ? sr.sortingOrder : 100;
             }
             else
             {
-                // fallback start position: human hand container
-                if (humanHandContainer != null) startPos = humanHandContainer.position;
+                // No original view found - this is common for network moves from remote players
+                // Get sprite from lookup and calculate start position based on player index
+                sprite = GetSpriteForCard(move.PlayedCard);
+                
+                // Calculate start position based on which player made the move
+                int localIndex = GetLocalPlayerIndex();
+                int numPlayers = turnController?.GameState?.NumPlayers ?? 4;
+                Vector3 basePos = tableCardContainer != null ? tableCardContainer.position : Vector3.zero;
+                
+                if (move.PlayerIndex == localIndex)
+                {
+                    // Local player - start from human hand
+                    startPos = humanHandContainer != null ? humanHandContainer.position : basePos + Vector3.down * 3f;
+                }
+                else if (move.PlayerIndex == ((localIndex + 1) % numPlayers))
+                {
+                    // Left player
+                    startPos = basePos + Vector3.left * 5f;
+                }
+                else if (move.PlayerIndex == ((localIndex + 2) % numPlayers))
+                {
+                    // Top player
+                    startPos = basePos + Vector3.up * 2.5f;
+                }
+                else
+                {
+                    // Right player
+                    startPos = basePos + Vector3.right * 5f;
+                }
             }
 
             var temp = new GameObject($"CardAnim_{move.PlayedCard.Suit}_{move.PlayedCard.Rank}");
@@ -1256,6 +1230,29 @@ namespace Project51.Unity
             tempSr.sortingOrder = baseOrder + 200;
 
             StartCoroutine(PlayCardAnimationTemp(temp, target, tempSr, baseOrder));
+        }
+        
+        /// <summary>
+        /// Gets the local player index, with fallback for when GameManager is not available.
+        /// </summary>
+        private int GetLocalPlayerIndex()
+        {
+            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
+            if (gmType != null)
+            {
+                var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                var gm = instanceProp?.GetValue(null);
+                if (gm != null)
+                {
+                    var localIdxProp = gmType.GetProperty("LocalPlayerIndex", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (localIdxProp != null)
+                    {
+                        var idxVal = localIdxProp.GetValue(gm);
+                        if (idxVal is int i) return i;
+                    }
+                }
+            }
+            return 0;
         }
 
         private System.Collections.IEnumerator PlayCardAnimationTemp(GameObject tempObj, Vector3 target, SpriteRenderer sr, int originalOrder)

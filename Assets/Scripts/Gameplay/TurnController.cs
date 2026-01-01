@@ -258,7 +258,6 @@ namespace Project51.Unity
         {
             if (gameState == null || gameState.RoundEnded)
             {
-                // cannot execute move: game not active
                 return;
             }
 
@@ -274,9 +273,8 @@ namespace Project51.Unity
 
                 if (isLocalPlayer && isHuman)
                 {
-                    // Local human player - trigger event for NetworkGameController
                     OnLocalPlayerMoveRequested?.Invoke(move);
-                    return; // Network controller will call ExecuteMove again via RPC
+                    return;
                 }
 
                 if (isBot)
@@ -287,13 +285,12 @@ namespace Project51.Unity
                         return;
                     }
                     
-                    // Master Client executes bot move and triggers event
                     OnLocalPlayerMoveRequested?.Invoke(move);
-                    return; // Network controller will call ExecuteMove again via RPC
+                    return;
                 }
             }
 
-            // Ensure valid moves list is initialized (clients joining mid-game via RPC can hit null)
+            // Ensure valid moves list is initialized
             if (currentValidMoves == null)
             {
                 RefreshValidMoves();
@@ -312,27 +309,76 @@ namespace Project51.Unity
 
                 if (!allowForcedHumanPlayOnly)
                 {
-                    // invalid move
                     return;
                 }
-
-                // forced PlayOnly accepted
             }
 
-            // executing move
+            // For capture moves, add visual delay BEFORE applying the move
+            if (move.Type != MoveType.PlayOnly && move.CapturedCards != null && move.CapturedCards.Count > 0)
+            {
+                StartCoroutine(ExecuteMoveWithVisualDelay(move, fromNetwork));
+            }
+            else
+            {
+                // PlayOnly moves execute immediately
+                ApplyMoveInternal(move, fromNetwork);
+            }
+        }
+
+        /// <summary>
+        /// Executes a capture move with a visual delay to show the played card.
+        /// The card is temporarily added to the table so all players can see it.
+        /// </summary>
+        private System.Collections.IEnumerator ExecuteMoveWithVisualDelay(Move move, bool fromNetwork)
+        {
+            // Phase 1: Show the played card on the table temporarily
+            var playedCard = move.PlayedCard;
+            var player = gameState.Players[move.PlayerIndex];
+            
+            // Temporarily add to table and remove from hand for visual feedback
+            bool wasInHand = player.Hand.Remove(playedCard);
+            gameState.Table.Add(playedCard);
+            
+            // Force visual refresh so the card appears on the table
+            if (cardViewManager != null)
+            {
+                cardViewManager.ForceRefresh();
+            }
+            
+            // Wait to show the played card (1.5 seconds gives time to see both played card and targets)
+            yield return new WaitForSeconds(1.5f);
+            
+            // Phase 2: Remove from table and add back to hand, then apply the actual move
+            gameState.Table.Remove(playedCard);
+            if (wasInHand)
+            {
+                player.Hand.Add(playedCard);
+            }
+            
+            // Now apply the real move (which will capture the cards)
+            ApplyMoveInternal(move, fromNetwork);
+        }
+
+        /// <summary>
+        /// Internal method that applies a move to the game state.
+        /// Called either directly (for PlayOnly) or after visual delay (for captures).
+        /// </summary>
+        private void ApplyMoveInternal(Move move, bool fromNetwork)
+        {
             // Use RoundManager to apply move (handles scopa, dealing, end of smazzata)
             if (roundManager == null && gameState != null)
             {
-                // Client may receive RPC before local roundManager is set up
                 roundManager = new RoundManager(gameState);
             }
             roundManager.ApplyMove(move);
+            
             // Refresh captured piles visuals after move
             if (capturedPileManager != null)
             {
                 capturedPileManager.ForceRefresh();
             }
-            // Notify listeners (e.g. UI) that a move was executed so they can animate
+            
+            // Notify listeners that a move was executed so they can animate
             OnMoveExecuted?.Invoke(move);
 
             // If RoundManager set RoundEnded, handle end
@@ -346,7 +392,7 @@ namespace Project51.Unity
             RefreshValidMoves();
 
             // If next player is AI, execute their turn
-            // In multiplayer, only Master Client executes AI turns
+            var provider = GameModeService.Current;
             if (!IsHumanPlayerTurn)
             {
                 bool shouldExecuteAI = !provider.IsMultiplayer || provider.IsMasterClient;
@@ -420,20 +466,17 @@ namespace Project51.Unity
 
         /// <summary>
         /// AI uses CirullaAI for strategic move selection.
-        /// Executes the move with a delay to show the played card before capture.
+        /// Animation is handled by CardViewManager.HandleMoveExecuted which is synchronized via RPC.
         /// </summary>
         private void ExecuteAITurn()
         {
             if (currentValidMoves == null || currentValidMoves.Count == 0)
             {
-                // AI no valid moves
                 return;
             }
 
-            // Use strategic AI to choose move
             Move chosenMove = cirullaAI?.ChooseMove(gameState, gameState.CurrentPlayerIndex, currentValidMoves);
             
-            // Fallback if AI returns null
             if (chosenMove == null)
             {
                 var captureMoves = currentValidMoves.Where(m => m.Type != MoveType.PlayOnly).ToList();
@@ -442,43 +485,9 @@ namespace Project51.Unity
                     : currentValidMoves[Random.Range(0, currentValidMoves.Count)];
             }
 
-            // If the move involves a capture, execute in two phases:
-            // 1. Play the card to the table (so it's visible)
-            // 2. Wait, then complete the capture
-            if (chosenMove.Type != MoveType.PlayOnly && chosenMove.CapturedCards != null && chosenMove.CapturedCards.Count > 0)
-            {
-                StartCoroutine(ExecuteAITurnWithDelay(chosenMove));
-            }
-            else
-            {
-                // No capture, execute immediately
-                ExecuteMove(chosenMove);
-            }
-        }
-
-        /// <summary>
-        /// Executes an AI capture move with a delay to show the played card.
-        /// </summary>
-        private System.Collections.IEnumerator ExecuteAITurnWithDelay(Move move)
-        {
-            // Phase 1: Temporarily add the played card to the table so it's visible
-            var playedCard = move.PlayedCard;
-            var botPlayer = gameState.Players[move.PlayerIndex];
-            
-            // Remove from bot hand and add to table temporarily
-            botPlayer.Hand.Remove(playedCard);
-            gameState.Table.Add(playedCard);
-            
-            // Wait for player to see the card (1.5 seconds)
-            // The card will be flipped to face-up automatically by RefreshCardViews
-            yield return new UnityEngine.WaitForSeconds(1.5f);
-            
-            // Phase 2: Remove from table and add back to hand, then execute real move
-            gameState.Table.Remove(playedCard);
-            botPlayer.Hand.Add(playedCard);
-            
-            // Now execute the actual capture move
-            ExecuteMove(move);
+            // Execute move directly - animation is triggered via OnMoveExecuted event
+            // which CardViewManager.HandleMoveExecuted riceve su tutti i client tramite sincronizzazione RPC
+            ExecuteMove(chosenMove);
         }
 
         /// <summary>
@@ -601,8 +610,8 @@ namespace Project51.Unity
                 roundEndPanel.Hide();
             }
             
-            // Load main menu scene
-            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+            // Use AppFlowManager for centralized navigation
+                    AppFlowManager.GoToMainMenu();
         }
 
         /// <summary>
