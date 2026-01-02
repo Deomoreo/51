@@ -12,6 +12,9 @@ namespace Project51.Unity
         [Tooltip("Se true, applica anche la safe area laterale (per telefoni con notch laterali in landscape)")]
         [SerializeField] private bool applySides = false;
 
+        [Tooltip("Se true, applica anche la safe area in basso (gesture bar / home indicator).")]
+        [SerializeField] private bool applyBottom = false;
+
         private RectTransform _rt;
         private Rect _lastSafeArea;
 
@@ -37,8 +40,8 @@ namespace Project51.Unity
             float minX = applySides ? safe.xMin / Screen.width : 0f;
             float maxX = applySides ? safe.xMax / Screen.width : 1f;
             
-            // Bottom resta a 0 (bordo inferiore dello schermo)
-            float minY = 0f;
+            // Bottom usa la safe area se applyBottom è true, altrimenti resta a 0 (bordo inferiore dello schermo)
+            float minY = applyBottom ? (safe.yMin / Screen.height) : 0f;
             
             // Top usa la safe area (per evitare notch/dynamic island)
             float maxY = safe.yMax / Screen.height;

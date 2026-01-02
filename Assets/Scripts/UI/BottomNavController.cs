@@ -58,7 +58,7 @@ namespace Project51.Unity
 
         [Header("Integration")]
         [Tooltip("Se true, SelectTab cambia anche pagina tramite PanelSwipeController.\nDisattiva (false) se la navigazione pagine è gestita altrove (es. MainHudController + BottomNavBarUI).")]
-        [SerializeField] private bool drivePages = true;
+        [SerializeField] private bool drivePages = false;
 
         [Header("UI Only")]
         [Tooltip("Se true, disabilita qualsiasi movimento/animazione dell'overlay da parte di questo controller.\nUsalo quando l'indicator durante swipe è gestito da BottomNavBarUI.")]
@@ -86,6 +86,11 @@ namespace Project51.Unity
 
         private void OnEnable()
         {
+            // Questo controller non deve intercettare i click se la navigazione è gestita da BottomNavBarUI.
+            // Lasciamo i bottoni così come sono già configurati altrove.
+            if (!drivePages)
+                return;
+
             for (int i = 0; i < tabs.Count; i++)
             {
                 if (tabs[i].button == null) continue;

@@ -78,11 +78,14 @@
     <Compile Include="Assets\Scripts\UI\PrimaryButtonUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatSettings.cs" />
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
+    <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
     <Compile Include="Assets\Scripts\UI\IModal.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\FriendItem.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoPanelController.cs" />
+    <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
+    <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
     <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\ChatIdCheckerUI.cs" />
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelManager.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavController.cs" />
   </ItemGroup>
   <ItemGroup>

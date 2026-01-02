@@ -220,28 +220,6 @@ namespace Project51.Unity
             });
         }
 
-        public void SwitchPage(int newIndex)
-        {
-            if (pages == null || pages.Count == 0) return;
-            if (newIndex < 0 || newIndex >= pages.Count) return;
-
-            ForcePagesActive();
-
-            if (!isDragging && currentIndex == newIndex && !isAnimating)
-            {
-                ApplyLayout(currentIndex);
-                return;
-            }
-
-            int oldIndex = currentIndex;
-            currentIndex = newIndex;
-            SnapToCurrentIndex(snapDuration, snapEase, () =>
-            {
-                if (oldIndex != newIndex)
-                    OnPageChanged?.Invoke(currentIndex);
-            });
-        }
-
         private void SettleToCenter()
         {
             snapTweener?.Kill();
@@ -317,16 +295,26 @@ namespace Project51.Unity
             return page.gameObject.AddComponent<CanvasGroup>();
         }
 
-        private void ApplyLayout(int index)
+        private void EnsureInitializedForProgrammaticNavigation()
         {
             if (pagesViewport == null) return;
-            if (pages == null) return;
 
             if (screenWidth <= 0f)
                 screenWidth = pagesViewport.rect.width;
 
             if (pageSpacing <= 0f)
+            {
+                // Spacing tra pagine: width del viewport + overflow laterale (per non sovrapporre)
                 pageSpacing = screenWidth + (pageHorizontalOverflow * 2f);
+            }
+        }
+
+        private void ApplyLayout(int index)
+        {
+            if (pagesViewport == null) return;
+            if (pages == null) return;
+
+            EnsureInitializedForProgrammaticNavigation();
 
             smoothedOffsetX = 0f;
 
@@ -336,15 +324,18 @@ namespace Project51.Unity
                 if (page == null) continue;
 
                 page.gameObject.SetActive(true);
-                
-                // Usa pageSpacing per evitare overlap
-                page.anchoredPosition = new Vector2((i - index) * pageSpacing, 0f);
+
+                float spacing = pageSpacing > 0f ? pageSpacing : pagesViewport.rect.width;
+                page.anchoredPosition = new Vector2((i - index) * spacing, 0f);
 
                 var canvasGroup = GetOrAddCanvasGroup(page);
                 if (canvasGroup != null)
                 {
                     bool isCurrent = (i == index);
                     canvasGroup.interactable = isCurrent;
+
+                    // Cruciale: le pagine NON correnti non devono mai bloccare i raycast,
+                    // altrimenti possono "coprire" la bottom bar (specialmente con Canvas multipli).
                     canvasGroup.blocksRaycasts = debugForceBlocksRaycastsOnPages ? true : isCurrent;
                     canvasGroup.alpha = 1f;
                 }
@@ -364,8 +355,11 @@ namespace Project51.Unity
                 var canvasGroup = GetOrAddCanvasGroup(page);
                 if (canvasGroup == null) continue;
 
-                canvasGroup.interactable = false;
-                canvasGroup.blocksRaycasts = false;
+                // Durante il drag vogliamo evitare click accidentali sulle pagine non correnti,
+                // ma NON vogliamo "uccidere" l'input della pagina corrente (es. bottom bar / bottoni visibili).
+                bool isCurrent = (i == currentIndex);
+                canvasGroup.interactable = isCurrent;
+                canvasGroup.blocksRaycasts = debugForceBlocksRaycastsOnPages ? true : isCurrent;
                 canvasGroup.alpha = 1f;
             }
         }
@@ -394,6 +388,46 @@ namespace Project51.Unity
                 img.color = new Color(1f, 1f, 1f, 0f); // Trasparente
                 img.raycastTarget = false;
             }
+        }
+
+        public void SwitchPage(int newIndex)
+        {
+            EnsureInitializedForProgrammaticNavigation();
+
+            if (pages == null || pages.Count == 0)
+            {
+                return;
+            }
+
+            newIndex = Mathf.Clamp(newIndex, 0, pages.Count - 1);
+
+            ForcePagesActive();
+
+            // Se le misure non sono ancora pronte (Start coroutine non ha ancora settato rect),
+            // posizioniamo immediatamente senza tween.
+            if (pageSpacing <= 0f)
+            {
+                currentIndex = newIndex;
+                ApplyLayout(currentIndex);
+                OnPageProgress?.Invoke(currentIndex);
+                OnPageChanged?.Invoke(currentIndex);
+                return;
+            }
+
+            if (!isDragging && currentIndex == newIndex && !isAnimating)
+            {
+                ApplyLayout(currentIndex);
+                return;
+            }
+
+            int oldIndex = currentIndex;
+            currentIndex = newIndex;
+
+            SnapToCurrentIndex(snapDuration, snapEase, () =>
+            {
+                if (oldIndex != newIndex)
+                    OnPageChanged?.Invoke(currentIndex);
+            });
         }
     }
 }

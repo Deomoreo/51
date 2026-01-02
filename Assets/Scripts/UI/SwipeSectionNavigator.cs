@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Project51.Unity
 {
@@ -25,6 +26,12 @@ namespace Project51.Unity
         [Tooltip("Percentuale di schermo da trascinare per cambiare pagina (0.0-1.0)")]
         [SerializeField, Range(0.1f, 0.5f)] private float minSwipePercent = 0.25f;
 
+        [Header("Input Guard")]
+        [Tooltip("Se assegnato, lo swipe non parte quando il gesto inizia sopra questo RectTransform (es. root della bottom bar).")]
+        [SerializeField] private RectTransform blockSwipeOver;
+        [Tooltip("Se > 0, lo swipe non parte quando il gesto inizia sotto questa Y (in pixel, in coordinate schermo).")]
+        [SerializeField] private float blockSwipeBelowScreenY = 0f;
+
         private Vector2 startPos;
         private float startTime;
         private bool dragging;
@@ -43,9 +50,34 @@ namespace Project51.Unity
                 bottomNavController = FindObjectOfType<BottomNavController>(true);
         }
 
+        private bool ShouldBlockSwipe(PointerEventData eventData)
+        {
+            if (eventData == null) return false;
+
+            // Escludi l'area bassa dello schermo (solo se configurata)
+            if (blockSwipeBelowScreenY > 0f && eventData.position.y <= blockSwipeBelowScreenY)
+                return true;
+
+            // Escludi un rect specifico (es. root della bottom bar) (solo se assegnato)
+            if (blockSwipeOver != null)
+            {
+                var cam = eventData.pressEventCamera;
+                if (RectTransformUtility.RectangleContainsScreenPoint(blockSwipeOver, eventData.position, cam))
+                    return true;
+            }
+
+            return false;
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             ResolveReferencesIfNeeded();
+
+            if (ShouldBlockSwipe(eventData))
+            {
+                dragging = false;
+                return;
+            }
 
             eventData.useDragThreshold = false;
 
