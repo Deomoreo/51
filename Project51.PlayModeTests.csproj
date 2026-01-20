@@ -920,10 +920,6 @@
       <Project>{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}</Project>
       <Name>Project51.Gameplay</Name>
     </ProjectReference>
-    <ProjectReference Include="Project51.Networking.csproj">
-      <Project>{8E5A128F-0AFA-442D-0FEF-32EA25ECE6F2}</Project>
-      <Name>Project51.Networking</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />

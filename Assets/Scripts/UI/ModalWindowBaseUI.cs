@@ -10,6 +10,14 @@ namespace Project51.Unity
         [SerializeField] private RectTransform window;
         [SerializeField] private Button btnClose;
         [SerializeField] private Button dimmerButton;
+        [SerializeField] private RectTransform dimmerRect;
+
+        [Header("Header drag -> ScrollRect (optional)")]
+        [SerializeField] private RectTransform headerDragArea;
+        [SerializeField] private ScrollRect scrollRect;
+
+        [Header("Responsive")]
+        [SerializeField] private bool respectSafeArea = true;
         [SerializeField] private float duration = 0.25f;
 
         public bool IsOpen { get; private set; }

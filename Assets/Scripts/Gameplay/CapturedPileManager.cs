@@ -51,31 +51,56 @@ namespace Project51.Unity
 
         private void CreateDefaultPilePositions()
         {
-            playerPilePositions = new Transform[4];
+            // Dynamic: create positions based on numPlayers
+            // Default to 4 for fallback, but will be recreated when game starts with actual player count
+            int numPlayers = 4;
+            if (turnController != null && turnController.GameState != null)
+                numPlayers = turnController.GameState.NumPlayers;
 
-            var pos0 = new GameObject("Player0_CapturedPilePos").transform;
-            pos0.SetParent(transform);
-            pos0.localPosition = new Vector3(3.0f, -3.5f, 0);
-            pos0.localRotation = Quaternion.identity;
-            playerPilePositions[0] = pos0;
+            playerPilePositions = new Transform[numPlayers];
 
-            var pos1 = new GameObject("Player1_CapturedPilePos").transform;
-            pos1.SetParent(transform);
-            pos1.localPosition = new Vector3(-6.5f, 0.0f, 0);
-            pos1.localRotation = Quaternion.Euler(0, 0, -90);
-            playerPilePositions[1] = pos1;
+            if (numPlayers == 2)
+            {
+                // 1v1: faccia a faccia (tu in basso, avversario in alto)
+                var pos0 = new GameObject("Player0_CapturedPilePos").transform;
+                pos0.SetParent(transform);
+                pos0.localPosition = new Vector3(3.0f, -3.5f, 0);
+                pos0.localRotation = Quaternion.identity;
+                playerPilePositions[0] = pos0;
 
-            var pos2 = new GameObject("Player2_CapturedPilePos").transform;
-            pos2.SetParent(transform);
-            pos2.localPosition = new Vector3(-2.0f, 3.5f, 0);
-            pos2.localRotation = Quaternion.Euler(0, 0, 180);
-            playerPilePositions[2] = pos2;
+                var pos1 = new GameObject("Player1_CapturedPilePos").transform;
+                pos1.SetParent(transform);
+                pos1.localPosition = new Vector3(-2.0f, 3.5f, 0);
+                pos1.localRotation = Quaternion.Euler(0, 0, 180); // ruotata 180° (capovolto)
+                playerPilePositions[1] = pos1;
+            }
+            else
+            {
+                // 4P: layout originale
+                var pos0 = new GameObject("Player0_CapturedPilePos").transform;
+                pos0.SetParent(transform);
+                pos0.localPosition = new Vector3(3.0f, -3.5f, 0);
+                pos0.localRotation = Quaternion.identity;
+                playerPilePositions[0] = pos0;
 
-            var pos3 = new GameObject("Player3_CapturedPilePos").transform;
-            pos3.SetParent(transform);
-            pos3.localPosition = new Vector3(6.5f, 0.0f, 0);
-            pos3.localRotation = Quaternion.Euler(0, 0, -90);
-            playerPilePositions[3] = pos3;
+                var pos1 = new GameObject("Player1_CapturedPilePos").transform;
+                pos1.SetParent(transform);
+                pos1.localPosition = new Vector3(-6.5f, 0.0f, 0);
+                pos1.localRotation = Quaternion.Euler(0, 0, -90);
+                playerPilePositions[1] = pos1;
+
+                var pos2 = new GameObject("Player2_CapturedPilePos").transform;
+                pos2.SetParent(transform);
+                pos2.localPosition = new Vector3(-2.0f, 3.5f, 0);
+                pos2.localRotation = Quaternion.Euler(0, 0, 180);
+                playerPilePositions[2] = pos2;
+
+                var pos3 = new GameObject("Player3_CapturedPilePos").transform;
+                pos3.SetParent(transform);
+                pos3.localPosition = new Vector3(6.5f, 0.0f, 0);
+                pos3.localRotation = Quaternion.Euler(0, 0, -90);
+                playerPilePositions[3] = pos3;
+            }
         }
 
         private void InitializePileViews()

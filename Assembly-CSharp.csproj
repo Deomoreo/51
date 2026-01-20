@@ -65,37 +65,62 @@
     <Compile Include="Assets\Scripts\Tests\TestDOTween.cs" />
     <Compile Include="Assets\Scripts\UI\SettingsModalUI.cs" />
     <Compile Include="Assets\Scripts\UI\TabButtonUI.cs" />
+    <Compile Include="Assets\Scripts\UI\AnchorToPosition.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChannelSelector.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoCardSlot.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\NamePickNewGui.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\EnableOnStart.cs" />
+    <Compile Include="Assets\Scripts\UI\PlayerSlotUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerData.cs" />
     <Compile Include="Assets\Scripts\UI\ModeSelectPopupUI.cs" />
+    <Compile Include="Assets\Scripts\UI\SafeAreaBottomOnly.cs" />
+    <Compile Include="Assets\Scripts\UI\WaitingRoomUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatNewGui.cs" />
+    <Compile Include="Assets\Scripts\Networking\NetworkGameController.cs" />
     <Compile Include="Assets\Scripts\UI\SafeArea.cs" />
     <Compile Include="Assets\Scripts\UI\PanelSwipeController.cs" />
     <Compile Include="Assets\Scripts\UI\PrimaryButtonUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatSettings.cs" />
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
+    <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
+    <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
+    <Compile Include="Assets\Scripts\UI\UICardHoloFoilDriver.cs" />
+    <Compile Include="Assets\Scripts\DEBUG\HierarchyDumper.cs" />
+    <Compile Include="Assets\Scripts\UI\FollowBottomLine.cs" />
+    <Compile Include="Assets\Scripts\Networking\RoomManager.cs" />
+    <Compile Include="Assets\Scripts\UI\JoinRoomPopupUI.cs" />
     <Compile Include="Assets\Scripts\UI\IModal.cs" />
+    <Compile Include="Assets\Scripts\Networking\PlayerDataManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\FriendItem.cs" />
+    <Compile Include="Assets\Scripts\Networking\SceneLoadManager.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoPanelController.cs" />
+    <Compile Include="Assets\Scripts\Networking\GameManager.cs" />
+    <Compile Include="Assets\Scripts\Networking\NetworkTypes.cs" />
     <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
     <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
     <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
+    <Compile Include="Assets\Scripts\Networking\NetworkTestUI.cs" />
     <Compile Include="Assets\Scripts\UI\ModalManager.cs" />
+    <Compile Include="Assets\Scripts\UI\GameLaunchController.cs" />
     <Compile Include="Assets\Scripts\UI\TurnIndicator.cs" />
+    <Compile Include="Assets\Scripts\UI\ModalitySelectorPanelUI.cs" />
+    <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
+    <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
+    <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\ChatIdCheckerUI.cs" />
+    <Compile Include="Assets\Scripts\UI\PrivateRoomOptionsUI.cs" />
+    <Compile Include="Assets\Scripts\Networking\NetworkManager.cs" />
+    <Compile Include="Assets\Scripts\UI\HeaderAlignToScrollView.cs" />
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
     <Compile Include="Assets\Scripts\UI\PanelManager.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavController.cs" />
@@ -109,6 +134,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
+    <None Include="Assets\Shaders\SpritesHoloFoil.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
@@ -484,6 +510,18 @@
     </Reference>
     <Reference Include="Photon3Unity3D">
       <HintPath>Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.Types">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.Gradle">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Gradle.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.GradleProject">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.GradleProject.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">
@@ -1052,6 +1090,10 @@
       <Project>{A572C4F7-69B5-2CE2-7DA9-30F88407EAF4}</Project>
       <Name>Unity.VisualScripting.Core.Editor</Name>
     </ProjectReference>
+    <ProjectReference Include="PunDemos.DemoSlotcarEditor.csproj">
+      <Project>{496C720A-38E9-8D23-1B08-9CC1C3C8CB03}</Project>
+      <Name>PunDemos.DemoSlotcarEditor</Name>
+    </ProjectReference>
     <ProjectReference Include="Unity.Rider.Editor.csproj">
       <Project>{A80CEAE2-33BA-5CEA-3D9F-F96017638EF6}</Project>
       <Name>Unity.Rider.Editor</Name>
@@ -1067,14 +1109,6 @@
     <ProjectReference Include="ParrelSync.csproj">
       <Project>{59BC8DF0-F736-0AE3-39E9-FFCD94194E02}</Project>
       <Name>ParrelSync</Name>
-    </ProjectReference>
-    <ProjectReference Include="Project51.Networking.csproj">
-      <Project>{8E5A128F-0AFA-442D-0FEF-32EA25ECE6F2}</Project>
-      <Name>Project51.Networking</Name>
-    </ProjectReference>
-    <ProjectReference Include="PunDemos.DemoSlotcarEditor.csproj">
-      <Project>{496C720A-38E9-8D23-1B08-9CC1C3C8CB03}</Project>
-      <Name>PunDemos.DemoSlotcarEditor</Name>
     </ProjectReference>
     <ProjectReference Include="Unity.VisualScripting.Flow.csproj">
       <Project>{338CAA62-8AF6-FED6-4DAF-75467F991001}</Project>

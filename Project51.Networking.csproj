@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Networking\NetworkGameController.cs" />
+    <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Scripts\Networking\RoomManager.cs" />
     <Compile Include="Assets\Scripts\Networking\PlayerDataManager.cs" />
     <Compile Include="Assets\Scripts\Networking\SceneLoadManager.cs" />

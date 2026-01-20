@@ -84,6 +84,22 @@ namespace Project51.Unity
             {
                 cirullaAI = new CirullaAI(aiDifficulty);
             }
+
+            // Check if GameSceneInitializer exists OR if ActiveConfig is already set
+            // If GameSceneInitializer exists, it will call StartNewGame() when ready
+            var gameSceneInitializer = FindObjectOfType<GameSceneInitializer>();
+            if (gameSceneInitializer != null)
+            {
+                Debug.Log("[TurnController] GameSceneInitializer found - deferring game start to it.");
+                return;
+            }
+
+            // Also check if ActiveConfig is set (means GameSceneInitializer.Awake already ran)
+            if (GameSceneInitializer.ActiveConfig != null)
+            {
+                Debug.Log("[TurnController] ActiveConfig already set by GameSceneInitializer - deferring to it.");
+                return;
+            }
             
             var provider = GameModeService.Current;
             
@@ -101,9 +117,11 @@ namespace Project51.Unity
                 return;
             }
             
-            // Single-player or no GameManager found
+            // Single-player or no GameManager found - only auto-start if explicitly enabled
+            // AND we're not expecting a GameSceneInitializer
             if (autoStartGame)
             {
+                Debug.Log("[TurnController] No GameSceneInitializer and autoStartGame=true - starting with defaults.");
                 StartNewGame();
             }
         }
@@ -161,9 +179,24 @@ namespace Project51.Unity
         {
             cirullaAI = new CirullaAI(aiDifficulty);
         }
-        
+
+        // Determine player count from MatchConfig (loaded by GameSceneInitializer)
+        int numPlayers = 4;
+        var cfg = GameSceneInitializer.ActiveConfig;
+        if (cfg != null)
+        {
+            numPlayers = cfg.PlayerCount;
+            Debug.Log($"[TurnController] Starting game with {numPlayers} players (from config: {cfg.Format})");
+        }
+        else
+        {
+            Debug.LogWarning("[TurnController] GameSceneInitializer.ActiveConfig is null! Defaulting to 4 players.");
+        }
+
         // starting new game
-        gameState = Rules51.CreateNewGame();
+        gameState = Rules51.CreateNewGame(numPlayers);
+        Debug.Log($"[TurnController] GameState created: {gameState.NumPlayers} players, dealer={gameState.DealerIndex}, current={gameState.CurrentPlayerIndex}");
+        
         roundManager = new RoundManager(gameState);
         
         // Subscribe to events

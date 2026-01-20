@@ -20,7 +20,9 @@ public class SafeAreaFitter : MonoBehaviour
     {
         if (_rt == null) return;
 
-        Rect safe = Screen.safeArea;
+        Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels();
+
+
         if (safe == _lastSafeArea) return;
         _lastSafeArea = safe;
 

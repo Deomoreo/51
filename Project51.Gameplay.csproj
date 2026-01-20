@@ -66,7 +66,10 @@
     <Compile Include="Assets\Scripts\Gameplay\PlayerScoreRow.cs" />
     <Compile Include="Assets\Scripts\Gameplay\RoundEndPanel.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerCapturedPileView.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\GameSceneInitializer.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardView.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\ProceduralShineStripeTexture.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\CardShineOverlayMove.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardViewManager.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CapturedPileManager.cs" />
   </ItemGroup>
@@ -414,6 +417,10 @@
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\WebGLSupport\UnityEditor.WebGL.Extensions.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEditor.Android.Extensions">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\UnityEditor.Android.Extensions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEditor.WindowsStandalone.Extensions">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\WindowsStandaloneSupport\UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
       <Private>False</Private>
@@ -468,6 +475,18 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.TextureAssets">
       <HintPath>Library\PackageCache\com.unity.visualscripting@1.9.4\Editor\VisualScripting.Core\EditorAssetResources\Unity.VisualScripting.TextureAssets.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.Types">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Types.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.Gradle">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.Gradle.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Android.GradleProject">
+      <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\PlaybackEngines\AndroidPlayer\Unity.Android.GradleProject.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="netstandard">
@@ -975,6 +994,14 @@
     <ProjectReference Include="Unity.TextMeshPro.csproj">
       <Project>{E3BDE992-601A-71F3-BA96-D7648C89C4B9}</Project>
       <Name>Unity.TextMeshPro</Name>
+    </ProjectReference>
+    <ProjectReference Include="PhotonRealtime.csproj">
+      <Project>{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}</Project>
+      <Name>PhotonRealtime</Name>
+    </ProjectReference>
+    <ProjectReference Include="PhotonUnityNetworking.csproj">
+      <Project>{A845AAD8-A4F2-CFCD-2F62-A7405871A929}</Project>
+      <Name>PhotonUnityNetworking</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

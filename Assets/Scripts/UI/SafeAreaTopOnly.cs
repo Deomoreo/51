@@ -32,7 +32,9 @@ namespace Project51.Unity
         {
             if (_rt == null) return;
 
-            Rect safe = Screen.safeArea;
+            Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels();
+
+
             if (safe == _lastSafeArea) return;
             _lastSafeArea = safe;
 

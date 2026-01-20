@@ -12,6 +12,16 @@ namespace Project51.Unity
         [SerializeField] private RectTransform pagesViewport;
         [SerializeField] private List<RectTransform> pages;
 
+        [Header("Bottom Bar / Safe Area")]
+        [Tooltip("Se assegnato, il viewport verrà ridimensionato per non andare sotto questa bottom bar.")]
+        [SerializeField] private RectTransform bottomBar;
+        [Tooltip("Se true, usa anche la SafeArea del device (notch/home indicator) per calcolare l'altezza disponibile.")]
+        [SerializeField] private bool respectSafeArea = true;
+        [Tooltip("Altezza fissa della bottom bar in pixel schermo. Se > 0, il layout parte sempre da qui (più safe area se abilitata).")]
+        [SerializeField] private float bottomBarFixedHeightPx = 190f;
+        [Tooltip("Offset aggiuntivo (in pixel schermo) sopra la bottom bar/safe area. Utile per correggere layout particolari.")]
+        [SerializeField] private float extraBottomPaddingPx = 0f;
+
         [Header("Animation")]
         [SerializeField] private float snapDuration = 0.33f;
         [SerializeField] private Ease snapEase = Ease.OutQuart;
@@ -42,6 +52,16 @@ namespace Project51.Unity
         private Tweener snapTweener;
         private float smoothedOffsetX;
 
+        private Vector2Int _lastScreen;
+        private Rect _lastSafeArea;
+        private float _lastViewportBottomOffset;
+
+        private bool _overflowApplied;
+
+        // Cache dell'overflow già applicato per rendere l'operazione idempotente
+        // (evita che offsetMin/offsetMax vengano sommate più volte a ogni relayout).
+        private readonly Dictionary<RectTransform, float> _appliedOverflowByPage = new Dictionary<RectTransform, float>();
+
         public bool IsAnimating => isAnimating;
         public bool IsDragging => isDragging;
         public int CurrentIndex => currentIndex;
@@ -51,6 +71,44 @@ namespace Project51.Unity
         public event Action<int> OnPageChanged;
         public event Action<float> OnPageProgress;
 
+
+        private void LateUpdate()
+        {
+            var s = new Vector2Int(Screen.width, Screen.height);
+            var sa = Screen.safeArea;
+            if (_lastScreen == s && _lastSafeArea == sa) return;
+            _lastScreen = s;
+            _lastSafeArea = sa;
+
+            RecalculateAndRelayout();
+        }
+        private void RecalculateAndRelayout()
+        {
+            if (pagesViewport == null) return;
+
+            Canvas.ForceUpdateCanvases(); // assicura rect aggiornati [web:291]
+
+            // Ridimensiona il viewport in verticale per non sovrapporsi a bottom bar/safe area.
+            ApplyViewportVerticalConstraints();
+
+            screenWidth = pagesViewport.rect.width;
+            pageSpacing = screenWidth + (pageHorizontalOverflow * 2f);
+
+            // In caso di cambio device/orientamento, riallinea dimensioni e overflow.
+            ForcePagesToFillViewport();
+            ForcePagesToFillViewportY();
+            ApplyPageOverflow();
+            EnsureCanvasGroupsForInteraction();
+
+            ApplyLayout(currentIndex);
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            // Chiamato da Unity quando cambiano le dimensioni del RectTransform (es. Canvas scaler/orientamento).
+            if (!isActiveAndEnabled) return;
+            RecalculateAndRelayout();
+        }
         public void SetCurrentIndexImmediate(int newIndex)
         {
             if (pages == null || pages.Count == 0) return;
@@ -82,6 +140,8 @@ namespace Project51.Unity
             yield return null;
             Canvas.ForceUpdateCanvases();
 
+            ForcePagesToFillViewport();
+            ForcePagesToFillViewportY();
             screenWidth = pagesViewport.rect.width;
             
             // Calcola lo spacing tra pagine: screenWidth + overflow*2 (per evitare sovrapposizioni)
@@ -95,15 +155,35 @@ namespace Project51.Unity
         /// </summary>
         private void ApplyPageOverflow()
         {
+            if (pages == null) return;
+
+            // Se l'overflow è stato cambiato (o se si passa a 0), ripristina prima lo stato precedente.
+            foreach (var page in pages)
+            {
+                if (page == null) continue;
+                if (_appliedOverflowByPage.TryGetValue(page, out var alreadyApplied) && alreadyApplied != 0f)
+                {
+                    page.offsetMin = new Vector2(page.offsetMin.x + alreadyApplied, page.offsetMin.y);
+                    page.offsetMax = new Vector2(page.offsetMax.x - alreadyApplied, page.offsetMax.y);
+                    _appliedOverflowByPage[page] = 0f;
+                }
+            }
+
             if (pageHorizontalOverflow <= 0f) return;
 
             foreach (var page in pages)
             {
                 if (page == null) continue;
 
+                // Applica una sola volta per pagina (idempotente rispetto a relayout).
+                if (_appliedOverflowByPage.TryGetValue(page, out var applied) && Mathf.Approximately(applied, pageHorizontalOverflow))
+                    continue;
+
                 // Estendi la pagina ai lati
                 page.offsetMin = new Vector2(page.offsetMin.x - pageHorizontalOverflow, page.offsetMin.y);
                 page.offsetMax = new Vector2(page.offsetMax.x + pageHorizontalOverflow, page.offsetMax.y);
+
+                _appliedOverflowByPage[page] = pageHorizontalOverflow;
 
                 // Opzionale: aggiungi padding al ContentSizeFitter se presente
                 ContentSizeFitter csf = page.GetComponent<ContentSizeFitter>();
@@ -123,7 +203,110 @@ namespace Project51.Unity
                     hlg.padding.right += (int)pageHorizontalOverflow;
                 }
             }
+
+            _overflowApplied = true;
         }
+
+        private void EnsureCanvasGroupsForInteraction()
+        {
+            if (pages == null) return;
+
+            for (int i = 0; i < pages.Count; i++)
+            {
+                var page = pages[i];
+                if (page == null) continue;
+
+                var canvasGroup = GetOrAddCanvasGroup(page);
+                if (canvasGroup == null) continue;
+
+                bool isCurrent = (i == currentIndex);
+                canvasGroup.interactable = isCurrent;
+                canvasGroup.blocksRaycasts = debugForceBlocksRaycastsOnPages ? true : isCurrent;
+            }
+        }
+
+        private void ApplyViewportVerticalConstraints()
+        {
+            if (pagesViewport == null) return;
+
+            var viewportParent = pagesViewport.parent as RectTransform;
+            if (viewportParent == null) return;
+
+            var canvas = pagesViewport.GetComponentInParent<Canvas>();
+            var cam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;
+
+            // Calcolo "a filo": lavora in coordinate locali del parent per evitare mismatch di pixel
+            // (Device Simulator scale / CanvasScaler / render mode).
+            // bottomOffsetLocal = distanza dal bordo basso del parent fino al TOP della bottom bar.
+            float bottomOffsetLocal = 0f;
+
+            // 1) Bottom bar (preferita): usa il suo TOP in local del parent del viewport.
+            if (bottomBar != null)
+            {
+                var barCorners = new Vector3[4];
+                bottomBar.GetWorldCorners(barCorners);
+                float topLocalY = float.NegativeInfinity;
+                for (int i = 0; i < 4; i++)
+                {
+                    // Converti corner world -> local del parent viewport
+                    Vector2 local = viewportParent.InverseTransformPoint(barCorners[i]);
+                    topLocalY = Mathf.Max(topLocalY, local.y);
+                }
+
+                // offsetMin.y è la distanza dal basso del parent: in coordinate locali con pivot 0.5,
+                // il bordo basso è -rect.height * pivot.y
+                float parentBottomLocalY = -viewportParent.rect.height * viewportParent.pivot.y;
+                bottomOffsetLocal = Mathf.Max(0f, topLocalY - parentBottomLocalY);
+            }
+            else
+            {
+                // Fallback: altezza fissa espressa in pixel schermo -> convertita in unità locali.
+                float px = Mathf.Max(0f, bottomBarFixedHeightPx);
+                var parentCorners = new Vector3[4];
+                viewportParent.GetWorldCorners(parentCorners);
+                float parentBottomScreenY = float.PositiveInfinity;
+                for (int i = 0; i < 4; i++)
+                {
+                    var sp = RectTransformUtility.WorldToScreenPoint(cam, parentCorners[i]);
+                    parentBottomScreenY = Mathf.Min(parentBottomScreenY, sp.y);
+                }
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, parentBottomScreenY), cam, out var p0);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, parentBottomScreenY + px), cam, out var p1);
+                bottomOffsetLocal = Mathf.Max(0f, p1.y - p0.y);
+            }
+
+            // 2) Safe area: applicala come minimo (se più grande della bottom bar) perché è una zona non utilizzabile.
+            if (respectSafeArea)
+            {
+                // yMin in px dal basso schermo -> in local offset del parent
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, 0f), cam, out var s0);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, Screen.safeArea.yMin), cam, out var s1);
+                float safeLocal = Mathf.Max(0f, s1.y - s0.y);
+                bottomOffsetLocal = Mathf.Max(bottomOffsetLocal, safeLocal);
+            }
+
+            if (!Mathf.Approximately(extraBottomPaddingPx, 0f))
+            {
+                // extraBottomPaddingPx è in pixel schermo: converti in local
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, 0f), cam, out var e0);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, extraBottomPaddingPx), cam, out var e1);
+                bottomOffsetLocal += Mathf.Max(0f, e1.y - e0.y);
+            }
+
+            // Evita di rieseguire se non è cambiato.
+            if (Mathf.Approximately(_lastViewportBottomOffset, bottomOffsetLocal))
+                return;
+            _lastViewportBottomOffset = bottomOffsetLocal;
+
+            // Applica: riduci l'altezza disponibile del viewport dal basso.
+            // Presupposto: viewport ancorato stretch verticale nel canvas.
+            pagesViewport.anchorMin = new Vector2(0f, 0f);
+            pagesViewport.anchorMax = new Vector2(1f, 1f);
+            pagesViewport.pivot = new Vector2(0.5f, 0.5f);
+
+            pagesViewport.offsetMin = new Vector2(pagesViewport.offsetMin.x, bottomOffsetLocal);
+        }
+
 
         public void ForcePagesActive()
         {
@@ -134,6 +317,41 @@ namespace Project51.Unity
                 pages[i].gameObject.SetActive(true);
             }
         }
+        private void ForcePagesToFillViewport()
+        {
+            if (pages == null) return;
+
+            foreach (var page in pages)
+            {
+                if (page == null) continue;
+
+                page.anchorMin = Vector2.zero;
+                page.anchorMax = Vector2.one;
+                page.pivot = new Vector2(0.5f, 0.5f);
+
+                // riempi verticalmente il viewport
+                page.offsetMin = new Vector2(page.offsetMin.x, 0f);
+                page.offsetMax = new Vector2(page.offsetMax.x, 0f);
+            }
+        }
+        private void ForcePagesToFillViewportY()
+        {
+            if (pages == null) return;
+
+            foreach (var page in pages)
+            {
+                if (page == null) continue;
+
+                page.anchorMin = new Vector2(0f, 0f);
+                page.anchorMax = new Vector2(1f, 1f);
+
+                // Non toccare X (perché lo usi per overflow), ma blocca Y:
+                page.offsetMin = new Vector2(page.offsetMin.x, 0f);
+                page.offsetMax = new Vector2(page.offsetMax.x, 0f);
+            }
+        }
+
+
 
         public void BeginDrag()
         {

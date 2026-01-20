@@ -155,12 +155,22 @@ namespace Project51.Unity
                     Vector3 position;
                     float baseRotation = 0f;
 
-                    if (p == ((localIndex + 1) % players.Count))
+                    int numPlayers = players.Count; // AGGIUNGI QUESTA RIGA ALL'INIZIO
+
+                    // Layout 1v1: avversario in alto capovolto
+                    if (numPlayers == 2)
+                    {
+                        // Player 1 (avversario) in alto, ruotato 180°
+                        position = CalculateFanPosition(basePos + Vector3.up * 3.5f, hand.Count, i, 180f);
+                        baseRotation = 180f;
+                    }
+                    // Layout 4P: distribuzione classica (sinistra, alto, destra)
+                    else if (p == ((localIndex + 1) % numPlayers))
                     {
                         position = CalculateFanPositionVertical(basePos + Vector3.left * 5f, hand.Count, i, true);
                         baseRotation = 90f;
                     }
-                    else if (p == ((localIndex + 2) % players.Count))
+                    else if (p == ((localIndex + 2) % numPlayers))
                     {
                         position = CalculateFanPosition(basePos + Vector3.up * 2.5f, hand.Count, i, 180f);
                         baseRotation = 180f;
@@ -176,10 +186,17 @@ namespace Project51.Unity
                     if (useFanLayout)
                     {
                         float fanRotation = 0f;
-                        if (p == ((localIndex + 1) % players.Count) || p == ((localIndex + 3) % players.Count))
+
+                        // 1v1: solo rotazione fan orizzontale
+                        if (numPlayers == 2)
+                        {
+                            fanRotation = CalculateFanRotation(hand.Count, i);
+                        }
+                        // 4P: rotazione fan verticale per sinistra/destra, orizzontale per alto
+                        else if (p == ((localIndex + 1) % numPlayers) || p == ((localIndex + 3) % numPlayers))
                         {
                             fanRotation = CalculateFanRotationVertical(hand.Count, i);
-                            if (p == ((localIndex + 3) % players.Count))
+                            if (p == ((localIndex + 3) % numPlayers))
                             {
                                 fanRotation = -fanRotation;
                             }

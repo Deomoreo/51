@@ -42,6 +42,43 @@ namespace Project51.Core
             this.rng = rng ?? new Random();
         }
 
+        private MatchRules GetRules()
+        {
+            try
+            {
+                var t = System.Type.GetType("Project51.Unity.GameSceneInitializer, Assembly-CSharp");
+                if (t != null)
+                {
+                    var prop = t.GetProperty("ActiveConfig", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    var cfg = prop?.GetValue(null) as MatchConfig;
+                    if (cfg?.Rules != null)
+                        return cfg.Rules;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return MatchRules.Default;
+        }
+
+        private int ApplyAccusiRulePoints(int basePoints)
+        {
+            var rules = GetRules();
+            if (rules == null)
+                return basePoints;
+
+            if (!rules.EnableAccusi)
+                return 0;
+
+            float mul = rules.AccusiPointMultiplier;
+            if (mul <= 0f)
+                return 0;
+
+            return (int)System.Math.Round(basePoints * mul, MidpointRounding.AwayFromZero);
+        }
+
         public void StartSmazzata()
         {
             Rules51.DealInitialCards(state);
@@ -69,12 +106,12 @@ namespace Project51.Core
             {
                 if (baseSum == 15)
                 {
-                    state.Players[dealer].AccusiPoints += 1;
+                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(1);
                     TakeTableByPlayer(dealer);
                 }
                 else if (baseSum == 30)
                 {
-                    state.Players[dealer].AccusiPoints += 2;
+                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(2);
                     TakeTableByPlayer(dealer);
                 }
                 return;
@@ -117,12 +154,12 @@ namespace Project51.Core
             {
                 if (bestType == 15)
                 {
-                    state.Players[dealer].AccusiPoints += 1;
+                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(1);
                     TakeTableByPlayer(dealer);
                 }
                 else if (bestType == 30)
                 {
-                    state.Players[dealer].AccusiPoints += 2;
+                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(2);
                     TakeTableByPlayer(dealer);
                 }
             }
@@ -143,12 +180,16 @@ namespace Project51.Core
         /// </summary>
         public bool TryPlayerAccuso(int playerIndex, AccusoType accuso)
         {
+            var rules = GetRules();
+            if (rules != null && !rules.EnableAccusi)
+                return false;
+
             if (accuso == AccusoType.Cirulla)
             {
                 var hand = state.Players[playerIndex].Hand;
                 if (AccusiChecker.IsCirulla(hand))
                 {
-                    state.Players[playerIndex].AccusiPoints += 3;
+                    state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(3);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Cirulla, new List<Card>(hand));
                     return true;
                 }
@@ -159,7 +200,7 @@ namespace Project51.Core
                 var hand = state.Players[playerIndex].Hand;
                 if (AccusiChecker.IsDecino(hand))
                 {
-                    state.Players[playerIndex].AccusiPoints += 10;
+                    state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(10);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Decino, new List<Card>(hand));
                     return true;
                 }
@@ -181,9 +222,18 @@ namespace Project51.Core
                 int denari = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
                 if (denari == 10)
                 {
-                    // Immediate game-level win; for now mark RoundEnded and give large bonus
-                    state.RoundEnded = true;
-                    state.Players[i].TotalScore += 1000; // sentinel for immediate win
+                    var rules = GetRules();
+                    if (rules != null && !rules.CappottoEndsGameImmediately)
+                    {
+                        if (rules.CappottoBonusPoints > 0)
+                            state.Players[i].TotalScore += rules.CappottoBonusPoints;
+                    }
+                    else
+                    {
+                        // Immediate game-level win; for now mark RoundEnded and give large bonus
+                        state.RoundEnded = true;
+                        state.Players[i].TotalScore += 1000; // sentinel for immediate win
+                    }
                 }
             }
 
@@ -242,6 +292,15 @@ namespace Project51.Core
                 int denari = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
                 if (denari == 10)
                 {
+                    var rules = GetRules();
+                    if (rules != null && !rules.CappottoEndsGameImmediately)
+                    {
+                        if (rules.CappottoBonusPoints > 0)
+                            state.Players[i].TotalScore += rules.CappottoBonusPoints;
+                        // continue scoring normally
+                        break;
+                    }
+
                     state.RoundEnded = true;
                     // give sentinel big score to indicate immediate win
                     state.Players[i].TotalScore += 1000;
