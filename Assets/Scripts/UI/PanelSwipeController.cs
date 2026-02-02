@@ -240,6 +240,7 @@ namespace Project51.Unity
             // bottomOffsetLocal = distanza dal bordo basso del parent fino al TOP della bottom bar.
             float bottomOffsetLocal = 0f;
 
+
             // 1) Bottom bar (preferita): usa il suo TOP in local del parent del viewport.
             if (bottomBar != null)
             {

@@ -59,6 +59,14 @@ namespace Project51.Unity
         [Tooltip("Durata fade-in/out overlay.")]
         [SerializeField] private float backgroundDimFadeDuration = 0.18f;
 
+		[Header("Fade Other UI (TopBar/Banner/etc.)")]
+		[Tooltip("Optional CanvasGroups to fade when this panel is open (e.g. TopBar canvas group, Banner canvas group).")]
+		[SerializeField] private CanvasGroup[] fadeTargets;
+		[Tooltip("Alpha to reach on fade targets when panel is open.")]
+		[SerializeField, Range(0f, 1f)] private float fadeTargetsOpenAlpha = 0.35f;
+		[Tooltip("Fade duration for targets (open/close).")]
+		[SerializeField] private float fadeTargetsDuration = 0.18f;
+
         [Header("Overlay Close (Optional)")]
         [Tooltip("Optional button in the overlay/header area that closes this panel. If set, tap-outside logic is disabled.")]
         [SerializeField] private Button overlayCloseButton;
@@ -156,6 +164,8 @@ namespace Project51.Unity
                 backgroundDimOverlay.blocksRaycasts = false;
                 backgroundDimOverlay.gameObject.SetActive(false);
             }
+
+			ApplyFadeTargetsAlpha(1f, instant: true);
 
             if (overlayCloseButton != null)
             {
@@ -453,6 +463,8 @@ namespace Project51.Unity
                 float progress = Mathf.InverseLerp(hiddenY, shownY, Mathf.Clamp(newY, hiddenY, shownY));
                 backgroundDimOverlay.alpha = backgroundDimAlpha * progress;
             }
+
+			UpdateFadeTargetsByProgress(Mathf.InverseLerp(hiddenY, shownY, Mathf.Clamp(newY, hiddenY, shownY)));
         }
 
         private void EndHandleDrag()
@@ -590,6 +602,37 @@ namespace Project51.Unity
                 });
         }
 
+		private void ApplyFadeTargetsAlpha(float alpha, bool instant)
+		{
+			if (fadeTargets == null || fadeTargets.Length == 0)
+				return;
+
+			foreach (var cg in fadeTargets)
+			{
+				if (cg == null) continue;
+
+				cg.DOKill(false);
+				if (instant)
+				{
+					cg.alpha = alpha;
+				}
+				else
+				{
+					cg.DOFade(alpha, fadeTargetsDuration)
+						.SetEase(Ease.OutQuad)
+						.SetUpdate(true)
+						.SetTarget(cg);
+				}
+			}
+		}
+
+		private void UpdateFadeTargetsByProgress(float openProgress)
+		{
+			// openProgress: 0=closed, 1=open
+			float target = Mathf.Lerp(1f, Mathf.Clamp01(fadeTargetsOpenAlpha), Mathf.Clamp01(openProgress));
+			ApplyFadeTargetsAlpha(target, instant: true);
+		}
+
         private void StabilizeInnerScrollNextFrame()
         {
             if (debugInnerScrollRect == null)
@@ -715,6 +758,7 @@ namespace Project51.Unity
 
             SetInputBlocking(true);
             SetBackgroundDim(true);
+			ApplyFadeTargetsAlpha(fadeTargetsOpenAlpha, instant: false);
             OnOpening();
 
             panelContainer.anchoredPosition = new Vector2(panelContainer.anchoredPosition.x, hiddenY);
@@ -772,6 +816,7 @@ namespace Project51.Unity
 
             OnClosing();
             SetBackgroundDim(false);
+			ApplyFadeTargetsAlpha(1f, instant: false);
 
             _tween = DOTween.To(
                     () => panelContainer.anchoredPosition,

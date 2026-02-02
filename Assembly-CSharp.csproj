@@ -85,6 +85,7 @@
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
     <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
+    <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
     <Compile Include="Assets\Scripts\UI\UICardHoloFoilDriver.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="Assets\Scripts\UI\TurnIndicator.cs" />
     <Compile Include="Assets\Scripts\UI\ModalitySelectorPanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
+    <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />

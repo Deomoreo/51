@@ -11,7 +11,7 @@ namespace Project51.Unity
             Data = new PlayerData();
 
             // placeholder iniziale
-            Data.UpdateData(gold: 1000, gems: 50, level: 1);
+            Data.UpdateData(gold: 1000, gems: 50, level: 1, currentXp: 0, nextLevelXp: 100);
         }
     }
 }

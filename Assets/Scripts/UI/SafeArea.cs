@@ -1,5 +1,7 @@
 using UnityEngine;
 
+using Project51.Unity;
+
 [RequireComponent(typeof(RectTransform))]
 public class SafeAreaFitter : MonoBehaviour
 {
