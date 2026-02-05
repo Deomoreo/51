@@ -12,6 +12,11 @@ namespace Project51.Unity
         [SerializeField] private Button dimmerButton;
         [SerializeField] private RectTransform dimmerRect;
 
+		[Header("Fade Other UI (TopBar/Banner/etc.)")]
+		[SerializeField] private CanvasGroup[] fadeTargets;
+		[SerializeField, Range(0f, 1f)] private float fadeTargetsOpenAlpha = 0.35f;
+		[SerializeField] private float fadeTargetsDuration = 0.18f;
+
         [Header("Header drag -> ScrollRect (optional)")]
         [SerializeField] private RectTransform headerDragArea;
         [SerializeField] private ScrollRect scrollRect;
@@ -34,6 +39,29 @@ namespace Project51.Unity
             }
         }
 
+		private void ApplyFadeTargetsAlpha(float alpha, float durationOverride)
+		{
+			if (fadeTargets == null || fadeTargets.Length == 0)
+				return;
+
+			for (int i = 0; i < fadeTargets.Length; i++)
+			{
+				var cg = fadeTargets[i];
+				if (cg == null)
+					continue;
+
+				cg.DOKill();
+				if (durationOverride <= 0f)
+				{
+					cg.alpha = alpha;
+				}
+				else
+				{
+					cg.DOFade(alpha, durationOverride);
+				}
+			}
+		}
+
         public void Open()
         {
             gameObject.SetActive(true);
@@ -52,6 +80,8 @@ namespace Project51.Unity
 
             canvasGroup.DOFade(1f, duration);
             window.DOScale(1f, duration).SetEase(Ease.OutBack);
+
+			ApplyFadeTargetsAlpha(fadeTargetsOpenAlpha, fadeTargetsDuration);
             if (dimmerButton != null)
             {
                 dimmerButton.interactable = false;
@@ -77,6 +107,8 @@ namespace Project51.Unity
             canvasGroup.DOFade(0f, duration);
             window.DOScale(0.8f, duration).SetEase(Ease.InBack)
                 .OnComplete(() => gameObject.SetActive(false));
+
+			ApplyFadeTargetsAlpha(1f, fadeTargetsDuration);
         }
 
     }

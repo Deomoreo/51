@@ -22,6 +22,7 @@ public sealed class FollowBottomLine : MonoBehaviour
 
     void LateUpdate()
     {
+        if (!forceEveryFrame && Application.isPlaying) return;
         if (bottomLine == null || bottomBar == null) return;
         if (canvas == null) canvas = bottomBar.GetComponentInParent<Canvas>();
         if (canvas == null) return;
@@ -42,5 +43,27 @@ public sealed class FollowBottomLine : MonoBehaviour
         var ap = bottomBar.anchoredPosition;
         bottomBar.anchoredPosition = new Vector2(ap.x, lineLocalInBarParent.y + extraCanvasY);
 
+    }
+
+    public void RefreshNow()
+    {
+        if (!isActiveAndEnabled) return;
+        ApplyOnce();
+    }
+
+    private void ApplyOnce()
+    {
+        if (bottomLine == null || bottomBar == null) return;
+        if (canvas == null) canvas = bottomBar.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+
+        var cam = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
+        Vector2 sp = RectTransformUtility.WorldToScreenPoint(cam, bottomLine.position);
+        RectTransform barParent = bottomBar.parent as RectTransform;
+        if (barParent == null) return;
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(barParent, sp, cam, out Vector2 lineLocalInBarParent);
+        var ap = bottomBar.anchoredPosition;
+        bottomBar.anchoredPosition = new Vector2(ap.x, lineLocalInBarParent.y + extraCanvasY);
     }
 }

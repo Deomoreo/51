@@ -40,6 +40,9 @@ public class BannerUI : MonoBehaviour
     private Vector2Int _lastScreen;
     private Vector2 _lastCanvasSize;
 
+    private Project51.Auth.AuthBootstrapper _auth;
+    private bool _nameApplied;
+
     private void Awake()
     {
         _rt = GetComponent<RectTransform>();
@@ -49,6 +52,51 @@ public class BannerUI : MonoBehaviour
         // Prevent stretching the banner sprite.
         if (bannerImage != null)
             bannerImage.preserveAspect = false;
+    }
+
+    private void OnEnable()
+    {
+        _nameApplied = false;
+        TryBindAuth();
+    }
+
+    private void OnDisable()
+    {
+        if (_auth != null)
+        {
+            _auth.PlayFabAuth.OnDisplayNameChanged -= HandleDisplayNameChanged;
+        }
+    }
+
+    private void Update()
+    {
+        // Banner UI can enable before AuthBootstrapper exists (scene init ordering).
+        // Retry a few frames until we can bind and apply the name.
+        if (_nameApplied) return;
+        TryBindAuth();
+    }
+
+    private void TryBindAuth()
+    {
+        if (playerNameText == null) return;
+
+        if (_auth == null)
+            _auth = Project51.Auth.AuthBootstrapper.Instance;
+
+        if (_auth == null || _auth.PlayFabAuth == null)
+            return;
+
+        _auth.PlayFabAuth.OnDisplayNameChanged -= HandleDisplayNameChanged;
+        _auth.PlayFabAuth.OnDisplayNameChanged += HandleDisplayNameChanged;
+
+        SetPlayerName(_auth.PlayFabAuth.GetBestDisplayName());
+        _nameApplied = true;
+    }
+
+    private void HandleDisplayNameChanged(string _)
+    {
+        if (_auth == null) return;
+        SetPlayerName(_auth.PlayFabAuth.GetBestDisplayName());
     }
 
     private void LateUpdate()
