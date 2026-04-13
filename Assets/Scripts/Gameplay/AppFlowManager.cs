@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
@@ -37,6 +38,7 @@ namespace Project51.Unity
         /// <param name="usePhotonSync">Se true, usa PhotonNetwork.LoadLevel per sincronizzare con altri client.</param>
         public static void GoToGame(bool usePhotonSync = false)
         {
+            Debug.Log("[AppFlow] GoToGame called. StackTrace:\n" + Environment.StackTrace);
             Debug.Log("[AppFlow] Loading Game Scene...");
 
             if (usePhotonSync && PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient)

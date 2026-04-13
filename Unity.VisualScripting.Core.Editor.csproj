@@ -990,6 +990,10 @@
       <HintPath>Assets\PlayFabEditorExtensions\Editor\Resources\Microsoft.IdentityModel.JsonWebTokens.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Coffee.UIParticle.R">
+      <HintPath>Library\PackageCache\com.coffee.ui-particle@04c1ca72cd\Runtime\Coffee.UIParticle.R.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Microsoft.IdentityModel.Logging">
       <HintPath>Assets\PlayFabEditorExtensions\Editor\Resources\Microsoft.IdentityModel.Logging.dll</HintPath>
       <Private>False</Private>

@@ -31,13 +31,18 @@ namespace Project51.Auth
         [SerializeField] private GameObject guestPanel;
         [SerializeField] private GameObject loginPanel;
         [SerializeField] private GameObject registerPanel;
+        [SerializeField] private GameObject accountPanel;
         [SerializeField] private CanvasGroup mainCanvasGroup;
 
-        [Header("Visual Gate (optional)")]
-        [Tooltip("Optional full-screen overlay (Image) to visually hide other canvases behind the auth UI.")]
-        [SerializeField] private CanvasGroup dimmerCanvasGroup;
-        [SerializeField] private float dimmerAlpha = 0.9f;
+        [Header("Account Panel")]
+        [Tooltip("Text that shows the current player name / account info.")]
+        [SerializeField] private TextMeshProUGUI accountPlayerNameText;
+        [Tooltip("Text that shows the PlayFab ID or account type (guest/registered).")]
+        [SerializeField] private TextMeshProUGUI accountStatusText;
+        [Tooltip("Button to close the account panel and go back to TapToEnter.")]
+        [SerializeField] private Button accountCloseButton;
 
+        [Header("Canvas Sorting")]
         [Tooltip("If true, this canvas will be forced to a high sortingOrder while the auth UI is visible.")]
         [SerializeField] private bool forceHighSortingOrder = true;
         [SerializeField] private int sortingOrderWhileVisible = 2000;
@@ -57,6 +62,7 @@ namespace Project51.Auth
         [SerializeField] private Button playAsGuestButton;
         [SerializeField] private Button showRegisterButton;
         [SerializeField] private Button showLoginButton;
+        [SerializeField] private Button guestBackButton;
         [SerializeField] private TextMeshProUGUI guestInfoText;
         
         #endregion
@@ -89,6 +95,10 @@ namespace Project51.Auth
         [Header("Loading")]
         [SerializeField] private GameObject loadingOverlay;
         [SerializeField] private TextMeshProUGUI loadingText;
+
+        [Header("Account")]
+        [Tooltip("Optional: button that logs out of the current account and restarts auth.")]
+        [SerializeField] private Button logoutButton;
         
         #endregion
         
@@ -96,12 +106,17 @@ namespace Project51.Auth
         
         /// <summary>Invocato quando l'utente sceglie di giocare (registrato o guest).</summary>
         public event Action OnPlayPressed;
+
+        /// <summary>Invocato quando l'utente chiude l'UI auth senza entrare nel gioco.</summary>
+        public event Action OnClosed;
         
         /// <summary>Invocato quando la registrazione ha successo.</summary>
         public event Action OnRegistrationSuccess;
         
         /// <summary>Invocato quando il login ha successo.</summary>
         public event Action OnLoginSuccess;
+
+        public bool IsClosingToTapToEnter { get; private set; }
         
         #endregion
         
@@ -131,70 +146,80 @@ namespace Project51.Auth
 
             // Setup button listeners - Guest Panel
             if (playAsGuestButton != null)
+            {
+                playAsGuestButton.onClick.RemoveAllListeners();
                 playAsGuestButton.onClick.AddListener(OnPlayAsGuestClicked);
+            }
             
             if (showRegisterButton != null)
+            {
+                showRegisterButton.onClick.RemoveAllListeners();
                 showRegisterButton.onClick.AddListener(ShowRegisterPanel);
+            }
             
             if (showLoginButton != null)
+            {
+                showLoginButton.onClick.RemoveAllListeners();
                 showLoginButton.onClick.AddListener(ShowLoginPanel);
+            }
+
+            if (guestBackButton != null)
+            {
+                guestBackButton.onClick.RemoveAllListeners();
+                guestBackButton.onClick.AddListener(OnAccountCloseClicked);
+            }
             
             // Setup button listeners - Register Panel
             if (registerButton != null)
                 registerButton.onClick.AddListener(OnRegisterClicked);
             
             if (registerBackButton != null)
+            {
+                registerBackButton.onClick.RemoveAllListeners();
                 registerBackButton.onClick.AddListener(ShowGuestPanel);
+            }
             
             // Setup button listeners - Login Panel
             if (loginButton != null)
                 loginButton.onClick.AddListener(OnLoginClicked);
             
             if (loginBackButton != null)
+            {
+                loginBackButton.onClick.RemoveAllListeners();
                 loginBackButton.onClick.AddListener(ShowGuestPanel);
+            }
             
             // Hide loading
             SetLoading(false);
+
+            if (logoutButton != null)
+                logoutButton.onClick.AddListener(Logout);
+
+            if (accountCloseButton != null)
+            {
+                accountCloseButton.onClick.RemoveAllListeners();
+                accountCloseButton.onClick.AddListener(OnAccountCloseClicked);
+            }
+        }
+
+        public void Logout()
+        {
+            var bs = Project51.Auth.AuthBootstrapper.Instance;
+            if (bs != null)
+                bs.LogoutAndRestart(clearRealAccountFlag: true);
+
+            // After logout, stay in auth UI and show guest/login/register panel.
+            ShowGuestPanel();
+            Debug.Log("[AuthUIController] Logged out. Showing login/register/guest panel.");
         }
         
         private void Start()
         {
-            // Integrato: se `AuthBootstrapper` è presente, aspetta che la state machine sia Ready
-            // prima di mostrare UI e permettere register/login.
-            var bootstrapper = AuthBootstrapper.Instance;
-            if (bootstrapper == null)
-            {
-                Debug.LogWarning("[AuthUIController] AuthBootstrapper non trovato. UI in modalità standalone.");
-                GateGameUI(true);
-                OnAuthReady();
-                return;
-            }
-
-            if (bootstrapper.IsReady)
-            {
-                GateGameUI(true);
-                OnAuthReady();
-                return;
-            }
-
-            // Mostra overlay mentre aspettiamo (se configurato)
-            SetLoading(true, "Connessione in corso...");
-            GateGameUI(true);
-            bootstrapper.OnAuthReady += HandleBootstrapperReady;
+            // Auth UI starts hidden. TapToEnterUI is the entry point and will call
+            // ShowAuthUI() when the user needs to login/register.
+            HideAuthUI();
         }
 
-        private void OnEnable()
-        {
-            // Se la UI viene riattivata (o la scena ricarica), assicurati che questo Canvas stia sopra.
-            ForceCanvasSorting();
-
-            // Il dimmer deve stare dietro ai pannelli della auth UI, ma comunque sopra agli altri canvas.
-            if (dimmerCanvasGroup != null)
-            {
-                dimmerCanvasGroup.transform.SetAsFirstSibling();
-            }
-        }
-        
         private void OnDestroy()
         {
             var bootstrapper = AuthBootstrapper.Instance;
@@ -213,7 +238,6 @@ namespace Project51.Auth
             }
 
             SetLoading(false);
-            OnAuthReady();
         }
         
         #endregion
@@ -258,6 +282,7 @@ namespace Project51.Auth
             if (guestPanel != null) guestPanel.SetActive(false);
             if (loginPanel != null) loginPanel.SetActive(false);
             if (registerPanel != null) registerPanel.SetActive(false);
+            if (accountPanel != null) accountPanel.SetActive(false);
         }
         
         /// <summary>
@@ -269,7 +294,6 @@ namespace Project51.Auth
 
             GateGameUI(false);
 
-            SetDimmerVisible(false);
             RestoreCanvasSorting();
             
             if (mainCanvasGroup != null)
@@ -301,9 +325,59 @@ namespace Project51.Auth
             }
 
             GateGameUI(true);
-            SetDimmerVisible(true);
             ForceCanvasSorting();
-            ShowGuestPanel();
+
+            // Decide which panel to show based on login state.
+            // Only show AccountPanel for REAL logins (email/register), not guest.
+            var bs = AuthBootstrapper.Instance;
+            bool hasRealLogin = bs != null && bs.PlayFabAuth != null && bs.PlayFabAuth.HasRealLogin;
+
+            if (hasRealLogin)
+                ShowAccountPanel();
+            else
+                ShowGuestPanel();
+        }
+
+        /// <summary>
+        /// Shows the account info panel (player name, account type, logout).
+        /// </summary>
+        public void ShowAccountPanel()
+        {
+            HideAllPanels();
+
+            if (accountPanel != null)
+            {
+                accountPanel.SetActive(true);
+                UpdateAccountPanelInfo();
+            }
+            else
+            {
+                // Fallback: if no account panel is configured, show guest panel.
+                Debug.LogWarning("[AuthUIController] accountPanel not assigned. Falling back to GuestPanel.");
+                ShowGuestPanel();
+            }
+
+            ClearStatusTexts();
+        }
+
+        private void UpdateAccountPanelInfo()
+        {
+            var bs = AuthBootstrapper.Instance;
+            if (bs == null || bs.PlayFabAuth == null) return;
+
+            string displayName = bs.PlayFabAuth.GetBestDisplayName();
+            bool isRegistered = bs.PlayFabAuth.IsRegistered;
+
+            if (accountPlayerNameText != null)
+                accountPlayerNameText.text = displayName;
+
+            if (accountStatusText != null)
+            {
+                if (isRegistered)
+                    accountStatusText.text = "Account registrato";
+                else
+                    accountStatusText.text = "Guest";
+            }
         }
         
         #endregion
@@ -314,10 +388,42 @@ namespace Project51.Auth
         {
             Debug.Log("[AuthUIController] Play as guest clicked");
 
-            // Nota: anche se l'utente entra come guest, l'EXP verrà gestita da PlayerProgressLocal
-            // e messa in pending finché non si registra.
+            var bs = Project51.Auth.AuthBootstrapper.Instance;
+            if (bs != null && bs.PlayFabAuth != null)
+            {
+                // Force guest identity: clear registered name, use Guest_xxxx.
+                bs.PlayFabAuth.ForceGuestIdentity();
+
+                // Do NOT call MarkHasLoggedIn: guest sessions are temporary.
+                // Next app launch will show auth UI again.
+
+                // Update Photon nickname to match the new guest name.
+                string guestName = bs.PlayFabAuth.GetBestDisplayName();
+                try { Photon.Pun.PhotonNetwork.NickName = guestName; } catch { }
+            }
+
             HideAuthUI();
             OnPlayPressed?.Invoke();
+        }
+
+        /// <summary>
+        /// Close button on Account panel: hide auth UI and go back to TapToEnter.
+        /// </summary>
+        private void OnAccountCloseClicked()
+        {
+            IsClosingToTapToEnter = true;
+            HideAuthUI();
+
+            OnClosed?.Invoke();
+
+            // Reset next frame to avoid any same-frame callbacks entering the game.
+            StartCoroutine(ResetClosingFlagNextFrame());
+        }
+
+        private System.Collections.IEnumerator ResetClosingFlagNextFrame()
+        {
+            yield return null;
+            IsClosingToTapToEnter = false;
         }
         
         private void OnRegisterClicked()
@@ -358,9 +464,11 @@ namespace Project51.Auth
                     // Se esiste `PlayerProgressLocal`, riscatta pendingExp
                     PlayerProgressLocal.Instance?.ClaimPendingExp();
 
+                    var bsReg = Project51.Auth.AuthBootstrapper.Instance;
+                    bsReg?.PlayFabAuth?.MarkHasLoggedIn();
+
                     OnRegistrationSuccess?.Invoke();
                     HideAuthUI();
-                    OnPlayPressed?.Invoke();
                 },
                 error =>
                 {
@@ -398,13 +506,14 @@ namespace Project51.Auth
                     MarkRegisteredLocal(true);
                     PlayerProgressLocal.Instance?.ClaimPendingExp();
 
+                    bs.PlayFabAuth?.MarkHasLoggedIn();
+
                     _isProcessing = false;
                     SetLoading(false);
                     SetStatusText(loginStatusText, "Login effettuato!", false);
 
                     OnLoginSuccess?.Invoke();
                     HideAuthUI();
-                    OnPlayPressed?.Invoke();
                 },
                 onError: errorMsg =>
                 {
@@ -418,15 +527,6 @@ namespace Project51.Auth
         #endregion
         
         #region Private Methods
-        
-        private void OnAuthReady()
-        {
-            Debug.Log("[AuthUIController] Auth ready, checking registration status...");
-
-            // Gate UI: NON far partire il gioco automaticamente.
-            // Anche se l'utente risulta già registrato, mostriamo comunque la schermata e lasciamo scegliere.
-            ShowGuestPanel();
-        }
         
         private void UpdateGuestPanelInfo()
         {
@@ -656,30 +756,6 @@ namespace Project51.Auth
             // Quando visibile, deve bloccare input sotto
             mainCanvasGroup.blocksRaycasts = true;
             mainCanvasGroup.interactable = true;
-        }
-
-        private void SetDimmerVisible(bool visible)
-        {
-            if (dimmerCanvasGroup == null) return;
-
-            if (visible)
-            {
-                if (!dimmerCanvasGroup.gameObject.activeSelf)
-                    dimmerCanvasGroup.gameObject.SetActive(true);
-
-                dimmerCanvasGroup.alpha = dimmerAlpha;
-                dimmerCanvasGroup.blocksRaycasts = true;
-                dimmerCanvasGroup.interactable = true;
-            }
-            else
-            {
-                dimmerCanvasGroup.alpha = 0f;
-                dimmerCanvasGroup.blocksRaycasts = false;
-                dimmerCanvasGroup.interactable = false;
-
-                if (dimmerCanvasGroup.gameObject.activeSelf)
-                    dimmerCanvasGroup.gameObject.SetActive(false);
-            }
         }
 
         private void ForceCanvasSorting()

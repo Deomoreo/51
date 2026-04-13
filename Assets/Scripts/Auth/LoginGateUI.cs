@@ -303,7 +303,7 @@ namespace Project51.Auth
             }
             
             // Qui puoi invocare un evento o caricare la prossima scena
-            // Es: SceneManager.LoadScene("MainMenu");
+            Project51.Unity.AppFlowManager.GoToGame(usePhotonSync: false);
         }
         
         #endregion

@@ -66,6 +66,12 @@ namespace Project51.Auth
         // Servizi
         public PlayFabAuthService PlayFabAuth { get; private set; }
         public ProfileService Profile { get; private set; }
+
+        /// <summary>
+        /// True se l'utente ha già fatto almeno un login su questo device (anche guest).
+        /// Se true, mostra TapToEnter; se false, mostra auth UI per la prima scelta.
+        /// </summary>
+        public bool ShouldShowTapToEnter => PlayFabAuth != null && PlayFabAuth.HasEverLoggedIn;
         
         #endregion
         
@@ -122,6 +128,12 @@ namespace Project51.Auth
         
         private void Start()
         {
+            // If the user is not in a real-login state, treat guest as ephemeral: generate a new guest next launch.
+            if (PlayFabAuth != null && !PlayFabAuth.HasRealLogin)
+            {
+                PlayFabAuth.ResetGuestDeviceId();
+            }
+
             // Avvia il processo di autenticazione automaticamente
             StartAuthentication();
         }
@@ -161,6 +173,36 @@ namespace Project51.Auth
             {
                 StartAuthentication();
             }
+        }
+
+        public void LogoutAndRestart(bool clearRealAccountFlag = false)
+        {
+            try
+            {
+                if (PhotonNetwork.IsConnected)
+                    PhotonNetwork.Disconnect();
+            }
+            catch { }
+
+            // Clear cached/nicked values so a subsequent guest login does not reuse the previous account name.
+            try
+            {
+                PhotonNetwork.NickName = string.Empty;
+            }
+            catch { }
+
+            if (PlayFabAuth != null)
+            {
+                PlayFabAuth.Logout();
+                if (clearRealAccountFlag)
+                {
+                    PlayFabAuth.ClearRealLoginFlag();
+                    PlayFabAuth.ClearHasLoggedIn();
+                    PlayFabAuth.ClearRegisteredFlag();
+                }
+            }
+
+            StartAuthentication();
         }
         
         /// <summary>
@@ -357,8 +399,8 @@ namespace Project51.Auth
                 PlayFabAuth.PhotonCustomAuthToken
             );
             
-            // Imposta nickname
-            string nickname = PlayFabAuth.DisplayName ?? $"Player{PlayFabAuth.PlayFabId.Substring(0, 6)}";
+            // Imposta nickname (sempre derivato dallo stato corrente, non da valori stale)
+            string nickname = PlayFabAuth.GetBestDisplayName();
             
             bool photonConnectDone = false;
             bool photonConnectSuccess = false;
