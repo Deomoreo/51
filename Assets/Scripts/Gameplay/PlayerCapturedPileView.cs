@@ -19,8 +19,8 @@ namespace Project51.Unity
         [SerializeField] private float scopeVerticalOffset = 0.1f;
 
         [Header("Visual Settings")]
-        [SerializeField] private Vector3 normalPileScale = new Vector3(0.6f, 0.6f, 1f);
-        [SerializeField] private Vector3 scopePileScale = new Vector3(0.6f, 0.6f, 1f);
+        [SerializeField] private Vector3 normalPileScale = Vector3.one;
+        [SerializeField] private Vector3 scopePileScale = Vector3.one;
         [SerializeField] private Color scopeCardTint = Color.white;
 
         private GameObject normalPileCardView;
@@ -45,6 +45,30 @@ namespace Project51.Unity
             if (player == null) return;
             UpdateNormalPile(player.CapturedCards.Count);
             UpdateScopePile(player.ScopaCount);
+        }
+
+        /// <summary>
+        /// Imposta la stessa dimensione per prese e scope, incluse le carte già create.
+        /// </summary>
+        public void SetPileCardScale(float scale)
+        {
+            float clampedScale = Mathf.Max(0.01f, scale);
+            Vector3 uniformScale = new Vector3(clampedScale, clampedScale, 1f);
+            normalPileScale = uniformScale;
+            scopePileScale = uniformScale;
+
+            if (normalPileCardView != null)
+            {
+                normalPileCardView.transform.localScale = uniformScale;
+            }
+
+            foreach (var scopeCardView in scopeCardViews)
+            {
+                if (scopeCardView != null)
+                {
+                    scopeCardView.transform.localScale = uniformScale;
+                }
+            }
         }
 
         private void UpdateNormalPile(int totalCaptured)

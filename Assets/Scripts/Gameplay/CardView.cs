@@ -21,15 +21,37 @@ namespace Project51.Unity
         private bool isClickable = false;
         private bool enableHover = false;
         [SerializeField] private float raiseAmount = 0.35f;
+        [SerializeField] private float hoverRaiseAmount = 0.12f;
+        [SerializeField] private float hoverScaleMultiplier = 1.08f;
+        [SerializeField] private float hoverAnimDuration = 0.1f;
         [SerializeField] private int selectionSortingBoost = 100;
         [SerializeField] private float selectionAnimDuration = 0.12f;
 
         private bool isSelected = false;
         private Vector3 originalPosition;
+        private Vector3 displayScale = Vector3.one;
         private int originalSortingOrder = 0;
         private Coroutine selectionCoroutine;
+        private Coroutine hoverCoroutine;
 
         public Card Card => card;
+
+        /// <summary>
+        /// Renderer visivo della carta, risolto anche quando si trova in un figlio del prefab.
+        /// </summary>
+        public SpriteRenderer CardRenderer
+        {
+            get
+            {
+                if (spriteRenderer == null)
+                {
+                    spriteRenderer = GetComponent<SpriteRenderer>() ?? GetComponentInChildren<SpriteRenderer>();
+                }
+
+                return spriteRenderer;
+            }
+        }
+
         public bool IsClickable
         {
             get => isClickable;
@@ -152,6 +174,34 @@ namespace Project51.Unity
             defaultCardBack = back;
         }
 
+        /// <summary>
+        /// Imposta la scala visiva di riposo della carta.
+        /// Hover, selezione e hint vengono calcolati a partire da questa scala.
+        /// </summary>
+        public void SetDisplayScale(float scale)
+        {
+            float clampedScale = Mathf.Max(0.01f, scale);
+            Vector3 newDisplayScale = new Vector3(clampedScale, clampedScale, 1f);
+            if ((displayScale - newDisplayScale).sqrMagnitude <= 0.000001f)
+            {
+                return;
+            }
+
+            displayScale = newDisplayScale;
+
+            if (!isSelected && !isDragging)
+            {
+                if (isMouseOver && enableHover)
+                {
+                    AnimateHover(true);
+                }
+                else
+                {
+                    transform.localScale = displayScale;
+                }
+            }
+        }
+
         private void OnMouseDown()
         {
             if (isClickable)
@@ -195,7 +245,7 @@ namespace Project51.Unity
             {
                 // if selected, keep selection animation; otherwise scale smoothly
                 if (!isSelected)
-                    transform.localScale = Vector3.one * 1.05f;
+                    AnimateHover(true);
 
                 // Show original 7 di Coppe when hovering (hide Matta temporary value)
                 if (showingTemporaryValue && originalFaceSprite != null)
@@ -217,7 +267,7 @@ namespace Project51.Unity
             if (!isDragging && enableHover)
             {
                 if (!isSelected)
-                    transform.localScale = Vector3.one;
+                    AnimateHover(false);
 
                 // Restore Matta temporary value when leaving hover
                 if (!showingTemporaryValue && temporaryFaceSprite != null)
@@ -251,7 +301,7 @@ namespace Project51.Unity
             if (isDragging)
             {
                 isDragging = false;
-                transform.localScale = Vector3.one;
+                transform.localScale = displayScale;
                 // notify listeners about drag release only if dragging allowed
                 if (allowDrag)
                 {
@@ -318,7 +368,7 @@ namespace Project51.Unity
         {
             float elapsed = 0f;
             var startScale = transform.localScale;
-            var targetScale = select ? Vector3.one * 1.12f : Vector3.one;
+            var targetScale = select ? displayScale * 1.12f : displayScale;
             var startPos = transform.position;
             var targetPos = select ? originalPosition + Vector3.up * raiseAmount : originalPosition;
             if (spriteRenderer != null)
@@ -368,7 +418,55 @@ namespace Project51.Unity
         /// </summary>
         public void SetPosition(Vector3 position)
         {
-            transform.position = position;
+            if ((originalPosition - position).sqrMagnitude <= 0.000001f)
+            {
+                return;
+            }
+
+            originalPosition = position;
+            if (!isSelected && !isDragging)
+            {
+                if (isMouseOver && enableHover)
+                {
+                    AnimateHover(true);
+                }
+                else
+                {
+                    transform.position = position;
+                }
+            }
+        }
+
+        private void AnimateHover(bool enter)
+        {
+            if (hoverCoroutine != null)
+            {
+                StopCoroutine(hoverCoroutine);
+            }
+
+            hoverCoroutine = StartCoroutine(HoverCoroutine(enter));
+        }
+
+        private System.Collections.IEnumerator HoverCoroutine(bool enter)
+        {
+            float elapsed = 0f;
+            Vector3 startScale = transform.localScale;
+            Vector3 startPosition = transform.position;
+            Vector3 targetScale = enter ? displayScale * hoverScaleMultiplier : displayScale;
+            Vector3 targetPosition = enter ? originalPosition + Vector3.up * hoverRaiseAmount : originalPosition;
+
+            while (elapsed < hoverAnimDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / hoverAnimDuration));
+                transform.localScale = Vector3.Lerp(startScale, targetScale, t);
+                transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+                yield return null;
+            }
+
+            transform.localScale = targetScale;
+            transform.position = targetPosition;
+            hoverCoroutine = null;
         }
 
         /// <summary>
@@ -574,7 +672,7 @@ namespace Project51.Unity
             if (!isSelected)
             {
                 transform.position = originalPosition;
-                transform.localScale = Vector3.one;
+                transform.localScale = displayScale;
             }
         }
 

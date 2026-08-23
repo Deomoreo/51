@@ -12,14 +12,21 @@ namespace Project51.Unity
         [Header("Layout Settings")]
         [SerializeField] private Transform[] playerPilePositions;
         [SerializeField] private bool autoCreatePositions = true;
+        [SerializeField] private bool positionPilesBesidePlayerHands = true;
+        [SerializeField] private float scopeOffsetFromCapturedPile = 1.1f;
+        [SerializeField, Range(0.5f, 1.5f)] private float sharedPileCardScale = 1.15f;
 
         private PlayerCapturedPileView[] playerPileViews;
+        private CardViewManager cardViewManager;
+        private bool cardViewManagerSearched;
         private bool isInitialized = false;
 
         private void Start()
         {
             if (turnController == null)
                 turnController = FindObjectOfType<TurnController>();
+
+            CacheCardViewManager();
 
             if (autoCreatePositions && (playerPilePositions == null || playerPilePositions.Length == 0))
                 CreateDefaultPilePositions();
@@ -209,6 +216,9 @@ namespace Project51.Unity
                 var pileView = playerPileViews[viewIndex];
                 if (pileView == null) continue;
 
+                PositionPileBesideHand(viewIndex, numPlayers);
+                pileView.SetPileCardScale(sharedPileCardScale);
+
                 var playerState = players[p];
                 pileView.UpdatePile(playerState);
 
@@ -217,6 +227,49 @@ namespace Project51.Unity
                     pileView.UpdateScopePileWithCards(playerState.ScopaCards);
                 }
             }
+        }
+
+        private void PositionPileBesideHand(int relativePlayerIndex, int playerCount)
+        {
+            if (!positionPilesBesidePlayerHands || playerPilePositions == null ||
+                relativePlayerIndex < 0 || relativePlayerIndex >= playerPilePositions.Length)
+            {
+                return;
+            }
+
+            var pilePosition = playerPilePositions[relativePlayerIndex];
+            if (pilePosition == null)
+            {
+                return;
+            }
+
+            CacheCardViewManager();
+
+            if (cardViewManager == null)
+            {
+                return;
+            }
+
+            Vector3 handAnchor = cardViewManager.GetPlayerHandAnchor(relativePlayerIndex, playerCount);
+            Vector3 playerRight = cardViewManager.GetPlayerRightDirection(relativePlayerIndex, playerCount);
+            pilePosition.position = handAnchor + playerRight * cardViewManager.GetCapturedPileDistance() + cardViewManager.GetCapturedPileScreenDownOffset();
+
+            var pileView = playerPileViews[relativePlayerIndex];
+            if (pileView != null && pileView.scopeContainer != null)
+            {
+                pileView.scopeContainer.position = pilePosition.position + playerRight * scopeOffsetFromCapturedPile;
+            }
+        }
+
+        private void CacheCardViewManager()
+        {
+            if (cardViewManagerSearched)
+            {
+                return;
+            }
+
+            cardViewManagerSearched = true;
+            cardViewManager = FindObjectOfType<CardViewManager>();
         }
 
         public void ForceRefresh()

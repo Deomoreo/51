@@ -26,6 +26,13 @@ public static class CreateCirullaScene
         // Create new scene
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
+        var gameplayCamera = Camera.main;
+        if (gameplayCamera != null)
+        {
+            gameplayCamera.orthographic = true;
+            gameplayCamera.gameObject.AddComponent<CameraResponsiveFit>();
+        }
+
         // Create a simple CardView prefab
         var cardViewGO = new GameObject("CardViewPrefab_Temp");
         var spriteRenderer = cardViewGO.AddComponent<SpriteRenderer>();

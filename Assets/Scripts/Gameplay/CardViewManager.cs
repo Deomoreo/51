@@ -39,6 +39,36 @@ namespace Project51.Unity
         [SerializeField] private float fanAngle = 15f; // Angolo massimo del ventaglio (gradi)
         [SerializeField] private float fanRadius = 0.3f; // Raggio del ventaglio (curvatura)
 
+        [Header("Responsive Layout")]
+        [SerializeField] private bool useResponsiveLayout = true;
+        [SerializeField, Range(0.4f, 0.95f)] private float tableWidthUsage = 0.72f;
+        [SerializeField, Range(0.25f, 0.8f)] private float handWidthUsage = 0.42f;
+        [SerializeField, Range(0.25f, 0.8f)] private float sideHandHeightUsage = 0.42f;
+        [SerializeField, Range(0f, 2f)] private float layoutScreenPadding = 0.75f;
+        [SerializeField] private float minTableCardSpacing = 0.8f;
+        [SerializeField] private float minHandCardSpacing = 0.75f;
+        [SerializeField] private float minSideHandCardSpacing = 0.75f;
+        [SerializeField, Range(0.35f, 0.49f)] private float localPlayerBottomOffsetRatio = 0.46f;
+        [SerializeField, Range(0.2f, 0.48f)] private float topOpponentOffsetRatio = 0.4f;
+        [SerializeField, Range(0.2f, 0.4f)] private float topOpponentOffsetRatioFourPlayers = 0.33f;
+        [SerializeField, Range(0.2f, 0.48f)] private float sideOpponentOffsetRatio = 0.38f;
+        [SerializeField, Range(0f, 0.1f)] private float opponentHandScreenDownOffsetRatio = 0.04f;
+        [SerializeField, Range(0f, 0.15f)] private float sideOpponentAdditionalScreenDownOffsetRatio = 0.05f;
+        [SerializeField, Range(0f, 0.1f)] private float capturedPileScreenDownOffsetRatio = 0.035f;
+
+        [Header("Player Hierarchy")]
+        [SerializeField, Range(1f, 2f)] private float localPlayerCardScale = 1.7f;
+        [SerializeField, Range(0.5f, 1.4f)] private float opponentCardScale = 1.12f;
+        [SerializeField, Range(0.5f, 1.4f)] private float tableCardScale = 1.1f;
+
+        private const float MinimumLocalPlayerCardScale = 2.2f;
+        private const float MinimumOpponentCardScale = 1.12f;
+        private const float MinimumTableCardScale = 1.1f;
+
+        private float EffectiveLocalPlayerCardScale => Mathf.Max(localPlayerCardScale, MinimumLocalPlayerCardScale);
+        private float EffectiveOpponentCardScale => Mathf.Max(opponentCardScale, MinimumOpponentCardScale);
+        private float EffectiveTableCardScale => Mathf.Max(tableCardScale, MinimumTableCardScale);
+
         [Header("Sprites (Optional)")]
         [SerializeField] private Sprite[] cardSprites; // shared with CardSpriteProvider
         [SerializeField] private Sprite defaultCardBack;
@@ -56,6 +86,7 @@ namespace Project51.Unity
         private Dictionary<(Suit suit, int rank), Sprite> explicitMapCache = new Dictionary<(Suit, int), Sprite>();
 
         private Dictionary<Card, CardView> activeCardViews = new Dictionary<Card, CardView>();
+        private Camera layoutCamera;
 
         /// <summary>
         /// Gets all currently active CardViews. Useful for tests.
@@ -143,6 +174,7 @@ namespace Project51.Unity
                     }
 
                     var cardView = activeCardViews[card];
+                    cardView.SetDisplayScale(EffectiveOpponentCardScale);
                     // FORZA il flip a face-up se il giocatore ha dichiarato accuso
                     if (faceUp && cardView != null)
                     {
@@ -151,33 +183,32 @@ namespace Project51.Unity
                             cardView.FlipToFaceUp(faceSprite);
                     }
 
-                    Vector3 basePos = tableCardContainer != null ? tableCardContainer.position : Vector3.zero;
                     Vector3 position;
                     float baseRotation = 0f;
 
-                    int numPlayers = players.Count; // AGGIUNGI QUESTA RIGA ALL'INIZIO
+                    int numPlayers = players.Count;
 
                     // Layout 1v1: avversario in alto capovolto
                     if (numPlayers == 2)
                     {
                         // Player 1 (avversario) in alto, ruotato 180°
-                        position = CalculateFanPosition(basePos + Vector3.up * 3.5f, hand.Count, i, 180f);
+                        position = CalculateFanPosition(GetTopOpponentBasePosition(true), hand.Count, i, 180f, EffectiveOpponentCardScale);
                         baseRotation = 180f;
                     }
                     // Layout 4P: distribuzione classica (sinistra, alto, destra)
                     else if (p == ((localIndex + 1) % numPlayers))
                     {
-                        position = CalculateFanPositionVertical(basePos + Vector3.left * 5f, hand.Count, i, true);
+                        position = CalculateFanPositionVertical(GetSideOpponentBasePosition(true), hand.Count, i, true, EffectiveOpponentCardScale);
                         baseRotation = 90f;
                     }
                     else if (p == ((localIndex + 2) % numPlayers))
                     {
-                        position = CalculateFanPosition(basePos + Vector3.up * 2.5f, hand.Count, i, 180f);
+                        position = CalculateFanPosition(GetTopOpponentBasePosition(false), hand.Count, i, 180f, EffectiveOpponentCardScale);
                         baseRotation = 180f;
                     }
                     else
                     {
-                        position = CalculateFanPositionVertical(basePos + Vector3.right * 5f, hand.Count, i, false);
+                        position = CalculateFanPositionVertical(GetSideOpponentBasePosition(false), hand.Count, i, false, EffectiveOpponentCardScale);
                         baseRotation = -90f;
                     }
 
@@ -352,13 +383,7 @@ namespace Project51.Unity
                 }
             }
             
-            if (turnController != null)
-            {
-                turnController.OnMoveExecuted += HandleMoveExecuted;
-            }
-
-            // Ensure we unsubscribe when destroyed
-            // (OnDestroy implemented below)
+            CacheLayoutCamera();
 
             // reset name lookup cache on scene start
             spriteLookup.Clear();
@@ -395,8 +420,202 @@ namespace Project51.Unity
                 Debug.LogWarning("CardViewManager.Start: cardViewPrefab is null after Start(). Cards will not be rendered.");
             }
 
-            // Subscribe to game state changes (in a real implementation, use events)
-            InvokeRepeating(nameof(RefreshCardViews), 0.5f, 0.5f);
+            ForceRefresh();
+        }
+
+        private void CacheLayoutCamera()
+        {
+            layoutCamera = Camera.main;
+            if (layoutCamera == null)
+            {
+                layoutCamera = FindObjectOfType<Camera>();
+            }
+        }
+
+        private void EnsureLayoutCameraCached()
+        {
+            if (layoutCamera == null)
+            {
+                CacheLayoutCamera();
+            }
+        }
+
+        private void ApplyResponsiveCameraIfAvailable()
+        {
+            EnsureLayoutCameraCached();
+            if (layoutCamera == null)
+            {
+                return;
+            }
+
+            var responsiveFit = layoutCamera.GetComponent("CameraResponsiveFit") as MonoBehaviour;
+            if (responsiveFit == null)
+            {
+                return;
+            }
+
+            var applyMethod = responsiveFit.GetType().GetMethod("Apply");
+            applyMethod?.Invoke(responsiveFit, null);
+        }
+
+        private float GetVisibleWidth()
+        {
+            ApplyResponsiveCameraIfAvailable();
+
+            if (layoutCamera != null && layoutCamera.orthographic)
+            {
+                return Mathf.Max(1f, layoutCamera.orthographicSize * 2f * layoutCamera.aspect);
+            }
+
+            return 12f;
+        }
+
+        private float GetVisibleHeight()
+        {
+            ApplyResponsiveCameraIfAvailable();
+
+            if (layoutCamera != null && layoutCamera.orthographic)
+            {
+                return Mathf.Max(1f, layoutCamera.orthographicSize * 2f);
+            }
+
+            return 8f;
+        }
+
+        private float GetResponsiveHorizontalSpacing(int totalCards, float minSpacing, float widthUsage)
+        {
+            if (!useResponsiveLayout || totalCards <= 1)
+            {
+                return cardSpacing;
+            }
+
+            float availableWidth = Mathf.Max(minSpacing, (GetVisibleWidth() * widthUsage) - (layoutScreenPadding * 2f));
+            float spacing = availableWidth / Mathf.Max(1, totalCards - 1);
+            return Mathf.Clamp(spacing, minSpacing, cardSpacing);
+        }
+
+        private float GetResponsiveVerticalSpacing(int totalCards, float minSpacing, float heightUsage)
+        {
+            if (!useResponsiveLayout || totalCards <= 1)
+            {
+                return cardSpacing;
+            }
+
+            float availableHeight = Mathf.Max(minSpacing, (GetVisibleHeight() * heightUsage) - (layoutScreenPadding * 2f));
+            float spacing = availableHeight / Mathf.Max(1, totalCards - 1);
+            return Mathf.Clamp(spacing, minSpacing, cardSpacing);
+        }
+
+        private Vector3 GetTableCenterPosition()
+        {
+            return tableCardContainer != null ? tableCardContainer.position : Vector3.zero;
+        }
+
+        private Vector3 GetHumanHandBasePosition()
+        {
+            Vector3 tableCenter = GetTableCenterPosition();
+            Vector3 position = tableCenter + Vector3.down * (GetVisibleHeight() * localPlayerBottomOffsetRatio);
+
+            if (humanHandContainer != null)
+            {
+                position.x = humanHandContainer.position.x;
+                position.z = humanHandContainer.position.z;
+            }
+
+            return position;
+        }
+
+        private Vector3 GetTopOpponentBasePosition(bool isTwoPlayers)
+        {
+            float ratio = isTwoPlayers ? topOpponentOffsetRatio : topOpponentOffsetRatioFourPlayers;
+            float visibleHeight = GetVisibleHeight();
+            return GetTableCenterPosition() + Vector3.up * (visibleHeight * ratio) + Vector3.down * (visibleHeight * opponentHandScreenDownOffsetRatio);
+        }
+
+        private Vector3 GetSideOpponentBasePosition(bool isLeft)
+        {
+            float direction = isLeft ? -1f : 1f;
+            float visibleHeight = GetVisibleHeight();
+            float downOffset = opponentHandScreenDownOffsetRatio + sideOpponentAdditionalScreenDownOffsetRatio;
+            return GetTableCenterPosition() + Vector3.right * (GetVisibleWidth() * sideOpponentOffsetRatio * direction) + Vector3.down * (visibleHeight * downOffset);
+        }
+
+        /// <summary>
+        /// Restituisce l'ancora della mano per una seduta relativa al giocatore locale.
+        /// Indici: 0 = locale, 1 = sinistra, 2 = fronte, 3 = destra.
+        /// </summary>
+        public Vector3 GetPlayerHandAnchor(int relativePlayerIndex, int playerCount)
+        {
+            if (relativePlayerIndex == 0)
+            {
+                return GetHumanHandBasePosition();
+            }
+
+            if (playerCount == 2)
+            {
+                return GetTopOpponentBasePosition(true);
+            }
+
+            switch (relativePlayerIndex)
+            {
+                case 1:
+                    return GetSideOpponentBasePosition(true);
+                case 2:
+                    return GetTopOpponentBasePosition(false);
+                default:
+                    return GetSideOpponentBasePosition(false);
+            }
+        }
+
+        /// <summary>
+        /// Restituisce la destra relativa del giocatore nella sua posizione al tavolo.
+        /// </summary>
+        public Vector3 GetPlayerRightDirection(int relativePlayerIndex, int playerCount)
+        {
+            if (relativePlayerIndex == 0)
+            {
+                return Vector3.right;
+            }
+
+            if (playerCount == 2 || relativePlayerIndex == 2)
+            {
+                return Vector3.left;
+            }
+
+            return relativePlayerIndex == 1 ? Vector3.down : Vector3.up;
+        }
+
+        /// <summary>
+        /// Distanza responsive per posizionare prese e scope accanto alla mano.
+        /// </summary>
+        public float GetCapturedPileDistance()
+        {
+            return Mathf.Max(1.8f, Mathf.Min(GetVisibleWidth(), GetVisibleHeight()) * 0.22f);
+        }
+
+        /// <summary>
+        /// Offset verso il basso per separare prese e scope dalla mano senza usare coordinate fisse.
+        /// </summary>
+        public Vector3 GetCapturedPileScreenDownOffset()
+        {
+            return Vector3.down * (GetVisibleHeight() * capturedPileScreenDownOffsetRatio);
+        }
+
+        private Vector3 CalculateTableCardPosition(int totalCards, int cardIndex)
+        {
+            Vector3 center = GetTableCenterPosition();
+            float spacing = GetResponsiveHorizontalSpacing(totalCards, minTableCardSpacing, tableWidthUsage) * EffectiveTableCardScale;
+            float offset = (cardIndex - (totalCards - 1) / 2f) * spacing;
+            return center + Vector3.right * offset;
+        }
+
+        /// <summary>
+        /// Calcola la posizione che avrà una carta aggiunta al tavolo senza modificare lo stato.
+        /// </summary>
+        public Vector3 GetNextTableCardPosition(int currentTableCardCount)
+        {
+            int totalCards = Mathf.Max(1, currentTableCardCount + 1);
+            return CalculateTableCardPosition(totalCards, totalCards - 1);
         }
 
         /// <summary>
@@ -531,6 +750,22 @@ namespace Project51.Unity
         }
 
         /// <summary>
+        /// Restituisce la vista già presente per una carta, senza crearla o modificarla.
+        /// Usato dal controller di animazione prima del commit della mossa.
+        /// </summary>
+        public bool TryGetCardView(Card card, out CardView cardView)
+        {
+            if (card != null && activeCardViews.TryGetValue(card, out var resolvedView) && resolvedView != null)
+            {
+                cardView = resolvedView;
+                return true;
+            }
+
+            cardView = null;
+            return false;
+        }
+
+        /// <summary>
         /// Removes card views for cards that are no longer in play.
         /// </summary>
         private void CleanupOldViews(GameState state)
@@ -603,12 +838,17 @@ namespace Project51.Unity
                     cardView.EnableHover = false;
                 }
 
-                Vector3 position = tableCardContainer != null
-                    ? tableCardContainer.position + Vector3.right * i * cardSpacing
-                    : Vector3.right * i * cardSpacing;
+                Vector3 position = CalculateTableCardPosition(tableCards.Count, i);
 
+                var tableRenderer = cardView.CardRenderer;
+                if (tableRenderer != null)
+                {
+                    tableRenderer.enabled = true;
+                }
+
+                cardView.SetDisplayScale(EffectiveTableCardScale);
                 cardView.SetPosition(position);
-                
+
                 // IMPORTANT: Table cards are ALWAYS straight (rotation 0) - no fan layout
                 cardView.transform.rotation = Quaternion.Euler(0, 0, 0);
             }
@@ -936,6 +1176,7 @@ namespace Project51.Unity
                 }
 
                 var cardView = activeCardViews[card];
+                cardView.SetDisplayScale(EffectiveLocalPlayerCardScale);
                 // Ensure interactivity reflects current turn
                 cardView.IsClickable = turnController.IsHumanPlayerTurn;
                 // ALWAYS enable hover (for Matta visual hints to work)
@@ -949,8 +1190,7 @@ namespace Project51.Unity
                 }
 
                 // Calculate position with fan layout
-                Vector3 basePos = humanHandContainer != null ? humanHandContainer.position : Vector3.down * 3f;
-                Vector3 position = CalculateFanPosition(basePos, handCards.Count, i, 0f);
+                Vector3 position = CalculateFanPosition(GetHumanHandBasePosition(), handCards.Count, i, 0f, EffectiveLocalPlayerCardScale);
                 cardView.SetPosition(position);
                 
                 // Apply rotation for fan effect - INVERTED for bottom player
@@ -970,71 +1210,55 @@ namespace Project51.Unity
         /// <summary>
         /// Calculates the position for a card in a fan layout.
         /// </summary>
-        private Vector3 CalculateFanPosition(Vector3 centerPos, int totalCards, int cardIndex, float baseRotation)
+        private Vector3 CalculateFanPosition(Vector3 centerPos, int totalCards, int cardIndex, float baseRotation, float spacingMultiplier = 1f)
         {
+            float effectiveSpacing = GetResponsiveHorizontalSpacing(totalCards, minHandCardSpacing, handWidthUsage) * spacingMultiplier;
+            float effectiveFanRadius = fanRadius * Mathf.Sqrt(spacingMultiplier);
+
             if (!useFanLayout || totalCards <= 1)
             {
-                // Linear layout fallback
-                float offset = (cardIndex - (totalCards - 1) / 2.0f) * cardSpacing * 0.6f;
+                float offset = (cardIndex - (totalCards - 1) / 2.0f) * effectiveSpacing * 0.6f;
                 return centerPos + Vector3.right * offset;
             }
 
-            // Fan layout with curve
             float normalizedIndex = totalCards > 1 ? (float)cardIndex / (totalCards - 1) : 0.5f;
             float angle = Mathf.Lerp(-fanAngle, fanAngle, normalizedIndex);
-            
-            // Convert angle to radians for calculation
             float angleRad = angle * Mathf.Deg2Rad;
-            
-            // Calculate curved position
-            float x = Mathf.Sin(angleRad) * fanRadius;
-            float y = (1f - Mathf.Cos(angleRad)) * fanRadius * 0.5f; // Curve direction
-            
-            // For player (baseRotation = 0), curve should go DOWN (positive y) - same as top
-            // For top player (baseRotation = 180), curve should go DOWN (positive y)
-            // Both open "from above"
-            
-            // Horizontal spacing
-            float horizontalOffset = (normalizedIndex - 0.5f) * (totalCards - 1) * cardSpacing * 0.5f;
-            
+
+            float x = Mathf.Sin(angleRad) * effectiveFanRadius;
+            float y = (1f - Mathf.Cos(angleRad)) * effectiveFanRadius * 0.5f;
+            float horizontalOffset = (normalizedIndex - 0.5f) * (totalCards - 1) * effectiveSpacing * 0.5f;
+
             return centerPos + new Vector3(horizontalOffset + x, y, 0);
         }
 
         /// <summary>
         /// Calculates the position for a card in a vertical fan layout (for left/right players).
         /// </summary>
-        private Vector3 CalculateFanPositionVertical(Vector3 centerPos, int totalCards, int cardIndex, bool isLeft)
+        private Vector3 CalculateFanPositionVertical(Vector3 centerPos, int totalCards, int cardIndex, bool isLeft, float spacingMultiplier = 1f)
         {
+            float effectiveSpacing = GetResponsiveVerticalSpacing(totalCards, minSideHandCardSpacing, sideHandHeightUsage) * spacingMultiplier;
+            float effectiveFanRadius = fanRadius * Mathf.Sqrt(spacingMultiplier);
+
             if (!useFanLayout || totalCards <= 1)
             {
-                // Linear layout fallback
-                float offset = (cardIndex - (totalCards - 1) / 2.0f) * cardSpacing * 0.6f;
+                float offset = (cardIndex - (totalCards - 1) / 2.0f) * effectiveSpacing * 0.6f;
                 return centerPos + Vector3.up * offset;
             }
 
-            // Vertical fan layout with curve
             float normalizedIndex = totalCards > 1 ? (float)cardIndex / (totalCards - 1) : 0.5f;
             float angle = Mathf.Lerp(-fanAngle, fanAngle, normalizedIndex);
-            
-            // Convert angle to radians for calculation
             float angleRad = angle * Mathf.Deg2Rad;
-            
-            // Calculate curved position
-            // For vertical fans: y is the spread, x is the curve
-            float ySpread = Mathf.Sin(angleRad) * fanRadius;
-            float xCurve = (1f - Mathf.Cos(angleRad)) * fanRadius * 0.8f;
-            
-            // For left player, curve toward center (positive x = toward right) - CORRECT
-            // For right player, curve toward center (negative x = toward left) - OPPOSITE of current
+
+            float ySpread = Mathf.Sin(angleRad) * effectiveFanRadius;
+            float xCurve = (1f - Mathf.Cos(angleRad)) * effectiveFanRadius * 0.8f;
             if (!isLeft)
             {
-                // Right player: curve toward left (toward center)
                 xCurve = -xCurve;
             }
-            
-            // Vertical spacing along the main axis
-            float verticalOffset = (normalizedIndex - 0.5f) * (totalCards - 1) * cardSpacing * 0.5f;
-            
+
+            float verticalOffset = (normalizedIndex - 0.5f) * (totalCards - 1) * effectiveSpacing * 0.5f;
+
             return centerPos + new Vector3(xCurve, verticalOffset + ySpread, 0);
         }
 
@@ -1185,9 +1409,7 @@ namespace Project51.Unity
             int idx = table.IndexOf(move.PlayedCard);
             if (idx < 0) idx = table.Count - 1; // fallback to last
 
-            Vector3 target = tableCardContainer != null
-                ? tableCardContainer.position + Vector3.right * idx * cardSpacing
-                : Vector3.right * idx * cardSpacing;
+            Vector3 target = CalculateTableCardPosition(table.Count, idx);
 
             // Create a temporary GameObject to animate so we don't touch the real CardView which
             // may be destroyed/recycled during state refresh
@@ -1213,27 +1435,30 @@ namespace Project51.Unity
                 // Calculate start position based on which player made the move
                 int localIndex = GetLocalPlayerIndex();
                 int numPlayers = turnController?.GameState?.NumPlayers ?? 4;
-                Vector3 basePos = tableCardContainer != null ? tableCardContainer.position : Vector3.zero;
                 
                 if (move.PlayerIndex == localIndex)
                 {
                     // Local player - start from human hand
-                    startPos = humanHandContainer != null ? humanHandContainer.position : basePos + Vector3.down * 3f;
+                    startPos = GetHumanHandBasePosition();
+                }
+                else if (numPlayers == 2)
+                {
+                    startPos = GetTopOpponentBasePosition(true);
                 }
                 else if (move.PlayerIndex == ((localIndex + 1) % numPlayers))
                 {
                     // Left player
-                    startPos = basePos + Vector3.left * 5f;
+                    startPos = GetSideOpponentBasePosition(true);
                 }
                 else if (move.PlayerIndex == ((localIndex + 2) % numPlayers))
                 {
                     // Top player
-                    startPos = basePos + Vector3.up * 2.5f;
+                    startPos = GetTopOpponentBasePosition(false);
                 }
                 else
                 {
                     // Right player
-                    startPos = basePos + Vector3.right * 5f;
+                    startPos = GetSideOpponentBasePosition(false);
                 }
             }
 
@@ -1247,6 +1472,80 @@ namespace Project51.Unity
             tempSr.sortingOrder = baseOrder + 200;
 
             StartCoroutine(PlayCardAnimationTemp(temp, target, tempSr, baseOrder));
+
+            if (move.CapturedCards != null && move.CapturedCards.Count > 0)
+            {
+                StartCoroutine(PlayCaptureAnimations(move));
+            }
+        }
+
+        private System.Collections.IEnumerator PlayCaptureAnimations(Move move)
+        {
+            int localIndex = GetLocalPlayerIndex();
+            int playerCount = turnController?.GameState?.NumPlayers ?? 4;
+            int relativePlayerIndex = (move.PlayerIndex - localIndex + playerCount) % playerCount;
+            Vector3 pileTarget = GetPlayerHandAnchor(relativePlayerIndex, playerCount) +
+                GetPlayerRightDirection(relativePlayerIndex, playerCount) * GetCapturedPileDistance() +
+                GetCapturedPileScreenDownOffset();
+
+            int sequenceIndex = 0;
+            foreach (var capturedCard in move.CapturedCards)
+            {
+                if (!activeCardViews.TryGetValue(capturedCard, out var sourceView) || sourceView == null)
+                {
+                    continue;
+                }
+
+                var sourceRenderer = sourceView.GetComponent<SpriteRenderer>();
+                if (sourceRenderer == null || sourceRenderer.sprite == null)
+                {
+                    continue;
+                }
+
+                var temp = new GameObject($"CaptureAnim_{capturedCard.Suit}_{capturedCard.Rank}");
+                temp.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+                temp.transform.position = sourceView.transform.position;
+                temp.transform.localScale = sourceView.transform.localScale;
+                var renderer = temp.AddComponent<SpriteRenderer>();
+                renderer.sprite = sourceRenderer.sprite;
+                renderer.sortingLayerName = sourceRenderer.sortingLayerName;
+                renderer.sortingOrder = sourceRenderer.sortingOrder + 250 + sequenceIndex;
+
+                StartCoroutine(FlyCapturedCard(temp, pileTarget, sequenceIndex * 0.055f));
+                sequenceIndex++;
+            }
+
+            yield break;
+        }
+
+        private System.Collections.IEnumerator FlyCapturedCard(GameObject tempObj, Vector3 target, float delay)
+        {
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+
+            if (tempObj == null) yield break;
+
+            const float duration = 0.26f;
+            float elapsed = 0f;
+            Vector3 start = tempObj.transform.position;
+            Vector3 startScale = tempObj.transform.localScale;
+            Vector3 arcControl = (start + target) * 0.5f + Vector3.up * 0.25f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float easedT = t * t * (3f - 2f * t);
+                Vector3 firstHalf = Vector3.Lerp(start, arcControl, easedT);
+                Vector3 secondHalf = Vector3.Lerp(arcControl, target, easedT);
+                tempObj.transform.position = Vector3.Lerp(firstHalf, secondHalf, easedT);
+                tempObj.transform.localScale = Vector3.Lerp(startScale, startScale * 0.72f, easedT);
+                yield return null;
+            }
+
+            UnityEngine.Object.Destroy(tempObj);
         }
         
         /// <summary>
@@ -1275,9 +1574,11 @@ namespace Project51.Unity
         private System.Collections.IEnumerator PlayCardAnimationTemp(GameObject tempObj, Vector3 target, SpriteRenderer sr, int originalOrder)
         {
             if (tempObj == null) yield break;
-            float duration = 0.28f;
+            float duration = 0.32f;
             float elapsed = 0f;
             Vector3 start = tempObj.transform.position;
+            Vector3 startScale = tempObj.transform.localScale;
+            Vector3 arcControl = (start + target) * 0.5f + Vector3.up * 0.35f;
 
             // optional audio feedback
             if (playSound != null)
@@ -1288,19 +1589,23 @@ namespace Project51.Unity
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
-                tempObj.transform.position = Vector3.Lerp(start, target, t);
+                float t = Mathf.Clamp01(elapsed / duration);
+                float easedT = 1f - Mathf.Pow(1f - t, 3f);
+                Vector3 firstHalf = Vector3.Lerp(start, arcControl, easedT);
+                Vector3 secondHalf = Vector3.Lerp(arcControl, target, easedT);
+                tempObj.transform.position = Vector3.Lerp(firstHalf, secondHalf, easedT);
+                float impactScale = 1f + Mathf.Sin(t * Mathf.PI) * 0.12f;
+                tempObj.transform.localScale = startScale * impactScale;
                 yield return null;
             }
 
             tempObj.transform.position = target;
+            tempObj.transform.localScale = startScale;
             UnityEngine.Object.Destroy(tempObj);
         }
 
         private void OnDestroy()
         {
-            if (turnController != null)
-                turnController.OnMoveExecuted -= HandleMoveExecuted;
         }
 
         /// <summary>

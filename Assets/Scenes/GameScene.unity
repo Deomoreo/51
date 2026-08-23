@@ -1049,6 +1049,7 @@ MonoBehaviour:
   roundEndPanel: {fileID: 2032226896}
   cardViewManager: {fileID: 0}
   capturedPileManager: {fileID: 0}
+  cardAnimationController: {fileID: 0}
   autoStartGame: 1
   aiMoveDelay: 2
   aiDifficulty: 1
@@ -2069,6 +2070,57 @@ MonoBehaviour:
   specialMarkerImage: {fileID: 938611806}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   specialTint: {r: 1, g: 1, b: 0.7, a: 1}
+--- !u!1 &1485140950
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1485140952}
+  - component: {fileID: 1485140951}
+  m_Layer: 0
+  m_Name: CardAnimationController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1485140951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485140950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0e656c3a05137842966ac69bc7c1afc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playDuration: 0.35
+  captureDuration: 0.4
+  flipDuration: 0.2
+  playEase: 9
+  captureEase: 7
+  playArcHeight: 0.4
+  flightSortingOrderBase: 500
+--- !u!4 &1485140952
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485140950}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -214.33218, y: 1462.5474, z: -13.228598}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1536919590
 GameObject:
   m_ObjectHideFlags: 0
@@ -3389,3 +3441,4 @@ SceneRoots:
   - {fileID: 1095328333}
   - {fileID: 2147355216}
   - {fileID: 2004220926}
+  - {fileID: 1485140952}

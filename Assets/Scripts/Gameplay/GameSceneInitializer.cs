@@ -40,6 +40,8 @@ namespace Project51.Unity
             ActiveConfig = _config;
             Debug.Log($"[GameSceneInitializer] Loaded config: {_config}");
 
+            EnsureResponsiveCamera();
+
             // Configura il GameModeService
             SetupGameModeProvider();
         }
@@ -216,6 +218,39 @@ namespace Project51.Unity
                     Debug.Log("[GameSceneInitializer] Sent initial GameState to clients");
                 }
             }
+        }
+
+        private void EnsureResponsiveCamera()
+        {
+            Camera targetCamera = Camera.main;
+            if (targetCamera == null)
+            {
+                targetCamera = FindObjectOfType<Camera>();
+            }
+
+            if (targetCamera == null)
+            {
+                Debug.LogWarning("[GameSceneInitializer] No camera found for responsive gameplay layout.");
+                return;
+            }
+
+            targetCamera.orthographic = true;
+
+            var responsiveFit = targetCamera.GetComponent("CameraResponsiveFit") as MonoBehaviour;
+            if (responsiveFit == null)
+            {
+                var responsiveType = System.Type.GetType("Project51.Unity.CameraResponsiveFit, Project51.Gameplay");
+                if (responsiveType == null)
+                {
+                    Debug.LogWarning("[GameSceneInitializer] CameraResponsiveFit type not available yet. A Unity/VS refresh may be required.");
+                    return;
+                }
+
+                responsiveFit = targetCamera.gameObject.AddComponent(responsiveType) as MonoBehaviour;
+            }
+
+            var applyMethod = responsiveFit.GetType().GetMethod("Apply");
+            applyMethod?.Invoke(responsiveFit, null);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@ using UnityEngine;
 using Project51.Core;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 
 namespace Project51.Unity
 {
@@ -18,6 +19,7 @@ namespace Project51.Unity
         [Header("Managers (Optional - Auto-Find)")]
         [SerializeField] private CardViewManager cardViewManager;
         [SerializeField] private CapturedPileManager capturedPileManager;
+        [SerializeField] private CardAnimationController cardAnimationController;
         
         /// <summary>
         /// Sets the CardViewManager reference at runtime. Useful for tests.
@@ -34,10 +36,16 @@ namespace Project51.Unity
         [SerializeField] private float aiMoveDelay = 2.0f;
         [SerializeField] private AIDifficulty aiDifficulty = AIDifficulty.Medium;
 
+        [Header("Redeal Animation")]
+        [SerializeField] private float redealStartDelay = 0.2f;
+
         private GameState gameState;
         private List<Move> currentValidMoves;
         private RoundManager roundManager;
         private CirullaAI cirullaAI;
+        private bool isMoveAnimationInProgress;
+        private bool isRedealPendingVisual;
+        private bool isRedealAnimationInProgress;
         
         /// <summary>
         /// Event fired quando un player esegue una mossa.
@@ -77,6 +85,15 @@ namespace Project51.Unity
             if (capturedPileManager == null)
             {
                 capturedPileManager = FindObjectOfType<CapturedPileManager>();
+            }
+
+            if (cardAnimationController == null)
+            {
+                cardAnimationController = FindObjectOfType<CardAnimationController>();
+                if (cardAnimationController == null)
+                {
+                    cardAnimationController = gameObject.AddComponent<CardAnimationController>();
+                }
             }
             
             // Initialize AI
@@ -200,25 +217,10 @@ namespace Project51.Unity
         roundManager = new RoundManager(gameState);
         
         // Subscribe to events
-        roundManager.OnNewHandsDealt += CheckAndDeclareAccusiForAllPlayers; // For mid-game redeals
+        roundManager.OnNewHandsDealt += HandleNewHandsDealt; // For mid-game redeals with staged reveal
         // Do NOT declare on initial hands immediately; we'll handle it after a short visual delay
         
         roundManager.StartSmazzata();
-        
-        // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
-        // This ensures dealer 15/30 accuso (which removes table cards) happens BEFORE rendering
-        // Otherwise cards might be visible for 0.5 seconds before disappearing
-        if (cardViewManager != null)
-        {
-            cardViewManager.ForceRefresh();
-        }
-
-        // Delay the initial accusi declaration slightly so all clients see stable visuals first
-        // In multiplayer, only Master Client will perform declaration and sync via RPC
-        StartCoroutine(DeclareInitialAccusiWithDelay());
-
-        // Compute valid moves for the current player
-        RefreshValidMoves();
 
         // MULTIPLAYER: If we're Master Client, send GameState to all clients
         var provider = GameModeService.Current;
@@ -263,7 +265,7 @@ namespace Project51.Unity
                 yield break;
             }
 
-            CheckAndDeclareAccusiForAllPlayers();
+            CheckAndDeclareAccusiForAllPlayers(refreshVisuals: true);
         }
 
         /// <summary>
@@ -289,7 +291,7 @@ namespace Project51.Unity
         /// <param name="fromNetwork">True if this call originated from a network RPC (prevents re-broadcasting)</param>
         public void ExecuteMove(Move move, bool fromNetwork = false)
         {
-            if (gameState == null || gameState.RoundEnded)
+            if (move == null || gameState == null || gameState.RoundEnded || isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress)
             {
                 return;
             }
@@ -346,50 +348,145 @@ namespace Project51.Unity
                 }
             }
 
-            // For capture moves, add visual delay BEFORE applying the move
-            if (move.Type != MoveType.PlayOnly && move.CapturedCards != null && move.CapturedCards.Count > 0)
-            {
-                StartCoroutine(ExecuteMoveWithVisualDelay(move, fromNetwork));
-            }
-            else
-            {
-                // PlayOnly moves execute immediately
-                ApplyMoveInternal(move, fromNetwork);
-            }
+            StartCoroutine(ExecuteMoveWithAnimation(move, fromNetwork));
         }
 
         /// <summary>
-        /// Executes a capture move with a visual delay to show the played card.
-        /// The card is temporarily added to the table so all players can see it.
+        /// Animates the played card to the table, optionally previews the capture, then commits the move once.
         /// </summary>
-        private System.Collections.IEnumerator ExecuteMoveWithVisualDelay(Move move, bool fromNetwork)
+        private System.Collections.IEnumerator ExecuteMoveWithAnimation(Move move, bool fromNetwork)
         {
-            // Phase 1: Show the played card on the table temporarily
-            var playedCard = move.PlayedCard;
-            var player = gameState.Players[move.PlayerIndex];
-            
-            // Temporarily add to table and remove from hand for visual feedback
-            bool wasInHand = player.Hand.Remove(playedCard);
-            gameState.Table.Add(playedCard);
-            
-            // Force visual refresh so the card appears on the table
-            if (cardViewManager != null)
+            isMoveAnimationInProgress = true;
+
+            var hiddenRendererEntries = new List<(SpriteRenderer renderer, Card card)>();
+            var visualCopies = new List<Transform>();
+
+            try
             {
-                cardViewManager.ForceRefresh();
+                if (cardAnimationController != null && cardViewManager != null &&
+                    cardViewManager.TryGetCardView(move.PlayedCard, out var playedCardView) &&
+                    cardAnimationController.TryCreateVisualCopy(
+                        playedCardView.transform,
+                        playedCardView.CardRenderer,
+                        $"PlayedCardAnimation_{move.PlayedCard.Suit}_{move.PlayedCard.Rank}",
+                        out var playedVisual,
+                        out var playedVisualRenderer))
+                {
+                    visualCopies.Add(playedVisual);
+                    Sprite faceSprite = cardViewManager.GetSpriteForCard(move.PlayedCard);
+                    if (faceSprite != null)
+                    {
+                        playedVisualRenderer.sprite = faceSprite;
+                    }
+
+                    playedCardView.CardRenderer.enabled = false;
+                    hiddenRendererEntries.Add((playedCardView.CardRenderer, move.PlayedCard));
+
+                    Vector3 tableTarget = cardViewManager.GetNextTableCardPosition(gameState.Table.Count);
+                    Sequence playSequence = cardAnimationController.PlayCardToTable(
+                        playedVisual,
+                        playedVisualRenderer,
+                        tableTarget,
+                        0f);
+                    yield return playSequence.WaitForCompletion();
+
+                    bool isCapture = move.Type != MoveType.PlayOnly && move.CapturedCards != null && move.CapturedCards.Count > 0;
+                    if (isCapture)
+                    {
+                        var capturedTransforms = new List<Transform>();
+                        var capturedRenderers = new List<SpriteRenderer>();
+                        bool canAnimateCapture = true;
+
+                        foreach (var capturedCard in move.CapturedCards)
+                        {
+                            if (!cardViewManager.TryGetCardView(capturedCard, out var capturedCardView) ||
+                                !cardAnimationController.TryCreateVisualCopy(
+                                    capturedCardView.transform,
+                                    capturedCardView.CardRenderer,
+                                    $"CapturedCardAnimation_{capturedCard.Suit}_{capturedCard.Rank}",
+                                    out var capturedVisual,
+                                    out var capturedVisualRenderer))
+                            {
+                                canAnimateCapture = false;
+                                break;
+                            }
+
+                            visualCopies.Add(capturedVisual);
+                            capturedCardView.CardRenderer.enabled = false;
+                            hiddenRendererEntries.Add((capturedCardView.CardRenderer, capturedCard));
+                            capturedTransforms.Add(capturedVisual);
+                            capturedRenderers.Add(capturedVisualRenderer);
+                        }
+
+                        if (canAnimateCapture)
+                        {
+                            yield return cardAnimationController.CreateCapturePreview().WaitForCompletion();
+
+                            int playerCount = gameState.NumPlayers;
+                            int localPlayerIndex = GameModeService.Current.LocalPlayerIndex;
+                            int relativePlayerIndex = (move.PlayerIndex - localPlayerIndex + playerCount) % playerCount;
+                            Vector3 pileTarget = cardViewManager.GetPlayerHandAnchor(relativePlayerIndex, playerCount)
+                                + cardViewManager.GetPlayerRightDirection(relativePlayerIndex, playerCount) * cardViewManager.GetCapturedPileDistance()
+                                + cardViewManager.GetCapturedPileScreenDownOffset();
+
+                            Sequence captureSequence = cardAnimationController.CaptureSequence(
+                                playedVisual,
+                                playedVisualRenderer,
+                                capturedTransforms,
+                                capturedRenderers,
+                                pileTarget);
+                            yield return captureSequence.WaitForCompletion();
+                        }
+                    }
+                }
+
+                ApplyMoveInternal(move, fromNetwork);
             }
-            
-            // Wait to show the played card (1.5 seconds gives time to see both played card and targets)
-            yield return new WaitForSeconds(1.5f);
-            
-            // Phase 2: Remove from table and add back to hand, then apply the actual move
-            gameState.Table.Remove(playedCard);
-            if (wasInHand)
+            finally
             {
-                player.Hand.Add(playedCard);
+                foreach (var entry in hiddenRendererEntries)
+                {
+                    if (entry.renderer == null)
+                    {
+                        continue;
+                    }
+
+                    if (ShouldRestoreHiddenRenderer(entry.card))
+                    {
+                        entry.renderer.enabled = true;
+                    }
+                }
+
+                foreach (var visualCopy in visualCopies)
+                {
+                    cardAnimationController?.DestroyVisualCopy(visualCopy);
+                }
+
+                isMoveAnimationInProgress = false;
             }
-            
-            // Now apply the real move (which will capture the cards)
-            ApplyMoveInternal(move, fromNetwork);
+        }
+
+        private bool ShouldRestoreHiddenRenderer(Card card)
+        {
+            if (card == null || gameState == null)
+            {
+                return true;
+            }
+
+            if (gameState.Table.Contains(card))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < gameState.Players.Count; i++)
+            {
+                if (gameState.Players[i].Hand.Contains(card))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -404,6 +501,11 @@ namespace Project51.Unity
                 roundManager = new RoundManager(gameState);
             }
             roundManager.ApplyMove(move);
+
+            if (!isRedealPendingVisual && cardViewManager != null)
+            {
+                cardViewManager.ForceRefresh();
+            }
             
             // Refresh captured piles visuals after move
             if (capturedPileManager != null)
@@ -426,7 +528,7 @@ namespace Project51.Unity
 
             // If next player is AI, execute their turn
             var provider = GameModeService.Current;
-            if (!IsHumanPlayerTurn)
+            if (!IsHumanPlayerTurn && !isRedealPendingVisual && !isRedealAnimationInProgress)
             {
                 bool shouldExecuteAI = !provider.IsMultiplayer || provider.IsMasterClient;
 
@@ -439,12 +541,10 @@ namespace Project51.Unity
 
         /// <summary>
         /// Deals 3 new cards to each player from the deck (no new table cards).
+        /// Legacy helper retained for QA scenarios.
         /// </summary>
         private void DealNewHands()
         {
-            // dealing new hands
-
-            // Deal clockwise: start from player to the left of dealer
             int firstPlayerIndex = (gameState.DealerIndex - 1 + gameState.NumPlayers) % gameState.NumPlayers;
             for (int round = 0; round < 3; round++)
             {
@@ -460,10 +560,91 @@ namespace Project51.Unity
                 }
             }
 
-            // new hands dealt
-            
-            // Check for automatic accusi declaration after dealing new hands
-            CheckAndDeclareAccusiForAllPlayers();
+            HandleNewHandsDealt();
+        }
+
+        private void HandleNewHandsDealt()
+        {
+            if (isRedealAnimationInProgress)
+            {
+                return;
+            }
+
+            isRedealPendingVisual = true;
+            StartCoroutine(HandleNewHandsRevealSequence());
+        }
+
+        private System.Collections.IEnumerator HandleNewHandsRevealSequence()
+        {
+            isRedealAnimationInProgress = true;
+
+            try
+            {
+                while (isMoveAnimationInProgress)
+                {
+                    yield return null;
+                }
+
+                if (redealStartDelay > 0f)
+                {
+                    yield return new WaitForSeconds(redealStartDelay);
+                }
+
+                CheckAndDeclareAccusiForAllPlayers(refreshVisuals: false);
+
+                if (cardViewManager != null)
+                {
+                    cardViewManager.ForceRefresh();
+                }
+
+                if (cardAnimationController != null && cardViewManager != null && gameState != null)
+                {
+                    var handViews = new List<CardView>();
+                    for (int i = 0; i < gameState.NumPlayers; i++)
+                    {
+                        foreach (var card in gameState.Players[i].Hand)
+                        {
+                            if (cardViewManager.TryGetCardView(card, out var cardView) && cardView != null)
+                            {
+                                handViews.Add(cardView);
+                            }
+                        }
+                    }
+
+                    if (handViews.Count > 0)
+                    {
+                        yield return cardAnimationController.PlayDealtCardsReveal(handViews).WaitForCompletion();
+                    }
+                }
+
+                if (capturedPileManager != null)
+                {
+                    capturedPileManager.ForceRefresh();
+                }
+
+                if (cardViewManager != null)
+                {
+                    cardViewManager.ForceRefresh();
+                }
+            }
+            finally
+            {
+                isRedealPendingVisual = false;
+                isRedealAnimationInProgress = false;
+            }
+
+            RefreshValidMoves();
+
+            if (!IsHumanPlayerTurn)
+            {
+                var provider = GameModeService.Current;
+                bool shouldExecuteAI = !provider.IsMultiplayer || provider.IsMasterClient;
+                if (shouldExecuteAI)
+                {
+                    CancelInvoke(nameof(ExecuteAITurn));
+                    Invoke(nameof(ExecuteAITurn), aiMoveDelay);
+                }
+            }
         }
 
         /// <summary>
@@ -527,7 +708,7 @@ namespace Project51.Unity
         /// Checks all players' hands and automatically declares accusi (Decino/Cirulla) if possible.
         /// This is called at the start of each hand distribution.
         /// </summary>
-        private void CheckAndDeclareAccusiForAllPlayers()
+        private void CheckAndDeclareAccusiForAllPlayers(bool refreshVisuals)
         {
             if (roundManager == null || gameState == null) return;
 
@@ -560,6 +741,11 @@ namespace Project51.Unity
                     }
                 }
             }
+            if (!refreshVisuals)
+            {
+                return;
+            }
+
             // Refresh piles to show accusi badges/updates
             if (capturedPileManager != null)
             {
