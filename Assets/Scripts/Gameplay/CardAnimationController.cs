@@ -18,7 +18,6 @@ namespace Project51.Unity
         [SerializeField] private float flipDuration = 0.2f;
         [SerializeField] private float dealRevealDuration = 0.22f;
         [SerializeField] private float dealRevealStagger = 0.045f;
-        [SerializeField] private float initialDealFlightDuration = 0.3f;
 
         [Header("Feel")]
         [SerializeField] private Ease playEase = Ease.OutCubic;
@@ -237,42 +236,6 @@ namespace Project51.Unity
 
                 float startAt = i * dealRevealStagger;
                 sequence.Insert(startAt, cardTransform.DOScale(originalScale, dealRevealDuration).SetEase(Ease.OutBack));
-            }
-
-            return sequence;
-        }
-
-        public Sequence PlayInitialDealFromSource(IReadOnlyList<CardView> cardViews, Vector3 sourcePosition)
-        {
-            if (cardViews == null || cardViews.Count == 0)
-            {
-                return CreateCompletedSequence(null);
-            }
-
-            var entries = new List<(Transform transform, Vector3 targetPosition, Vector3 targetScale)>();
-            for (int i = 0; i < cardViews.Count; i++)
-            {
-                var cardView = cardViews[i];
-                if (cardView == null)
-                {
-                    continue;
-                }
-
-                Transform cardTransform = cardView.transform;
-                entries.Add((cardTransform, cardTransform.position, cardTransform.localScale));
-                cardTransform.position = sourcePosition;
-                cardTransform.localScale = cardTransform.localScale * 0.1f;
-            }
-
-            var sequence = DOTween.Sequence().SetTarget(this);
-            for (int i = 0; i < entries.Count; i++)
-            {
-                int index = i;
-                float startAt = index * dealRevealStagger;
-                sequence.Insert(startAt,
-                    entries[index].transform.DOMove(entries[index].targetPosition, initialDealFlightDuration).SetEase(Ease.OutCubic));
-                sequence.Insert(startAt,
-                    entries[index].transform.DOScale(entries[index].targetScale, dealRevealDuration).SetEase(Ease.OutBack));
             }
 
             return sequence;

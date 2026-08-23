@@ -221,6 +221,21 @@ namespace Project51.Unity
         // Do NOT declare on initial hands immediately; we'll handle it after a short visual delay
         
         roundManager.StartSmazzata();
+        
+        // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
+        // This ensures dealer 15/30 accuso (which removes table cards) happens BEFORE rendering
+        // Otherwise cards might be visible for 0.5 seconds before disappearing
+        if (cardViewManager != null)
+        {
+            cardViewManager.ForceRefresh();
+        }
+
+        // Delay the initial accusi declaration slightly so all clients see stable visuals first
+        // In multiplayer, only Master Client will perform declaration and sync via RPC
+        StartCoroutine(DeclareInitialAccusiWithDelay());
+
+        // Compute valid moves for the current player
+        RefreshValidMoves();
 
         // MULTIPLAYER: If we're Master Client, send GameState to all clients
         var provider = GameModeService.Current;
@@ -358,7 +373,7 @@ namespace Project51.Unity
         {
             isMoveAnimationInProgress = true;
 
-            var hiddenRendererEntries = new List<(SpriteRenderer renderer, Card card)>();
+            var hiddenRenderers = new List<SpriteRenderer>();
             var visualCopies = new List<Transform>();
 
             try
@@ -380,7 +395,7 @@ namespace Project51.Unity
                     }
 
                     playedCardView.CardRenderer.enabled = false;
-                    hiddenRendererEntries.Add((playedCardView.CardRenderer, move.PlayedCard));
+                    hiddenRenderers.Add(playedCardView.CardRenderer);
 
                     Vector3 tableTarget = cardViewManager.GetNextTableCardPosition(gameState.Table.Count);
                     Sequence playSequence = cardAnimationController.PlayCardToTable(
@@ -413,7 +428,7 @@ namespace Project51.Unity
 
                             visualCopies.Add(capturedVisual);
                             capturedCardView.CardRenderer.enabled = false;
-                            hiddenRendererEntries.Add((capturedCardView.CardRenderer, capturedCard));
+                            hiddenRenderers.Add(capturedCardView.CardRenderer);
                             capturedTransforms.Add(capturedVisual);
                             capturedRenderers.Add(capturedVisualRenderer);
                         }
@@ -444,16 +459,15 @@ namespace Project51.Unity
             }
             finally
             {
-                foreach (var entry in hiddenRendererEntries)
+                bool shouldRestoreHiddenRenderers = !isRedealPendingVisual;
+                if (shouldRestoreHiddenRenderers)
                 {
-                    if (entry.renderer == null)
+                    foreach (var renderer in hiddenRenderers)
                     {
-                        continue;
-                    }
-
-                    if (ShouldRestoreHiddenRenderer(entry.card))
-                    {
-                        entry.renderer.enabled = true;
+                        if (renderer != null)
+                        {
+                            renderer.enabled = true;
+                        }
                     }
                 }
 
@@ -464,29 +478,6 @@ namespace Project51.Unity
 
                 isMoveAnimationInProgress = false;
             }
-        }
-
-        private bool ShouldRestoreHiddenRenderer(Card card)
-        {
-            if (card == null || gameState == null)
-            {
-                return true;
-            }
-
-            if (gameState.Table.Contains(card))
-            {
-                return true;
-            }
-
-            for (int i = 0; i < gameState.Players.Count; i++)
-            {
-                if (gameState.Players[i].Hand.Contains(card))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

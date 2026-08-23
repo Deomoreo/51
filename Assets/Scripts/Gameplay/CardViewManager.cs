@@ -840,15 +840,9 @@ namespace Project51.Unity
 
                 Vector3 position = CalculateTableCardPosition(tableCards.Count, i);
 
-                var tableRenderer = cardView.CardRenderer;
-                if (tableRenderer != null)
-                {
-                    tableRenderer.enabled = true;
-                }
-
                 cardView.SetDisplayScale(EffectiveTableCardScale);
                 cardView.SetPosition(position);
-
+                
                 // IMPORTANT: Table cards are ALWAYS straight (rotation 0) - no fan layout
                 cardView.transform.rotation = Quaternion.Euler(0, 0, 0);
             }
