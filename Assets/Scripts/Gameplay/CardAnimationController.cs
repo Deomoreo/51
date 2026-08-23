@@ -74,6 +74,7 @@ namespace Project51.Unity
             SpriteRenderer cardRenderer,
             Vector3 targetPosition,
             float targetRotationZ,
+            float targetScale,
             Action onComplete = null)
         {
             if (cardTransform == null || cardRenderer == null)
@@ -85,6 +86,8 @@ namespace Project51.Unity
 
             int originalSortingOrder = cardRenderer.sortingOrder;
             Vector3 originalScale = cardTransform.localScale;
+            Vector3 destinationScale = Vector3.one * Mathf.Max(0.01f, targetScale);
+            Vector3 liftScale = Vector3.Lerp(originalScale, destinationScale, 0.5f) * 1.06f;
             Vector3 startPosition = cardTransform.position;
             Vector3 midpoint = Vector3.Lerp(startPosition, targetPosition, 0.5f) + Vector3.up * playArcHeight;
             bool restored = false;
@@ -98,7 +101,6 @@ namespace Project51.Unity
 
                 restored = true;
                 cardRenderer.sortingOrder = originalSortingOrder;
-                cardTransform.localScale = originalScale;
             }
 
             cardRenderer.sortingOrder = flightSortingOrderBase;
@@ -107,7 +109,9 @@ namespace Project51.Unity
                 .SetTarget(cardTransform)
                 .Append(cardTransform.DOPath(new[] { midpoint, targetPosition }, playDuration, PathType.CatmullRom).SetEase(playEase))
                 .Join(cardTransform.DORotate(new Vector3(0f, 0f, targetRotationZ), playDuration))
-                .Join(cardTransform.DOScale(originalScale * 1.08f, playDuration * 0.4f).SetLoops(2, LoopType.Yoyo));
+                .Join(DOTween.Sequence()
+                    .Append(cardTransform.DOScale(liftScale, playDuration * 0.45f).SetEase(Ease.OutQuad))
+                    .Append(cardTransform.DOScale(destinationScale, playDuration * 0.55f).SetEase(Ease.InOutQuad)));
 
             sequence.OnComplete(() =>
             {

@@ -39,6 +39,9 @@ namespace Project51.Unity
         [Header("Redeal Animation")]
         [SerializeField] private float redealStartDelay = 0.2f;
 
+        [Header("Played Card Feedback")]
+        [SerializeField] private float playedCardCrossfadeDuration = 0.08f;
+
         private GameState gameState;
         private List<Move> currentValidMoves;
         private RoundManager roundManager;
@@ -177,7 +180,7 @@ namespace Project51.Unity
             {
                 new Card(Suit.Coppe, 7), // Matta
                 new Card(Suit.Bastoni, 6),
-                new Card(Suit.Denari, 3), // 6+3+1=10 -> nessun accuso e non è coppia
+                new Card(Suit.Denari, 3), // 6+3+1=10 -> nessun accuso e non Ã¨ coppia
             };
             var table = new List<Card>();
             SetupScenarioForCurrentPlayer(hand, table);
@@ -375,6 +378,8 @@ namespace Project51.Unity
 
             var hiddenRenderers = new List<SpriteRenderer>();
             var visualCopies = new List<Transform>();
+            Transform playedVisualForCrossfade = null;
+            SpriteRenderer playedVisualRendererForCrossfade = null;
 
             try
             {
@@ -398,11 +403,13 @@ namespace Project51.Unity
                     hiddenRenderers.Add(playedCardView.CardRenderer);
 
                     Vector3 tableTarget = cardViewManager.GetNextTableCardPosition(gameState.Table.Count);
+                    float tableScale = cardViewManager.GetTableCardScale();
                     Sequence playSequence = cardAnimationController.PlayCardToTable(
                         playedVisual,
                         playedVisualRenderer,
                         tableTarget,
-                        0f);
+                        0f,
+                        tableScale);
                     yield return playSequence.WaitForCompletion();
 
                     bool isCapture = move.Type != MoveType.PlayOnly && move.CapturedCards != null && move.CapturedCards.Count > 0;
@@ -453,9 +460,23 @@ namespace Project51.Unity
                             yield return captureSequence.WaitForCompletion();
                         }
                     }
+                    else
+                    {
+                        playedVisualForCrossfade = playedVisual;
+                        playedVisualRendererForCrossfade = playedVisualRenderer;
+                    }
                 }
 
                 ApplyMoveInternal(move, fromNetwork);
+
+                if (playedVisualRendererForCrossfade != null && !isRedealPendingVisual)
+                {
+                    yield return DOTween.ToAlpha(
+                        () => playedVisualRendererForCrossfade.color,
+                        c => playedVisualRendererForCrossfade.color = c,
+                        0f,
+                        playedCardCrossfadeDuration).WaitForCompletion();
+                }
             }
             finally
             {

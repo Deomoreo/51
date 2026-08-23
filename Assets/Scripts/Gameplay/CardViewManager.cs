@@ -69,6 +69,8 @@ namespace Project51.Unity
         private float EffectiveOpponentCardScale => Mathf.Max(opponentCardScale, MinimumOpponentCardScale);
         private float EffectiveTableCardScale => Mathf.Max(tableCardScale, MinimumTableCardScale);
 
+        public float GetTableCardScale() => EffectiveTableCardScale;
+
         [Header("Sprites (Optional)")]
         [SerializeField] private Sprite[] cardSprites; // shared with CardSpriteProvider
         [SerializeField] private Sprite defaultCardBack;
@@ -175,12 +177,11 @@ namespace Project51.Unity
 
                     var cardView = activeCardViews[card];
                     cardView.SetDisplayScale(EffectiveOpponentCardScale);
-                    // FORZA il flip a face-up se il giocatore ha dichiarato accuso
-                    if (faceUp && cardView != null)
+
+                    // Difensivo: stesso motivo di RenderTableCards.
+                    if (cardView.CardRenderer != null)
                     {
-                        var faceSprite = GetSpriteForCard(card);
-                        if (faceSprite != null)
-                            cardView.FlipToFaceUp(faceSprite);
+                        cardView.CardRenderer.enabled = true;
                     }
 
                     Vector3 position;
@@ -833,9 +834,16 @@ namespace Project51.Unity
                     {
                         cardView.FlipToFaceUp(faceSprite);
                     }
-                    
+
                     // Disable hover when card moves from hand to table
                     cardView.EnableHover = false;
+
+                    // Difensivo: una carta riposizionata sul tavolo deve sempre essere visibile,
+                    // anche se un'animazione precedente aveva disabilitato il renderer.
+                    if (cardView.CardRenderer != null)
+                    {
+                        cardView.CardRenderer.enabled = true;
+                    }
                 }
 
                 Vector3 position = CalculateTableCardPosition(tableCards.Count, i);
@@ -1176,11 +1184,10 @@ namespace Project51.Unity
                 // ALWAYS enable hover (for Matta visual hints to work)
                 cardView.EnableHover = true;
 
-                // Ensure face sprite is correct in case the view was created before sprites were loaded
-                var face = GetSpriteForCard(card);
-                if (face != null)
+                // Difensivo: stesso motivo di RenderTableCards.
+                if (cardView.CardRenderer != null)
                 {
-                    cardView.FlipToFaceUp(face);
+                    cardView.CardRenderer.enabled = true;
                 }
 
                 // Calculate position with fan layout
