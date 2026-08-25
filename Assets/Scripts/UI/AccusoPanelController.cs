@@ -35,6 +35,8 @@ namespace Project51.Unity
         [SerializeField] private Sprite[] cardSprites;
         [Tooltip("Small badge/star sprite shown on cards with 'special' value (e.g., when Matta acts as another rank). Can be left empty.")]
         [SerializeField] private Sprite specialValueMarker;
+
+        public Sprite SpecialValueMarker => specialValueMarker;
         
         [Header("Audio (Optional)")]
         [SerializeField] private AudioClip accusoSound;
@@ -173,7 +175,7 @@ namespace Project51.Unity
                 // Update description
                 if (descriptionText != null)
                 {
-                    descriptionText.text = $"Carta reale: 7 di coppe. È stata usata come {mattaEffectiveValue} per il Decino.";
+                    descriptionText.text = $"Carta reale: 7 di coppe. ï¿½ stata usata come {mattaEffectiveValue} per il Decino.";
                 }
                 
                 // Play flip sound
@@ -269,7 +271,7 @@ namespace Project51.Unity
                 // Update description
                 if (descriptionText != null)
                 {
-                    descriptionText.text = "Carta reale: 7 di coppe. È stata usata come 1 per la Cirulla.";
+                    descriptionText.text = "Carta reale: 7 di coppe. ï¿½ stata usata come 1 per la Cirulla.";
                 }
                 
                 // Play flip sound
@@ -457,7 +459,7 @@ namespace Project51.Unity
                 return;
             }
             
-            // Populate for all 40 cards (4 suits × 10 ranks)
+            // Populate for all 40 cards (4 suits ï¿½ 10 ranks)
             for (int suitIndex = 0; suitIndex < 4; suitIndex++)
             {
                 Suit suit = (Suit)suitIndex;

@@ -192,7 +192,7 @@ namespace Project51.Unity
                     // Layout 1v1: avversario in alto capovolto
                     if (numPlayers == 2)
                     {
-                        // Player 1 (avversario) in alto, ruotato 180°
+                        // Player 1 (avversario) in alto, ruotato 180ï¿½
                         position = CalculateFanPosition(GetTopOpponentBasePosition(true), hand.Count, i, 180f, EffectiveOpponentCardScale);
                         baseRotation = 180f;
                     }
@@ -611,7 +611,7 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Calcola la posizione che avrà una carta aggiunta al tavolo senza modificare lo stato.
+        /// Calcola la posizione che avrï¿½ una carta aggiunta al tavolo senza modificare lo stato.
         /// </summary>
         public Vector3 GetNextTableCardPosition(int currentTableCardCount)
         {
@@ -751,7 +751,7 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Restituisce la vista già presente per una carta, senza crearla o modificarla.
+        /// Restituisce la vista giï¿½ presente per una carta, senza crearla o modificarla.
         /// Usato dal controller di animazione prima del commit della mossa.
         /// </summary>
         public bool TryGetCardView(Card card, out CardView cardView)
@@ -1390,165 +1390,6 @@ namespace Project51.Unity
             return view;
         }
 
-        private void HandleMoveExecuted(Move move)
-        {
-            if (move == null) return;
-
-            // Try to find the original CardView to copy visual info
-            activeCardViews.TryGetValue(move.PlayedCard, out var originalView);
-
-            // If Matta had a temporary overlay, ensure we clear visual to real face before playing animation
-            if (originalView != null)
-            {
-                originalView.ClearTemporaryValue();
-            }
-
-            // Determine target index on table (card should be present in GameState.Table after move)
-            var table = turnController?.GameState?.Table;
-            if (table == null) return;
-
-            int idx = table.IndexOf(move.PlayedCard);
-            if (idx < 0) idx = table.Count - 1; // fallback to last
-
-            Vector3 target = CalculateTableCardPosition(table.Count, idx);
-
-            // Create a temporary GameObject to animate so we don't touch the real CardView which
-            // may be destroyed/recycled during state refresh
-            Sprite sprite = null;
-            Vector3 startPos = Vector3.zero;
-            Vector3 startScale = Vector3.one;
-            int baseOrder = 100;
-            
-            if (originalView != null)
-            {
-                var sr = originalView.GetComponent<SpriteRenderer>();
-                if (sr != null) sprite = sr.sprite;
-                startPos = originalView.transform.position;
-                startScale = originalView.transform.localScale;
-                baseOrder = sr != null ? sr.sortingOrder : 100;
-            }
-            else
-            {
-                // No original view found - this is common for network moves from remote players
-                // Get sprite from lookup and calculate start position based on player index
-                sprite = GetSpriteForCard(move.PlayedCard);
-                
-                // Calculate start position based on which player made the move
-                int localIndex = GetLocalPlayerIndex();
-                int numPlayers = turnController?.GameState?.NumPlayers ?? 4;
-                
-                if (move.PlayerIndex == localIndex)
-                {
-                    // Local player - start from human hand
-                    startPos = GetHumanHandBasePosition();
-                }
-                else if (numPlayers == 2)
-                {
-                    startPos = GetTopOpponentBasePosition(true);
-                }
-                else if (move.PlayerIndex == ((localIndex + 1) % numPlayers))
-                {
-                    // Left player
-                    startPos = GetSideOpponentBasePosition(true);
-                }
-                else if (move.PlayerIndex == ((localIndex + 2) % numPlayers))
-                {
-                    // Top player
-                    startPos = GetTopOpponentBasePosition(false);
-                }
-                else
-                {
-                    // Right player
-                    startPos = GetSideOpponentBasePosition(false);
-                }
-            }
-
-            var temp = new GameObject($"CardAnim_{move.PlayedCard.Suit}_{move.PlayedCard.Rank}");
-            temp.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild | HideFlags.DontUnloadUnusedAsset;
-            var tempSr = temp.AddComponent<SpriteRenderer>();
-            tempSr.sprite = sprite ?? defaultCardBack;
-            temp.transform.position = startPos;
-            temp.transform.localScale = startScale;
-            tempSr.sortingLayerName = "Default";
-            tempSr.sortingOrder = baseOrder + 200;
-
-            StartCoroutine(PlayCardAnimationTemp(temp, target, tempSr, baseOrder));
-
-            if (move.CapturedCards != null && move.CapturedCards.Count > 0)
-            {
-                StartCoroutine(PlayCaptureAnimations(move));
-            }
-        }
-
-        private System.Collections.IEnumerator PlayCaptureAnimations(Move move)
-        {
-            int localIndex = GetLocalPlayerIndex();
-            int playerCount = turnController?.GameState?.NumPlayers ?? 4;
-            int relativePlayerIndex = (move.PlayerIndex - localIndex + playerCount) % playerCount;
-            Vector3 pileTarget = GetPlayerHandAnchor(relativePlayerIndex, playerCount) +
-                GetPlayerRightDirection(relativePlayerIndex, playerCount) * GetCapturedPileDistance() +
-                GetCapturedPileScreenDownOffset();
-
-            int sequenceIndex = 0;
-            foreach (var capturedCard in move.CapturedCards)
-            {
-                if (!activeCardViews.TryGetValue(capturedCard, out var sourceView) || sourceView == null)
-                {
-                    continue;
-                }
-
-                var sourceRenderer = sourceView.GetComponent<SpriteRenderer>();
-                if (sourceRenderer == null || sourceRenderer.sprite == null)
-                {
-                    continue;
-                }
-
-                var temp = new GameObject($"CaptureAnim_{capturedCard.Suit}_{capturedCard.Rank}");
-                temp.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
-                temp.transform.position = sourceView.transform.position;
-                temp.transform.localScale = sourceView.transform.localScale;
-                var renderer = temp.AddComponent<SpriteRenderer>();
-                renderer.sprite = sourceRenderer.sprite;
-                renderer.sortingLayerName = sourceRenderer.sortingLayerName;
-                renderer.sortingOrder = sourceRenderer.sortingOrder + 250 + sequenceIndex;
-
-                StartCoroutine(FlyCapturedCard(temp, pileTarget, sequenceIndex * 0.055f));
-                sequenceIndex++;
-            }
-
-            yield break;
-        }
-
-        private System.Collections.IEnumerator FlyCapturedCard(GameObject tempObj, Vector3 target, float delay)
-        {
-            if (delay > 0f)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-
-            if (tempObj == null) yield break;
-
-            const float duration = 0.26f;
-            float elapsed = 0f;
-            Vector3 start = tempObj.transform.position;
-            Vector3 startScale = tempObj.transform.localScale;
-            Vector3 arcControl = (start + target) * 0.5f + Vector3.up * 0.25f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                float easedT = t * t * (3f - 2f * t);
-                Vector3 firstHalf = Vector3.Lerp(start, arcControl, easedT);
-                Vector3 secondHalf = Vector3.Lerp(arcControl, target, easedT);
-                tempObj.transform.position = Vector3.Lerp(firstHalf, secondHalf, easedT);
-                tempObj.transform.localScale = Vector3.Lerp(startScale, startScale * 0.72f, easedT);
-                yield return null;
-            }
-
-            UnityEngine.Object.Destroy(tempObj);
-        }
-        
         /// <summary>
         /// Gets the local player index, with fallback for when GameManager is not available.
         /// </summary>
@@ -1570,39 +1411,6 @@ namespace Project51.Unity
                 }
             }
             return 0;
-        }
-
-        private System.Collections.IEnumerator PlayCardAnimationTemp(GameObject tempObj, Vector3 target, SpriteRenderer sr, int originalOrder)
-        {
-            if (tempObj == null) yield break;
-            float duration = 0.32f;
-            float elapsed = 0f;
-            Vector3 start = tempObj.transform.position;
-            Vector3 startScale = tempObj.transform.localScale;
-            Vector3 arcControl = (start + target) * 0.5f + Vector3.up * 0.35f;
-
-            // optional audio feedback
-            if (playSound != null)
-            {
-                AudioSource.PlayClipAtPoint(playSound, Camera.main != null ? Camera.main.transform.position : Vector3.zero, playSoundVolume);
-            }
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                float easedT = 1f - Mathf.Pow(1f - t, 3f);
-                Vector3 firstHalf = Vector3.Lerp(start, arcControl, easedT);
-                Vector3 secondHalf = Vector3.Lerp(arcControl, target, easedT);
-                tempObj.transform.position = Vector3.Lerp(firstHalf, secondHalf, easedT);
-                float impactScale = 1f + Mathf.Sin(t * Mathf.PI) * 0.12f;
-                tempObj.transform.localScale = startScale * impactScale;
-                yield return null;
-            }
-
-            tempObj.transform.position = target;
-            tempObj.transform.localScale = startScale;
-            UnityEngine.Object.Destroy(tempObj);
         }
 
         private void OnDestroy()

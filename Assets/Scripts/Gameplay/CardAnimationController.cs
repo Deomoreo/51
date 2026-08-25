@@ -236,9 +236,9 @@ namespace Project51.Unity
 
                 Transform cardTransform = cardView.transform;
                 Vector3 originalScale = cardTransform.localScale;
-                cardTransform.localScale = originalScale * 0.12f;
 
                 float startAt = i * dealRevealStagger;
+                sequence.InsertCallback(startAt, () => cardTransform.localScale = originalScale * 0.12f);
                 sequence.Insert(startAt, cardTransform.DOScale(originalScale, dealRevealDuration).SetEase(Ease.OutBack));
             }
 

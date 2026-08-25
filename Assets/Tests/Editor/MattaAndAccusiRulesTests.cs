@@ -41,29 +41,43 @@ namespace Project51.Tests
         }
 
         [Test]
-        public void Rules51_Matta_Generates_Only_Plausible_Capture_Moves()
+        public void RoundManager_Declares_Cirulla_With_Matta_As_Ace_And_Awards_Points()
         {
             var state = new GameState(2);
             state.Table.Clear();
-            state.Players[0].Hand.Clear();
-            state.Players[1].Hand.Clear();
+            foreach (var p in state.Players) p.Hand.Clear();
 
-            // Table: 4 and 5; Hand: matta (7C)
-            state.Table.Add(new Card(Suit.Bastoni, 4));
-            state.Table.Add(new Card(Suit.Spade, 5));
-            state.Players[0].Hand.Add(new Card(Suit.Coppe, 7));
+            // 2 + 3 + matta(=1) => 6 <= 9 => Cirulla
+            state.Players[0].Hand.Add(new Card(Suit.Denari, 2));
+            state.Players[0].Hand.Add(new Card(Suit.Coppe, 3));
+            state.Players[0].Hand.Add(new Card(Suit.Coppe, 7)); // Matta
 
-            var moves = Rules51.GetValidMoves(state, 0);
+            var roundManager = new RoundManager(state);
+            bool declared = roundManager.TryPlayerAccuso(0, AccusoType.Cirulla);
 
-            // Expect at least one move that captures both cards (either Capture15 with 4+5 or AceCapture all)
-            Assert.IsTrue(
-                moves.Any(m => (m.Type == MoveType.Capture15 || m.Type == MoveType.AceCapture) && m.CapturedCards.Count == 2),
-                "Matta should allow capturing both 4 and 5 (via 15 or ace-capture behavior)"
-            );
+            Assert.IsTrue(declared, "Hand qualifies for Cirulla with Matta valued as Ace");
+            Assert.AreEqual(3, state.Players[0].AccusiPoints,
+                "Cirulla is worth 3 points; RoundManager does not (yet) execute any card capture for it");
+        }
 
-            // Expect single-card equal captures for 4 and 5 as well
-            Assert.IsTrue(moves.Any(m => m.Type == MoveType.CaptureEqual && m.CapturedCards.Count == 1 && m.CapturedCards[0].Value == 4));
-            Assert.IsTrue(moves.Any(m => m.Type == MoveType.CaptureEqual && m.CapturedCards.Count == 1 && m.CapturedCards[0].Value == 5));
+        [Test]
+        public void RoundManager_Declares_Decino_With_Matta_Completing_Pair_And_Awards_Points()
+        {
+            var state = new GameState(2);
+            state.Table.Clear();
+            foreach (var p in state.Players) p.Hand.Clear();
+
+            // 5, 5, matta(=5) => Decino (matta completes the pair into a tris)
+            state.Players[0].Hand.Add(new Card(Suit.Denari, 5));
+            state.Players[0].Hand.Add(new Card(Suit.Bastoni, 5));
+            state.Players[0].Hand.Add(new Card(Suit.Coppe, 7)); // Matta
+
+            var roundManager = new RoundManager(state);
+            bool declared = roundManager.TryPlayerAccuso(0, AccusoType.Decino);
+
+            Assert.IsTrue(declared, "Hand qualifies for Decino with Matta completing the pair of 5s");
+            Assert.AreEqual(10, state.Players[0].AccusiPoints,
+                "Decino is worth 10 points; RoundManager does not (yet) execute any card capture for it");
         }
     }
 }

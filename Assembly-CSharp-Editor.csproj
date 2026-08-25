@@ -64,6 +64,7 @@
     <Compile Include="Assets\Tests\Editor\Rules51RestoredTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
+    <Compile Include="Assets\Editor\DragonsHoardThemeApplier.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAndAccusiRulesTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAccusiCombinationsTests.cs" />
     <Compile Include="Assets\Tests\Editor\AceAndCaptureRulesTests.cs" />

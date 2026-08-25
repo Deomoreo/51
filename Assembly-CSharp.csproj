@@ -93,6 +93,7 @@
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthState.cs" />
     <Compile Include="Assets\Scripts\Auth\IAuthUI.cs" />
+    <Compile Include="Assets\Scripts\UI\ThemedButton.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthBootstrapper.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
     <Compile Include="Assets\Scripts\UI\UICardHoloFoilDriver.cs" />
@@ -125,6 +126,7 @@
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
+    <Compile Include="Assets\Scripts\UI\UITheme.cs" />
     <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayerProgressLocal.cs" />
@@ -135,6 +137,7 @@
     <Compile Include="Assets\Scripts\UI\TapToEnterUI.cs" />
     <Compile Include="Assets\Scripts\UI\HeaderAlignToScrollView.cs" />
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
+    <Compile Include="Assets\Scripts\UI\ThemedPanel.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthUIController.cs" />
     <Compile Include="Assets\Scripts\UI\PanelManager.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayFabAuthService.cs" />
@@ -160,6 +163,7 @@
     <None Include="Assets\Photon\PhotonLibs\changes-library.txt" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
+    <None Include="Assets\UI\Sprites\DragonsHoard\51cirulla_design_system.xml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\Photon\PhotonUnityNetworking\readme.txt" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll" />

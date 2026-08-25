@@ -33,11 +33,15 @@ namespace Project51.Tests
         {
             var state = new GameState(2);
             state.Table.Add(new Card(Suit.Coppe,4));
-            state.Players[0].Hand.Add(new Card(Suit.Denari,4));
-            state.Players[0].Hand.Add(new Card(Suit.Denari,2));
+            var captureCard = new Card(Suit.Denari,4);
+            var freeCard = new Card(Suit.Denari,2);
+            state.Players[0].Hand.Add(captureCard);
+            state.Players[0].Hand.Add(freeCard);
             var moves = Rules51.GetValidMoves(state, 0);
-            // There should be no PlayOnly because capture exists
-            Assert.IsFalse(moves.Any(m => m.Type == MoveType.PlayOnly));
+            // The 4 of Denari can capture, so it must NOT have a PlayOnly move
+            Assert.IsFalse(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(captureCard)));
+            // The 2 of Denari cannot capture anything, so it remains discardable
+            Assert.IsTrue(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(freeCard)));
         }
     }
 }

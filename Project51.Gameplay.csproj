@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Gameplay\PlayerCapturedPileView.cs" />
     <Compile Include="Assets\Scripts\Gameplay\GameSceneInitializer.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardView.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\GameBackgroundFitter.cs" />
     <Compile Include="Assets\Scripts\Gameplay\ProceduralShineStripeTexture.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardShineOverlayMove.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardViewManager.cs" />

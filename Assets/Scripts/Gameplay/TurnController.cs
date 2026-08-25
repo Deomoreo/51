@@ -28,7 +28,20 @@ namespace Project51.Unity
         {
             cardViewManager = manager;
         }
-        
+
+        /// <summary>
+        /// Imposta lo stato di gioco ricevuto dalla rete e inizializza RoundManager per il client.
+        /// Sostituisce il precedente accesso via reflection da NetworkGameController.
+        /// </summary>
+        public void SetNetworkGameState(GameState newGameState)
+        {
+            gameState = newGameState;
+            roundManager = new RoundManager(gameState);
+            RefreshValidMoves();
+            cardViewManager?.ForceRefresh();
+            OnMoveExecuted?.Invoke(null);
+        }
+
         [Header("Game Settings")]
         [SerializeField] private bool autoStartGame = false;
         
@@ -49,6 +62,7 @@ namespace Project51.Unity
         private bool isMoveAnimationInProgress;
         private bool isRedealPendingVisual;
         private bool isRedealAnimationInProgress;
+        private readonly List<Transform> pendingRedealVisualCopies = new List<Transform>();
         
         /// <summary>
         /// Event fired quando un player esegue una mossa.
@@ -492,9 +506,16 @@ namespace Project51.Unity
                     }
                 }
 
-                foreach (var visualCopy in visualCopies)
+                if (isRedealPendingVisual)
                 {
-                    cardAnimationController?.DestroyVisualCopy(visualCopy);
+                    pendingRedealVisualCopies.AddRange(visualCopies);
+                }
+                else
+                {
+                    foreach (var visualCopy in visualCopies)
+                    {
+                        cardAnimationController?.DestroyVisualCopy(visualCopy);
+                    }
                 }
 
                 isMoveAnimationInProgress = false;
@@ -609,6 +630,15 @@ namespace Project51.Unity
                     cardViewManager.ForceRefresh();
                 }
 
+                if (cardAnimationController != null && pendingRedealVisualCopies.Count > 0)
+                {
+                    foreach (var visualCopy in pendingRedealVisualCopies)
+                    {
+                        cardAnimationController.DestroyVisualCopy(visualCopy);
+                    }
+                    pendingRedealVisualCopies.Clear();
+                }
+
                 if (cardAnimationController != null && cardViewManager != null && gameState != null)
                 {
                     var handViews = new List<CardView>();
@@ -692,7 +722,9 @@ namespace Project51.Unity
 
         /// <summary>
         /// AI uses CirullaAI for strategic move selection.
-        /// Animation is handled by CardViewManager.HandleMoveExecuted which is synchronized via RPC.
+        /// Animation is handled locally by ExecuteMoveWithAnimation/CardAnimationController;
+        /// in multiplayer the move is broadcast via OnLocalPlayerMoveRequested and replayed
+        /// on each client through ExecuteMove(move, fromNetwork: true).
         /// </summary>
         private void ExecuteAITurn()
         {
@@ -711,8 +743,9 @@ namespace Project51.Unity
                     : currentValidMoves[Random.Range(0, currentValidMoves.Count)];
             }
 
-            // Execute move directly - animation is triggered via OnMoveExecuted event
-            // which CardViewManager.HandleMoveExecuted riceve su tutti i client tramite sincronizzazione RPC
+            // Execute move: in singleplayer this runs ExecuteMoveWithAnimation directly;
+            // in multiplayer it raises OnLocalPlayerMoveRequested so NetworkGameController
+            // can broadcast the move via RPC, which each client then applies locally.
             ExecuteMove(chosenMove);
         }
 

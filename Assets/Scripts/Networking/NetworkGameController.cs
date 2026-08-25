@@ -431,52 +431,11 @@ namespace Project51.Networking
                 Debug.Log($"<color=green>[NET] Player {i} hand: {gameState.Players[i].Hand.Count} cards</color>");
             }
 
-            // Set the GameState in TurnController using reflection
-            // (TurnController doesn't have a public SetGameState method)
-            var tcType = typeof(TurnController);
-            var gameStateField = tcType.GetField("gameState", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (gameStateField != null)
-            {
-                gameStateField.SetValue(turnController, gameState);
-                Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
-                
-                // IMPORTANT: Initialize RoundManager for the client too
-                var roundManagerField = tcType.GetField("roundManager", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                if (roundManagerField != null)
-                {
-                    var roundManager = new RoundManager(gameState);
-                    roundManagerField.SetValue(turnController, roundManager);
-                    Debug.Log("<color=green>[NET] RoundManager initialized for client!</color>");
-                }
-                
-                // Refresh valid moves for the current player
-                var refreshMethod = tcType.GetMethod("RefreshValidMoves", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                refreshMethod?.Invoke(turnController, null);
-                
-                // Force CardViewManager refresh
-                var cardViewManagerField = tcType.GetField("cardViewManager", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                var cardViewManager = cardViewManagerField?.GetValue(turnController) as CardViewManager;
-                if (cardViewManager != null)
-                {
-                    cardViewManager.ForceRefresh();
-                    Debug.Log("<color=green>[NET] CardViewManager refreshed!</color>");
-                }
-                
-                // Force UI refresh via event
-                var onMoveExecuted = tcType.GetField("OnMoveExecuted", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
-                if (onMoveExecuted != null)
-                {
-                    var evt = onMoveExecuted.GetValue(turnController) as System.Action<Move>;
-                    evt?.Invoke(null); // Trigger UI refresh
-                }
+            turnController.SetNetworkGameState(gameState);
+            Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
 
-                // Apply any pending accusi received before GameState was ready
-                FlushPendingAccusi();
-            }
-            else
-            {
-                Debug.LogError("Could not find gameState field in TurnController!");
-            }
+            // Apply any pending accusi received before GameState was ready
+            FlushPendingAccusi();
         }
 
         #endregion

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  51 Cirulla — Design System "Dragon's Hoard"
+  Riferimento di stile per UI, illustrazioni AI e animazioni.
+  Ogni volta che aggiungi un elemento nuovo (schermata, pulsante, prompt per Leonardo),
+  parti da questi valori invece di reinventarli: e' quello che tiene tutto coerente.
+-->
+<DesignSystem name="51 Cirulla" theme="Dragon's Hoard" version="1.0">
+
+  <Meta>
+    <Concept>
+      Tana di drago / tesoro prezioso: verde smeraldo lucido + oro caldo.
+      Non "rettile minaccioso", ma "gioiello, ricchezza, calore" - vicino a
+      Coin Master / Solitaire Grand Harvest, non a un dark fantasy.
+    </Concept>
+    <Mood>caldo, premium, tattile, luminoso al centro / scuro ai bordi</Mood>
+  </Meta>
+
+  <!-- ============ PALETTE ============ -->
+  <!-- Usa SEMPRE questi hex, mai varianti simili "a occhio" -->
+  <Palette>
+    <Color name="EmeraldHighlight" hex="#2E7A5A" usage="centro luminoso di sfondi e pannelli, stato hover" />
+    <Color name="EmeraldMid"       hex="#0D382A" usage="superficie principale di pannelli, pillole, card" />
+    <Color name="EmeraldDeep"      hex="#051611" usage="bordi scena, vignettatura, sfondo pieno scuro" />
+    <Color name="GoldLight"        hex="#FAD682" usage="highlight su elementi dorati, bagliori, testo su oro scuro" />
+    <Color name="Gold"             hex="#E8B24A" usage="bordi decorativi, CTA principali, accenti premium" />
+    <Color name="GoldDark"         hex="#966922" usage="base gradiente oro, bordo inferiore bottoni (effetto 3D)" />
+    <Color name="Cream"            hex="#FAF4E0" usage="testo primario su sfondi scuri" />
+    <Color name="TextMuted"        hex="#C6D6C8" usage="testo secondario, sottotitoli, placeholder" />
+    <Color name="GlassBorder"      hex="#466E58" usage="bordo sottile 1-2px su pannelli in vetro scuro" />
+    <Color name="GemAccent"        hex="#46E2AA" usage="dettagli preziosi puntuali (gemme, valuta secondaria) - usare con parsimonia" />
+  </Palette>
+
+  <PaletteRules>
+    <Rule>Non introdurre nuovi colori "una tantum" per una singola schermata (es. il blu della schermata Modalita' attuale). Se serve un accento diverso, deriva da GemAccent, non da un blu/rosso scollegato.</Rule>
+    <Rule>Il rosso (nastri splash attuali) non fa parte della palette: va sostituito con Gold o rimosso.</Rule>
+    <Rule>Superfici scure sempre da EmeraldDeep/EmeraldMid, mai grigio neutro piatto (le schermate Shop/Carte/Profilo oggi sono grigio-blu piatto: sbagliato, vanno riportate qui).</Rule>
+  </PaletteRules>
+
+  <!-- ============ FORME ============ -->
+  <CornerRadius>
+    <Size name="Small"  px="10" usage="badge, tag piccoli" />
+    <Size name="Medium" px="18" usage="pillole valuta, pannelli secondari" />
+    <Size name="Large"  px="28" usage="banner, card principali" />
+    <Size name="Pill"   px="9999" usage="pulsanti CTA, barra XP, nav bar item attivo" />
+  </CornerRadius>
+
+  <!-- ============ PROFONDITA' (ombre e bagliori) ============ -->
+  <Elevation>
+    <Shadow name="Low"  offsetY="4"  blur="10" opacity="0.35" usage="badge, elementi piccoli" />
+    <Shadow name="Mid"  offsetY="8"  blur="16" opacity="0.40" usage="pannelli, pillole valuta, card" />
+    <Shadow name="High" offsetY="14" blur="24" opacity="0.45" usage="banner, CTA principale, elementi in primo piano" />
+  </Elevation>
+
+  <Glow>
+    <Effect name="Standard" color="Gold" opacity="0.35" blur="24" expand="10" usage="attorno a CTA, badge livello, tab attiva" />
+    <Effect name="Accent"   color="GemAccent" opacity="0.4" blur="14" expand="4" usage="valuta secondaria, dettagli preziosi" />
+    <Rule>Un solo elemento con Glow "Standard" acceso per schermata (di solito il CTA primario) - se tutto brilla, niente attira l'occhio.</Rule>
+  </Glow>
+
+  <!-- ============ TIPOGRAFIA ============ -->
+  <Typography fontFamily="Poppins">
+    <Style name="Display" weight="Bold"   size="48" usage="testo dentro CTA principali (es. GIOCA)" />
+    <Style name="Heading" weight="Bold"   size="34" usage="titoli di schermata" />
+    <Style name="Body"    weight="Medium" size="26" usage="testo pillole, etichette, corpo" />
+    <Style name="Caption" weight="Medium" size="20" usage="sottotitoli, testo secondario" />
+    <Rule>Solo due pesi in tutta l'app: Bold per punti di attenzione (CTA, titoli), Medium per tutto il resto. Mai Regular/Light su sfondi scuri: contrasto insufficiente.</Rule>
+  </Typography>
+
+  <!-- ============ MOVIMENTO ============ -->
+  <!-- Valori di riferimento suggeriti per coerenza tra le animazioni,
+       da allineare con i tempi gia' impostati in CardAnimationController -->
+  <Motion>
+    <Timing name="Micro"   durationSec="0.08" easing="OutQuad"    usage="crossfade, feedback immediato (es. dissolvenza carta)" />
+    <Timing name="Fast"    durationSec="0.18" easing="OutQuad"    usage="pressione pulsanti, hover" />
+    <Timing name="Base"    durationSec="0.30" easing="OutCubic"   usage="animazioni carte, transizioni pannelli" />
+    <Timing name="Reflow"  durationSec="0.25" easing="OutQuad"    usage="riposizionamento elementi gia' visibili (es. carte tavolo)" />
+    <Rule>Le transizioni tra tab devono condividere lo sfondo (nessuna giuntura visibile tra pannelli durante lo swipe) - vedi bug identificato nel video del 24/08.</Rule>
+  </Motion>
+
+  <!-- ============ COMPONENTI ============ -->
+  <Components>
+    <Button variant="Primary">
+      <Fill type="RadialGradient" from="GoldLight" to="GoldDark" />
+      <Border color="GoldDark" width="3" />
+      <Text style="Display" color="EmeraldDeep" />
+      <Shadow ref="High" />
+      <Glow ref="Standard" />
+      <CornerRadius ref="Pill" />
+    </Button>
+    <Button variant="Secondary">
+      <Fill type="VerticalGradient" from="EmeraldMid" to="EmeraldDeep" />
+      <Border color="GlassBorder" width="2" />
+      <Text style="Body" color="Cream" />
+      <Shadow ref="Mid" />
+      <CornerRadius ref="Medium" />
+    </Button>
+    <Panel variant="Glass">
+      <Fill type="VerticalGradient" from="EmeraldMid" to="EmeraldDeep" opacity="0.9" />
+      <Border color="GlassBorder" width="1" />
+      <Shadow ref="Mid" />
+    </Panel>
+    <CurrencyPill>
+      <Fill type="VerticalGradient" from="EmeraldMid" to="EmeraldDeep" />
+      <Border color="GlassBorder" width="2" />
+      <IconBackdrop type="RadialGradient" from="GoldLight" to="GoldDark" glow="Standard" />
+      <CornerRadius ref="Pill" />
+    </CurrencyPill>
+  </Components>
+
+  <!-- ============ RIFERIMENTO PROMPT PER GENERAZIONE AI (Leonardo.ai ecc.) ============ -->
+  <!-- Incolla questo blocco di descrizione stile alla fine di ogni prompt,
+       cambiando solo la parte che descrive il soggetto -->
+  <AIPromptReference>
+    <StyleDescriptor>
+      warm emerald green and gold color palette, glossy jewel-toned materials,
+      soft warm rim lighting from above, painterly fantasy illustration style,
+      rich atmospheric glow, treasure/dragon's hoard aesthetic, no harsh dark
+      or menacing tones, cohesive with a golden ornate frame
+    </StyleDescriptor>
+    <NegativePrompt>
+      blue tones, cold lighting, red accents, flat colors, sterile UI,
+      photorealistic, dark ominous atmosphere
+    </NegativePrompt>
+    <Tip>Genera prima un asset "manifesto" (es. lo stemma 51 attuale, gia' vicino a questa direzione) e riusalo come image reference per ogni generazione successiva invece di ripartire da solo testo: riduce moltissimo la deriva di stile tra un asset e l'altro.</Tip>
+  </AIPromptReference>
+
+</DesignSystem>

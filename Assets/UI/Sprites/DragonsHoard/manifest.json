@@ -1,0 +1,62 @@
+{
+  "panel_glass.png": {
+    "size": [
+      128,
+      128
+    ],
+    "border_9slice_px": {
+      "left": 34,
+      "right": 34,
+      "top": 34,
+      "bottom": 34
+    },
+    "usage": "pannelli secondari, pillole valuta"
+  },
+  "button_primary.png": {
+    "size": [
+      220,
+      110
+    ],
+    "border_9slice_px": {
+      "left": 58,
+      "right": 58,
+      "top": 8,
+      "bottom": 8
+    },
+    "usage": "CTA principale (es. GIOCA) - stretch orizzontale, non verticale"
+  },
+  "button_secondary.png": {
+    "size": [
+      220,
+      110
+    ],
+    "border_9slice_px": {
+      "left": 58,
+      "right": 58,
+      "top": 8,
+      "bottom": 8
+    },
+    "usage": "pulsanti secondari (Deck, Allenamento) - stretch orizzontale, non verticale"
+  },
+  "glow_soft.png": {
+    "size": [
+      256,
+      256
+    ],
+    "border_9slice_px": 0,
+    "usage": "bagliore - tingere con Image.color in Unity (es. oro o smeraldo)"
+  },
+  "drop_shadow.png": {
+    "size": [
+      192,
+      192
+    ],
+    "border_9slice_px": {
+      "left": 40,
+      "right": 40,
+      "top": 40,
+      "bottom": 40
+    },
+    "usage": "ombra da mettere come Image separata dietro al pannello, offset Y negativo"
+  }
+}

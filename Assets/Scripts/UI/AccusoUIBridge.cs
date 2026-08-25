@@ -133,14 +133,7 @@ namespace Project51.Unity
 
         private Sprite GetSpecialMarkerSprite()
         {
-            // Try to reuse panel's special marker
-            var field = accusoPanelController.GetType().GetField("specialValueMarker", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field != null)
-            {
-                var marker = field.GetValue(accusoPanelController) as Sprite;
-                return marker;
-            }
-            return null;
+            return accusoPanelController != null ? accusoPanelController.SpecialValueMarker : null;
         }
 
         private void HandleAccusoAnimationComplete()
@@ -148,16 +141,9 @@ namespace Project51.Unity
             // Clear temporary overlays after animation
             var cvManager = FindObjectOfType<CardViewManager>();
             if (cvManager == null) return;
-            var field = cvManager.GetType().GetField("activeCardViews", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (field == null) return;
-            var dict = field.GetValue(cvManager) as System.Collections.IDictionary;
-            if (dict == null) return;
-            foreach (System.Collections.DictionaryEntry de in dict)
+            foreach (var view in cvManager.GetActiveCardViews())
             {
-                if (de.Value is CardView view)
-                {
-                    view.ClearTemporaryValue();
-                }
+                view.ClearTemporaryValue();
             }
             // Unsubscribe after handling
             accusoPanelController.OnAccusoAnimationComplete -= HandleAccusoAnimationComplete;

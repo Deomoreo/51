@@ -49,12 +49,16 @@ namespace Project51.Tests
             var state = new GameState(2);
             // Player has a card that can capture and another that would be a normal play
             state.Table.Add(new Card(Suit.Coppe, 5));
-            state.Players[0].Hand.Add(new Card(Suit.Denari, 5)); // can capture
-            state.Players[0].Hand.Add(new Card(Suit.Spade, 3));
+            var captureCard = new Card(Suit.Denari, 5); // can capture
+            var freeCard = new Card(Suit.Spade, 3); // cannot capture anything
+            state.Players[0].Hand.Add(captureCard);
+            state.Players[0].Hand.Add(freeCard);
 
             var moves = Rules51.GetValidMoves(state, 0);
-            // Since there's at least one capture move, there should be no PlayOnly moves
-            Assert.IsFalse(moves.Any(m => m.Type == MoveType.PlayOnly));
+            // The 5 of Denari can capture, so it must NOT have a PlayOnly move
+            Assert.IsFalse(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(captureCard)));
+            // The 3 of Spade cannot capture anything, so it remains discardable
+            Assert.IsTrue(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(freeCard)));
         }
 
         [Test]

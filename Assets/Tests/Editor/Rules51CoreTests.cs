@@ -173,7 +173,7 @@ namespace Project51.Tests
         #region Matta (7 of Coppe) Tests
 
         [Test]
-        public void Matta_Can_Capture_Any_Single_Card()
+        public void Matta_Plays_As_Normal_Seven_Not_Wildcard()
         {
             var state = new GameState(2);
             state.Players[0].Hand.Add(new Card(Suit.Coppe, 7)); // Matta
@@ -181,23 +181,29 @@ namespace Project51.Tests
             state.Table.Add(new Card(Suit.Bastoni, 8));
 
             var moves = Rules51.GetValidMoves(state, 0);
-            
-            // Should have CaptureEqual for both table cards
-            var equalCaptures = moves.Where(m => m.Type == MoveType.CaptureEqual).ToList();
-            Assert.AreEqual(2, equalCaptures.Count, "Matta should be able to capture any card");
+
+            // Outside of an accuso context, the Matta plays as a plain 7: it must NOT
+            // capture unrelated table cards (3 and 8) as a wildcard would.
+            Assert.IsFalse(moves.Any(m => m.Type == MoveType.CaptureEqual),
+                "Matta should not act as a wildcard capturing any single card during play");
+
+            // As a normal 7, it can still capture via sum-to-15 (7 + 8 = 15).
+            Assert.IsTrue(moves.Any(m => m.Type == MoveType.Capture15 && m.CapturedCards.Count == 1 && m.CapturedCards[0].Value == 8));
         }
 
         [Test]
-        public void Matta_Can_Act_As_Ace_For_Capture()
+        public void Matta_Does_Not_Act_As_Ace_For_Capture()
         {
             var state = new GameState(2);
             state.Players[0].Hand.Add(new Card(Suit.Coppe, 7)); // Matta
             state.Table.Add(new Card(Suit.Denari, 1)); // Ace on table
 
             var moves = Rules51.GetValidMoves(state, 0);
-            
-            // Matta acting as Ace should allow AceCapture
-            Assert.IsTrue(moves.Any(m => m.Type == MoveType.AceCapture));
+
+            // Outside of an accuso context, the Matta is a plain 7: it cannot capture
+            // the Ace (7 != 1, and no subset sums to 15-7=8 with only a lone Ace).
+            Assert.IsFalse(moves.Any(m => m.Type == MoveType.AceCapture));
+            Assert.IsTrue(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.IsMatta));
         }
 
         #endregion
