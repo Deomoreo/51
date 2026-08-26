@@ -116,7 +116,7 @@ namespace Project51.Unity
             // Initialize AI
             if (cirullaAI == null)
             {
-                cirullaAI = new CirullaAI(aiDifficulty);
+                cirullaAI = new CirullaAI(ResolveAIDifficulty());
             }
 
             // Check if GameSceneInitializer exists OR if ActiveConfig is already set
@@ -211,7 +211,7 @@ namespace Project51.Unity
         // Initialize AI if not already done
         if (cirullaAI == null)
         {
-            cirullaAI = new CirullaAI(aiDifficulty);
+            cirullaAI = new CirullaAI(ResolveAIDifficulty());
         }
 
         // Determine player count from MatchConfig (loaded by GameSceneInitializer)
@@ -747,6 +747,34 @@ namespace Project51.Unity
             // in multiplayer it raises OnLocalPlayerMoveRequested so NetworkGameController
             // can broadcast the move via RPC, which each client then applies locally.
             ExecuteMove(chosenMove);
+        }
+
+        /// <summary>
+        /// Legge la difficolta' bot scelta dall'utente da GameSceneInitializer.ActiveConfig
+        /// (impostata da MatchConfig in lobby) e la converte in AIDifficulty per CirullaAI.
+        /// Fallback al valore Inspector se non c'e' una config attiva (es. contesto di test).
+        /// </summary>
+        private AIDifficulty ResolveAIDifficulty()
+        {
+            var activeConfig = GameSceneInitializer.ActiveConfig;
+            if (activeConfig == null)
+                return aiDifficulty;
+
+            switch (activeConfig.BotDifficulty)
+            {
+                case BotDifficulty.Easy:
+                    return AIDifficulty.Easy;
+                case BotDifficulty.Medium:
+                    return AIDifficulty.Medium;
+                case BotDifficulty.Hard:
+                case BotDifficulty.Expert:
+                    // CirullaAI non ha ancora un livello Expert distinto: per ora mappa su Hard.
+                    // TODO: valutare se serve un comportamento IA piu' difficile per Expert -
+                    // decisione di design separata da questo fix di wiring.
+                    return AIDifficulty.Hard;
+                default:
+                    return AIDifficulty.Medium;
+            }
         }
 
         /// <summary>

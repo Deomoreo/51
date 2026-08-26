@@ -45,8 +45,8 @@ namespace Project51.Unity
             if (modalityPanel != null)
             {
                 modalityPanel.OnConfigSelected += OnModalityConfigSelected;
-                modalityPanel.OnCreatePrivateRoomRequested += OnCreatePrivateRoomRequested;
-                modalityPanel.OnJoinPrivateRoomRequested += OnJoinPrivateRoomRequested;
+                modalityPanel.OnCreatePrivateRoomSelected += OnCreatePrivateRoomRequested;
+                modalityPanel.OnJoinPrivateRoomSelected += OnJoinPrivateRoomSelectedFromPanel;
             }
 
             // Subscribe agli eventi del WaitingRoom
@@ -69,22 +69,16 @@ namespace Project51.Unity
             }
         }
 
+        private bool _matchmakingEventsSubscribed;
+
         private void OnEnable()
         {
-            // Subscribe agli eventi del MatchmakingManager
-            if (MatchmakingManager.Instance != null)
-            {
-                MatchmakingManager.Instance.OnStateChanged += OnMatchmakingStateChanged;
-                MatchmakingManager.Instance.OnError += OnMatchmakingError;
-                MatchmakingManager.Instance.OnMatchFound += OnMatchFound;
-                MatchmakingManager.Instance.OnRoomCreated += OnPrivateRoomCreated;
-                MatchmakingManager.Instance.OnRoomJoined += OnPrivateRoomJoined;
-            }
+            EnsureMatchmakingSubscription();
         }
 
         private void OnDisable()
         {
-            if (MatchmakingManager.Instance != null)
+            if (_matchmakingEventsSubscribed && MatchmakingManager.Instance != null)
             {
                 MatchmakingManager.Instance.OnStateChanged -= OnMatchmakingStateChanged;
                 MatchmakingManager.Instance.OnError -= OnMatchmakingError;
@@ -92,6 +86,28 @@ namespace Project51.Unity
                 MatchmakingManager.Instance.OnRoomCreated -= OnPrivateRoomCreated;
                 MatchmakingManager.Instance.OnRoomJoined -= OnPrivateRoomJoined;
             }
+            _matchmakingEventsSubscribed = false;
+        }
+
+        /// <summary>
+        /// Iscrizione "lazy" agli eventi di MatchmakingManager: OnEnable() da solo non basta,
+        /// perche' MatchmakingManager.Instance potrebbe non essere ancora pronto a quel punto
+        /// (il flusso di autenticazione PlayFab/Photon e' asincrono e gira prima della Home).
+        /// Richiamato anche subito prima di ogni operazione che dipende da questi eventi, cosi'
+        /// l'iscrizione avviene comunque appena l'istanza e' disponibile, indipendentemente
+        /// dall'ordine di Awake/OnEnable tra i due componenti.
+        /// </summary>
+        private void EnsureMatchmakingSubscription()
+        {
+            if (_matchmakingEventsSubscribed || MatchmakingManager.Instance == null)
+                return;
+
+            MatchmakingManager.Instance.OnStateChanged += OnMatchmakingStateChanged;
+            MatchmakingManager.Instance.OnError += OnMatchmakingError;
+            MatchmakingManager.Instance.OnMatchFound += OnMatchFound;
+            MatchmakingManager.Instance.OnRoomCreated += OnPrivateRoomCreated;
+            MatchmakingManager.Instance.OnRoomJoined += OnPrivateRoomJoined;
+            _matchmakingEventsSubscribed = true;
         }
 
         private void OnDestroy()
@@ -99,8 +115,8 @@ namespace Project51.Unity
             if (modalityPanel != null)
             {
                 modalityPanel.OnConfigSelected -= OnModalityConfigSelected;
-                modalityPanel.OnCreatePrivateRoomRequested -= OnCreatePrivateRoomRequested;
-                modalityPanel.OnJoinPrivateRoomRequested -= OnJoinPrivateRoomRequested;
+                modalityPanel.OnCreatePrivateRoomSelected -= OnCreatePrivateRoomRequested;
+                modalityPanel.OnJoinPrivateRoomSelected -= OnJoinPrivateRoomSelectedFromPanel;
             }
             if (waitingRoomUI != null)
             {
@@ -133,7 +149,7 @@ namespace Project51.Unity
                     break;
 
                 case MatchIntent.PrivateRoom:
-                    // Questo non dovrebbe più accadere - ora usiamo eventi separati
+                    // Questo non dovrebbe piï¿½ accadere - ora usiamo eventi separati
                     if (config.IsHost)
                         CreatePrivateRoom(config);
                     else
@@ -158,6 +174,13 @@ namespace Project51.Unity
 
             _pendingConfig = config;
             ShowJoinRoomPopup();
+        }
+
+        private void OnJoinPrivateRoomSelectedFromPanel()
+        {
+            // OnJoinPrivateRoomSelected non porta la MatchConfig (a differenza di OnCreatePrivateRoomSelected):
+            // Select_JoinPrivateRoom() valorizza pero' CurrentSelection subito prima di invocare l'evento.
+            OnJoinPrivateRoomRequested(modalityPanel.CurrentSelection);
         }
 
         #endregion
@@ -186,6 +209,7 @@ namespace Project51.Unity
             // Per training non serve matchmaking, vai diretto al gioco
             if (MatchmakingManager.Instance != null)
             {
+                EnsureMatchmakingSubscription();
                 MatchmakingManager.Instance.StartTraining(config);
             }
             else
@@ -240,6 +264,7 @@ namespace Project51.Unity
 
             if (MatchmakingManager.Instance != null)
             {
+                EnsureMatchmakingSubscription();
                 MatchmakingManager.Instance.StartQuickMatch(config);
             }
             else
@@ -268,6 +293,7 @@ namespace Project51.Unity
 
             if (MatchmakingManager.Instance != null)
             {
+                EnsureMatchmakingSubscription();
                 MatchmakingManager.Instance.CreatePrivateRoom(cfg);
             }
         }
@@ -295,6 +321,7 @@ namespace Project51.Unity
 
             if (MatchmakingManager.Instance != null)
             {
+                EnsureMatchmakingSubscription();
                 MatchmakingManager.Instance.JoinPrivateRoom(roomCode, _pendingConfig);
             }
         }
