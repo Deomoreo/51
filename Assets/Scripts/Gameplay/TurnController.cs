@@ -35,6 +35,15 @@ namespace Project51.Unity
         /// </summary>
         public void SetNetworkGameState(GameState newGameState)
         {
+            // Ricalcola l'indice locale/masterClient/bot ORA, non fidandosi di quello calcolato al
+            // primissimo Awake() della scena: su un device reale (rete piu' lenta della LAN/localhost
+            // dell'Editor) PhotonNetwork.PlayerList poteva non essere ancora del tutto sincronizzato
+            // in quel momento, facendo risultare l'indice locale sbagliato (es. sempre 0 come il
+            // Master -> stessa identica mano mostrata su piu' client). Qui l'arrivo stesso di questo
+            // GameState via RPC garantisce che la connessione/room siano gia' del tutto stabilite.
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            gsi?.RefreshMultiplayerGameModeProvider();
+
             gameState = newGameState;
             roundManager = new RoundManager(gameState);
             RefreshValidMoves();
@@ -258,8 +267,11 @@ namespace Project51.Unity
         var provider = GameModeService.Current;
         if (provider.IsMultiplayer && provider.IsMasterClient)
         {
-            // Find NetworkGameController and send GameState via reflection (to avoid circular dependency)
-            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Project51.Networking");
+            // Find NetworkGameController and send GameState via reflection (to avoid circular dependency).
+            // L'assembly si chiama "Assembly-CSharp" (il vecchio asmdef "Project51.Networking" non
+            // esiste piu'): con il nome vecchio questa lookup falliva sempre silenziosamente e lo
+            // stato iniziale non arrivava mai agli altri client (tavolo vuoto per loro).
+            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
             if (netControllerType != null)
             {
                 var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -836,8 +848,10 @@ namespace Project51.Unity
             var provider = GameModeService.Current;
             if (!provider.IsMultiplayer) return;
 
-            // Use reflection to call NetworkGameController.SendAccuso (to avoid circular dependency)
-            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Project51.Networking");
+            // Use reflection to call NetworkGameController.SendAccuso (to avoid circular dependency).
+            // Stesso fix del nome assembly di StartNewGame()/SendInitialGameStateToClients: senza
+            // questo, gli accusi (Cirulla/Decino) non venivano mai sincronizzati agli altri client.
+            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
             if (netControllerType != null)
             {
                 var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);

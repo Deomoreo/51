@@ -20,7 +20,7 @@ namespace Project51.Core
         public GameFormat Format { get; set; } = GameFormat.FourPlayers;
 
         /// <summary>
-        /// Difficoltà dei bot (solo per Training).
+        /// Difficoltï¿½ dei bot (solo per Training).
         /// </summary>
         public BotDifficulty BotDifficulty { get; set; } = BotDifficulty.Medium;
 
@@ -128,7 +128,7 @@ namespace Project51.Core
     }
 
     /// <summary>
-    /// Difficoltà dei bot.
+    /// Difficoltï¿½ dei bot.
     /// </summary>
     public enum BotDifficulty
     {
@@ -225,12 +225,21 @@ namespace Project51.Core
         private readonly int _localPlayerIndex;
         private readonly int _numPlayers;
         private readonly bool _isMasterClient;
+        private readonly System.Collections.Generic.HashSet<int> _botPlayerIndices;
 
-        public MultiplayerGameModeProvider(int localPlayerIndex, int numPlayers, bool isMasterClient)
+        /// <param name="botPlayerIndices">
+        /// Indici dei posti "riempiti con bot" (stanza privata avviata dall'host con meno
+        /// giocatori reali del formato). Null o vuoto = nessun bot (comportamento originale).
+        /// I bot sono giocati dal Master Client tramite CirullaAI e le mosse vengono comunque
+        /// propagate via RPC agli altri client, esattamente come una mossa umana locale
+        /// (vedi TurnController.ExecuteMove).
+        /// </param>
+        public MultiplayerGameModeProvider(int localPlayerIndex, int numPlayers, bool isMasterClient, System.Collections.Generic.HashSet<int> botPlayerIndices = null)
         {
             _localPlayerIndex = localPlayerIndex;
             _numPlayers = numPlayers;
             _isMasterClient = isMasterClient;
+            _botPlayerIndices = botPlayerIndices;
         }
 
         public bool IsMultiplayer => true;
@@ -238,8 +247,8 @@ namespace Project51.Core
         public int LocalPlayerIndex => _localPlayerIndex;
 
         public bool IsLocalPlayer(int playerIndex) => playerIndex == _localPlayerIndex;
-        public bool IsHumanPlayer(int playerIndex) => playerIndex >= 0 && playerIndex < _numPlayers;
-        public bool IsBotPlayer(int playerIndex) => false; // In multiplayer non ci sono bot
+        public bool IsHumanPlayer(int playerIndex) => playerIndex >= 0 && playerIndex < _numPlayers && !IsBotPlayer(playerIndex);
+        public bool IsBotPlayer(int playerIndex) => _botPlayerIndices != null && _botPlayerIndices.Contains(playerIndex);
     }
 
     [Serializable]

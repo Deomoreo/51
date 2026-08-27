@@ -31,6 +31,11 @@ namespace Project51.Unity
         [SerializeField] private TMP_Text startButtonText;
         [SerializeField] private TMP_Text statusText;
 
+        [Header("Bot Fill (Host Only)")]
+        [Tooltip("Se attivo, l'host puo' avviare la partita anche senza aver riempito tutti i posti: i posti vuoti vengono giocati da un bot (CirullaAI) gestito dal Master Client.")]
+        [SerializeField] private Toggle fillWithBotsToggle;
+        [SerializeField] private GameObject fillWithBotsContainer;
+
         [Header("Animation")]
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private float fadeInDuration = 0.3f;
@@ -43,6 +48,17 @@ namespace Project51.Unity
         private bool _isHost;
         private int _requiredPlayers;
 
+        /// <summary>
+        /// Se true, l'host puo' avviare la partita anche con posti vuoti: verranno riempiti con bot
+        /// (vedi GameSceneInitializer, che li assegna automaticamente confrontando i giocatori reali
+        /// in stanza col formato scelto). Irrilevante per i client non host.
+        /// Il toggle in scena e' opzionale: se non e' stato collegato (vedi
+        /// Tools/Lobby/Add Fill-With-Bots Toggle To Waiting Room) il riempimento automatico resta
+        /// comunque attivo di default; se il toggle e' presente e spento, l'host deve aspettare la
+        /// stanza piena come in origine.
+        /// </summary>
+        public bool FillEmptySlotsWithBots => _isHost && (fillWithBotsToggle == null || fillWithBotsToggle.isOn);
+
         private void Awake()
         {
             if (startButton != null)
@@ -51,6 +67,8 @@ namespace Project51.Unity
                 leaveButton.onClick.AddListener(OnLeaveClicked);
             if (copyCodeButton != null)
                 copyCodeButton.onClick.AddListener(OnCopyCodeClicked);
+            if (fillWithBotsToggle != null)
+                fillWithBotsToggle.onValueChanged.AddListener(OnFillWithBotsToggled);
 
             // Nascondi il feedback di copia inizialmente
             if (roomCodeCopiedFeedback != null)
@@ -113,6 +131,14 @@ namespace Project51.Unity
         {
             _isHost = isHost;
             _requiredPlayers = requiredPlayers;
+            _isLeaving = false;
+
+            // Riattiva l'input: Hide() lo disabilita per bloccare i click durante il fade-out.
+            if (canvasGroup != null)
+            {
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
 
             // Mostra codice stanza
             if (roomCodeText != null)
@@ -125,17 +151,38 @@ namespace Project51.Unity
                 startButton.interactable = false;
             }
 
+            if (leaveButton != null)
+                leaveButton.interactable = true;
+
             if (startButtonText != null)
                 startButtonText.text = "AVVIA PARTITA";
+
+            // Il toggle "riempi con bot" ha senso solo per l'host
+            if (fillWithBotsToggle != null)
+                fillWithBotsToggle.SetIsOnWithoutNotify(false);
+            if (fillWithBotsContainer != null)
+                fillWithBotsContainer.SetActive(isHost);
+            else if (fillWithBotsToggle != null)
+                fillWithBotsToggle.gameObject.SetActive(isHost);
 
             UpdateStatus();
             RefreshPlayerSlots();
 
-            // Fade in
+            // Fade + leggero scale-in, cosi' l'ingresso nella waiting room non e' un pop istantaneo
+            // dopo la chiusura animata del pannello modalita' (DOKill previene salti se Initialize
+            // viene richiamato mentre l'animazione precedente e' ancora in corso).
             if (canvasGroup != null)
             {
+                canvasGroup.DOKill();
                 canvasGroup.alpha = 0f;
                 DOTween.To(() => canvasGroup.alpha, x => canvasGroup.alpha = x, 1f, fadeInDuration);
+
+                if (canvasGroup.transform is RectTransform rt)
+                {
+                    rt.DOKill();
+                    rt.localScale = Vector3.one * 0.94f;
+                    rt.DOScale(Vector3.one, fadeInDuration).SetEase(Ease.OutCubic);
+                }
             }
         }
 
@@ -189,6 +236,13 @@ namespace Project51.Unity
             {
                 statusText.text = _isHost ? "Pronto! Premi AVVIA" : "In attesa dell'host...";
             }
+            else if (FillEmptySlotsWithBots)
+            {
+                int missing = Mathf.Max(0, _requiredPlayers - current);
+                statusText.text = missing > 0
+                    ? $"Pronto! {missing} posto/i verranno riempiti con bot ({current}/{max})"
+                    : "Pronto! Premi AVVIA";
+            }
             else
             {
                 statusText.text = $"In attesa di giocatori... ({current}/{max})";
@@ -205,9 +259,16 @@ namespace Project51.Unity
                 return;
             }
 
-            // Abilita il bottone se abbiamo abbastanza giocatori
-            int minPlayers = Mathf.Max(2, _requiredPlayers);
+            // Con "riempi con bot" attivo, l'host puo' avviare anche da solo: i posti mancanti
+            // vengono assegnati a bot in GameSceneInitializer una volta caricata la GameScene.
+            int minPlayers = FillEmptySlotsWithBots ? 1 : Mathf.Max(2, _requiredPlayers);
             startButton.interactable = PhotonNetwork.CurrentRoom.PlayerCount >= minPlayers;
+        }
+
+        private void OnFillWithBotsToggled(bool _)
+        {
+            UpdateStatus();
+            UpdateStartButton();
         }
 
         private void OnPlayerJoined(Photon.Realtime.Player player)
@@ -233,8 +294,20 @@ namespace Project51.Unity
             OnStartRequested?.Invoke();
         }
 
+        private bool _isLeaving;
+
         private void OnLeaveClicked()
         {
+            // Guardia anti doppio-invio: durante il fade-out di Hide() (0.2s) il CanvasGroup resta
+            // cliccabile finche' non e' del tutto trasparente, quindi un doppio click/tap sul
+            // bottone ESCI poteva rilanciare OnLeaveRequested una seconda volta (leave + rejoin che
+            // sembrava un pannello che "si leva e si rimette").
+            if (_isLeaving) return;
+            _isLeaving = true;
+
+            if (leaveButton != null) leaveButton.interactable = false;
+            if (startButton != null) startButton.interactable = false;
+
             OnLeaveRequested?.Invoke();
         }
 
@@ -266,6 +339,12 @@ namespace Project51.Unity
         {
             if (canvasGroup != null)
             {
+                // Blocca subito i click: durante il fade-out (0.2s) il pannello resta visivamente
+                // presente ma non deve piu' reagire a input (vedi guardia in OnLeaveClicked).
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+
+                canvasGroup.DOKill();
                 DOTween.To(() => canvasGroup.alpha, x => canvasGroup.alpha = x, 0f, 0.2f)
                     .OnComplete(() => gameObject.SetActive(false));
             }

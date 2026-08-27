@@ -28,6 +28,8 @@ namespace Project51.Unity
         public event Action<string> OnJoinRequested;
         public event Action OnCancelled;
 
+        private Coroutine _activateInputRoutine;
+
         private void Awake()
         {
             if (joinButton != null)
@@ -45,20 +47,28 @@ namespace Project51.Unity
             if (errorText != null)
                 errorText.gameObject.SetActive(false);
 
-            gameObject.SetActive(false);
+            // NON disattivare qui il GameObject. Questo popup e' salvato gia' inattivo nella
+            // scena (vedi WirePrefabsIntoScene): Awake() percio' non viene eseguito al caricamento
+            // della scena, ma solo alla PRIMA volta che qualcuno lo attiva (Show() -> SetActive(true)).
+            // In quel momento Awake() gira in modo sincrono PRIMA che il resto di Show() continui:
+            // un SetActive(false) qui lo disattiverebbe di nuovo immediatamente, e la StartCoroutine
+            // subito dopo in Show() falliva con "Coroutine couldn't be started because the game
+            // object is inactive". Lo stato iniziale nascosto e' gia' garantito dalla scena/prefab.
         }
 
         public void Show()
         {
             gameObject.SetActive(true);
 
+            // Il popup viene aperto quasi sempre nello stesso click che chiude il pannello
+            // modalita' sottostante (vedi ModalitySelectorPanelUI.Select_JoinPrivateRoom): senza
+            // questo SetAsLastSibling() rischia di restare sotto altri overlay aggiunti alla scena
+            // dopo di lui, risultando visibile-ma-non-cliccabile finche' qualcos'altro non cambia.
+            transform.SetAsLastSibling();
+
             // Reset
             if (roomCodeInput != null)
-            {
                 roomCodeInput.text = "";
-                roomCodeInput.Select();
-                roomCodeInput.ActivateInputField();
-            }
 
             if (errorText != null)
                 errorText.gameObject.SetActive(false);
@@ -78,6 +88,28 @@ namespace Project51.Unity
                 panelTransform.localScale = Vector3.one * 0.8f;
                 panelTransform.DOScale(Vector3.one, animDuration).SetEase(Ease.OutBack);
             }
+
+            // Attivare l'input field nello stesso frame del click che ha aperto questo popup
+            // (es. bottone "Unisciti a stanza privata") e' inaffidabile in uGUI: l'EventSystem sta
+            // ancora processando quel click e spesso lascia il campo non selezionato/non editabile,
+            // dando l'impressione che serva un secondo click per poter scrivere il codice.
+            // Rimandare l'attivazione al frame successivo risolve la race.
+            if (_activateInputRoutine != null)
+                StopCoroutine(_activateInputRoutine);
+            _activateInputRoutine = StartCoroutine(ActivateInputFieldNextFrame());
+        }
+
+        private System.Collections.IEnumerator ActivateInputFieldNextFrame()
+        {
+            yield return null;
+
+            if (roomCodeInput != null)
+            {
+                roomCodeInput.Select();
+                roomCodeInput.ActivateInputField();
+            }
+
+            _activateInputRoutine = null;
         }
 
         public void Hide()

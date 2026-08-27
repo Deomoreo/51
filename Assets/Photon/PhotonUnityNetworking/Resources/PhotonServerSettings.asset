@@ -45,6 +45,7 @@ MonoBehaviour:
   - RPC_ExecuteMove
   - RPC_ReceiveInitialGameState
   - RPC_ReceiveAccuso
+  - RPC_RequestInitialGameState
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

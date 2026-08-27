@@ -78,7 +78,7 @@ namespace Project51.Unity
                 var pos1 = new GameObject("Player1_CapturedPilePos").transform;
                 pos1.SetParent(transform);
                 pos1.localPosition = new Vector3(-2.0f, 3.5f, 0);
-                pos1.localRotation = Quaternion.Euler(0, 0, 180); // ruotata 180° (capovolto)
+                pos1.localRotation = Quaternion.Euler(0, 0, 180); // ruotata 180ï¿½ (capovolto)
                 playerPilePositions[1] = pos1;
             }
             else
@@ -175,23 +175,11 @@ namespace Project51.Unity
 
         private int GetLocalPlayerIndex()
         {
-            // Use GameManager via reflection to avoid assembly coupling
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gmType != null)
-            {
-                var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var gm = instanceProp?.GetValue(null);
-                if (gm != null)
-                {
-                    var localIdxProp = gmType.GetProperty("LocalPlayerIndex", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (localIdxProp != null)
-                    {
-                        var idxVal = localIdxProp.GetValue(gm);
-                        if (idxVal is int i) return i;
-                    }
-                }
-            }
-            return 0;
+            // Fonte di verita' reale, popolata da GameSceneInitializer. In precedenza usava
+            // reflection su un assembly "Project51.Networking" che non esiste piu' (rinominato/
+            // rimosso), quindi tornava sempre 0: le pile di carte catturate finivano tutte
+            // ancorate alla posizione "player 0" invece che a quella del player locale reale.
+            return GameModeService.Current.LocalPlayerIndex;
         }
 
         private int MapToViewIndex(int playerIndex, int localIndex, int numPlayers)

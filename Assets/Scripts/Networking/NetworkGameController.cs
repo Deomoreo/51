@@ -91,6 +91,9 @@ namespace Project51.Networking
         // Buffer for early accuso events arriving before GameState is ready
         private List<(int playerIndex, int accusoType)> pendingAccusi = new List<(int, int)>();
 
+        // Client-side: richiede lo stato iniziale al Master finche' non lo riceve.
+        private Coroutine _requestInitialStateCoroutine;
+
         #endregion
 
         #region Unity Lifecycle
@@ -131,6 +134,18 @@ namespace Project51.Networking
             {
                 Debug.Log("<color=cyan>[NET] Master Client: Will send initial GameState after game starts</color>");
             }
+            else if (PhotonNetwork.InRoom)
+            {
+                // Il Master manda lo stato iniziale una volta sola, con un delay fisso
+                // (GameSceneInitializer.multiplayerStartDelay), subito dopo aver avviato la partita.
+                // Se questo client (device reale, caricamento piu' lento dell'Editor) non ha ancora
+                // istanziato la propria PhotonView/scena in quel preciso istante, quell'RPC va
+                // semplicemente perso per lui (non e' bufferizzato, e lui non e' un "nuovo" membro
+                // della room per Photon). Prima restava per sempre con GameState=null / uno stato
+                // sbagliato. Con questa richiesta attiva, il client stesso chiede allo stato al
+                // Master finche' non lo riceve, indipendentemente dai tempi di caricamento di ciascuno.
+                _requestInitialStateCoroutine = StartCoroutine(RequestInitialGameStateUntilReceived());
+            }
 
             // Try flush any pending accusi if received before init
             FlushPendingAccusi();
@@ -143,6 +158,58 @@ namespace Project51.Networking
             {
                 turnController.OnLocalPlayerMoveRequested -= SendMove;
             }
+
+            if (_requestInitialStateCoroutine != null)
+            {
+                StopCoroutine(_requestInitialStateCoroutine);
+                _requestInitialStateCoroutine = null;
+            }
+        }
+
+        /// <summary>
+        /// Richiede periodicamente lo stato iniziale della partita al Master Client, finche'
+        /// il TurnController locale non ha uno GameState valido. Si auto-cancella quando
+        /// RPC_ReceiveInitialGameState applica con successo lo stato ricevuto.
+        /// </summary>
+        private System.Collections.IEnumerator RequestInitialGameStateUntilReceived()
+        {
+            // Piccolo margine per dare tempo al proprio PhotonView di essere pronto.
+            yield return new WaitForSeconds(0.3f);
+
+            while (turnController != null && turnController.GameState == null)
+            {
+                if (logNetworkMoves)
+                    Debug.Log("<color=cyan>[NET] Requesting initial GameState from Master Client...</color>");
+
+                photonView.RPC(nameof(RPC_RequestInitialGameState), RpcTarget.MasterClient);
+
+                yield return new WaitForSeconds(1.5f);
+            }
+
+            _requestInitialStateCoroutine = null;
+        }
+
+        /// <summary>
+        /// Eseguita sul Master Client quando un altro client richiede lo stato iniziale
+        /// (perche' non l'ha ricevuto in tempo, es. caricamento scena piu' lento su device reale).
+        /// </summary>
+        [PunRPC]
+        private void RPC_RequestInitialGameState(PhotonMessageInfo info)
+        {
+            if (!PhotonNetwork.IsMasterClient)
+                return;
+
+            if (turnController == null || turnController.GameState == null)
+            {
+                // La partita non e' ancora partita da questa parte: il richiedente ritentera'.
+                return;
+            }
+
+            if (logNetworkMoves)
+                Debug.Log($"<color=cyan>[NET] Resending initial GameState to {(info.Sender != null ? info.Sender.NickName : "?")} on request</color>");
+
+            string gameStateJson = SerializeGameState(turnController.GameState);
+            photonView.RPC(nameof(RPC_ReceiveInitialGameState), info.Sender, gameStateJson);
         }
 
         #endregion
@@ -433,6 +500,13 @@ namespace Project51.Networking
 
             turnController.SetNetworkGameState(gameState);
             Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
+
+            // Non serve piu' richiedere lo stato: fermiamo eventuale retry in corso.
+            if (_requestInitialStateCoroutine != null)
+            {
+                StopCoroutine(_requestInitialStateCoroutine);
+                _requestInitialStateCoroutine = null;
+            }
 
             // Apply any pending accusi received before GameState was ready
             FlushPendingAccusi();

@@ -226,6 +226,15 @@ namespace Project51.Networking
                 PhotonNetwork.LeaveRoom();
             }
             SetState(MatchmakingState.Idle);
+
+            // Fondamentale: dopo aver lasciato una stanza, Photon riconnette automaticamente il
+            // client al Master Server (comportamento normale, serve per poter creare/unirsi ad
+            // un'altra stanza) - questo rifÃ  scattare OnConnectedToMaster(). Se CurrentConfig non
+            // viene azzerato qui, quel callback lo trova ancora popolato con Intent=PrivateRoom/
+            // IsHost=true e ricrea da solo la STESSA stanza appena lasciata (stesso RoomCode, perche'
+            // CreatePrivateRoomInternal non lo rigenera): e' quello che faceva riapparire la waiting
+            // room subito dopo aver premuto ESCI, senza alcun altro click.
+            CurrentConfig = null;
         }
 
         #endregion
@@ -341,11 +350,22 @@ namespace Project51.Networking
             if (CurrentConfig?.Intent == MatchIntent.PrivateRoom)
             {
                 SetState(MatchmakingState.InWaitingRoom);
-                OnRoomJoined?.Invoke();
+
+                // Photon chiama SEMPRE OnJoinedRoom() subito dopo OnCreatedRoom() quando si crea
+                // una stanza (creare una stanza implica anche entrarci). Per l'host questo evento
+                // e' quindi ridondante: OnCreatedRoom() ha gia' mostrato la waiting room con
+                // isHost=true. Se qui rilanciassimo OnRoomJoined (pensato per chi entra con un
+                // codice), GameLaunchController richiamerebbe ShowWaitingRoom(isHost:false) subito
+                // dopo, sovrascrivendo l'host con la UI da ospite: il bottone AVVIA spariva e
+                // l'animazione di ingresso ripartiva da capo a meta'.
+                if (!CurrentConfig.IsHost)
+                {
+                    OnRoomJoined?.Invoke();
+                }
             }
             else // Quick Match
             {
-                // Controlla se la stanza è piena
+                // Controlla se la stanza ï¿½ piena
                 if (PhotonNetwork.CurrentRoom.PlayerCount >= PhotonNetwork.CurrentRoom.MaxPlayers)
                 {
                     SetState(MatchmakingState.Starting);

@@ -701,34 +701,15 @@ namespace Project51.Unity
             // Render table cards
             RenderTableCards(state.Table);
 
-            // Determine local player index via GameManager (reflection to avoid assembly ref)
-            int localIndex = 0;
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gmType != null)
-            {
-                var isMpProp = gmType.GetProperty("IsMultiplayerSafe", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                bool isMp = false;
-                if (isMpProp != null)
-                {
-                    var val = isMpProp.GetValue(null);
-                    if (val is bool b) isMp = b;
-                }
-
-                var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var gm = instanceProp?.GetValue(null);
-                if (gm != null)
-                {
-                    var localIdxProp = gmType.GetProperty("LocalPlayerIndex", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (localIdxProp != null)
-                    {
-                        var idxVal = localIdxProp.GetValue(gm);
-                        if (idxVal is int i && i >= 0 && i < state.Players.Count)
-                        {
-                            localIndex = i;
-                        }
-                    }
-                }
-            }
+            // Determina l'indice del player locale tramite GameModeService (fonte di verita' reale,
+            // popolata da GameSceneInitializer sia in training che in multiplayer). In precedenza
+            // usava reflection su "Project51.Unity.GameManager, Project51.Networking": quell'assembly
+            // non esiste piu' (asmdef rimosso), quindi la lookup falliva sempre e localIndex restava
+            // sempre 0 - ogni client renderizzava la mano del player 0 come "la propria mano",
+            // motivo per cui in multiplayer tutti i client vedevano le stesse identiche carte.
+            int localIndex = GameModeService.Current.LocalPlayerIndex;
+            if (localIndex < 0 || localIndex >= state.Players.Count)
+                localIndex = 0;
 
             // Render local human player's hand at bottom UI using their actual hand
             if (state.Players.Count > localIndex)
@@ -932,7 +913,7 @@ namespace Project51.Unity
 
         private void OnTableCardClicked(CardView tableCardView)
         {
-            if (!turnController.IsHumanPlayerTurn) return;
+            if (!IsMyTurnToPlay) return;
 
             if (!isSelecting)
             {
@@ -1139,6 +1120,22 @@ namespace Project51.Unity
         }
 
         /// <summary>
+        /// True solo se e' il turno del giocatore umano E quel giocatore e' il client locale.
+        /// </summary>
+        /// <remarks>
+        /// turnController.IsHumanPlayerTurn da solo dice solo "il player di turno non e' un bot":
+        /// in single-player e' equivalente a "e' il mio turno" (unico umano = seat locale), ma in
+        /// multiplayer con 2+ giocatori umani reali NON lo e' - ogni client renderizzava comunque
+        /// la propria mano come cliccabile ogni volta che era il turno di UN QUALSIASI giocatore
+        /// umano (non necessariamente il proprio), permettendo di giocare carte fuori turno e
+        /// desincronizzando la partita fra i client ("quando qualcuno gioca non si vede").
+        /// </remarks>
+        private bool IsMyTurnToPlay =>
+            turnController != null
+            && turnController.IsHumanPlayerTurn
+            && GameModeService.Current.IsLocalPlayer(turnController.CurrentPlayerIndex);
+
+        /// <summary>
         /// Renders the human player's hand with fan layout.
         /// </summary>
         private void RenderHumanHand(List<Card> handCards)
@@ -1148,13 +1145,13 @@ namespace Project51.Unity
             {
                 return;
             }
-            
+
             for (int i = 0; i < handCards.Count; i++)
             {
                 var card = handCards[i];
                 if (!activeCardViews.ContainsKey(card))
                 {
-                    var view = CreateCardView(card, faceUp: true, clickable: turnController.IsHumanPlayerTurn);
+                    var view = CreateCardView(card, faceUp: true, clickable: IsMyTurnToPlay);
                     if (view != null)
                     {
                         // Hook UI events
@@ -1163,7 +1160,7 @@ namespace Project51.Unity
                         // Do NOT subscribe to OnDragReleased for human cards: drag-to-play UI disabled for human
 
                         // Human cards: clickable and show hover overlay
-                        view.IsClickable = turnController.IsHumanPlayerTurn;
+                        view.IsClickable = IsMyTurnToPlay;
                         // ALWAYS enable hover for player cards (even when not their turn - for Matta visual)
                         view.EnableHover = true;
                         // Ensure selection state cleared
@@ -1180,7 +1177,7 @@ namespace Project51.Unity
                 var cardView = activeCardViews[card];
                 cardView.SetDisplayScale(EffectiveLocalPlayerCardScale);
                 // Ensure interactivity reflects current turn
-                cardView.IsClickable = turnController.IsHumanPlayerTurn;
+                cardView.IsClickable = IsMyTurnToPlay;
                 // ALWAYS enable hover (for Matta visual hints to work)
                 cardView.EnableHover = true;
 
@@ -1288,13 +1285,13 @@ namespace Project51.Unity
 
         private void OnHumanCardDoubleClicked(CardView clickedCardView)
         {
-            if (!turnController.IsHumanPlayerTurn) return;
+            if (!IsMyTurnToPlay) return;
             turnController.OnPlayerDoubleClick(clickedCardView.Card);
         }
 
         private void OnHumanCardDragReleased(CardView cardView, Vector3 worldPos)
         {
-            if (!turnController.IsHumanPlayerTurn) return;
+            if (!IsMyTurnToPlay) return;
             // Use a Physics2D overlap to detect table card colliders under the release point.
             var targets = new List<Card>();
             Vector2 point = new Vector2(worldPos.x, worldPos.y);
@@ -1391,26 +1388,11 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Gets the local player index, with fallback for when GameManager is not available.
+        /// Gets the local player index from GameModeService (fonte di verita' reale).
         /// </summary>
         private int GetLocalPlayerIndex()
         {
-            var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-            if (gmType != null)
-            {
-                var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var gm = instanceProp?.GetValue(null);
-                if (gm != null)
-                {
-                    var localIdxProp = gmType.GetProperty("LocalPlayerIndex", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    if (localIdxProp != null)
-                    {
-                        var idxVal = localIdxProp.GetValue(gm);
-                        if (idxVal is int i) return i;
-                    }
-                }
-            }
-            return 0;
+            return GameModeService.Current.LocalPlayerIndex;
         }
 
         private void OnDestroy()
@@ -1423,9 +1405,9 @@ namespace Project51.Unity
         /// </summary>
         private void OnHumanCardClicked(CardView clickedCardView)
         {
-            if (!turnController.IsHumanPlayerTurn)
+            if (!IsMyTurnToPlay)
             {
-                // silent: not human turn
+                // silent: not local player's turn
                 return;
             }
 

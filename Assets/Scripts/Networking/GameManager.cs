@@ -18,13 +18,13 @@ namespace Project51.Unity
             {
                 if (_instance == null)
                 {
+                    // NON loggare un errore se manca: GameManager e' un sistema legacy, superato da
+                    // GameSceneInitializer/GameModeService (vedi CardView/CardViewManager/CapturedPileManager,
+                    // che lo interrogano via reflection solo come fallback opzionale). In GameScene.unity
+                    // questo componente e' stato rimosso perche' sovrascriveva GameModeService.Current con
+                    // se stesso, rompendo IsHumanPlayer/IsBotPlayer per il multiplayer (dipendevano dal
+                    // RoomManager, mai presente nella scena reale -> "RoomManager not found" in loop).
                     _instance = FindObjectOfType<GameManager>();
-                    
-                    // Se ancora null dopo FindObjectOfType, significa che non c'è nella scena
-                    if (_instance == null)
-                    {
-                        Debug.LogError("GameManager not found in scene! Make sure there's a GameManager component in the scene.");
-                    }
                 }
                 return _instance;
             }
@@ -106,8 +106,8 @@ namespace Project51.Unity
         private int _localPlayerIndex = -1;
         
         /// <summary>
-        /// Index del player locale in modalità multiplayer.
-        /// In single-player è sempre 0.
+        /// Index del player locale in modalitï¿½ multiplayer.
+        /// In single-player ï¿½ sempre 0.
         /// </summary>
         public int LocalPlayerIndex => _localPlayerIndex >= 0 ? _localPlayerIndex : 0;
 
@@ -247,7 +247,7 @@ namespace Project51.Unity
         #region Player Queries
 
         /// <summary>
-        /// Verifica se il player index è il player locale.
+        /// Verifica se il player index ï¿½ il player locale.
         /// </summary>
         public bool IsLocalPlayer(int playerIndex)
         {
@@ -257,12 +257,12 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Verifica se il player index è un player umano.
+        /// Verifica se il player index ï¿½ un player umano.
         /// </summary>
         public bool IsHumanPlayer(int playerIndex)
         {
             if (CurrentGameMode == GameMode.SinglePlayer)
-                return playerIndex == 0; // In single-player, solo player 0 è umano
+                return playerIndex == 0; // In single-player, solo player 0 ï¿½ umano
 
             var roomManager = RoomManager.Instance;
             if (roomManager == null) return false;
@@ -274,7 +274,7 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Verifica se il player index è un bot.
+        /// Verifica se il player index ï¿½ un bot.
         /// </summary>
         public bool IsBotPlayer(int playerIndex)
         {
@@ -303,7 +303,7 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Verifica se è il turno del player locale.
+        /// Verifica se ï¿½ il turno del player locale.
         /// </summary>
         public bool IsLocalPlayerTurn()
         {

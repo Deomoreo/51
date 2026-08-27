@@ -97,6 +97,187 @@ namespace Project51.EditorTools
             return prefab;
         }
 
+        // ==================== Bot Fill Toggle (patch existing prefab) ====================
+
+        [MenuItem("Tools/Lobby/Add Fill-With-Bots Toggle To Waiting Room")]
+        private static void AddFillWithBotsToggle()
+        {
+            var theme = Resources.Load<UITheme>(ThemeResourcePath);
+            if (theme == null)
+            {
+                Debug.LogError($"[LobbyPrefabBuilder] UITheme non trovato in Resources/{ThemeResourcePath}. Aborto.");
+                return;
+            }
+
+            var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(WaitingRoomPanelPrefabPath);
+            if (prefabAsset == null)
+            {
+                Debug.LogError($"[LobbyPrefabBuilder] {WaitingRoomPanelPrefabPath} non trovato. Esegui prima 'Tools/Lobby/Build Missing Prefabs'. Aborto.");
+                return;
+            }
+
+            var contentsRoot = PrefabUtility.LoadPrefabContents(WaitingRoomPanelPrefabPath);
+            try
+            {
+                var waitingRoomUI = contentsRoot.GetComponent<WaitingRoomUI>();
+                if (waitingRoomUI == null)
+                {
+                    Debug.LogError($"[LobbyPrefabBuilder] {WaitingRoomPanelPrefabPath} non ha un componente WaitingRoomUI. Aborto.");
+                    return;
+                }
+
+                var so = new SerializedObject(waitingRoomUI);
+                var toggleProp = so.FindProperty("fillWithBotsToggle");
+                if (toggleProp.objectReferenceValue != null)
+                {
+                    Debug.Log("[LobbyPrefabBuilder] Il toggle 'riempi con bot' e' gia' presente su questo prefab, salto.");
+                    return;
+                }
+
+                var existing = contentsRoot.transform.Find("FillWithBotsToggle");
+                if (existing != null)
+                {
+                    Debug.LogWarning("[LobbyPrefabBuilder] Trovato un GameObject 'FillWithBotsToggle' orfano (non collegato allo script): lo ricollego invece di duplicarlo.");
+                    var existingToggle = existing.GetComponent<Toggle>();
+                    toggleProp.objectReferenceValue = existingToggle;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                    PrefabUtility.SaveAsPrefabAsset(contentsRoot, WaitingRoomPanelPrefabPath);
+                    return;
+                }
+
+                // TMP_DefaultControls (nella versione di TextMeshPro in questo progetto) non offre
+                // CreateToggle (a differenza di CreateButton/CreateInputField/CreateDropdown):
+                // costruiamo il Toggle a mano, come gia' fatto altrove in questo file (es. BuildPlayerSlot).
+                var toggleGO = new GameObject("FillWithBotsToggle", typeof(RectTransform), typeof(Toggle));
+                SceneManager.MoveGameObjectToScene(toggleGO, contentsRoot.scene);
+                toggleGO.transform.SetParent(contentsRoot.transform, false);
+                SetAnchoredRect((RectTransform)toggleGO.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(460, 46), new Vector2(0, 205));
+
+                var backgroundGO = new GameObject("Background", typeof(RectTransform), typeof(Image));
+                SceneManager.MoveGameObjectToScene(backgroundGO, contentsRoot.scene);
+                backgroundGO.transform.SetParent(toggleGO.transform, false);
+                var backgroundRt = (RectTransform)backgroundGO.transform;
+                backgroundRt.anchorMin = new Vector2(0f, 0.5f);
+                backgroundRt.anchorMax = new Vector2(0f, 0.5f);
+                backgroundRt.pivot = new Vector2(0f, 0.5f);
+                backgroundRt.sizeDelta = new Vector2(40, 40);
+                backgroundRt.anchoredPosition = new Vector2(4, 0);
+                var backgroundImage = backgroundGO.GetComponent<Image>();
+                backgroundImage.color = new Color(1f, 1f, 1f, 0.15f);
+
+                var checkmarkGO = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
+                SceneManager.MoveGameObjectToScene(checkmarkGO, contentsRoot.scene);
+                checkmarkGO.transform.SetParent(backgroundGO.transform, false);
+                var checkmarkRt = (RectTransform)checkmarkGO.transform;
+                checkmarkRt.anchorMin = Vector2.zero;
+                checkmarkRt.anchorMax = Vector2.one;
+                checkmarkRt.offsetMin = new Vector2(6, 6);
+                checkmarkRt.offsetMax = new Vector2(-6, -6);
+                var checkmarkImage = checkmarkGO.GetComponent<Image>();
+                checkmarkImage.color = theme.GemAccent;
+
+                CreateStretchedText(toggleGO.transform, "Label", "Riempi i posti vuoti con bot",
+                    22f, FontStyles.Bold, theme.Cream, TextAlignmentOptions.MidlineLeft,
+                    new Vector2(52, 0), Vector2.zero);
+
+                var toggle = toggleGO.GetComponent<Toggle>();
+                toggle.targetGraphic = backgroundImage;
+                toggle.graphic = checkmarkImage;
+                toggle.isOn = false;
+
+                toggleProp.objectReferenceValue = toggle;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                PrefabUtility.SaveAsPrefabAsset(contentsRoot, WaitingRoomPanelPrefabPath);
+                Debug.Log($"[LobbyPrefabBuilder] Toggle 'riempi con bot' aggiunto a {WaitingRoomPanelPrefabPath} e collegato a WaitingRoomUI.fillWithBotsToggle.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(contentsRoot);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        // ==================== Matchmaking Status UI (patch existing scene object) ====================
+
+        [MenuItem("Tools/Lobby/Build Matchmaking Status UI")]
+        private static void BuildMatchmakingStatusUI()
+        {
+            var theme = Resources.Load<UITheme>(ThemeResourcePath);
+            if (theme == null)
+            {
+                Debug.LogError($"[LobbyPrefabBuilder] UITheme non trovato in Resources/{ThemeResourcePath}. Aborto.");
+                return;
+            }
+
+            var activeScene = EditorSceneManager.GetActiveScene();
+            if (Path.GetFileName(activeScene.path) != "MainMenu.unity")
+            {
+                Debug.LogError($"[LobbyPrefabBuilder] La scena attiva e' '{activeScene.path}', non MainMenu.unity. Apri MainMenu.unity e riprova. Aborto.");
+                return;
+            }
+
+            var statusUI = Object.FindObjectOfType<MatchmakingStatusUI>(true);
+            if (statusUI == null)
+            {
+                Debug.LogError("[LobbyPrefabBuilder] Nessun MatchmakingStatusUI trovato nella scena attiva. Aborto.");
+                return;
+            }
+
+            var so = new SerializedObject(statusUI);
+            var statusTextProp = so.FindProperty("statusText");
+            if (statusTextProp.objectReferenceValue != null)
+            {
+                Debug.Log("[LobbyPrefabBuilder] MatchmakingStatusUI risulta gia' collegato (statusText assegnato), salto.");
+                return;
+            }
+
+            var root = statusUI.gameObject;
+
+            // Il GameObject esiste gia' in scena (referenziato da GameLaunchController.matchmakingStatusUI)
+            // ma non ha mai avuto testo/animazione/bottone collegati: e' solo un Image bianco al 39%
+            // di opacita' con lo sprite di default di Unity, senza contenuto. Show()/Hide() lo attivano/
+            // disattivano comunque (i null-check sui figli mancanti sono innocui), quindi appariva a
+            // schermo come un riquadro grigio vuoto e senza fade durante "Creazione stanza..." o il
+            // caricamento della GameScene. Qui lo ritematizziamo riusando lo stesso Image (non lo
+            // ricreiamo, per non rompere il riferimento gia' assegnato in GameLaunchController).
+            var existingImage = root.GetComponent<Image>();
+            if (existingImage != null)
+            {
+                existingImage.color = Color.white;
+                ApplyThemedPanel(root, theme);
+            }
+
+            var canvasGroup = root.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+                canvasGroup = root.AddComponent<CanvasGroup>();
+
+            var statusText = CreateStretchedText(root.transform, "StatusText", "Connessione...",
+                30f, FontStyles.Bold, theme.Cream, TextAlignmentOptions.Center,
+                new Vector2(24, 0), new Vector2(-24, 0));
+            SetAnchoredRect((RectTransform)statusText.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(600, 60), new Vector2(0, 30));
+
+            var detailText = CreateStretchedText(root.transform, "DetailText", "",
+                20f, FontStyles.Normal, theme.TextMuted, TextAlignmentOptions.Center,
+                new Vector2(24, 0), new Vector2(-24, 0));
+            SetAnchoredRect((RectTransform)detailText.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(600, 40), new Vector2(0, -20));
+            detailText.gameObject.SetActive(false);
+
+            var cancelButton = CreateThemedButton(root.transform, "CancelButton", "ANNULLA", ThemedButton.Variant.Secondary, theme, new Vector2(220, 70), out _);
+            SetAnchoredRect((RectTransform)cancelButton.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(220, 70), new Vector2(0, 60));
+
+            so.FindProperty("statusText").objectReferenceValue = statusText;
+            so.FindProperty("detailText").objectReferenceValue = detailText;
+            so.FindProperty("cancelButton").objectReferenceValue = cancelButton;
+            so.FindProperty("canvasGroup").objectReferenceValue = canvasGroup;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorSceneManager.MarkSceneDirty(activeScene);
+            Debug.Log("[LobbyPrefabBuilder] MatchmakingStatusUI ritematizzato e collegato (scena NON salvata - salva tu manualmente).");
+        }
+
         // ==================== Wire Into Scene ====================
 
         [MenuItem("Tools/Lobby/Wire Prefabs Into Scene")]

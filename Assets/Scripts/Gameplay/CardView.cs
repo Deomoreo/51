@@ -69,14 +69,14 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// True se la carta è attualmente scoperta (face-up), false se mostra il dorso.
+        /// True se la carta ï¿½ attualmente scoperta (face-up), false se mostra il dorso.
         /// </summary>
         public bool IsFaceUp
         {
             get
             {
                 if (spriteRenderer == null) return false;
-                // Considera la carta scoperta se la sprite NON è il dorso
+                // Considera la carta scoperta se la sprite NON ï¿½ il dorso
                 return spriteRenderer.sprite != null && spriteRenderer.sprite != defaultCardBack;
             }
         }
@@ -310,33 +310,25 @@ namespace Project51.Unity
             }
         }
 
+        private TurnController _turnControllerCache;
+
+        /// <summary>
+        /// True solo se e' specificamente il turno del client locale (non solo "di un umano
+        /// qualsiasi"). Prima usava reflection su "Project51.Unity.GameManager, Project51.Networking",
+        /// un assembly che non esiste piu': tornava sempre null -> fallback "return true" sempre,
+        /// per chiunque, in qualunque momento - qualsiasi client poteva trascinare/giocare carte
+        /// fuori dal proprio turno, desincronizzando la partita in multiplayer.
+        /// </summary>
         private bool IsLocalPlayersTurn()
         {
-            // Check via GameManager reflection to avoid hard assembly refs
-            try
-            {
-                var gmType = System.Type.GetType("Project51.Unity.GameManager, Project51.Networking");
-                if (gmType != null)
-                {
-                    var instanceProp = gmType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var gm = instanceProp?.GetValue(null);
-                    if (gm != null)
-                    {
-                        var isLocalTurnMethod = gmType.GetMethod("IsLocalPlayerTurn", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        if (isLocalTurnMethod != null)
-                        {
-                            var res = isLocalTurnMethod.Invoke(gm, null);
-                            if (res is bool b) return b;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // ignore reflection errors in editor
-            }
-            // Default to true in single-player or if GM not found
-            return true;
+            if (_turnControllerCache == null)
+                _turnControllerCache = FindObjectOfType<TurnController>();
+
+            if (_turnControllerCache == null || _turnControllerCache.CurrentPlayerIndex < 0)
+                return true; // fallback: nessun TurnController trovato ancora (es. scena in caricamento)
+
+            return _turnControllerCache.IsHumanPlayerTurn
+                && GameModeService.Current.IsLocalPlayer(_turnControllerCache.CurrentPlayerIndex);
         }
 
         private float lastClickTime = 0f;

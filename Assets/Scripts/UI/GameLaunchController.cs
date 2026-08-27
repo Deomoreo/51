@@ -22,9 +22,14 @@ namespace Project51.Unity
         [SerializeField] private MatchmakingStatusUI matchmakingStatusUI;
 
         [Header("Scene Names")]
+        // NOTE: WaitingRoom e LobbyScene NON esistono come scene separate: la waiting room e' un
+        // overlay dentro MainMenu.unity. La scena di destinazione per QUALSIASI intent, una volta
+        // che la partita puo' iniziare, e' sempre GameScene. Non puntare piu' a nomi di scena inesistenti
+        // (causava un PhotonNetwork.LoadLevel/SceneManager.LoadScene silenzioso su una scena assente:
+        // "la partita non parte mai" anche a stanza piena).
         [SerializeField] private string trainingSceneName = "GameScene";
-        [SerializeField] private string quickMatchSceneName = "LobbyScene";
-        [SerializeField] private string privateRoomSceneName = "WaitingRoom";
+        [SerializeField] private string quickMatchSceneName = "GameScene";
+        [SerializeField] private string privateRoomSceneName = "GameScene";
 
         [Header("Fake Matchmaking (temporary)")]
         [Tooltip("For now, simulate matchmaking/loading even for offline training.")]
@@ -427,11 +432,22 @@ namespace Project51.Unity
             if (logEvents)
                 Debug.Log("[GameLaunchController] Match found! Loading game scene...");
 
-            HideMatchmakingStatus();
             if (waitingRoomUI != null)
                 waitingRoomUI.Hide();
 
-            GoToGameScene(MatchmakingManager.Instance?.CurrentConfig ?? _pendingConfig);
+            // Caricare la scena subito dopo waitingRoomUI.Hide() tagliava via la sua animazione
+            // di uscita (0.2s) a meta': PhotonNetwork.LoadLevel/SceneManager.LoadScene non aspettano
+            // nessun fade. Mostriamo un breve step "Caricamento..." (gia' usato dal fake-matchmaking
+            // del training) e diamo il tempo all'animazione di finire prima di cambiare scena.
+            ShowMatchmakingStatus("Partita trovata!", "Caricamento...");
+            StartCoroutine(LoadGameSceneAfterTransition(MatchmakingManager.Instance?.CurrentConfig ?? _pendingConfig));
+        }
+
+        private System.Collections.IEnumerator LoadGameSceneAfterTransition(MatchConfig config)
+        {
+            yield return new WaitForSecondsRealtime(0.35f);
+            HideMatchmakingStatus();
+            GoToGameScene(config);
         }
 
         private void OnMatchmakingCancelRequested()
