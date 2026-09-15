@@ -1,0 +1,32 @@
+51 — CORTE DI GIADA
+
+MAZZO
+40 carte: 10 bastoni, 10 spade, 10 denari, 10 coppe.
+01 = Asso; 02–07 = semi; 08 = Fante; 09 = Cavallo; 10 = Re.
+Sono inclusi anche il fronte vuoto e il dorso coordinato.
+Tutti i 42 PNG sono RGBA da 963 x 1419 pixel con angoli trasparenti.
+
+PSD IN PHOTOPEA
+Apri 51_CORTE_DI_GIADA_MASTER.psd. Il file si apre sul 7 di coppe.
+Tieni visibile CARD_FACE_MASTER: contiene SFONDO_ORIGINALE e CORNICE_GIADA,
+separati per poter modificare la cornice mantenendo il fondo.
+Spegni il gruppo della carta attiva e accendi una sola carta nel seme desiderato.
+Ogni carta dal 2 al 7 ha un livello per ciascun seme.
+Gli assi e le figure sono su livelli trasparenti separati.
+Per il retro accendi DORSO_COORDINATO.
+
+CONTENUTO DELLO ZIP
+51_GIADA_PNG_Unity: le 40 carte e i due template pronti per Unity.
+Assets_separati: semi, assi, figure, fondo e cornice riutilizzabili.
+Anteprime: tavole complete dei quattro semi.
+
+UNITY
+Texture Type: Sprite (2D and UI). Sprite Mode: Single.
+Usa lo stesso Pixels Per Unit su tutte le carte. Nella UI usa Preserve Aspect.
+I PNG sono gia separati; non serve eseguire lo slicing.
+
+NOTE
+Lo stile e stato sviluppato dalla proposta Corte di Giada approvata.
+Le illustrazioni sono state generate e composte in un PSD modificabile.
+La pergamena deriva dal template originale: il suo interno centrale e conservato,
+con la texture estesa sotto la nuova cornice, al posto di quella precedente.

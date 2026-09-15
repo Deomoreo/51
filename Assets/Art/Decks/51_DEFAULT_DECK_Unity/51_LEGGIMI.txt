@@ -1,0 +1,26 @@
+51 — Mazzo completo
+
+40 carte, 4 semi: bastoni, spade, denari, coppe.
+Ogni PNG misura 963 x 1419 pixel, RGBA, con trasparenza agli angoli esterni.
+01 = Asso, 02–07 = semi, 08 = Fante, 09 = Cavallo, 10 = Re.
+
+PSD MODIFICABILE
+Apri 51_MAZZO_MASTER.psd in Photopea.
+Il file si apre sul 7 di coppe. Tieni sempre visibile CARD_FACE_MASTER.
+Per cambiare carta, spegni il gruppo della carta attuale, accendi il gruppo
+del seme desiderato e una sola carta al suo interno.
+Denari e coppe dal 2 al 7 hanno ogni seme su un livello separato.
+Bastoni e spade conservano le composizioni del master, centrate in orizzontale.
+Le figure sono state adattate per rimanere dentro la cornice.
+Gli assi e la cornice provengono dal master originale.
+
+UNITY
+Importa i PNG come Sprite (2D and UI), Sprite Mode: Single.
+Usa lo stesso Pixels Per Unit per tutte le carte e Preserve Aspect nella UI.
+Le dimensioni sono uniformi; non serve eseguire uno slicing.
+
+NOTE SULLE FIGURE
+Sono state utilizzate le illustrazioni fornite, senza rigenerarle.
+Le nuove figure sono state scontornate e i cartigli inferiori rimossi,
+coerentemente con bastoni e spade. I tagli del corpo presenti nelle
+illustrazioni sorgenti non sono stati ricostruiti.
