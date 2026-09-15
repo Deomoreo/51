@@ -71,6 +71,13 @@ namespace Project51.Unity
 
         public float GetTableCardScale() => EffectiveTableCardScale;
 
+        /// <summary>
+        /// Scala carta-in-mano per un giocatore specifico: quella del giocatore locale
+        /// (piu' grande) o quella condivisa dagli avversari, a seconda di chi e' playerIndex.
+        /// </summary>
+        public float GetHandCardScale(int playerIndex) =>
+            GameModeService.Current.IsLocalPlayer(playerIndex) ? EffectiveLocalPlayerCardScale : EffectiveOpponentCardScale;
+
         [Header("Sprites (Optional)")]
         [SerializeField] private Sprite[] cardSprites; // shared with CardSpriteProvider
         [SerializeField] private Sprite defaultCardBack;
@@ -88,6 +95,62 @@ namespace Project51.Unity
         private Dictionary<(Suit suit, int rank), Sprite> explicitMapCache = new Dictionary<(Suit, int), Sprite>();
 
         private Dictionary<Card, CardView> activeCardViews = new Dictionary<Card, CardView>();
+
+        /// <summary>
+        /// Quando true, i render pass NON riaccendono il renderer delle carte (vedi i punti
+        /// "Difensivo" in RenderTableCards/RenderHumanHand/RenderAIHandsDynamic). Serve a
+        /// TurnController per tenere le carte nascoste durante l'animazione di distribuzione dal
+        /// mazziere: un semplice SetAllCardRenderersVisible(false) chiamato dall'esterno non basta,
+        /// perche' un QUALSIASI ForceRefresh successivo (incluso quello interno di
+        /// CardViewManager.Start(), il cui ordine rispetto agli Start() altrui non e' garantito)
+        /// le riaccende subito tramite quei punti difensivi, prima ancora che Unity disegni un
+        /// frame - bug segnalato piu' volte ("non sono invisibili").
+        /// </summary>
+        private bool suppressNewCardVisibility = false;
+
+        public void SetSuppressNewCardVisibility(bool suppress)
+        {
+            suppressNewCardVisibility = suppress;
+        }
+
+        /// <summary>
+        /// Sposta FISICAMENTE le carte indicate sulla posizione del mazziere a scala quasi zero,
+        /// catturando prima posizione/scala finale (quella appena calcolata da ForceRefresh) per
+        /// poterle far rientrare in animazione. Piu' robusto di un semplice toggle di visibilita':
+        /// anche se qualcos'altro dovesse riaccenderne il renderer per un motivo che non e' stato
+        /// possibile isolare (bug segnalato piu' volte: "si vedono ancora"), la carta sarebbe
+        /// comunque minuscola e sovrapposta dal lato del mazziere, non "gia' distribuita in mano".
+        /// </summary>
+        public List<StagedCard> StageCardsAtOriginForDealAnimation(IReadOnlyList<CardView> views, Vector3 originPosition)
+        {
+            var staged = new List<StagedCard>();
+            if (views == null) return staged;
+
+            foreach (var view in views)
+            {
+                if (view == null) continue;
+                var t = view.transform;
+                staged.Add(new StagedCard(view, t.position, t.localScale));
+                t.position = originPosition;
+                t.localScale = t.localScale * 0.001f;
+            }
+            return staged;
+        }
+
+        public readonly struct StagedCard
+        {
+            public readonly CardView View;
+            public readonly Vector3 FinalPosition;
+            public readonly Vector3 FinalScale;
+
+            public StagedCard(CardView view, Vector3 finalPosition, Vector3 finalScale)
+            {
+                View = view;
+                FinalPosition = finalPosition;
+                FinalScale = finalScale;
+            }
+        }
+
         private Camera layoutCamera;
 
         /// <summary>
@@ -176,12 +239,29 @@ namespace Project51.Unity
                     }
 
                     var cardView = activeCardViews[card];
+
+                    // La CardView per questa carta puo' gia' esistere da PRIMA che l'accuso fosse
+                    // dichiarato (creata face-down quando la mano e' stata distribuita): il parametro
+                    // faceUp di CreateCardView sopra si applica SOLO alla creazione, quindi senza
+                    // questo controllo la carta restava coperta per sempre anche dopo un Cirulla/
+                    // Decino valido, perche' il ramo "if (!activeCardViews.ContainsKey(card))" veniva
+                    // saltato. Stesso identico pattern gia' usato in RenderTableCards per "flippare"
+                    // una carta gia' esistente quando passa da mano a tavolo.
+                    if (faceUp && !cardView.IsFaceUp)
+                    {
+                        var faceSprite = GetSpriteForCard(card);
+                        if (faceSprite != null)
+                        {
+                            cardView.FlipToFaceUp(faceSprite);
+                        }
+                    }
+
                     cardView.SetDisplayScale(EffectiveOpponentCardScale);
 
                     // Difensivo: stesso motivo di RenderTableCards.
                     if (cardView.CardRenderer != null)
                     {
-                        cardView.CardRenderer.enabled = true;
+                        cardView.CardRenderer.enabled = !suppressNewCardVisibility;
                     }
 
                     Vector3 position;
@@ -258,10 +338,36 @@ namespace Project51.Unity
         /// <summary>
         /// Gets the sprite for a specific card. Public for use by other UI components.
         /// </summary>
+        /// <summary>
+        /// Carica cardSprites da Resources/Cards se non ancora popolato (assegnato in Inspector
+        /// o gia' caricato in precedenza). Prima questo accadeva SOLO dentro Start(): se un
+        /// chiamante esterno (es. TurnController.StartNewGame(), chiamato direttamente da
+        /// GameSceneInitializer PRIMA che Start() di questo componente sia mai girato) invocava
+        /// ForceRefresh() abbastanza presto, cardSprites era ancora vuoto - le carte create in
+        /// quel momento restavano bloccate con lo sprite placeholder per sempre, perche' il
+        /// render delle carte in mano (a differenza di tavolo/avversari, che ri-controllano lo
+        /// sprite ad ogni refresh per gestire il flip face-down->face-up) non lo ricontrolla piu'
+        /// una volta creata la view (bug segnalato: "le mie carte sono rettangoli piccoli senza
+        /// immagine, le altre sono normali"). GetSpriteForCard ora e' autosufficiente indipendentemente
+        /// da quando/da chi viene chiamato per primo.
+        /// </summary>
+        private void EnsureCardSpritesLoaded()
+        {
+            if (cardSprites != null && cardSprites.Length > 0) return;
+
+            var loaded = Resources.LoadAll<Sprite>("Cards");
+            if (loaded != null && loaded.Length > 0)
+            {
+                cardSprites = loaded;
+            }
+        }
+
         public Sprite GetSpriteForCard(Card card)
         {
             // 1) Do NOT rely on array index ordering; many packs are unordered.
             // Prefer explicit mappings or name-based resolution.
+
+            EnsureCardSpritesLoaded();
 
             // 2) Name-based fallback for renamed assets (e.g., Bastoni_1, Coppe_7, Spade_Re, Denari_Asso)
             if (spriteLookup == null || spriteLookup.Count == 0)
@@ -390,19 +496,7 @@ namespace Project51.Unity
             spriteLookup.Clear();
 
             // Auto-load sprites if not assigned
-            if (cardSprites == null || cardSprites.Length == 0)
-            {
-                var loaded = Resources.LoadAll<Sprite>("Cards");
-                if (loaded != null && loaded.Length > 0)
-                {
-                    cardSprites = loaded;
-                    // sprites loaded
-                }
-                else
-                {
-                    // no sprites found in Resources/Cards
-                }
-            }
+            EnsureCardSpritesLoaded();
 
             // Auto-load Matta special sprites if not assigned
             if (mattaSpecialSprites == null || mattaSpecialSprites.Length == 0)
@@ -611,6 +705,35 @@ namespace Project51.Unity
         }
 
         /// <summary>
+        /// Wrapper pubblico di CalculateTableCardPosition. Serve a chi deve posizionare carte
+        /// "fantasma" (non presenti nel vero gameState.Table) sulle stesse coordinate delle carte
+        /// tavolo reali - es. il reveal dell'accuso del dealer, che mostra carte gia' rimosse da
+        /// gameState.Table (RoundManager le processa prima che qualunque render esista).
+        /// </summary>
+        public Vector3 GetTableCardPosition(int totalCards, int cardIndex)
+        {
+            return CalculateTableCardPosition(totalCards, cardIndex);
+        }
+
+        /// <summary>
+        /// Crea una CardView "fantasma": stesso identico visual delle carte tavolo reali, ma NON
+        /// registrata in activeCardViews e non interattiva - solo per animazioni una tantum (es.
+        /// il reveal dell'accuso del dealer). Il chiamante e' responsabile di distruggerla con
+        /// view.DestroyView() quando ha finito.
+        /// </summary>
+        public CardView SpawnGhostCardView(Card card, Vector3 position)
+        {
+            var view = CreateCardView(card, faceUp: true, clickable: false);
+            if (view == null) return null;
+
+            view.SetDisplayScale(EffectiveTableCardScale);
+            view.SetPosition(position);
+            view.transform.rotation = Quaternion.identity;
+            if (view.CardRenderer != null) view.CardRenderer.enabled = true;
+            return view;
+        }
+
+        /// <summary>
         /// Calcola la posizione che avr� una carta aggiunta al tavolo senza modificare lo stato.
         /// </summary>
         public Vector3 GetNextTableCardPosition(int currentTableCardCount)
@@ -732,6 +855,23 @@ namespace Project51.Unity
         }
 
         /// <summary>
+        /// Nasconde/mostra il renderer di TUTTE le CardView attive, senza toccare posizione o
+        /// scala. Usato da TurnController per tenere le carte invisibili tra ForceRefresh() (che
+        /// le crea e posiziona subito, sincrono) e l'animazione di distribuzione dal mazziere -
+        /// altrimenti le carte si vedevano gia' ferme un attimo prima che partisse l'animazione
+        /// (bug segnalato: "le carte appaiono gia' distribuite, poi dichiara il dealer").
+        /// </summary>
+        public void SetAllCardRenderersVisible(bool visible)
+        {
+            foreach (var view in activeCardViews.Values)
+            {
+                if (view == null) continue;
+                var renderer = view.CardRenderer;
+                if (renderer != null) renderer.enabled = visible;
+            }
+        }
+
+        /// <summary>
         /// Restituisce la vista gi� presente per una carta, senza crearla o modificarla.
         /// Usato dal controller di animazione prima del commit della mossa.
         /// </summary>
@@ -820,10 +960,11 @@ namespace Project51.Unity
                     cardView.EnableHover = false;
 
                     // Difensivo: una carta riposizionata sul tavolo deve sempre essere visibile,
-                    // anche se un'animazione precedente aveva disabilitato il renderer.
+                    // anche se un'animazione precedente aveva disabilitato il renderer (a meno che
+                    // non sia sospeso apposta per l'animazione di distribuzione dal mazziere).
                     if (cardView.CardRenderer != null)
                     {
-                        cardView.CardRenderer.enabled = true;
+                        cardView.CardRenderer.enabled = !suppressNewCardVisibility;
                     }
                 }
 
@@ -1184,7 +1325,7 @@ namespace Project51.Unity
                 // Difensivo: stesso motivo di RenderTableCards.
                 if (cardView.CardRenderer != null)
                 {
-                    cardView.CardRenderer.enabled = true;
+                    cardView.CardRenderer.enabled = !suppressNewCardVisibility;
                 }
 
                 // Calculate position with fan layout

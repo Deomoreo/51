@@ -38,7 +38,7 @@ namespace Project51.Unity
         [SerializeField] private RectTransform indicator;
         [SerializeField] private RectTransform tabsContainer;
         [SerializeField] private List<RectTransform> tabRects;
-        [SerializeField] private float indicatorFixedWidth = 80f;
+        [SerializeField] private float indicatorFixedWidth = 248f;
         [SerializeField] private float indicatorAnimDuration = 0.25f;
         [SerializeField] private Ease indicatorAnimEase = Ease.OutCubic;
 

@@ -46,9 +46,74 @@ namespace Project51.Unity
 
             gameState = newGameState;
             roundManager = new RoundManager(gameState);
+
+            // Un GameState "fresco" dal Master rende irrilevante (anzi pericolosa, se applicata
+            // fuori ordine su uno stato diverso) qualunque mossa di rete accodata in precedenza:
+            // scartiamo la coda e ripartiamo puliti. Azzeriamo anche i flag di animazione/redeal:
+            // se questo client stava rianimando una mossa vecchia quando e' arrivato un resync
+            // (es. dopo RequestNetworkResync), quello stato locale non ha piu' senso.
+            pendingNetworkMoves.Clear();
+            isMoveAnimationInProgress = false;
+            isRedealPendingVisual = false;
+            isRedealAnimationInProgress = false;
+            pendingRedealVisualCopies.Clear();
+            isAccusoWindowOpen = false;
+            accusoWindowSecondsRemaining = 0f;
+            accusoAlreadyResolvedThisHand.Clear();
+
             RefreshValidMoves();
             cardViewManager?.ForceRefresh();
             OnMoveExecuted?.Invoke(null);
+        }
+
+        /// <summary>
+        /// Chiamato da GameSceneInitializer.MarkPlayerDisconnected() quando un giocatore reale si
+        /// disconnette a partita gia' avviata e il suo posto e' stato appena convertito in bot nel
+        /// GameModeService.Current locale (indipendentemente su ogni client, stesso mapping di posti
+        /// per tutti - vedi GameSceneInitializer._stableActorOrder).
+        /// </summary>
+        /// <remarks>
+        /// Serve un aggancio esplicito perche' altrimenti, se il turno era GIA' fermo in attesa di
+        /// quel giocatore (caso tipico: la partita "si blocca" dopo la disconnessione), nessun altro
+        /// evento avrebbe mai fatto ripartire il gioco: la logica "se il prossimo giocatore e' un
+        /// bot, fai giocare l'IA" in ApplyMoveInternal scatta solo in reazione a una mossa APPENA
+        /// eseguita, non quando lo stato resta semplicemente fermo. Se invece la disconnessione
+        /// avviene mentre e' gia' in corso l'animazione di un'altra mossa, non serve fare nulla qui:
+        /// quando quell'animazione finira', ApplyMoveInternal rilevera' da solo (con IsHumanPlayerTurn
+        /// ormai aggiornato) che il turno successivo va giocato da un bot.
+        /// </remarks>
+        public void OnPlayerConvertedToBot(int playerIndex)
+        {
+            RefreshValidMoves();
+            cardViewManager?.ForceRefresh();
+
+            var provider = GameModeService.Current;
+            if (!provider.IsMultiplayer || !provider.IsMasterClient) return;
+            if (gameState == null || gameState.RoundEnded) return;
+            if (gameState.CurrentPlayerIndex != playerIndex) return;
+            if (isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress) return;
+
+            CancelInvoke(nameof(ExecuteAITurn));
+            Invoke(nameof(ExecuteAITurn), aiMoveDelay);
+        }
+
+        /// <summary>
+        /// Chiamato da NetworkGameController.OnMasterClientSwitched quando QUESTO client diventa il
+        /// nuovo Master Client per migrazione automatica di Photon (il master precedente si e'
+        /// disconnesso). Se il turno corrente era gia' di un bot, rimasto fermo in attesa che il
+        /// vecchio master lo giocasse, nessun altro evento lo rimetterebbe in moto da solo - stesso
+        /// identico motivo di OnPlayerConvertedToBot qui sopra.
+        /// </summary>
+        public void OnBecameMasterClient()
+        {
+            var provider = GameModeService.Current;
+            if (!provider.IsMultiplayer || !provider.IsMasterClient) return;
+            if (gameState == null || gameState.RoundEnded) return;
+            if (isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress) return;
+            if (!provider.IsBotPlayer(gameState.CurrentPlayerIndex)) return;
+
+            CancelInvoke(nameof(ExecuteAITurn));
+            Invoke(nameof(ExecuteAITurn), aiMoveDelay);
         }
 
         [Header("Game Settings")]
@@ -72,6 +137,52 @@ namespace Project51.Unity
         private bool isRedealPendingVisual;
         private bool isRedealAnimationInProgress;
         private readonly List<Transform> pendingRedealVisualCopies = new List<Transform>();
+        private List<CardViewManager.StagedCard> pendingInitialHandStagedCards;
+        private List<CardViewManager.StagedCard> pendingInitialTableStagedCards;
+        private (int dealerIndex, AccusoType type, List<Card> sweptCards)? pendingDealerAccuso;
+        [SerializeField] private DealerAccusoRevealController dealerAccusoRevealController;
+
+        private void HandleDealerAccusoDeclared(int dealerIndex, AccusoType type, List<Card> sweptCards)
+        {
+            pendingDealerAccuso = (dealerIndex, type, sweptCards);
+        }
+
+        [Header("Accuso manuale")]
+        [Tooltip("Durata fissa della finestra per dichiarare Accuso manualmente prima che scatti l'automatico. Sempre la stessa, anche se nessuno ha un accuso disponibile: una durata variabile rivelerebbe implicitamente chi ce l'ha (vedi discussione UI_SPEC_Tavolo.md sezione 9).")]
+        [SerializeField] private float manualAccusoWindowSeconds = 3f;
+
+        [Header("Animazione dealer (inizio smazzata) - provvisorio, verra' rifatto con una vera grafica")]
+        [Tooltip("Quanto resta visibile la chip 'MAZZIERE' prima che inizi la distribuzione animata.")]
+        [SerializeField] private float dealerDeclareHoldSeconds = 2.2f;
+        [Tooltip("Ritmo con cui arrivano le carte tavolo (una alla volta, dopo le mani): piu' lento dello stagger di default delle mani, richiesto esplicitamente.")]
+        [SerializeField] private float tableCardStagger = 0.35f;
+
+        private bool isAccusoWindowOpen;
+        private float accusoWindowSecondsRemaining;
+        // Indici gia' risolti (con o senza accuso) in questa mano: evita la doppia dichiarazione
+        // quando un giocatore ha gia' dichiarato manualmente durante la finestra e poi il fallback
+        // automatico di fine finestra ripasserebbe su tutti. Popolato anche dall'RPC in arrivo per
+        // le dichiarazioni manuali di ALTRI client (vedi MarkAccusoResolved).
+        private readonly HashSet<int> accusoAlreadyResolvedThisHand = new HashSet<int>();
+
+        public bool IsAccusoWindowOpen => isAccusoWindowOpen;
+        public float AccusoWindowSecondsRemaining => accusoWindowSecondsRemaining;
+
+        /// <summary>
+        /// Mosse arrivate dalla rete (fromNetwork=true) mentre questo client era occupato ad
+        /// animare una mossa/redeal precedente. PRIMA venivano scartate silenziosamente dal guard
+        /// iniziale di ExecuteMove: sugli screenshot di questo bug (soprattutto su device reali,
+        /// dove le animazioni durano piu' a lungo che in Editor/ParrelSync) bastava che due mosse
+        /// arrivassero ravvicinate perche' la seconda sparisse per un solo client, mandando quel
+        /// client fuori sincrono per sempre (ogni RPC successiva viene validata contro un
+        /// GameState ormai diverso da quello degli altri client, e fallisce a sua volta). Ora le
+        /// mosse di rete non vengono MAI scartate per questo motivo: si accodano ed entrano in
+        /// gioco in ordine non appena il client torna libero (vedi TryProcessNextQueuedNetworkMove).
+        /// </summary>
+        private readonly Queue<Move> pendingNetworkMoves = new Queue<Move>();
+
+        /// <summary>Throttle per RequestNetworkResync, per non spammare il Master di richieste.</summary>
+        private float lastResyncRequestTime = -999f;
         
         /// <summary>
         /// Event fired quando un player esegue una mossa.
@@ -86,6 +197,7 @@ namespace Project51.Unity
         public event System.Action<Move> OnLocalPlayerMoveRequested;
 
         public GameState GameState => gameState;
+        public RoundManager RoundManager => roundManager;
         public int CurrentPlayerIndex => gameState?.CurrentPlayerIndex ?? -1;
         
         /// <summary>
@@ -214,8 +326,50 @@ namespace Project51.Unity
     /// </summary>
     public void StartNewGame()
     {
+        // GUARDIA CRITICA: in multiplayer SOLO il Master Client puo' generare/rimescolare un
+        // nuovo mazzo. Rules51.CreateNewGame() usa un Random locale non condiviso: se un client
+        // non-Master arrivasse qui (es. in passato OnRoundEndContinue() lo chiamava SENZA
+        // controllare chi fosse il Master, quindi bastava che un giocatore qualsiasi premesse
+        // "Continua" a fine mano perche' il SUO client si costruisse in locale un mazzo/mano
+        // completamente diversi da quelli di tutti gli altri) lo stato locale diverge per sempre
+        // da quello reale della partita, esattamente come nei sintomi riportati ("la partita va
+        // avanti come se fosse un'altra sessione"). I client non-Master devono solo aspettare il
+        // GameState del Master via RPC (RPC_ReceiveInitialGameState -> SetNetworkGameState).
+        var providerGuard = GameModeService.Current;
+        if (providerGuard.IsMultiplayer && !providerGuard.IsMasterClient)
+        {
+            Debug.LogError("[TurnController] StartNewGame() chiamato su un client non-Master in multiplayer: ignorato per evitare un mazzo/mano divergenti. Questo client aspettera' il GameState dal Master.");
+            return;
+        }
+
+        // GameSceneInitializer.Start() chiama StartNewGame() DIRETTAMENTE, come normale metodo -
+        // non tramite il ciclo di vita Unity - e questo puo' succedere PRIMA che
+        // TurnController.Start() sia mai girato (confermato dai log: "deferring game start" arriva
+        // DOPO "GameState created"). cardViewManager/capturedPileManager/cardAnimationController
+        // non sono assegnati in Inspector su questo prefab (fileID: 0), quindi dipendono
+        // interamente dal fallback FindObjectOfType di Start() - se non e' ancora girato, erano
+        // null qui, e ogni blocco "if (cardViewManager != null)" piu' sotto veniva saltato in
+        // silenzio (nessun errore, nessuna soppressione, nessuna animazione - bug segnalato:
+        // "non fa neanche piu' l'animazione del dealer"). Stessa risoluzione di Start(), ripetuta
+        // qui per essere sicuri che questi riferimenti esistano indipendentemente da chi chiama
+        // StartNewGame() per primo.
+        if (cardViewManager == null) cardViewManager = FindObjectOfType<CardViewManager>();
+        if (capturedPileManager == null) capturedPileManager = FindObjectOfType<CapturedPileManager>();
+        if (cardAnimationController == null)
+        {
+            cardAnimationController = FindObjectOfType<CardAnimationController>();
+            if (cardAnimationController == null)
+            {
+                cardAnimationController = gameObject.AddComponent<CardAnimationController>();
+            }
+        }
+
         // Reset GameState to ensure consistent initialization
         gameState = null;
+
+        // Scarta qualunque mossa di rete accodata da una mano/partita precedente: non ha piu'
+        // senso applicarla al nuovo GameState che stiamo per creare.
+        pendingNetworkMoves.Clear();
 
         // Initialize AI if not already done
         if (cirullaAI == null)
@@ -241,23 +395,83 @@ namespace Project51.Unity
         Debug.Log($"[TurnController] GameState created: {gameState.NumPlayers} players, dealer={gameState.DealerIndex}, current={gameState.CurrentPlayerIndex}");
         
         roundManager = new RoundManager(gameState);
-        
+
         // Subscribe to events
         roundManager.OnNewHandsDealt += HandleNewHandsDealt; // For mid-game redeals with staged reveal
+        // Cattura l'eventuale accuso del dealer (StartSmazzata lo processa in modo sincrono, PRIMA
+        // che qualunque render esista) per poterlo rivelare piu' avanti nella sequenza dealer.
+        pendingDealerAccuso = null;
+        roundManager.OnDealerAccusoDeclared += HandleDealerAccusoDeclared;
         // Do NOT declare on initial hands immediately; we'll handle it after a short visual delay
-        
+
         roundManager.StartSmazzata();
         
-        // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
-        // This ensures dealer 15/30 accuso (which removes table cards) happens BEFORE rendering
-        // Otherwise cards might be visible for 0.5 seconds before disappearing
+        // Sospende la visibilita' PRIMA del primo ForceRefresh (difesa di base) e, subito dopo,
+        // sposta FISICAMENTE ogni carta appena distribuita sulla posizione del mazziere a scala
+        // quasi zero (StageCardsAtOriginForDealAnimation) - cosi' anche se qualcosa dovesse
+        // riaccendere il renderer per un motivo che non e' stato possibile isolare (bug segnalato
+        // piu' volte: "si vedono ancora"), la carta sarebbe comunque minuscola e sovrapposta dal
+        // lato del mazziere, non "gia' distribuita in mano".
+        pendingInitialHandStagedCards = null;
+        pendingInitialTableStagedCards = null;
         if (cardViewManager != null)
         {
+            // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
+            // This ensures dealer 15/30 accuso (which removes table cards) happens BEFORE rendering
+            // Otherwise cards might be visible for 0.5 seconds before disappearing.
+            cardViewManager.SetSuppressNewCardVisibility(true);
             cardViewManager.ForceRefresh();
+
+            // try/catch difensivo: se qualunque cosa qui sotto lancia un'eccezione (es. camera non
+            // ancora pronta per GetDealerSeatPosition), NON deve impedire a StartCoroutine() poco
+            // sotto di partire - altrimenti l'intera sequenza dealer/distribuzione/accuso salta,
+            // non solo lo staging (bug segnalato: "non fa neanche piu' l'animazione del dealer").
+            try
+            {
+                // Separate in due liste (non piu' una sola): la sequenza ora distribuisce prima
+                // le mani, poi le carte tavolo a parte con un ritmo piu' lento (richiesto
+                // esplicitamente). Se il dealer ha fatto un accuso, gameState.Table e' gia' vuoto
+                // a questo punto (RoundManager l'ha gia' processato dentro StartSmazzata) - niente
+                // da mettere in pendingInitialTableStagedCards in quel caso, se ne occupa il reveal.
+                var handViews = new List<CardView>();
+                for (int i = 0; i < gameState.NumPlayers; i++)
+                {
+                    foreach (var card in gameState.Players[i].Hand)
+                    {
+                        if (cardViewManager.TryGetCardView(card, out var cv) && cv != null) handViews.Add(cv);
+                    }
+                }
+                if (handViews.Count > 0)
+                {
+                    pendingInitialHandStagedCards = cardViewManager.StageCardsAtOriginForDealAnimation(handViews, GetDealerSeatPosition());
+                }
+
+                var tableViews = new List<CardView>();
+                if (gameState.Table != null)
+                {
+                    foreach (var card in gameState.Table)
+                    {
+                        if (cardViewManager.TryGetCardView(card, out var cv) && cv != null) tableViews.Add(cv);
+                    }
+                }
+                if (tableViews.Count > 0)
+                {
+                    pendingInitialTableStagedCards = cardViewManager.StageCardsAtOriginForDealAnimation(tableViews, GetDealerSeatPosition());
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TurnController] Staging carte per animazione dealer fallito, proseguo senza: {ex}");
+                cardViewManager.SetSuppressNewCardVisibility(false);
+                pendingInitialHandStagedCards = null;
+                pendingInitialTableStagedCards = null;
+            }
         }
 
-        // Delay the initial accusi declaration slightly so all clients see stable visuals first
-        // In multiplayer, only Master Client will perform declaration and sync via RPC
+        // Delay the initial accusi declaration slightly so all clients see stable visuals first,
+        // poi apre la finestra Accuso manuale. In multiplayer, solo il Master Client dichiara
+        // automaticamente allo scadere e sincronizza via RPC (le dichiarazioni manuali restano
+        // per-client, ognuno dichiara solo se stesso - vedi TryDeclareLocalManualAccuso).
         StartCoroutine(DeclareInitialAccusiWithDelay());
 
         // Compute valid moves for the current player
@@ -285,21 +499,308 @@ namespace Project51.Unity
             }
         }
 
-        // If it's an AI player's turn, have them play automatically
-        if (!IsHumanPlayerTurn)
-        {
-            Invoke(nameof(ExecuteAITurn), aiMoveDelay); // Delay for visibility
-        }
+        // NON invochiamo piu' l'IA qui direttamente: DeclareInitialAccusiWithDelay se ne occupa
+        // alla fine della finestra Accuso (isRedealPendingVisual la tiene comunque ferma fino ad
+        // allora tramite gli stessi guard usati per il redeal a meta' partita).
     }
 
         /// <summary>
-        /// Performs initial accusi declaration after a short delay to avoid early visual pop.
-        /// In multiplayer, only Master Client will execute and sync.
+        /// Dopo un breve delay per la stabilizzazione visiva, apre la finestra Accuso manuale
+        /// (sempre la stessa durata, con o senza accusi disponibili) e infine dichiara in automatico
+        /// chi non ha dichiarato da se'. In multiplayer, solo il Master Client esegue il fallback
+        /// automatico e sincronizza via RPC.
         /// </summary>
         private System.Collections.IEnumerator DeclareInitialAccusiWithDelay()
         {
-            // Small delay for UI stabilization
-            yield return new UnityEngine.WaitForSeconds(0.25f);
+            isRedealPendingVisual = true; // stesso guard usato per il redeal: tiene ferma l'IA/le mosse
+
+            try
+            {
+                // La visibilita' e' gia' sospesa "alla fonte" da StartNewGame (vedi
+                // CardViewManager.SetSuppressNewCardVisibility), quindi qui basta il delay normale.
+                // Small delay for UI stabilization
+                yield return new UnityEngine.WaitForSeconds(0.25f);
+
+                // 1) Dichiarazione dealer: chip "MAZZIERE" sul banner giusto (resta accesa per
+                // tutta la smazzata, non si spegne piu' da sola) - da qui il giocatore capisce
+                // chi sta distribuendo PRIMA che si vedano le carte muoversi.
+                yield return PlayDealerDeclareSequence();
+
+                // 2) Le mani arrivano per prime (ritmo normale) dalla posizione del dealer.
+                if (cardAnimationController != null && pendingInitialHandStagedCards != null && pendingInitialHandStagedCards.Count > 0)
+                {
+                    Vector3 dealerOrigin = GetDealerSeatPosition();
+                    yield return cardAnimationController.PlayDealtCardsFromOrigin(pendingInitialHandStagedCards, dealerOrigin).WaitForCompletion();
+                }
+
+                yield return new WaitForSeconds(0.4f);
+
+                // 3) Poi le carte tavolo: se il dealer NON ha fatto accuso, arrivano una alla
+                // volta e piu' lentamente delle mani (richiesto esplicitamente). Se invece ha
+                // fatto 15/30, il tavolo e' gia' vuoto (RoundManager l'ha gia' processato dentro
+                // StartSmazzata): al posto della distribuzione normale si vede il reveal - prima
+                // queste carte sparivano in silenzio, senza che il giocatore potesse mai saperlo.
+                if (pendingDealerAccuso != null)
+                {
+                    // PlayDealerAccusoRevealIfAny si occupa gia' di posare le carte sul tavolo e
+                    // aspettare dopo l'ultima prima di rivelare l'esito - nessun'altra pausa qui.
+                    yield return PlayDealerAccusoRevealIfAny();
+                }
+                else if (cardAnimationController != null && pendingInitialTableStagedCards != null && pendingInitialTableStagedCards.Count > 0)
+                {
+                    Vector3 dealerOrigin = GetDealerSeatPosition();
+                    yield return cardAnimationController.PlayDealtCardsFromOrigin(pendingInitialTableStagedCards, dealerOrigin, tableCardStagger).WaitForCompletion();
+                }
+
+                // 4) Finestra Accuso, come sempre.
+                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
+            }
+            finally
+            {
+                // Rete di sicurezza: le carte sono state SPOSTATE FISICAMENTE sul mazziere da
+                // StartNewGame. Se per qualunque motivo l'animazione sopra non parte/fallisce
+                // (cardAnimationController nullo, eccezione), non devono restare li' minuscole per
+                // sempre - ForceRefresh ricalcola e riapplica la posizione/scala corretta di ognuna,
+                // esattamente come la sospensione della visibilita'.
+                if (cardViewManager != null)
+                {
+                    cardViewManager.SetSuppressNewCardVisibility(false);
+                    cardViewManager.ForceRefresh();
+                    cardViewManager.SetAllCardRenderersVisible(true);
+                }
+                pendingInitialHandStagedCards = null;
+                pendingInitialTableStagedCards = null;
+                isRedealPendingVisual = false;
+            }
+
+            RefreshValidMoves();
+
+            if (!IsHumanPlayerTurn)
+            {
+                var provider = GameModeService.Current;
+                bool shouldExecuteAI = !provider.IsMultiplayer || provider.IsMasterClient;
+                if (shouldExecuteAI)
+                {
+                    CancelInvoke(nameof(ExecuteAITurn));
+                    Invoke(nameof(ExecuteAITurn), aiMoveDelay);
+                }
+            }
+        }
+
+        [SerializeField] private DealerRouletteController dealerRouletteController;
+
+        /// <summary>
+        /// Roulette (icone/nomi dei 4 giocatori, evidenziatore che rallenta e si ferma sul
+        /// mazziere) seguita dalla chip "MAZZIERE" persistente sul banner - richiesta esplicita
+        /// dell'utente al posto della semplice chip statica. Un no-op silenzioso se qualcosa non
+        /// e' pronto - la distribuzione prosegue comunque, e' tutto puramente cosmetico.
+        /// </summary>
+        private System.Collections.IEnumerator PlayDealerDeclareSequence()
+        {
+            if (gameState == null) yield break;
+
+            if (dealerRouletteController == null)
+            {
+                // true = includeInactive: il pannello roulette parte SetActive(false) (spento
+                // finche' non serve), e FindObjectOfType di default IGNORA gli oggetti disattivati
+                // - senza questo parametro la ricerca falliva sempre in silenzio, saltando
+                // l'intera roulette (bug segnalato: "non si vede nulla, fa tutto come prima").
+                dealerRouletteController = FindObjectOfType<DealerRouletteController>(true);
+            }
+
+            if (dealerRouletteController != null)
+            {
+                var names = new string[4];
+                for (int p = 0; p < gameState.NumPlayers && p < 4; p++)
+                {
+                    int relative = GetRelativeSlot(p);
+                    if (relative >= 0 && relative < 4) names[relative] = GetSimpleDisplayName(p);
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    if (string.IsNullOrEmpty(names[i])) names[i] = "-";
+                }
+
+                yield return dealerRouletteController.PlayRoulette(names, GetDealerRelativeSlot());
+            }
+
+            // Resta accesa per tutta la smazzata (non si spegne piu' da sola): richiesta esplicita
+            // dell'utente. PlayerBannerManager.SetDealerIndicatorForPlayer spegne automaticamente
+            // quella del dealer precedente quando il ruolo passa a qualcun altro.
+            SetDealerIndicatorViaReflection(true);
+            yield return new WaitForSeconds(dealerDeclareHoldSeconds);
+        }
+
+        /// <summary>
+        /// Rivela l'accuso del dealer (Dealer15/Dealer30), se e' successo (catturato in
+        /// pendingDealerAccuso da HandleDealerAccusoDeclared). Le carte spazzate via da
+        /// RoundManager (gia' rimosse da gameState.Table prima che qualunque render esistesse)
+        /// vengono ricreate come CardView "fantasma" e posate sul tavolo VERO, una alla volta,
+        /// nelle stesse posizioni/ritmo delle carte tavolo normali - richiesto esplicitamente
+        /// dall'utente ("l'animazione deve partire 1-2 secondi dopo l'ultima carta poggiata sul
+        /// tavolo", non un pannello popup separato con carte finte). Poi una pausa leggibile,
+        /// poi volano verso il mazziere e vengono distrutte. No-op silenzioso se non c'e' nulla.
+        /// </summary>
+        private System.Collections.IEnumerator PlayDealerAccusoRevealIfAny()
+        {
+            if (pendingDealerAccuso == null) yield break;
+
+            var (dealerIndex, type, sweptCards) = pendingDealerAccuso.Value;
+            pendingDealerAccuso = null;
+
+            if (cardViewManager == null || cardAnimationController == null || sweptCards == null || sweptCards.Count == 0) yield break;
+
+            Vector3 dealerOrigin = GetDealerSeatPosition();
+
+            // 1) Ricrea le carte spazzate via come "fantasmi" e le posa sul tavolo vero, una alla
+            // volta, con lo stesso ritmo delle carte tavolo normali - non un popup con carte finte.
+            var ghosts = new List<CardView>();
+            var staged = new List<CardViewManager.StagedCard>();
+            for (int i = 0; i < sweptCards.Count; i++)
+            {
+                Vector3 tablePos = cardViewManager.GetTableCardPosition(sweptCards.Count, i);
+                var ghost = cardViewManager.SpawnGhostCardView(sweptCards[i], dealerOrigin);
+                if (ghost == null) continue;
+
+                ghosts.Add(ghost);
+                staged.Add(new CardViewManager.StagedCard(ghost, tablePos, ghost.transform.localScale));
+            }
+
+            if (ghosts.Count == 0) yield break;
+
+            yield return cardAnimationController.PlayDealtCardsFromOrigin(staged, dealerOrigin, tableCardStagger).WaitForCompletion();
+
+            // 2) Pausa leggibile dopo che l'ultima carta e' atterrata - richiesta esplicita
+            // dell'utente ("1-2 secondi dall'ultima carta poggiata sul tavolo").
+            yield return new WaitForSeconds(1.5f);
+
+            // 3) Messaggio esito (banner piccolo, non un pannello a schermo intero: le carte vere
+            // restano visibili sul tavolo mentre il testo compare sopra).
+            if (dealerAccusoRevealController == null)
+            {
+                // true = includeInactive, stesso motivo della roulette dealer.
+                dealerAccusoRevealController = FindObjectOfType<DealerAccusoRevealController>(true);
+            }
+            if (dealerAccusoRevealController != null)
+            {
+                // Niente numero di punti: RoundManager applica un moltiplicatore (regole match)
+                // che non e' passato attraverso l'evento - un valore base fisso rischierebbe di
+                // essere sbagliato. Solo il fatto ("ha fatto scopa da 15/30") e' garantito corretto.
+                string dealerName = GetSimpleDisplayName(dealerIndex);
+                string message = $"{dealerName} fa Scopa da {(type == AccusoType.Dealer30 ? 30 : 15)}!";
+                yield return dealerAccusoRevealController.ShowMessage(message);
+            }
+
+            // 4) Le carte volano verso il mazziere e vengono distrutte (erano solo fantasmi per
+            // questa animazione, non fanno parte di activeCardViews).
+            var transforms = new List<Transform>();
+            var renderers = new List<SpriteRenderer>();
+            foreach (var ghost in ghosts)
+            {
+                if (ghost == null) continue;
+                transforms.Add(ghost.transform);
+                renderers.Add(ghost.CardRenderer);
+            }
+
+            yield return cardAnimationController.PlaySweepToPile(transforms, renderers, dealerOrigin).WaitForCompletion();
+
+            foreach (var ghost in ghosts)
+            {
+                ghost?.DestroyView();
+            }
+        }
+
+        /// <summary>
+        /// Nome semplice per la roulette (niente lookup PlayFab: Project51.Auth vive
+        /// nell'assembly di default come Project51.Unity.UI, stesso motivo di
+        /// SetDealerIndicatorViaReflection - non vale la pena una reflection in piu' solo per
+        /// questo, "Tu"/"Giocatore N"/"Bot N" e' gia' chiaro per una rivelazione di un istante).
+        /// </summary>
+        private string GetSimpleDisplayName(int playerIndex)
+        {
+            var provider = GameModeService.Current;
+            if (provider.IsHumanPlayer(playerIndex))
+            {
+                return provider.IsLocalPlayer(playerIndex) ? "Tu" : $"Giocatore {playerIndex + 1}";
+            }
+            return $"Bot {playerIndex + 1}";
+        }
+
+        /// <summary>
+        /// Project51.Unity.UI (PlayerBanner/PlayerBannerManager) vive nell'assembly di default
+        /// (nessun .asmdef in Assets/Scripts/UI): Project51.Gameplay e' un assembly separato e
+        /// non puo' referenziarlo direttamente (dipendenza circolare, CS0234/CS0246 a compile
+        /// time) - stesso identico motivo/stesso pattern gia' usato per NetworkGameController
+        /// (vedi TrySendAccusoSync).
+        /// </summary>
+        private void SetDealerIndicatorViaReflection(bool active)
+        {
+            var managerType = System.Type.GetType("Project51.Unity.UI.PlayerBannerManager, Assembly-CSharp");
+            if (managerType == null) return;
+
+            var manager = FindObjectOfType(managerType);
+            if (manager == null) return;
+
+            var method = managerType.GetMethod("SetDealerIndicatorForPlayer", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            method?.Invoke(manager, new object[] { gameState.DealerIndex, active });
+        }
+
+        /// <summary>
+        /// Indice relativo (0=Locale/1=Sinistra/2=Alto/3=Destra) del giocatore assoluto dato,
+        /// stessa convenzione usata in tutto il progetto (PlayerBannerManager.ResolveRelativeSlot,
+        /// CardViewManager.RenderAIHandsDynamic, AccusoPanelController, ecc. - duplicata ovunque,
+        /// nessun helper condiviso esiste nel progetto per questo calcolo).
+        /// </summary>
+        private int GetRelativeSlot(int playerIndex)
+        {
+            if (gameState == null || gameState.NumPlayers <= 0) return 0;
+
+            int localIndex = GameModeService.Current.LocalPlayerIndex;
+            int numPlayers = gameState.NumPlayers;
+            int relative = ((playerIndex - localIndex) % numPlayers + numPlayers) % numPlayers;
+            if (numPlayers == 2 && relative == 1) relative = 2;
+            return relative;
+        }
+
+        private int GetDealerRelativeSlot()
+        {
+            return gameState != null ? GetRelativeSlot(gameState.DealerIndex) : 0;
+        }
+
+        /// <summary>
+        /// Posizione mondo della "seduta" del dealer - vedi CardViewManager.GetPlayerHandAnchor,
+        /// che e' l'unica fonte di verita' per queste posizioni (responsive, non pixel fissi).
+        /// </summary>
+        private Vector3 GetDealerSeatPosition()
+        {
+            if (cardViewManager == null || gameState == null) return Vector3.zero;
+            return cardViewManager.GetPlayerHandAnchor(GetDealerRelativeSlot(), gameState.NumPlayers);
+        }
+
+        /// <summary>
+        /// Finestra Accuso manuale condivisa da inizio-smazzata (DeclareInitialAccusiWithDelay) e
+        /// redeal a meta' partita (HandleNewHandsRevealSequence): stessa durata fissa sempre,
+        /// poi fallback automatico (solo Master in multiplayer) su chi non ha gia' risolto.
+        /// </summary>
+        private System.Collections.IEnumerator RunAccusoWindowCoroutine(bool refreshVisualsOnAutoDeclare)
+        {
+            accusoAlreadyResolvedThisHand.Clear();
+            isAccusoWindowOpen = true;
+            accusoWindowSecondsRemaining = manualAccusoWindowSeconds;
+
+            try
+            {
+                while (accusoWindowSecondsRemaining > 0f)
+                {
+                    accusoWindowSecondsRemaining -= Time.deltaTime;
+                    yield return null;
+                }
+            }
+            finally
+            {
+                isAccusoWindowOpen = false;
+                accusoWindowSecondsRemaining = 0f;
+            }
 
             var provider = GameModeService.Current;
             
@@ -309,7 +810,7 @@ namespace Project51.Unity
                 yield break;
             }
 
-            CheckAndDeclareAccusiForAllPlayers(refreshVisuals: true);
+            CheckAndDeclareAccusiForAllPlayers(refreshVisuals: refreshVisualsOnAutoDeclare);
         }
 
         /// <summary>
@@ -335,8 +836,27 @@ namespace Project51.Unity
         /// <param name="fromNetwork">True if this call originated from a network RPC (prevents re-broadcasting)</param>
         public void ExecuteMove(Move move, bool fromNetwork = false)
         {
-            if (move == null || gameState == null || gameState.RoundEnded || isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress)
+            if (move == null || gameState == null || gameState.RoundEnded)
             {
+                return;
+            }
+
+            bool localAnimationBusy = isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress;
+            if (localAnimationBusy)
+            {
+                if (fromNetwork)
+                {
+                    // Una mossa gia' avvenuta per davvero (su chi l'ha giocata e su tutti gli altri
+                    // client) NON puo' essere semplicemente ignorata solo perche' qui stiamo ancora
+                    // animando la precedente: accodiamola e applichiamola in ordine appena liberi
+                    // (vedi TryProcessNextQueuedNetworkMove). Scartarla qui significava perdere per
+                    // sempre quella singola mossa SOLO su questo client, con ogni RPC successiva
+                    // che falliva a sua volta il controllo di validita' contro uno stato ormai
+                    // diverso da quello reale.
+                    pendingNetworkMoves.Enqueue(move);
+                }
+                // Se invece e' un tentativo locale (umano o bot) mentre siamo occupati, va bene
+                // ignorarlo: non e' ancora stato inviato in rete, quindi non causa nessun disallineamento.
                 return;
             }
 
@@ -388,11 +908,81 @@ namespace Project51.Unity
 
                 if (!allowForcedHumanPlayOnly)
                 {
+                    if (fromNetwork)
+                    {
+                        // Una mossa arrivata dalla rete che non torna con lo stato locale non e'
+                        // un evento "normale" da ignorare in silenzio: significa che questo client
+                        // e' gia' divergente rispetto al resto della partita (es. per una mossa
+                        // persa in passato, prima di questo fix, o per qualunque altra causa non
+                        // ancora prevista). L'unica cosa sicura da fare e' richiedere al Master lo
+                        // stato completo e ripartire da li', invece di restare bloccati per sempre.
+                        Debug.LogError($"[TurnController] Mossa di rete non valida contro lo stato locale (probabile disallineamento): {move}. Richiedo un resync completo al Master.");
+                        RequestNetworkResync();
+                    }
                     return;
                 }
             }
 
             StartCoroutine(ExecuteMoveWithAnimation(move, fromNetwork));
+        }
+
+        /// <summary>
+        /// Applica in ordine le mosse di rete accodate mentre eravamo occupati ad animare una
+        /// mossa/redeal precedente (vedi pendingNetworkMoves). Va richiamato ogni volta che TUTTI
+        /// i flag di occupazione (animazione mossa, redeal in corso) tornano a false.
+        /// </summary>
+        private void TryProcessNextQueuedNetworkMove()
+        {
+            if (isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress)
+            {
+                return;
+            }
+
+            if (pendingNetworkMoves.Count == 0)
+            {
+                return;
+            }
+
+            var nextMove = pendingNetworkMoves.Dequeue();
+            ExecuteMove(nextMove, fromNetwork: true);
+        }
+
+        /// <summary>
+        /// Chiede al Master Client di reinviare l'intero GameState, per riallineare questo client
+        /// dopo aver rilevato una mossa di rete incompatibile con lo stato locale. Riusa lo stesso
+        /// meccanismo gia' usato per lo stato iniziale (RPC_RequestInitialGameState /
+        /// RPC_ReceiveInitialGameState -> SetNetworkGameState), tramite reflection per evitare la
+        /// dipendenza circolare Gameplay -> Networking (stesso pattern di TrySendAccusoSync).
+        /// </summary>
+        private void RequestNetworkResync()
+        {
+            var provider = GameModeService.Current;
+            if (!provider.IsMultiplayer || provider.IsMasterClient)
+            {
+                return;
+            }
+
+            if (Time.time - lastResyncRequestTime < 2f)
+            {
+                return; // Evita di spammare il Master se arrivano piu' mosse invalide di fila.
+            }
+            lastResyncRequestTime = Time.time;
+
+            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
+            if (netControllerType == null)
+            {
+                return;
+            }
+
+            var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            var netController = netInstanceProp?.GetValue(null);
+            if (netController == null)
+            {
+                return;
+            }
+
+            var requestMethod = netControllerType.GetMethod("RequestResync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            requestMethod?.Invoke(netController, null);
         }
 
         /// <summary>
@@ -531,6 +1121,13 @@ namespace Project51.Unity
                 }
 
                 isMoveAnimationInProgress = false;
+
+                // Se nel frattempo e' arrivata (ed e' stata accodata) un'altra mossa di rete,
+                // applicala ora. Se un redeal e' stato appena innescato da ApplyMoveInternal
+                // (isRedealPendingVisual=true, impostato in modo sincrono prima che questa
+                // coroutine arrivi qui), il metodo e' un no-op e sara' invece
+                // HandleNewHandsRevealSequence a occuparsene alla fine della sua animazione.
+                TryProcessNextQueuedNetworkMove();
             }
         }
 
@@ -635,11 +1232,41 @@ namespace Project51.Unity
                     yield return new WaitForSeconds(redealStartDelay);
                 }
 
-                CheckAndDeclareAccusiForAllPlayers(refreshVisuals: false);
-
+                // Come per la primissima mano (StartNewGame): sposta FISICAMENTE le nuove carte sul
+                // mazziere subito dopo ForceRefresh, non solo un toggle di visibilita' (richiesto:
+                // la distribuzione animata ad ogni mano, non solo all'inizio della smazzata - vedi
+                // CardViewManager.StageCardsAtOriginForDealAnimation per il motivo).
+                List<CardViewManager.StagedCard> staged = null;
                 if (cardViewManager != null)
                 {
+                    cardViewManager.SetSuppressNewCardVisibility(true);
                     cardViewManager.ForceRefresh();
+
+                    try
+                    {
+                        var handViews = new List<CardView>();
+                        for (int i = 0; i < gameState.NumPlayers; i++)
+                        {
+                            foreach (var card in gameState.Players[i].Hand)
+                            {
+                                if (cardViewManager.TryGetCardView(card, out var cardView) && cardView != null)
+                                {
+                                    handViews.Add(cardView);
+                                }
+                            }
+                        }
+
+                        if (handViews.Count > 0)
+                        {
+                            staged = cardViewManager.StageCardsAtOriginForDealAnimation(handViews, GetDealerSeatPosition());
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[TurnController] Staging carte per redeal fallito, proseguo senza: {ex}");
+                        cardViewManager.SetSuppressNewCardVisibility(false);
+                        staged = null;
+                    }
                 }
 
                 if (cardAnimationController != null && pendingRedealVisualCopies.Count > 0)
@@ -651,25 +1278,16 @@ namespace Project51.Unity
                     pendingRedealVisualCopies.Clear();
                 }
 
-                if (cardAnimationController != null && cardViewManager != null && gameState != null)
+                if (cardAnimationController != null && staged != null && staged.Count > 0)
                 {
-                    var handViews = new List<CardView>();
-                    for (int i = 0; i < gameState.NumPlayers; i++)
-                    {
-                        foreach (var card in gameState.Players[i].Hand)
-                        {
-                            if (cardViewManager.TryGetCardView(card, out var cardView) && cardView != null)
-                            {
-                                handViews.Add(cardView);
-                            }
-                        }
-                    }
-
-                    if (handViews.Count > 0)
-                    {
-                        yield return cardAnimationController.PlayDealtCardsReveal(handViews).WaitForCompletion();
-                    }
+                    Vector3 dealerOrigin = GetDealerSeatPosition();
+                    yield return cardAnimationController.PlayDealtCardsFromOrigin(staged, dealerOrigin).WaitForCompletion();
                 }
+
+                // La finestra Accuso parte SOLO ora, a distribuzione visivamente completata: prima
+                // partiva ancor prima che le carte finissero di arrivare in mano (bug segnalato -
+                // il countdown scadeva senza che si potesse nemmeno vedere la mano nuova).
+                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: false);
 
                 if (capturedPileManager != null)
                 {
@@ -683,8 +1301,23 @@ namespace Project51.Unity
             }
             finally
             {
+                // Rete di sicurezza (stesso motivo di DeclareInitialAccusiWithDelay): le carte sono
+                // state spostate fisicamente sul mazziere, ForceRefresh le riporta alla posizione
+                // corretta se l'animazione sopra non e' partita/e' fallita.
+                if (cardViewManager != null)
+                {
+                    cardViewManager.SetSuppressNewCardVisibility(false);
+                    cardViewManager.ForceRefresh();
+                    cardViewManager.SetAllCardRenderersVisible(true);
+                }
+
                 isRedealPendingVisual = false;
                 isRedealAnimationInProgress = false;
+
+                // Stesso motivo del blocco analogo in ExecuteMoveWithAnimation: eventuali mosse
+                // di rete arrivate ed accodate durante il redeal vanno applicate ora che il
+                // client torna libero.
+                TryProcessNextQueuedNetworkMove();
             }
 
             RefreshValidMoves();
@@ -790,42 +1423,22 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Checks all players' hands and automatically declares accusi (Decino/Cirulla) if possible.
-        /// This is called at the start of each hand distribution.
+        /// Dichiara in automatico Decino/Cirulla per chi non ha gia' dichiarato manualmente durante
+        /// la finestra Accuso (accusoAlreadyResolvedThisHand), in ordine di turno dal primo giocatore
+        /// di mano - non piu' per indice fisso 0..N: se piu' giocatori hanno un accuso nella stessa
+        /// mano, si rivelano in un ordine deterministico coerente col tavolo.
         /// </summary>
         private void CheckAndDeclareAccusiForAllPlayers(bool refreshVisuals)
         {
             if (roundManager == null || gameState == null) return;
 
-            for (int i = 0; i < gameState.NumPlayers; i++)
+            int firstPlayer = (gameState.DealerIndex - 1 + gameState.NumPlayers) % gameState.NumPlayers;
+            for (int offset = 0; offset < gameState.NumPlayers; offset++)
             {
-                var hand = gameState.Players[i].Hand;
-                
-                // Check for Decino first (higher priority - 10 points)
-                if (AccusiChecker.IsDecino(hand))
-                {
-                    bool declared = roundManager.TryPlayerAccuso(i, AccusoType.Decino);
-                    if (declared)
-                    {
-                        Debug.Log($"Player {i} declared DECINO!");
-                        // Sync accuso to clients in multiplayer
-                        TrySendAccusoSync(i, AccusoType.Decino);
-                    }
-                    continue; // Don't check for Cirulla if Decino was declared
-                }
-
-                // Check for Cirulla (3 points)
-                if (AccusiChecker.IsCirulla(hand))
-                {
-                    bool declared = roundManager.TryPlayerAccuso(i, AccusoType.Cirulla);
-                    if (declared)
-                    {
-                        Debug.Log($"Player {i} declared CIRULLA!");
-                        // Sync accuso to clients in multiplayer
-                        TrySendAccusoSync(i, AccusoType.Cirulla);
-                    }
-                }
+                int i = (firstPlayer + offset) % gameState.NumPlayers;
+                DeclareAccusoForPlayer(i);
             }
+
             if (!refreshVisuals)
             {
                 return;
@@ -841,6 +1454,67 @@ namespace Project51.Unity
             {
                 cardViewManager.ForceRefresh();
             }
+        }
+
+        /// <summary>
+        /// Chiamato dal bottone Accuso (TableActionButtonsController) per il giocatore locale,
+        /// SOLO mentre la finestra e' aperta. TryPlayerAccuso e' comunque auto-validante (non fa
+        /// nulla se la mano non e' davvero Cirulla/Decino), quindi e' sicuro chiamarlo alla cieca.
+        /// </summary>
+        public bool TryDeclareLocalManualAccuso()
+        {
+            if (!isAccusoWindowOpen || roundManager == null || gameState == null) return false;
+
+            int localIndex = GameModeService.Current.LocalPlayerIndex;
+            return DeclareAccusoForPlayer(localIndex);
+        }
+
+        /// <summary>
+        /// Dichiara Decino/Cirulla per un giocatore se non ancora risolto in questa mano (che sia
+        /// stato dichiarato manualmente o dal fallback automatico non importa: idempotente).
+        /// </summary>
+        private bool DeclareAccusoForPlayer(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= gameState.NumPlayers) return false;
+            if (!accusoAlreadyResolvedThisHand.Add(playerIndex)) return false; // gia' risolto
+
+            var hand = gameState.Players[playerIndex].Hand;
+
+            // Decino ha priorita' (10 punti) su Cirulla (3 punti) - stessa mano non puo' essere entrambi.
+            if (AccusiChecker.IsDecino(hand))
+            {
+                bool declared = roundManager.TryPlayerAccuso(playerIndex, AccusoType.Decino);
+                if (declared)
+                {
+                    Debug.Log($"Player {playerIndex} declared DECINO!");
+                    TrySendAccusoSync(playerIndex, AccusoType.Decino);
+                }
+                return declared;
+            }
+
+            if (AccusiChecker.IsCirulla(hand))
+            {
+                bool declared = roundManager.TryPlayerAccuso(playerIndex, AccusoType.Cirulla);
+                if (declared)
+                {
+                    Debug.Log($"Player {playerIndex} declared CIRULLA!");
+                    TrySendAccusoSync(playerIndex, AccusoType.Cirulla);
+                }
+                return declared;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Chiamato da NetworkGameController.RPC_ReceiveAccuso quando arriva la dichiarazione
+        /// manuale di UN ALTRO client: senza questo, il fallback automatico di questo client (se
+        /// e' Master) non saprebbe che quel giocatore ha gia' dichiarato da se' e lo ridichiarerebbe
+        /// (doppi punti, doppia animazione).
+        /// </summary>
+        public void MarkAccusoResolved(int playerIndex)
+        {
+            accusoAlreadyResolvedThisHand.Add(playerIndex);
         }
 
         private void TrySendAccusoSync(int playerIndex, AccusoType type)
@@ -902,7 +1576,20 @@ namespace Project51.Unity
                 roundEndPanel.OnMainMenuClicked -= OnRoundEndMainMenu;
                 roundEndPanel.Hide();
             }
-            
+
+            // In multiplayer, il bottone "Continua" e' cliccabile su OGNI client (RoundEndPanel
+            // non ha idea di chi sia il Master). Solo il Master deve davvero far partire la
+            // mano successiva (mazzo nuovo + broadcast): gli altri client si limitano a chiudere
+            // il pannello e aspettano il GameState che arrivera' via RPC quando il Master premera'
+            // a sua volta Continua - esattamente come gia' avviene per la primissima mano.
+            // StartNewGame() ha comunque una guardia equivalente, questo check evita solo di
+            // richiamarlo inutilmente da qui.
+            var provider = GameModeService.Current;
+            if (provider.IsMultiplayer && !provider.IsMasterClient)
+            {
+                return;
+            }
+
             // Start a new round (new smazzata)
             StartNewGame();
         }

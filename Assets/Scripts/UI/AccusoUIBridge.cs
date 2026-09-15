@@ -92,7 +92,7 @@ namespace Project51.Unity
                     ApplyTemporaryMattaOverlay(playerIndex, accusoType, hand);
 
                     // Show the accuso panel with animation
-                    accusoPanelController.ShowAccuso(hand, accusoType);
+                    accusoPanelController.ShowAccuso(hand, accusoType, playerIndex);
 
                     // Register to clear overlay when animation completes
                     accusoPanelController.OnAccusoAnimationComplete -= HandleAccusoAnimationComplete;
@@ -183,7 +183,7 @@ namespace Project51.Unity
                 new Card(Suit.Coppe, 7) // Matta
             };
             
-            accusoPanelController.ShowAccuso(testHand, AccusoType.Decino);
+            accusoPanelController.ShowAccuso(testHand, AccusoType.Decino, 0); // 0 = giocatore locale, solo per test manuale da editor
         }
         
         /// <summary>
@@ -206,7 +206,7 @@ namespace Project51.Unity
                 new Card(Suit.Coppe, 7) // Matta
             };
             
-            accusoPanelController.ShowAccuso(testHand, AccusoType.Cirulla);
+            accusoPanelController.ShowAccuso(testHand, AccusoType.Cirulla, 0); // 0 = giocatore locale, solo per test manuale da editor
         }
     }
 }

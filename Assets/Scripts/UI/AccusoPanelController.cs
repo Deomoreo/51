@@ -48,6 +48,48 @@ namespace Project51.Unity
         private bool isAnimating = false;
         private Coroutine currentSequence;
 
+        [Tooltip("Usato solo per risalire a NumPlayers/LocalPlayerIndex e scegliere la dimensione carte giuste. Se null, verra' cercato automaticamente.")]
+        [SerializeField] private TurnController turnController;
+
+        /// <summary>
+        /// Dimensioni (px UI, provvisorie - da tarare a occhio) delle carte rivelate nell'AccusoPanel,
+        /// in base alla posizione del giocatore che dichiara l'accuso rispetto al giocatore locale.
+        /// Non esiste un enum "posizione tavolo" nel progetto: la chiave e' l'indice relativo gia'
+        /// usato da CardViewManager.RenderAIHandsDynamic e CapturedPileManager.MapToViewIndex
+        /// (relative = (playerIndex - localIndex + numPlayers) % numPlayers):
+        /// 0 = Locale, 1 = Sinistra, 2 = Alto, 3 = Destra.
+        /// </summary>
+        private static readonly Dictionary<int, Vector2> AccusoCardSize = new Dictionary<int, Vector2>
+        {
+            { 0, new Vector2(132, 188) }, // Locale
+            { 1, new Vector2(72, 106) },  // Sinistra
+            { 2, new Vector2(82, 118) },  // Alto
+            { 3, new Vector2(72, 106) },  // Destra
+        };
+
+        /// <summary>
+        /// Risolve la dimensione carta da usare per un playerIndex assoluto, con la stessa
+        /// convenzione di posizione relativa usata altrove nel progetto (vedi AccusoCardSize).
+        /// </summary>
+        private Vector2 GetAccusoCardSizeForPlayer(int playerIndex)
+        {
+            int localIndex = GameModeService.Current.LocalPlayerIndex;
+            int numPlayers = (turnController != null && turnController.GameState != null)
+                ? turnController.GameState.NumPlayers
+                : 4;
+
+            int relative = numPlayers > 0 ? ((playerIndex - localIndex) % numPlayers + numPlayers) % numPlayers : 0;
+
+            // Con 2 giocatori l'unico avversario (relative 1) viene reso "in alto" da
+            // CardViewManager, non a sinistra: stessa eccezione qui.
+            if (numPlayers == 2 && relative == 1)
+            {
+                relative = 2;
+            }
+
+            return AccusoCardSize.TryGetValue(relative, out var size) ? size : AccusoCardSize[0];
+        }
+
         /// <summary>
         /// Fired when the accuso animation sequence completes or is forced closed.
         /// </summary>
@@ -78,6 +120,11 @@ namespace Project51.Unity
             {
                 cardViewManager = FindObjectOfType<CardViewManager>();
             }
+
+            if (turnController == null)
+            {
+                turnController = FindObjectOfType<TurnController>();
+            }
             
             // Build local cache from provided sprites (fallback if CardViewManager not available)
             if (cardSprites != null && cardSprites.Length >= 40)
@@ -92,15 +139,16 @@ namespace Project51.Unity
         /// </summary>
         /// <param name="cardsInAccuso">The 3 cards in the player's hand (including matta)</param>
         /// <param name="mattaEffectiveValue">The rank the matta is counting as for this accuso (e.g., 5)</param>
-        public void ShowDecinoAccuso(List<Card> cardsInAccuso, int mattaEffectiveValue)
+        /// <param name="playerIndex">Index of the player declaring the accuso (determines revealed card size)</param>
+        public void ShowDecinoAccuso(List<Card> cardsInAccuso, int mattaEffectiveValue, int playerIndex)
         {
             if (isAnimating)
             {
                 Debug.LogWarning("AccusoPanel is already animating, ignoring new request.");
                 return;
             }
-            
-            currentSequence = StartCoroutine(DecinoAccusoSequence(cardsInAccuso, mattaEffectiveValue));
+
+            currentSequence = StartCoroutine(DecinoAccusoSequence(cardsInAccuso, mattaEffectiveValue, playerIndex));
         }
         
         /// <summary>
@@ -109,20 +157,27 @@ namespace Project51.Unity
         /// </summary>
         /// <param name="cardsInAccuso">The 3 cards in the player's hand (including matta)</param>
         /// <param name="mattaEffectiveValue">Always 1 for Cirulla</param>
-        public void ShowCirullaAccuso(List<Card> cardsInAccuso, int mattaEffectiveValue)
+        /// <param name="playerIndex">Index of the player declaring the accuso (determines revealed card size)</param>
+        public void ShowCirullaAccuso(List<Card> cardsInAccuso, int mattaEffectiveValue, int playerIndex)
         {
             if (isAnimating)
             {
                 Debug.LogWarning("AccusoPanel is already animating, ignoring new request.");
                 return;
             }
-            
-            currentSequence = StartCoroutine(CirullaAccusoSequence(cardsInAccuso, mattaEffectiveValue));
+
+            currentSequence = StartCoroutine(CirullaAccusoSequence(cardsInAccuso, mattaEffectiveValue, playerIndex));
         }
         
-        private IEnumerator DecinoAccusoSequence(List<Card> cards, int mattaEffectiveValue)
+        private IEnumerator DecinoAccusoSequence(List<Card> cards, int mattaEffectiveValue, int playerIndex)
         {
             isAnimating = true;
+
+            Vector2 cardSize = GetAccusoCardSizeForPlayer(playerIndex);
+            foreach (var slot in cardSlots)
+            {
+                if (slot != null) slot.SetSize(cardSize);
+            }
             
             // Find which card is the matta
             Card mattaCard = cards.FirstOrDefault(c => c.IsMatta);
@@ -210,9 +265,15 @@ namespace Project51.Unity
             OnAccusoAnimationComplete?.Invoke();
         }
         
-        private IEnumerator CirullaAccusoSequence(List<Card> cards, int mattaEffectiveValue)
+        private IEnumerator CirullaAccusoSequence(List<Card> cards, int mattaEffectiveValue, int playerIndex)
         {
             isAnimating = true;
+
+            Vector2 cardSize = GetAccusoCardSizeForPlayer(playerIndex);
+            foreach (var slot in cardSlots)
+            {
+                if (slot != null) slot.SetSize(cardSize);
+            }
             
             // Find which card is the matta
             Card mattaCard = cards.FirstOrDefault(c => c.IsMatta);
@@ -481,21 +542,21 @@ namespace Project51.Unity
         /// Public method to show accuso based on the hand and accuso type.
         /// Automatically determines matta effective value.
         /// </summary>
-        public void ShowAccuso(List<Card> hand, AccusoType accusoType)
+        public void ShowAccuso(List<Card> hand, AccusoType accusoType, int playerIndex)
         {
             if (hand == null || hand.Count != 3)
             {
                 Debug.LogWarning("Accuso requires exactly 3 cards in hand.");
                 return;
             }
-            
+
             Card mattaCard = hand.FirstOrDefault(c => c.IsMatta);
-            
+
             if (accusoType == AccusoType.Decino)
             {
                 // Determine matta effective value for Decino
                 int mattaValue = 1; // Default
-                
+
                 if (mattaCard != null)
                 {
                     // Find the rank of the pair
@@ -505,13 +566,13 @@ namespace Project51.Unity
                         mattaValue = nonMatta[0].Rank;
                     }
                 }
-                
-                ShowDecinoAccuso(hand, mattaValue);
+
+                ShowDecinoAccuso(hand, mattaValue, playerIndex);
             }
             else if (accusoType == AccusoType.Cirulla)
             {
                 // Matta always counts as 1 for Cirulla
-                ShowCirullaAccuso(hand, 1);
+                ShowCirullaAccuso(hand, 1, playerIndex);
             }
             else
             {

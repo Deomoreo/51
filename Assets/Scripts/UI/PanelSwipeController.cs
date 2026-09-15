@@ -15,6 +15,8 @@ namespace Project51.Unity
         [Header("Bottom Bar / Safe Area")]
         [Tooltip("Se assegnato, il viewport verrà ridimensionato per non andare sotto questa bottom bar.")]
         [SerializeField] private RectTransform bottomBar;
+        [Tooltip("Se assegnato, il viewport non parte piu' in alto della base di questa top bar.")]
+        [SerializeField] private RectTransform topBar;
         [Tooltip("Se true, usa anche la SafeArea del device (notch/home indicator) per calcolare l'altezza disponibile.")]
         [SerializeField] private bool respectSafeArea = true;
         [Tooltip("Altezza fissa della bottom bar in pixel schermo. Se > 0, il layout parte sempre da qui (più safe area se abilitata).")]
@@ -55,6 +57,7 @@ namespace Project51.Unity
         private Vector2Int _lastScreen;
         private Rect _lastSafeArea;
         private float _lastViewportBottomOffset;
+        private float _lastViewportTopOffset;
 
         private bool _overflowApplied;
 
@@ -254,14 +257,14 @@ namespace Project51.Unity
                     topLocalY = Mathf.Max(topLocalY, local.y);
                 }
 
-                // offsetMin.y è la distanza dal basso del parent: in coordinate locali con pivot 0.5,
-                // il bordo basso è -rect.height * pivot.y
+                // offsetMin.y e' la distanza dal basso del parent: in coordinate locali con pivot 0.5,
+                // il bordo basso e' -rect.height * pivot.y
                 float parentBottomLocalY = -viewportParent.rect.height * viewportParent.pivot.y;
                 bottomOffsetLocal = Mathf.Max(0f, topLocalY - parentBottomLocalY);
             }
             else
             {
-                // Fallback: altezza fissa espressa in pixel schermo -> convertita in unità locali.
+                // Fallback: altezza fissa espressa in pixel schermo -> convertita in unita' locali.
                 float px = Mathf.Max(0f, bottomBarFixedHeightPx);
                 var parentCorners = new Vector3[4];
                 viewportParent.GetWorldCorners(parentCorners);
@@ -276,7 +279,7 @@ namespace Project51.Unity
                 bottomOffsetLocal = Mathf.Max(0f, p1.y - p0.y);
             }
 
-            // 2) Safe area: applicala come minimo (se più grande della bottom bar) perché è una zona non utilizzabile.
+            // 2) Safe area: applicala come minimo (se piu' grande della bottom bar) perche' e' una zona non utilizzabile.
             if (respectSafeArea)
             {
                 // yMin in px dal basso schermo -> in local offset del parent
@@ -288,24 +291,50 @@ namespace Project51.Unity
 
             if (!Mathf.Approximately(extraBottomPaddingPx, 0f))
             {
-                // extraBottomPaddingPx è in pixel schermo: converti in local
+                // extraBottomPaddingPx e' in pixel schermo: converti in local
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, 0f), cam, out var e0);
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(viewportParent, new Vector2(0f, extraBottomPaddingPx), cam, out var e1);
                 bottomOffsetLocal += Mathf.Max(0f, e1.y - e0.y);
             }
 
-            // Evita di rieseguire se non è cambiato.
-            if (Mathf.Approximately(_lastViewportBottomOffset, bottomOffsetLocal))
+            // 3) Top bar: simmetrico al calcolo della bottom bar, ma verso l'alto. FIX: prima
+            // non esisteva affatto un vincolo superiore, quindi il viewport (e le pagine al suo
+            // interno) si estendeva fino al bordo alto della SafeArea, sotto/dietro la TopBar.
+            // La pagina Home ha uno sfondo trasparente li' quindi non si notava, ma le pagine
+            // placeholder (Deck/Shop/Profilo) hanno uno sfondo scuro opaco a schermo intero che,
+            // essendo pagesViewport un fratello successivo di TopBar nella gerarchia, la copriva
+            // completamente ogni volta che si faceva swipe via da Home.
+            float topOffsetLocal = 0f;
+            if (topBar != null)
+            {
+                var topBarCorners = new Vector3[4];
+                topBar.GetWorldCorners(topBarCorners);
+                float bottomLocalY = float.PositiveInfinity;
+                for (int i = 0; i < 4; i++)
+                {
+                    Vector2 local = viewportParent.InverseTransformPoint(topBarCorners[i]);
+                    bottomLocalY = Mathf.Min(bottomLocalY, local.y);
+                }
+
+                float parentTopLocalY = viewportParent.rect.height * (1f - viewportParent.pivot.y);
+                topOffsetLocal = Mathf.Max(0f, parentTopLocalY - bottomLocalY);
+            }
+
+            // Evita di rieseguire se non e' cambiato.
+            if (Mathf.Approximately(_lastViewportBottomOffset, bottomOffsetLocal) &&
+                Mathf.Approximately(_lastViewportTopOffset, topOffsetLocal))
                 return;
             _lastViewportBottomOffset = bottomOffsetLocal;
+            _lastViewportTopOffset = topOffsetLocal;
 
-            // Applica: riduci l'altezza disponibile del viewport dal basso.
+            // Applica: riduci l'altezza disponibile del viewport dal basso e dall'alto.
             // Presupposto: viewport ancorato stretch verticale nel canvas.
             pagesViewport.anchorMin = new Vector2(0f, 0f);
             pagesViewport.anchorMax = new Vector2(1f, 1f);
             pagesViewport.pivot = new Vector2(0.5f, 0.5f);
 
             pagesViewport.offsetMin = new Vector2(pagesViewport.offsetMin.x, bottomOffsetLocal);
+            pagesViewport.offsetMax = new Vector2(pagesViewport.offsetMax.x, -topOffsetLocal);
         }
 
 
@@ -591,21 +620,28 @@ namespace Project51.Unity
         {
             if (pagesViewport == null) return;
 
-            // Aggiungi Mask component se non c'è già
-            Mask mask = pagesViewport.GetComponent<Mask>();
-            if (mask == null)
+            // FIX: prima usava Mask + Image(alpha=0). CanvasRenderer culla i graphic
+            // con alpha esattamente 0 come ottimizzazione, e quando il Graphic di un
+            // componente Mask viene culled Unity smette di renderizzare anche TUTTI i
+            // figli mascherati (bug/quirk noto di Unity UI). Risultato osservato: Home,
+            // Deck, Shop, Profilo tutte invisibili pur essendo posizionate e attive
+            // correttamente. RectMask2D clippa via CanvasRenderer senza passare da un
+            // Graphic/stencil, quindi non soffre di questo problema.
+            var oldMask = pagesViewport.GetComponent<Mask>();
+            if (oldMask != null)
             {
-                mask = pagesViewport.gameObject.AddComponent<Mask>();
-                mask.showMaskGraphic = false; // Non mostrare il grafico della mask
+                Destroy(oldMask);
             }
 
-            // Aggiungi Image component (richiesto dalla Mask) se non c'è
-            Image img = pagesViewport.GetComponent<Image>();
-            if (img == null)
+            var oldMaskImage = pagesViewport.GetComponent<Image>();
+            if (oldMaskImage != null && oldMaskImage.sprite == null && oldMaskImage.color.a == 0f)
             {
-                img = pagesViewport.gameObject.AddComponent<Image>();
-                img.color = new Color(1f, 1f, 1f, 0f); // Trasparente
-                img.raycastTarget = false;
+                Destroy(oldMaskImage);
+            }
+
+            if (pagesViewport.GetComponent<RectMask2D>() == null)
+            {
+                pagesViewport.gameObject.AddComponent<RectMask2D>();
             }
         }
 

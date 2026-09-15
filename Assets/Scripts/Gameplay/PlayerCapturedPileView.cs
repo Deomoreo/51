@@ -1,6 +1,7 @@
 using UnityEngine;
 using Project51.Core;
 using System.Collections.Generic;
+using TMPro;
 
 namespace Project51.Unity
 {
@@ -23,8 +24,18 @@ namespace Project51.Unity
         [SerializeField] private Vector3 scopePileScale = Vector3.one;
         [SerializeField] private Color scopeCardTint = Color.white;
 
+        [Header("Badge Conteggio Prese")]
+        [Tooltip("Diametro del badge in unita' mondo, provvisorio - da tarare a occhio.")]
+        [SerializeField] private float countBadgeDiameter = 0.5f;
+        [SerializeField] private Vector3 countBadgeOffset = new Vector3(0.45f, -0.4f, 0f);
+        [SerializeField] private Color countBadgeFillColor = new Color(0.07f, 0.09f, 0.12f, 0.95f);
+        [SerializeField] private Color countBadgeBorderColor = new Color(0.91f, 0.7f, 0.29f);
+
         private GameObject normalPileCardView;
         private List<GameObject> scopeCardViews = new List<GameObject>();
+        private GameObject countBadgeObj;
+        private TextMeshPro countBadgeText;
+        private static Sprite badgeCircleSprite;
         private bool isHoveringScope = false;
         private float currentTargetSpacing = 0f;
         private float lastHoverChangeTime = 0f;
@@ -91,6 +102,71 @@ namespace Project51.Unity
                     normalPileCardView = null;
                 }
             }
+
+            UpdateCountBadge(totalCaptured);
+        }
+
+        /// <summary>
+        /// Badge numerico con il conteggio prese, ancorato in basso a destra del mazzetto.
+        /// Non esisteva nessun conteggio visibile prima di questo metodo (vedi Assets/UI_SPEC_Tavolo.md, sezione 5).
+        /// </summary>
+        private void UpdateCountBadge(int count)
+        {
+            var container = NormalContainer;
+            if (container == null) return;
+
+            if (count <= 0)
+            {
+                if (countBadgeObj != null)
+                {
+                    Destroy(countBadgeObj);
+                    countBadgeObj = null;
+                    countBadgeText = null;
+                }
+                return;
+            }
+
+            if (countBadgeObj == null)
+            {
+                countBadgeObj = new GameObject("CapturedCountBadge");
+                countBadgeObj.transform.SetParent(container, false);
+                countBadgeObj.transform.localPosition = countBadgeOffset;
+                countBadgeObj.transform.localScale = new Vector3(countBadgeDiameter, countBadgeDiameter, 1f);
+
+                var fill = countBadgeObj.AddComponent<SpriteRenderer>();
+                fill.sprite = GetBadgeCircleSprite();
+                fill.color = countBadgeFillColor;
+                fill.sortingLayerName = "Default";
+                fill.sortingOrder = 20;
+
+                var borderObj = new GameObject("Border");
+                borderObj.transform.SetParent(countBadgeObj.transform, false);
+                borderObj.transform.localScale = Vector3.one * 1.15f;
+                var border = borderObj.AddComponent<SpriteRenderer>();
+                border.sprite = GetBadgeCircleSprite();
+                border.color = countBadgeBorderColor;
+                border.sortingLayerName = "Default";
+                border.sortingOrder = 19;
+
+                var textObj = new GameObject("CountText");
+                textObj.transform.SetParent(countBadgeObj.transform, false);
+                textObj.transform.localPosition = new Vector3(0f, 0f, -0.01f);
+                // Il testo e' figlio del badge (che e' scalato a countBadgeDiameter): annulla
+                // quella scala qui per tenere il font a dimensione fissa indipendente dal badge.
+                textObj.transform.localScale = new Vector3(1f / countBadgeDiameter, 1f / countBadgeDiameter, 1f);
+                countBadgeText = textObj.AddComponent<TextMeshPro>();
+                countBadgeText.alignment = TextAlignmentOptions.Center;
+                countBadgeText.fontSize = 6f;
+                countBadgeText.color = Color.white;
+                var textRenderer = textObj.GetComponent<MeshRenderer>();
+                if (textRenderer != null)
+                {
+                    textRenderer.sortingLayerName = "Default";
+                    textRenderer.sortingOrder = 21;
+                }
+            }
+
+            countBadgeText.text = count.ToString();
         }
 
         private void UpdateScopePile(int scopaCount)
@@ -203,6 +279,35 @@ namespace Project51.Unity
             return cardObj;
         }
 
+        /// <summary>
+        /// Cerchio pieno generato proceduralmente (nessuna dipendenza da sprite esterni),
+        /// stesso approccio gia' usato in CardView.GetPlaceholderSprite().
+        /// </summary>
+        private static Sprite GetBadgeCircleSprite()
+        {
+            if (badgeCircleSprite != null) return badgeCircleSprite;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.ARGB32, false);
+            var pixels = new Color32[size * size];
+            float radius = size / 2f;
+            var center = new Vector2(radius, radius);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), center);
+                    pixels[y * size + x] = dist <= radius ? new Color32(255, 255, 255, 255) : new Color32(255, 255, 255, 0);
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply();
+            badgeCircleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            return badgeCircleSprite;
+        }
+
         private Sprite GetScopaMarkerSprite()
         {
             var scopaMarker = Resources.Load<Sprite>("Cards/ScopaMarker");
@@ -303,6 +408,13 @@ namespace Project51.Unity
                 if (scopeCard != null) Destroy(scopeCard);
             }
             scopeCardViews.Clear();
+
+            if (countBadgeObj != null)
+            {
+                Destroy(countBadgeObj);
+                countBadgeObj = null;
+                countBadgeText = null;
+            }
         }
     }
 

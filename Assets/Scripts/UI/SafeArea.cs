@@ -5,6 +5,9 @@ using Project51.Unity;
 [RequireComponent(typeof(RectTransform))]
 public class SafeAreaFitter : MonoBehaviour
 {
+    [Tooltip("Logga Screen.width/height, Screen.safeArea e gli anchor risultanti ogni volta che vengono ricalcolati - utile per verificare la Safe Area nel Device Simulator.")]
+    [SerializeField] private bool debugLog = false;
+
     private RectTransform _rt;
     private Rect _lastSafeArea;
 
@@ -22,7 +25,7 @@ public class SafeAreaFitter : MonoBehaviour
     {
         if (_rt == null) return;
 
-        Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels();
+        Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels(debugLog);
 
 
         if (safe == _lastSafeArea) return;
@@ -38,5 +41,11 @@ public class SafeAreaFitter : MonoBehaviour
         _rt.anchorMax = max;
         _rt.offsetMin = Vector2.zero;
         _rt.offsetMax = Vector2.zero;
+
+        if (debugLog)
+        {
+            Debug.Log($"[SafeAreaFitter:{name}] Screen.width={Screen.width} Screen.height={Screen.height} " +
+                      $"Screen.safeArea={Screen.safeArea} -> anchorMin={min} anchorMax={max}");
+        }
     }
 }

@@ -32,6 +32,11 @@ namespace Project51.Unity
         [SerializeField] private Image glowImage;
         public bool IsActive;
 
+        [Header("Overrides (facoltativi, per varianti Primary/Secondary con sprite o colore testo specifici)")]
+        [SerializeField] private Sprite backgroundSpriteOverride;
+        [SerializeField] private bool overrideLabelColor;
+        [SerializeField] private Color labelColorOverride = Color.white;
+
         private void OnEnable()
         {
             Apply();
@@ -72,13 +77,28 @@ namespace Project51.Unity
 
         private void ApplyPill()
         {
-            Sprite sprite = variant == Variant.Primary ? theme.ButtonPrimary : theme.ButtonSecondary;
-            Color textColor = variant == Variant.Primary ? theme.EmeraldDeep : theme.Cream;
+            // backgroundSpriteOverride e' usato per bottoni Primary/Secondary che devono
+            // mostrare uno sprite 9-slice specifico invece del sprite generico del tema
+            // (es. Home Screen: btn_blue_long / btn_teal / btn_gold_long).
+            bool hasOverride = backgroundSpriteOverride != null;
+            Sprite sprite = hasOverride
+                ? backgroundSpriteOverride
+                : (variant == Variant.Primary ? theme.ButtonPrimary : theme.ButtonSecondary);
+            Color textColor = overrideLabelColor
+                ? labelColorOverride
+                : (variant == Variant.Primary ? theme.EmeraldDeep : theme.Cream);
 
             if (background != null && sprite != null)
             {
                 background.sprite = sprite;
-                background.type = Image.Type.Simple;
+                // Senza override (bottoni a tema standard) il tipo resta Simple, come sempre.
+                // Con override il chiamante ha gia' impostato il tipo che gli serve (Simple o
+                // Sliced a seconda del bottone: non tutti gli usi vogliono lo stesso) e Apply()
+                // non lo tocca piu', per non sovrascriverlo ad ogni OnEnable().
+                if (!hasOverride)
+                {
+                    background.type = Image.Type.Simple;
+                }
             }
 
             if (label != null)

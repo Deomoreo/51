@@ -41,6 +41,8 @@ namespace Project51.Unity
         [SerializeField] private Ease overlayTweenEase = Ease.OutCubic;
         [Tooltip("Se true, l'overlay usa coordinate (world->local) e quindi può stare sotto layout group / avere anchors diversi dai target.")]
         [SerializeField] private bool overlayUseWorldSpaceConversion = true;
+        [Tooltip("Se true, questo controller forza ogni frame (LateUpdate) sizeDelta.x dell'overlay a overlayFixedWidth. Default false: in conflitto con BottomNavBarUI.indicatorFixedWidth, che scrive lo stesso RectTransform con un altro valore. Attivare solo se BottomNavBarUI non gestisce piu' la larghezza dell'indicator.")]
+        public bool controlsOverlaySize = false;
 
         [Header("Swipe behaviour")]
         [Tooltip("Se true, durante swipe NON modifichiamo larghezze/alpha dei bottoni (evita spostamenti del LayoutGroup).")]
@@ -418,8 +420,11 @@ namespace Project51.Unity
 
         private void LateUpdate()
         {
-            // Hard lock: evita che il layout o altri script cambino la width dell'overlay.
-            ApplyOverlayFixedSize();
+            // Hard lock opzionale: evita che il layout o altri script cambino la width dell'overlay.
+            // Disattivato di default (controlsOverlaySize=false) perche' in conflitto con
+            // BottomNavBarUI.indicatorFixedWidth sullo stesso RectTransform (SelectionOverlay).
+            if (controlsOverlaySize)
+                ApplyOverlayFixedSize();
 
             // Fix "primo swipe offset": se il layout cambia (safe area / risoluzione / fitting),
             // ricache le posizioni e riallinea l'overlay.

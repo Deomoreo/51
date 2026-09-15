@@ -60,87 +60,173 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2Button.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\FriendViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\DeckCardView.cs" />
     <Compile Include="Assets\Photon\PhotonRealtime\Demos\DemoLoadBalancing\ConnectAndJoinRandomLb.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2Root.cs" />
     <Compile Include="Assets\Scripts\UI\RawImageUVScroll.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\HomeScreenV2.cs" />
     <Compile Include="Assets\Scripts\Auth\NativePlatformAuth.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\DestroyOnStart.cs" />
     <Compile Include="Assets\Scripts\Auth\PhotonAuthConnector.cs" />
     <Compile Include="Assets\Scripts\Tests\TestDOTween.cs" />
     <Compile Include="Assets\Scripts\Auth\LoginGateUI.cs" />
     <Compile Include="Assets\Scripts\UI\SettingsModalUI.cs" />
+    <Compile Include="Assets\Scripts\UI\OpenPanelShortcut.cs" />
     <Compile Include="Assets\Scripts\UI\TabButtonUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ProfileScreenV2.cs" />
     <Compile Include="Assets\Scripts\UI\AnchorToPosition.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChannelSelector.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoCardSlot.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ListRow.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelPremiController.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UICollectionCard.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UIHeaderWidget.cs" />
+    <Compile Include="Assets\Scripts\UI\PlayerBannerManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\NamePickNewGui.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\RewardViewData.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\EnableOnStart.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\SelectorOptionViewData.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerSlotUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerData.cs" />
+    <Compile Include="Assets\Scripts\UI\PlayerBanner.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UICollectionGrid.cs" />
     <Compile Include="Assets\Scripts\UI\ModeSelectPopupUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaBottomOnly.cs" />
     <Compile Include="Assets\Scripts\UI\WaitingRoomUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatNewGui.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkGameController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\FriendsScreenController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2CollectionCard.cs" />
     <Compile Include="Assets\Scripts\UI\SafeArea.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UIEquippedRow.cs" />
     <Compile Include="Assets\Scripts\UI\PanelSwipeController.cs" />
     <Compile Include="Assets\Scripts\UI\PrimaryButtonUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\EmoticonSlotView.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatSettings.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelPostaController.cs" />
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelClassificaController.cs" />
+    <Compile Include="Assets\UIV2\Tests\HomeV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
+    <Compile Include="Assets\UIV2\Tests\ProfileV2PreviewBootstrap.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ShopScreenV2.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
+    <Compile Include="Assets\Scripts\UI\SelectableMultiToggleGroup.cs" />
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelAmiciController.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthState.cs" />
     <Compile Include="Assets\Scripts\Auth\IAuthUI.cs" />
     <Compile Include="Assets\Scripts\UI\ThemedButton.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2SectionHeader.cs" />
+    <Compile Include="Assets\Scripts\UI\TableTopBarController.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthBootstrapper.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\DeckViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2StatTile.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2QuickActionButton.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
     <Compile Include="Assets\Scripts\UI\UICardHoloFoilDriver.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\ProfileViewData.cs" />
     <Compile Include="Assets\Scripts\DEBUG\HierarchyDumper.cs" />
     <Compile Include="Assets\Scripts\UI\FollowBottomLine.cs" />
     <Compile Include="Assets\Scripts\Auth\ProfileService.cs" />
+    <Compile Include="Assets\Scripts\UI\StubActionButton.cs" />
     <Compile Include="Assets\Scripts\Networking\RoomManager.cs" />
+    <Compile Include="Assets\UIV2\Tests\UIV2SandboxBootstrap.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\HomeViewData.cs" />
     <Compile Include="Assets\Scripts\UI\JoinRoomPopupUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\CollectionAccusiPanel.cs" />
     <Compile Include="Assets\Scripts\UI\IModal.cs" />
     <Compile Include="Assets\Scripts\Networking\PlayerDataManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\FriendItem.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UIScreenRoot.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\CollectionItemViewData.cs" />
     <Compile Include="Assets\Scripts\Networking\SceneLoadManager.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoPanelController.cs" />
+    <Compile Include="Assets\UIV2\Tests\ShopV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\Networking\GameManager.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\ShopItemViewData.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkTypes.cs" />
     <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
     <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
-    <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\LobbyPlayerViewData.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkTestUI.cs" />
+    <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelModalitaController.cs" />
     <Compile Include="Assets\Scripts\UI\ModalManager.cs" />
+    <Compile Include="Assets\UIV2\Tests\CollectionV2PreviewBootstrap.cs" />
+    <Compile Include="Assets\Scripts\UI\DeckPageController.cs" />
+    <Compile Include="Assets\Scripts\UI\ScrollFadeIndicator.cs" />
     <Compile Include="Assets\Scripts\UI\GameLaunchController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2BottomNav.cs" />
     <Compile Include="Assets\Scripts\UI\TurnIndicator.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2TopBar.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ShopOfferView.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ResourcePill.cs" />
+    <Compile Include="Assets\Scripts\UI\SelectableToggleItem.cs" />
     <Compile Include="Assets\Scripts\UI\ModalitySelectorPanelUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ShopProductCardView.cs" />
     <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
     <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\RankingEntryViewData.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\ShopProductViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ModalFrame.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2Theme.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UITabsRow.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2SelectorChip.cs" />
+    <Compile Include="Assets\Scripts\UI\SafeAreaTopOffset.cs" />
     <Compile Include="Assets\Scripts\UI\UITheme.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2AvatarBadge.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ProgressBar.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\ResourceViewData.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelMazzoController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\AccusoRowView.cs" />
+    <Compile Include="Assets\Scripts\UI\Kit\UIBottomNavBar.cs" />
     <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\IUIV2Modal.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayerProgressLocal.cs" />
     <Compile Include="Assets\JsonDotNetWrapper\JsonDotNetWrapper.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\ChatIdCheckerUI.cs" />
     <Compile Include="Assets\Scripts\UI\PrivateRoomOptionsUI.cs" />
+    <Compile Include="Assets\Scripts\UI\HomeNavBarController.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkManager.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\GameResultEntryViewData.cs" />
     <Compile Include="Assets\Scripts\UI\TapToEnterUI.cs" />
     <Compile Include="Assets\Scripts\UI\HeaderAlignToScrollView.cs" />
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\RoundResultEntryViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2PlayerRow.cs" />
+    <Compile Include="Assets\Scripts\UI\SelectableToggleGroup.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\CollectionScreenV2.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2ModalHost.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\CollectionEmoticonsPanel.cs" />
     <Compile Include="Assets\Scripts\UI\ThemedPanel.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\AccusoViewData.cs" />
+    <Compile Include="Assets\Scripts\UI\TableActionButtonsController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\MatchmakingPlayerViewData.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthUIController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimatedComponent.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\CollectionDecksPanel.cs" />
+    <Compile Include="Assets\Scripts\UI\PanelImpostazioniController.cs" />
     <Compile Include="Assets\Scripts\UI\PanelManager.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\MailMessageViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ProfileTrophyView.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\PlayerSummaryViewData.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayFabAuthService.cs" />
+    <Compile Include="Assets\Scripts\UI\SimpleToggleSwitch.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimationHooks.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\FriendRowView.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavController.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -163,7 +249,6 @@
     <None Include="Assets\Photon\PhotonLibs\changes-library.txt" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
-    <None Include="Assets\UI\Sprites\DragonsHoard\51cirulla_design_system.xml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\Photon\PhotonUnityNetworking\readme.txt" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll" />
@@ -518,6 +603,10 @@
     </Reference>
     <Reference Include="Photon3Unity3D">
       <HintPath>Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.2.1\Runtime\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Coffee.UIParticle.R">
@@ -1098,6 +1187,14 @@
     </Reference>
     <Reference Include="Unity.2D.Aseprite.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.2D.Aseprite.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MCPForUnity.Editor">
+      <HintPath>Library\ScriptAssemblies\MCPForUnity.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MCPForUnity.Runtime">
+      <HintPath>Library\ScriptAssemblies\MCPForUnity.Runtime.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PsdPlugin">

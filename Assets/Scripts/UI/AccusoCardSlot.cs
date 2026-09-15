@@ -39,6 +39,23 @@ namespace Project51.Unity
         }
         
         /// <summary>
+        /// Imposta la dimensione (in pixel UI) di questo slot, tipicamente in base alla
+        /// posizione al tavolo del giocatore che sta dichiarando l'accuso.
+        /// </summary>
+        public void SetSize(Vector2 size)
+        {
+            if (rectTransform == null)
+            {
+                rectTransform = GetComponent<RectTransform>();
+            }
+
+            if (rectTransform != null)
+            {
+                rectTransform.sizeDelta = size;
+            }
+        }
+
+        /// <summary>
         /// Sets the card to display in this slot.
         /// </summary>
         /// <param name="cardSprite">The sprite to display</param>

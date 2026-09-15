@@ -63,9 +63,25 @@ namespace Project51.Networking
             // AccusoType: assume Cirulla=3, Decino=10
             int points = accusoType == (int)AccusoType.Decino ? 10 : 3;
             player.AccusiPoints = Mathf.Max(player.AccusiPoints, points);
+
+            // Segna il giocatore come "gia' risolto" anche su QUESTO client: se questo e' il Master
+            // e la dichiarazione era manuale (arrivata da un altro client), il fallback automatico
+            // di fine finestra (CheckAndDeclareAccusiForAllPlayers) non deve ridichiararlo.
+            turnController.MarkAccusoResolved(playerIndex);
             // Optional: trigger UI badges or animations via AccusoUIBridge if present
             var pileMgr = FindObjectOfType<CapturedPileManager>();
             pileMgr?.ForceRefresh();
+
+            // CRITICO: sul Master il "giro" delle carte (face-down -> face-up) succede subito perche'
+            // CheckAndDeclareAccusiForAllPlayers() chiama gia' cardViewManager.ForceRefresh() in modo
+            // esplicito appena dichiara l'accuso in locale. Su TUTTI gli altri client, pero', questo
+            // RPC era l'UNICO punto in cui AccusiPoints veniva aggiornato - e prima non rinfrescava
+            // le CardView delle mani, solo i mucchi di prese. Il risultato: le carte dell'avversario
+            // restavano visivamente coperte finche' non arrivava una mossa qualunque a fare scattare
+            // un ForceRefresh per un motivo completamente diverso (da qui il "si girano solo dopo che
+            // qualcuno gioca una carta", che in realta' era solo il prossimo refresh casuale).
+            var cardViewMgr = FindObjectOfType<CardViewManager>();
+            cardViewMgr?.ForceRefresh();
         }
 
         private void FlushPendingAccusi()
@@ -151,6 +167,81 @@ namespace Project51.Networking
             FlushPendingAccusi();
         }
 
+        /// <summary>
+        /// Callback Photon consegnato IDENTICAMENTE a ogni client rimasto nella room quando un
+        /// giocatore se ne va (disconnessione, crash, uscita volontaria). Non serve nessun RPC
+        /// dedicato: essendo un evento nativo di Photon, ogni client lo riceve gia' da solo e puo'
+        /// aggiornare il proprio stato locale in modo indipendente ma coerente con tutti gli altri
+        /// (stessa foto stabile dei posti, vedi GameSceneInitializer._stableActorOrder).
+        /// </summary>
+        public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
+        {
+            if (turnController == null || turnController.GameState == null)
+            {
+                // La partita non e' nemmeno iniziata da questa parte: niente da convertire in bot.
+                return;
+            }
+
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            if (gsi == null || otherPlayer == null)
+            {
+                return;
+            }
+
+            int leftPlayerIndex = gsi.GetPlayerIndexForActor(otherPlayer.ActorNumber);
+            if (leftPlayerIndex < 0)
+            {
+                if (logNetworkMoves)
+                    Debug.LogWarning($"[NET] Player {otherPlayer.NickName} left but is not part of this match's starting roster - ignoring.");
+                return;
+            }
+
+            if (logNetworkMoves)
+                Debug.Log($"<color=orange>[NET] Player {otherPlayer.NickName} (seat {leftPlayerIndex}) left mid-match - converting to bot.</color>");
+
+            gsi.MarkPlayerDisconnected(leftPlayerIndex);
+        }
+
+        /// <summary>
+        /// Photon migra automaticamente il ruolo di Master Client quando quello attuale si
+        /// disconnette. Senza questo hook, il NUOVO master non ricalcolava mai IsMasterClient nel
+        /// proprio GameModeService.Current (costruito una volta sola in
+        /// GameSceneInitializer.SetupGameModeProvider e mai piu' aggiornato per questo evento):
+        /// restava "non master" per sempre, quindi non avrebbe mai piu' fatto giocare i bot ne'
+        /// rimandato lo stato - la partita si sarebbe bloccata esattamente come nel caso (gia'
+        /// risolto) della disconnessione di un giocatore normale. Il posto occupato dal vecchio
+        /// master viene comunque convertito in bot separatamente da OnPlayerLeftRoom sopra (Photon
+        /// consegna entrambi gli eventi): questo hook si occupa solo del ruolo di autorita', non
+        /// del posto giocatore.
+        /// </summary>
+        public override void OnMasterClientSwitched(Photon.Realtime.Player newMasterClient)
+        {
+            if (turnController == null || turnController.GameState == null)
+            {
+                return; // Partita non ancora iniziata da questa parte: nulla da riprendere.
+            }
+
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            gsi?.RefreshMultiplayerGameModeProvider();
+
+            if (!PhotonNetwork.IsMasterClient)
+            {
+                return; // Non sono io il nuovo master: nient'altro da fare da questo lato.
+            }
+
+            if (logNetworkMoves)
+                Debug.Log($"<color=orange>[NET] Master Client migrated to me ({(newMasterClient != null ? newMasterClient.NickName : "?")}) - resuming authoritative duties.</color>");
+
+            // Rimanda lo stato corrente a tutti: un client potrebbe essere rimasto indietro
+            // proprio nell'istante della migrazione (vecchio master disconnesso a meta' di un invio).
+            SendInitialGameState(turnController.GameState);
+
+            // Se il turno corrente era di un bot rimasto fermo in attesa che il vecchio master lo
+            // giocasse, nessun altro evento lo farebbe ripartire da solo (stesso motivo di
+            // TurnController.OnPlayerConvertedToBot).
+            turnController.OnBecameMasterClient();
+        }
+
         private void OnDestroy()
         {
             // Unsubscribe from events
@@ -190,8 +281,28 @@ namespace Project51.Networking
         }
 
         /// <summary>
+        /// Chiede al Master Client di reinviare l'intero GameState per riallineare questo client.
+        /// Usata da TurnController quando rileva una mossa di rete incompatibile con il proprio
+        /// stato locale (segnale di disallineamento, non un evento normale da ignorare). Riusa
+        /// esattamente lo stesso meccanismo dell'RPC dello stato iniziale.
+        /// </summary>
+        public void RequestResync()
+        {
+            if (!PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient)
+            {
+                return;
+            }
+
+            if (logNetworkMoves)
+                Debug.Log("<color=orange>[NET] Local GameState diverged - requesting full resync from Master Client...</color>");
+
+            photonView.RPC(nameof(RPC_RequestInitialGameState), RpcTarget.MasterClient);
+        }
+
+        /// <summary>
         /// Eseguita sul Master Client quando un altro client richiede lo stato iniziale
-        /// (perche' non l'ha ricevuto in tempo, es. caricamento scena piu' lento su device reale).
+        /// (perche' non l'ha ricevuto in tempo, es. caricamento scena piu' lento su device reale,
+        /// o perche' RequestResync() lo ha invocato dopo aver rilevato un disallineamento).
         /// </summary>
         [PunRPC]
         private void RPC_RequestInitialGameState(PhotonMessageInfo info)

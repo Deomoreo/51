@@ -1,0 +1,313 @@
+fileFormatVersion: 2
+guid: 5f30421456cec084f93e447e81d0cb08
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 2
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: iPhone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: emo_risata
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 652
+        width: 435
+        height: 390
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d87c0fb22852a0240a94775bfb2e25e4
+      internalID: -995945220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emo_arrabbiato
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 654
+        width: 408
+        height: 390
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 08aaab79a65e8844eb8533b444b9d1b1
+      internalID: 1259882216
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emo_sorpreso
+      rect:
+        serializedVersion: 2
+        x: 990
+        y: 651
+        width: 425
+        height: 386
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 954e1fe5f978aec4c9846b81a69a3f0e
+      internalID: -1335386468
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emo_pensieroso
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 150
+        width: 407
+        height: 400
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f55bd8ce6c7d98d4488b4b3b16748166
+      internalID: 1407341168
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emo_triste
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 150
+        width: 390
+        height: 386
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 043890fd950192e449639af271e15cb8
+      internalID: 1843719562
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: emo_furbo
+      rect:
+        serializedVersion: 2
+        x: 1008
+        y: 149
+        width: 402
+        height: 385
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dd40bced51b24d94388abef9262ab46f
+      internalID: -1880566063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      14_emoticon_set_1: 1408699885
+      14_emoticon_set_10: -96358050
+      14_emoticon_set_11: -1216888014
+      14_emoticon_set_12: 2004122194
+      14_emoticon_set_13: 1208285891
+      14_emoticon_set_14: 137820188
+      14_emoticon_set_15: -1612162905
+      14_emoticon_set_16: 1161578718
+      14_emoticon_set_17: -1247762220
+      14_emoticon_set_18: -130302902
+      14_emoticon_set_19: 1064486663
+      14_emoticon_set_2: -1237876459
+      14_emoticon_set_20: 1084901867
+      14_emoticon_set_21: -465884580
+      14_emoticon_set_22: 1490795966
+      14_emoticon_set_23: 220626662
+      14_emoticon_set_24: -1789988612
+      14_emoticon_set_28: 626024316
+      14_emoticon_set_29: 2013517783
+      14_emoticon_set_30: -124106445
+      14_emoticon_set_31: -511067796
+      14_emoticon_set_32: 1856943547
+      14_emoticon_set_33: 511739095
+      14_emoticon_set_34: -813964299
+      14_emoticon_set_35: -755255437
+      14_emoticon_set_36: 1541754360
+      14_emoticon_set_37: -2019167804
+      14_emoticon_set_38: -351892594
+      14_emoticon_set_39: 88328374
+      14_emoticon_set_4: -1460179729
+      14_emoticon_set_40: -485629483
+      14_emoticon_set_41: -1795249215
+      14_emoticon_set_42: -964924393
+      14_emoticon_set_43: -1528243420
+      14_emoticon_set_44: -2016158283
+      14_emoticon_set_45: 200375656
+      14_emoticon_set_46: -941782305
+      14_emoticon_set_6: 1077229069
+      14_emoticon_set_7: -1332737515
+      14_emoticon_set_8: -306465930
+      14_emoticon_set_9: 283459980
+      emo_arrabbiato: 1259882216
+      emo_furbo: -1880566063
+      emo_pensieroso: 1407341168
+      emo_risata: -995945220
+      emo_sorpreso: -1335386468
+      emo_triste: 1843719562
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

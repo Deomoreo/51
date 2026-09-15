@@ -1,6 +1,8 @@
 using UnityEngine;
 using Project51.Core;
 using Photon.Pun;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Project51.Unity
 {
@@ -90,8 +92,78 @@ namespace Project51.Unity
         {
             if (_config != null && _config.Intent != MatchIntent.Training)
             {
+                LockStableActorRosterIfNeeded();
                 SetupGameModeProvider();
             }
+        }
+
+        /// <summary>
+        /// Foto STABILE (ActorNumber, ordinata) di tutti i giocatori presenti nella room quando la
+        /// partita e' realmente iniziata. Fissata una sola volta e mai piu' ricalcolata da qui in
+        /// avanti: sia GetLocalPlayerIndex() sia GetPlayerIndexForActor() la usano per garantire lo
+        /// STESSO indice di posto per lo STESSO giocatore per tutta la durata della partita, anche
+        /// dopo che qualcuno si disconnette (PhotonNetwork.PlayerList si accorcia quando un
+        /// giocatore lascia la room: ricalcolare l'ordinamento su quella lista live avrebbe fatto
+        /// "scalare" gli indici di TUTTI i giocatori rimasti dopo il primo che se ne va, corrompendo
+        /// silenziosamente la mappatura mano/posto per chiunque restasse in partita).
+        /// </summary>
+        private List<int> _stableActorOrder;
+
+        /// <summary>
+        /// Indici (posti) convertiti in bot perche' il giocatore reale si e' disconnesso A PARTITA
+        /// GIA' AVVIATA. Va tenuto separato dal calcolo "posti riempiti con bot all'avvio" in
+        /// SetupGameModeProvider() (quello assume che i posti mancanti siano sempre gli ULTIMI
+        /// indici, cosa falsa per una disconnessione a meta' partita di un giocatore qualsiasi) e
+        /// va sempre riunito ai bot calcolati li', per sopravvivere a qualunque ricostruzione del
+        /// provider (nuova mano, resync).
+        /// </summary>
+        private readonly HashSet<int> _disconnectedPlayerIndices = new HashSet<int>();
+
+        private void LockStableActorRosterIfNeeded()
+        {
+            if (_stableActorOrder != null) return; // fissata una volta sola, mai risovrascritta
+            if (!PhotonNetwork.InRoom) return;
+
+            var players = new List<Photon.Realtime.Player>(PhotonNetwork.PlayerList);
+            players.Sort((a, b) => a.ActorNumber.CompareTo(b.ActorNumber));
+            _stableActorOrder = players.Select(p => p.ActorNumber).ToList();
+        }
+
+        /// <summary>
+        /// Mappa l'ActorNumber di un giocatore Photon al suo indice/posto nel GameState, usando la
+        /// foto stabile presa a inizio partita. Funziona anche per un giocatore che ha GIA' lasciato
+        /// la room (es. da OnPlayerLeftRoom, dove PhotonNetwork.PlayerList non lo contiene piu').
+        /// Ritorna -1 se non fa parte del roster iniziale di questa partita.
+        /// </summary>
+        public int GetPlayerIndexForActor(int actorNumber)
+        {
+            return _stableActorOrder?.IndexOf(actorNumber) ?? -1;
+        }
+
+        /// <summary>
+        /// Converte permanentemente un posto in bot perche' il giocatore reale che lo occupava si e'
+        /// disconnesso a partita gia' avviata. Chiamato in modo indipendente (e identico) su OGNI
+        /// client da NetworkGameController.OnPlayerLeftRoom (evento Photon consegnato a tutti i
+        /// membri della room, non serve nessun RPC dedicato): ognuno aggiorna il proprio
+        /// GameModeService.Current locale, cosi' che UI e regole di IsHumanPlayer/IsBotPlayer
+        /// restino coerenti ovunque. Solo il Master Client user CirullaAI per giocare davvero le
+        /// mosse di quel posto (vedi TurnController.OnPlayerConvertedToBot), esattamente come per i
+        /// bot gia' presenti dall'inizio.
+        /// </summary>
+        public void MarkPlayerDisconnected(int playerIndex)
+        {
+            if (playerIndex < 0) return;
+            if (!_disconnectedPlayerIndices.Add(playerIndex)) return; // gia' segnato
+
+            Debug.LogWarning($"[GameSceneInitializer] Player at seat {playerIndex} disconnected mid-match: converting to bot.");
+
+            RefreshMultiplayerGameModeProvider();
+
+            if (turnController == null)
+            {
+                turnController = FindObjectOfType<TurnController>();
+            }
+            turnController?.OnPlayerConvertedToBot(playerIndex);
         }
 
         private void SetupGameModeProvider()
@@ -115,10 +187,26 @@ namespace Project51.Unity
                 // i posti mancanti vengono riempiti con bot. I posti reali occupano sempre gli indici
                 // piu' bassi (stesso ordine di PhotonNetwork.PlayerList su tutti i client), quindi
                 // i bot sono semplicemente gli indici da "giocatori reali" a "PlayerCount-1".
-                var botIndices = new System.Collections.Generic.HashSet<int>();
-                int realPlayers = Mathf.Clamp(GetRealPlayerCountInRoom(), 1, _config.PlayerCount);
+                //
+                // IMPORTANTE: questo conteggio va congelato al numero di giocatori presenti quando
+                // la partita e' iniziata (_stableActorOrder.Count), NON ricalcolato da
+                // GetRealPlayerCountInRoom() (PhotonNetwork.CurrentRoom.PlayerCount live) ogni volta
+                // che il provider viene ricostruito (nuova mano, resync). Altrimenti, dopo che un
+                // qualsiasi giocatore reale si disconnette a meta' partita, PlayerCount si riduce e
+                // questo calcolo trasformerebbe in bot un ULTERIORE posto (sempre l'ultimo indice),
+                // anche se il giocatore che lo occupa e' ancora presente e sta giocando - la vera
+                // disconnessione va gestita SOLO tramite _disconnectedPlayerIndices qui sotto.
+                var botIndices = new HashSet<int>();
+                int realPlayers = _stableActorOrder != null
+                    ? Mathf.Clamp(_stableActorOrder.Count, 1, _config.PlayerCount)
+                    : Mathf.Clamp(GetRealPlayerCountInRoom(), 1, _config.PlayerCount);
                 for (int i = realPlayers; i < _config.PlayerCount; i++)
                     botIndices.Add(i);
+
+                // Posti convertiti in bot per disconnessione REALE a partita avviata (vedi
+                // MarkPlayerDisconnected): si sommano sempre, indipendentemente da quale indice sia.
+                foreach (var idx in _disconnectedPlayerIndices)
+                    botIndices.Add(idx);
 
                 provider = new MultiplayerGameModeProvider(localIndex, _config.PlayerCount, isMaster, botIndices);
                 Debug.Log($"[GameSceneInitializer] Setup Multiplayer mode, local index: {localIndex}, isMaster: {isMaster}, realPlayers: {realPlayers}, botSeats: {botIndices.Count}");
@@ -184,7 +272,19 @@ namespace Project51.Unity
             if (!IsInRoom())
                 return 0;
 
-            var players = new System.Collections.Generic.List<Photon.Realtime.Player>(PhotonNetwork.PlayerList);
+            // Preferisci sempre la foto stabile, se gia' fissata: ricalcolare l'ordinamento sulla
+            // PhotonNetwork.PlayerList LIVE dopo che un qualsiasi giocatore ha lasciato la room
+            // farebbe "scalare" l'indice di TUTTI i giocatori rimasti con ActorNumber maggiore del
+            // suo, cambiando silenziosamente il posto/mano di chi sta ancora giocando.
+            if (_stableActorOrder != null)
+            {
+                int idx = _stableActorOrder.IndexOf(PhotonNetwork.LocalPlayer.ActorNumber);
+                if (idx >= 0) return idx;
+                // Fallback estremo: il locale non e' nella foto iniziale (non dovrebbe succedere
+                // per chi sta gia' giocando una partita in corso) - prosegue col calcolo live sotto.
+            }
+
+            var players = new List<Photon.Realtime.Player>(PhotonNetwork.PlayerList);
             players.Sort((a, b) => a.ActorNumber.CompareTo(b.ActorNumber));
 
             for (int i = 0; i < players.Count; i++)

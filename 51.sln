@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{4E26570B-F536-5E74-38BF-492038EB5A70}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayFab", "PlayFab.csproj", "{7EBAD903-8908-F942-9E01-35B146A33AB7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project51.Gameplay", "Project51.Gameplay.csproj", "{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}"
@@ -12,8 +14,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.Play.Games", "Google.Play.Games.csproj", "{642083BA-8F89-8670-E70F-21B1348CB086}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{024587FC-86BF-81FB-0461-EDE08D4A36AB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{4E26570B-F536-5E74-38BF-492038EB5A70}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotonRealtime", "PhotonRealtime.csproj", "{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}"
 EndProject
@@ -49,6 +49,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E26570B-F536-5E74-38BF-492038EB5A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E26570B-F536-5E74-38BF-492038EB5A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E26570B-F536-5E74-38BF-492038EB5A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E26570B-F536-5E74-38BF-492038EB5A70}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7EBAD903-8908-F942-9E01-35B146A33AB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7EBAD903-8908-F942-9E01-35B146A33AB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7EBAD903-8908-F942-9E01-35B146A33AB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -73,10 +77,6 @@ Global
 		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4E26570B-F536-5E74-38BF-492038EB5A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4E26570B-F536-5E74-38BF-492038EB5A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4E26570B-F536-5E74-38BF-492038EB5A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4E26570B-F536-5E74-38BF-492038EB5A70}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Release|Any CPU.ActiveCfg = Release|Any CPU

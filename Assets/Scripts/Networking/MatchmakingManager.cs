@@ -347,6 +347,35 @@ namespace Project51.Networking
         {
             Debug.Log($"[Matchmaking] Joined room: {PhotonNetwork.CurrentRoom.Name}, Players: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
+            // Chi si unisce con un codice arriva con il Format scelto nella PROPRIA UI locale
+            // (di default), che puo' non combaciare col formato reale scelto dall'host. La stanza
+            // e' gia' autorevole su questo tramite le CustomRoomProperties impostate da
+            // CreatePrivateRoomInternal/GetRoomOptions: le rileggiamo per allineare CurrentConfig,
+            // cosi' che PlayerCount (derivato da Format) sia coerente su tutti i client.
+            if (CurrentConfig != null && PhotonNetwork.CurrentRoom?.CustomProperties != null)
+            {
+                var props = PhotonNetwork.CurrentRoom.CustomProperties;
+                if (props.ContainsKey("format"))
+                    CurrentConfig.Format = (GameFormat)(int)props["format"];
+                if (props.ContainsKey("target"))
+                    CurrentConfig.TargetScore = (int)props["target"];
+            }
+
+            // CRITICO: salviamo SUBITO la config (corretta) in PlayerPrefs, qui - non solo quando
+            // arriva "OnMatchFound". In una stanza privata OnMatchFound scatta SOLO sull'host quando
+            // preme "Avvia" (e' un evento C# locale, MAI un RPC di rete): un client che si e' unito
+            // con un codice non lo riceve mai. Per lui il passaggio a GameScene avviene invece in
+            // automatico via Photon (PhotonNetwork.AutomaticallySyncScene, attivato quando l'host
+            // chiama PhotonNetwork.LoadLevel), completamente al di fuori di
+            // GameLaunchController/OnMatchFound. Senza questo salvataggio, GameSceneInitializer.Awake()
+            // nella nuova scena carica da PlayerPrefs qualunque MatchConfig fosse rimasto li' da PRIMA
+            // (es. Training, il default) - e GameSceneInitializer.IsMasterClient() tratta
+            // Intent==Training come "sono sempre il master": il client si mette a giocare una
+            // partita completamente locale/offline contro bot, scollegata dalla vera partita in
+            // corso sugli altri client. E' la causa di "sul telefono la partita e' un'altra
+            // sessione e gioca da solo".
+            MatchConfigStorage.Save(CurrentConfig);
+
             if (CurrentConfig?.Intent == MatchIntent.PrivateRoom)
             {
                 SetState(MatchmakingState.InWaitingRoom);

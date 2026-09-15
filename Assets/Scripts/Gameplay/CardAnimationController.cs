@@ -245,6 +245,89 @@ namespace Project51.Unity
             return sequence;
         }
 
+        /// <summary>
+        /// Come PlayDealtCardsReveal, ma le carte partono visivamente dalla posizione del
+        /// mazziere (originPosition) invece di comparire ferme nella posizione finale - usata
+        /// per l'animazione di distribuzione a inizio smazzata e ad ogni redeal (mano + carte
+        /// tavolo). Le carte devono essere gia' state "staged" da
+        /// CardViewManager.StageCardsAtOriginForDealAnimation PRIMA di chiamare questo metodo
+        /// (posizione/scala finale gia' catturate, transform gia' spostato sul mazziere) - qui ci
+        /// si limita a farle rientrare, non a leggere una posizione "attuale" che a questo punto
+        /// sarebbe gia' quella del mazziere per tutte.
+        /// </summary>
+        public Sequence PlayDealtCardsFromOrigin(IReadOnlyList<CardViewManager.StagedCard> stagedCards, Vector3 originPosition, float staggerOverride = -1f)
+        {
+            if (stagedCards == null || stagedCards.Count == 0)
+            {
+                return CreateCompletedSequence(null);
+            }
+
+            float stagger = staggerOverride >= 0f ? staggerOverride : dealRevealStagger;
+            var sequence = DOTween.Sequence().SetTarget(this);
+            for (int i = 0; i < stagedCards.Count; i++)
+            {
+                var staged = stagedCards[i];
+                var cardView = staged.View;
+                if (cardView == null)
+                {
+                    continue;
+                }
+
+                Transform cardTransform = cardView.transform;
+                Vector3 finalPosition = staged.FinalPosition;
+                Vector3 finalScale = staged.FinalScale;
+                SpriteRenderer cardRenderer = cardView.CardRenderer;
+
+                float startAt = i * stagger;
+                sequence.InsertCallback(startAt, () =>
+                {
+                    cardTransform.position = originPosition;
+                    cardTransform.localScale = finalScale * 0.12f;
+                    if (cardRenderer != null) cardRenderer.enabled = true;
+                });
+                sequence.Insert(startAt, cardTransform.DOMove(finalPosition, dealRevealDuration).SetEase(playEase));
+                sequence.Insert(startAt, cardTransform.DOScale(finalScale, dealRevealDuration).SetEase(Ease.OutBack));
+            }
+
+            return sequence;
+        }
+
+        /// <summary>
+        /// Spazza via le carte indicate verso una posizione unica (es. il mazziere che si prende
+        /// le carte tavolo dopo un accuso Dealer15/Dealer30) - stessa idea del volo di
+        /// CaptureSequence ma senza la "carta giocata" iniziale, per un gruppo di carte che parte
+        /// gia' ferma sul tavolo invece che da un tiro di gioco.
+        /// </summary>
+        public Sequence PlaySweepToPile(IReadOnlyList<Transform> cards, IReadOnlyList<SpriteRenderer> renderers, Vector3 pileTargetPosition)
+        {
+            if (cards == null || renderers == null || cards.Count == 0 || cards.Count != renderers.Count)
+            {
+                return CreateCompletedSequence(null);
+            }
+
+            var sequence = DOTween.Sequence().SetTarget(this);
+            for (int i = 0; i < cards.Count; i++)
+            {
+                if (cards[i] == null || renderers[i] == null) continue;
+
+                int cardIndex = i;
+                Transform card = cards[cardIndex];
+                SpriteRenderer renderer = renderers[cardIndex];
+                Vector3 originalScale = card.localScale;
+                Vector3 destination = pileTargetPosition + new Vector3(0f, cardIndex * 0.015f, 0f);
+                float startAt = cardIndex * 0.08f;
+
+                var flight = DOTween.Sequence()
+                    .InsertCallback(startAt, () => renderer.sortingOrder = flightSortingOrderBase + cardIndex)
+                    .Insert(startAt, card.DOMove(destination, captureDuration).SetEase(captureEase))
+                    .Insert(startAt, card.DORotate(new Vector3(0f, 0f, UnityEngine.Random.Range(-8f, 8f)), captureDuration))
+                    .Insert(startAt, card.DOScale(originalScale * 0.6f, captureDuration));
+                sequence.Join(flight);
+            }
+
+            return sequence;
+        }
+
         public Sequence FlipCard(SpriteRenderer renderer, Sprite frontSprite, Action onComplete = null)
         {
             if (renderer == null)

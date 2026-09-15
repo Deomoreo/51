@@ -236,6 +236,64 @@ namespace Project51.Unity
         private bool isDragging = false;
         [SerializeField] private bool allowDrag = false; // default: disable drag for human players
 
+        /// <summary>
+        /// Difensivo: OnMouseExit di Unity puo' non scattare in alcuni casi limite (focus perso,
+        /// GameObject riusato/nascosto mentre il mouse era sopra, frame saltati), lasciando la
+        /// carta bloccata sollevata/selezionata visivamente o il valore temporaneo del Matta
+        /// (7 di Coppe) non ripristinato. Ogni frame in cui isMouseOver e' vero verifichiamo che
+        /// il mouse sia REALMENTE ancora sopra il collider e, se non lo e' piu', forziamo la
+        /// stessa pulizia di OnMouseExit.
+        /// </summary>
+        private void Update()
+        {
+            if (isMouseOver && !IsPointerActuallyOverCollider())
+            {
+                OnMouseExit();
+            }
+        }
+
+        private bool IsPointerActuallyOverCollider()
+        {
+            var col = GetComponent<Collider2D>();
+            if (col == null) return true; // niente da verificare, non forzare un'uscita errata
+
+            var cam = Camera.main;
+            if (cam == null) return true;
+
+            Vector3 mouseScreenPos = Input.mousePosition;
+            mouseScreenPos.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
+            Vector3 worldPos = cam.ScreenToWorldPoint(mouseScreenPos);
+            return col.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
+        }
+
+        private void OnDisable()
+        {
+            // Stessa difesa di Update/IsPointerActuallyOverCollider ma per il caso in cui la
+            // carta venga disattivata (nascosta, distrutta, riusata) mentre il mouse era ancora
+            // sopra: in quel caso OnMouseExit non scatta affatto.
+            if (isMouseOver)
+            {
+                isMouseOver = false;
+                if (!showingTemporaryValue && temporaryFaceSprite != null && spriteRenderer != null)
+                {
+                    spriteRenderer.sprite = temporaryFaceSprite;
+                    showingTemporaryValue = true;
+                    SetMarkerVisible(markerRenderer != null && markerRenderer.sprite != null);
+                }
+
+                if (!isSelected)
+                {
+                    if (hoverCoroutine != null)
+                    {
+                        StopCoroutine(hoverCoroutine);
+                        hoverCoroutine = null;
+                    }
+                    transform.localScale = displayScale;
+                    transform.position = originalPosition;
+                }
+            }
+        }
+
         private void OnMouseEnter()
         {
             isMouseOver = true;
@@ -263,7 +321,7 @@ namespace Project51.Unity
         private void OnMouseExit()
         {
             isMouseOver = false;
-            
+
             if (!isDragging && enableHover)
             {
                 if (!isSelected)

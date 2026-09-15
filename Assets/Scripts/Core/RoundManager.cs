@@ -36,6 +36,26 @@ namespace Project51.Core
         /// </summary>
         public event Action OnInitialHandsDealt;
 
+        /// <summary>
+        /// Event raised quando il dealer fa Dealer15/Dealer30 sulle carte tavolo a inizio
+        /// smazzata. Parametri: dealerIndex, AccusoType (Dealer15/Dealer30), le carte tavolo
+        /// SPAZZATE VIA (copia presa PRIMA che TakeTableByPlayer svuoti state.Table - altrimenti
+        /// chi ascolta l'evento le troverebbe gia' vuote). Prima non esisteva: le carte
+        /// sparivano silenziosamente dal tavolo senza che nessuno potesse mostrarlo (nessun
+        /// reveal), perche' ProcessDealerInitialAccuso gira PRIMA che qualunque render/UI esista.
+        /// </summary>
+        public event Action<int, AccusoType, List<Card>> OnDealerAccusoDeclared;
+
+        /// <summary>
+        /// Numero della mano corrente all'interno della smazzata (parte da 1).
+        /// </summary>
+        public int CurrentHandNumber { get; private set; } = 1;
+
+        /// <summary>
+        /// Numero totale di mani della smazzata corrente. Calcolato una volta in StartSmazzata.
+        /// </summary>
+        public int TotalHands { get; private set; }
+
         public RoundManager(GameState state, Random rng = null)
         {
             this.state = state ?? throw new ArgumentNullException(nameof(state));
@@ -83,6 +103,10 @@ namespace Project51.Core
         {
             Rules51.DealInitialCards(state);
 
+            const int deckSize = 40;
+            const int cardsPerPlayerPerHand = 3;
+            TotalHands = (deckSize - state.Table.Count) / (cardsPerPlayerPerHand * state.NumPlayers);
+
             foreach (var p in state.Players)
                 p.AccusiPoints = 0;
 
@@ -106,13 +130,11 @@ namespace Project51.Core
             {
                 if (baseSum == 15)
                 {
-                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(1);
-                    TakeTableByPlayer(dealer);
+                    DeclareDealerAccuso(dealer, AccusoType.Dealer15, 1);
                 }
                 else if (baseSum == 30)
                 {
-                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(2);
-                    TakeTableByPlayer(dealer);
+                    DeclareDealerAccuso(dealer, AccusoType.Dealer30, 2);
                 }
                 return;
             }
@@ -154,15 +176,22 @@ namespace Project51.Core
             {
                 if (bestType == 15)
                 {
-                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(1);
-                    TakeTableByPlayer(dealer);
+                    DeclareDealerAccuso(dealer, AccusoType.Dealer15, 1);
                 }
                 else if (bestType == 30)
                 {
-                    state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(2);
-                    TakeTableByPlayer(dealer);
+                    DeclareDealerAccuso(dealer, AccusoType.Dealer30, 2);
                 }
             }
+        }
+
+        private void DeclareDealerAccuso(int dealer, AccusoType type, int basePoints)
+        {
+            state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(basePoints);
+            // Copia PRIMA di svuotare il tavolo: TakeTableByPlayer chiama state.Table.Clear().
+            var sweptCards = new List<Card>(state.Table);
+            TakeTableByPlayer(dealer);
+            OnDealerAccusoDeclared?.Invoke(dealer, type, sweptCards);
         }
 
         private void TakeTableByPlayer(int playerIndex)
@@ -267,6 +296,7 @@ namespace Project51.Core
                     }
                     
                     // NEW: After dealing new hands, trigger event so TurnController can check for accusi
+                    CurrentHandNumber++;
                     OnNewHandsDealt?.Invoke();
                 }
                 else
