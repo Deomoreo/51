@@ -92,6 +92,22 @@ namespace Project51.UIV2.Screens
             if (mailButton != null) mailButton.SetBadgeCount(count);
         }
 
+        public void SetDeckInteractable(bool interactable)
+        {
+            if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
+        }
+
+        public void SetPendingActionsInteractable(bool interactable)
+        {
+            if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
+            foreach (var action in new[] { rewardsButton, rankingButton, mailButton })
+            {
+                if (action == null) continue;
+                var button = action.Button;
+                if (button != null) button.interactable = interactable;
+            }
+        }
+
         /// <summary>
         /// Hook per il futuro VideoPlayer/RenderTexture sull'area centrale - finche' non
         /// viene chiamato resta il placeholder neutro (vedi builder: VideoPlaceholderMarker).

@@ -71,6 +71,7 @@ namespace Project51.UIV2.Screens
 
             if (art != null)
             {
+                art.preserveAspect = true;
                 if (locked)
                 {
                     if (lockedArtSprite != null) art.sprite = lockedArtSprite;

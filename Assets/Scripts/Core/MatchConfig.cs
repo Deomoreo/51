@@ -148,6 +148,10 @@ namespace Project51.Core
         private const string KEY_DIFFICULTY = "BotDifficulty";
         private const string KEY_TARGET = "TargetScore";
         private const string KEY_DECK = "DeckBackId";
+        private const string KEY_ACCUSI = "MatchRules_EnableAccusi";
+        private const string KEY_ACCUSI_MULTIPLIER = "MatchRules_AccusiMultiplier";
+        private const string KEY_CAPPOTTO_IMMEDIATE = "MatchRules_CappottoImmediate";
+        private const string KEY_CAPPOTTO_BONUS = "MatchRules_CappottoBonus";
 
         /// <summary>
         /// Salva la config in PlayerPrefs.
@@ -161,6 +165,11 @@ namespace Project51.Core
             UnityEngine.PlayerPrefs.SetInt(KEY_DIFFICULTY, (int)config.BotDifficulty);
             UnityEngine.PlayerPrefs.SetInt(KEY_TARGET, config.TargetScore);
             UnityEngine.PlayerPrefs.SetString(KEY_DECK, config.DeckBackId ?? "default");
+            var rules = config.Rules ?? MatchRules.Default;
+            UnityEngine.PlayerPrefs.SetInt(KEY_ACCUSI, rules.EnableAccusi ? 1 : 0);
+            UnityEngine.PlayerPrefs.SetFloat(KEY_ACCUSI_MULTIPLIER, rules.AccusiPointMultiplier);
+            UnityEngine.PlayerPrefs.SetInt(KEY_CAPPOTTO_IMMEDIATE, rules.CappottoEndsGameImmediately ? 1 : 0);
+            UnityEngine.PlayerPrefs.SetInt(KEY_CAPPOTTO_BONUS, rules.CappottoBonusPoints);
             UnityEngine.PlayerPrefs.Save();
         }
 
@@ -175,7 +184,14 @@ namespace Project51.Core
                 Format = (GameFormat)UnityEngine.PlayerPrefs.GetInt(KEY_FORMAT, (int)GameFormat.FourPlayers),
                 BotDifficulty = (BotDifficulty)UnityEngine.PlayerPrefs.GetInt(KEY_DIFFICULTY, (int)BotDifficulty.Medium),
                 TargetScore = UnityEngine.PlayerPrefs.GetInt(KEY_TARGET, 51),
-                DeckBackId = UnityEngine.PlayerPrefs.GetString(KEY_DECK, "default")
+                DeckBackId = UnityEngine.PlayerPrefs.GetString(KEY_DECK, "default"),
+                Rules = new MatchRules
+                {
+                    EnableAccusi = UnityEngine.PlayerPrefs.GetInt(KEY_ACCUSI, MatchRules.Default.EnableAccusi ? 1 : 0) != 0,
+                    AccusiPointMultiplier = UnityEngine.PlayerPrefs.GetFloat(KEY_ACCUSI_MULTIPLIER, MatchRules.Default.AccusiPointMultiplier),
+                    CappottoEndsGameImmediately = UnityEngine.PlayerPrefs.GetInt(KEY_CAPPOTTO_IMMEDIATE, MatchRules.Default.CappottoEndsGameImmediately ? 1 : 0) != 0,
+                    CappottoBonusPoints = UnityEngine.PlayerPrefs.GetInt(KEY_CAPPOTTO_BONUS, MatchRules.Default.CappottoBonusPoints)
+                }
             };
         }
 
@@ -189,6 +205,10 @@ namespace Project51.Core
             UnityEngine.PlayerPrefs.DeleteKey(KEY_DIFFICULTY);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_TARGET);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_DECK);
+            UnityEngine.PlayerPrefs.DeleteKey(KEY_ACCUSI);
+            UnityEngine.PlayerPrefs.DeleteKey(KEY_ACCUSI_MULTIPLIER);
+            UnityEngine.PlayerPrefs.DeleteKey(KEY_CAPPOTTO_IMMEDIATE);
+            UnityEngine.PlayerPrefs.DeleteKey(KEY_CAPPOTTO_BONUS);
         }
     }
 

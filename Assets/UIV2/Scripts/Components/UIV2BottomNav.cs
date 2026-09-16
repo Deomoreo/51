@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -81,12 +82,12 @@ namespace Project51.UIV2.Components
             ApplyVisualState();
         }
 
-        public void SelectIndex(int index)
+        public void SelectIndex(int index, bool notify = true)
         {
             if (slots == null || index < 0 || index >= slots.Length) return;
             _selectedIndex = index;
             ApplyVisualState();
-            OnItemSelected?.Invoke(index);
+            if (notify) OnItemSelected?.Invoke(index);
         }
 
         private void ApplyVisualState()
@@ -102,10 +103,16 @@ namespace Project51.UIV2.Components
                 float size = selected ? SelectedIconSize : NormalIconSize;
                 if (slot.IconLayoutElement != null)
                 {
-                    slot.IconLayoutElement.preferredWidth = size;
-                    slot.IconLayoutElement.preferredHeight = size;
+                    slot.IconLayoutElement.preferredWidth = NormalIconSize;
+                    slot.IconLayoutElement.preferredHeight = NormalIconSize;
                 }
-                if (slot.Icon != null) slot.Icon.rectTransform.sizeDelta = new Vector2(size, size);
+                if (slot.Icon != null)
+                {
+                    slot.Icon.rectTransform.sizeDelta = Vector2.one * NormalIconSize;
+                    slot.Icon.rectTransform.DOKill();
+                    if (Application.isPlaying) slot.Icon.rectTransform.DOScale(size / NormalIconSize, .2f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(slot.Icon.gameObject);
+                    else slot.Icon.rectTransform.localScale = Vector3.one * (size / NormalIconSize);
+                }
                 if (slot.Label != null) slot.Label.color = selected ? selectedLabelColor : normalLabelColor;
             }
         }

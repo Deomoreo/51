@@ -1,0 +1,26 @@
+[mcp_servers.UnityMCP]
+command = 'C:\Users\franc\.local\bin\uvx.exe'
+args = [
+    "--offline",
+    "--from",
+    "mcpforunityserver==10.2.0",
+    "mcp-for-unity",
+]
+
+[mcp_servers.UnityMCP.tools.manage_scene]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.execute_code]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.manage_camera]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.refresh_unity]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.manage_editor]
+approval_mode = "approve"
+
+[mcp_servers.UnityMCP.tools.run_tests]
+approval_mode = "approve"

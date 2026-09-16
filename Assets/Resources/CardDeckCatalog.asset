@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 052b036b581d734478ec550e502af34a, type: 3}
+  m_Name: CardDeckCatalog
+  m_EditorClassIdentifier: 
+  entries:
+  - Id: napoletano
+    DisplayName: Napoletano
+    Subtitle: 40 carte
+    Artwork: {fileID: 21300000, guid: 00c4d72a9d1fb694bb699f53c25fe852, type: 2}
+    ResourcePath: CardDecks/napoletano
+  - Id: classico
+    DisplayName: Classico
+    Subtitle: "40 carte \xB7 dorso provvisorio"
+    Artwork: {fileID: 21300000, guid: 4023091643064014dbf2b05b5310f549, type: 3}
+    ResourcePath: CardDecks/classico
+  - Id: giada
+    DisplayName: Corte di Giada
+    Subtitle: 40 carte
+    Artwork: {fileID: 21300000, guid: ffec71c57be6fdf41b984a766bd4e9b1, type: 3}
+    ResourcePath: CardDecks/giada

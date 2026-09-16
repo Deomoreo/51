@@ -41,6 +41,8 @@ namespace Project51.UIV2.Components
                 portraitImage.enabled = player.Avatar != null;
             }
             if (nameLabel != null) nameLabel.text = player.DisplayName;
+            if (energyBar != null) energyBar.gameObject.SetActive(player.EnergyMax > 0);
+            if (xpBar != null) xpBar.gameObject.SetActive(player.XpMax > 0);
             SetEnergy(player.EnergyCurrent, player.EnergyMax);
             SetXp(player.XpCurrent, player.XpMax);
         }
@@ -48,6 +50,7 @@ namespace Project51.UIV2.Components
         public void SetResources(IReadOnlyList<ResourceViewData> resources)
         {
             if (resourcesContainer == null || resourcePillPrefab == null) return;
+            resourcesContainer.gameObject.SetActive(resources != null && resources.Count > 0);
 
             for (int i = _spawned.Count - 1; i >= 0; i--)
             {

@@ -82,6 +82,10 @@ namespace Project51.Unity
             }
         }
 
+        private CardDeckDefinition matchDeck;
+        private CardDeckDefinition MatchDeck => matchDeck != null ? matchDeck :
+            (matchDeck = CardDecks.Load(GameSceneInitializer.ActiveConfig?.DeckBackId ?? CardDecks.SelectedId));
+
         private void UpdateNormalPile(int totalCaptured)
         {
             var container = NormalContainer;
@@ -91,7 +95,7 @@ namespace Project51.Unity
             {
                 if (normalPileCardView == null)
                 {
-                    normalPileCardView = CreateCardView(container, cardBackSprite, normalPileScale, false);
+                    normalPileCardView = CreateCardView(container, MatchDeck != null ? MatchDeck.Back : cardBackSprite, normalPileScale, false);
                 }
             }
             else
@@ -231,6 +235,8 @@ namespace Project51.Unity
 
         private Sprite GetSpriteForCard(Card card)
         {
+            var selectedFace = MatchDeck != null ? MatchDeck.GetFace(card) : null;
+            if (selectedFace != null) return selectedFace;
             string suitName = card.Suit.ToString();
             int rank = card.Rank;
 
@@ -310,6 +316,8 @@ namespace Project51.Unity
 
         private Sprite GetScopaMarkerSprite()
         {
+            if (MatchDeck != null && MatchDeck.Id != CardDecks.DefaultId)
+                return MatchDeck.GetFace(new Card(Suit.Denari, 1));
             var scopaMarker = Resources.Load<Sprite>("Cards/ScopaMarker");
             if (scopaMarker != null) return scopaMarker;
             

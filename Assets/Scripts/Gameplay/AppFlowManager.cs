@@ -16,11 +16,22 @@ namespace Project51.Unity
         public const string SCENE_LOBBY = "LobbyScene";
         public const string SCENE_WAITING_ROOM = "WaitingRoom";
 
-        /// <summary>
-        /// Carica il Main Menu.
-        /// </summary>
+        private static bool returnToHome;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetNavigation() => returnToHome = false;
+
+        public static bool ConsumeReturnToHome()
+        {
+            bool value = returnToHome;
+            returnToHome = false;
+            return value;
+        }
+
+        /// <summary>Return from a match to Home without repeating the entry gate.</summary>
         public static void GoToMainMenu()
         {
+            returnToHome = SceneManager.GetActiveScene().name == SCENE_GAME;
             Debug.Log("[AppFlow] Loading Main Menu...");
             
             // Se siamo connessi a Photon, disconnetti
@@ -29,7 +40,7 @@ namespace Project51.Unity
                 PhotonNetwork.Disconnect();
             }
 
-            SceneManager.LoadScene(SCENE_MAIN_MENU);
+            if (!Core.AppLoading.LoadScene(SCENE_MAIN_MENU)) SceneManager.LoadScene(SCENE_MAIN_MENU);
         }
 
         /// <summary>
@@ -47,7 +58,7 @@ namespace Project51.Unity
             }
             else
             {
-                SceneManager.LoadScene(SCENE_GAME);
+                if (!Core.AppLoading.LoadScene(SCENE_GAME)) SceneManager.LoadScene(SCENE_GAME);
             }
         }
 

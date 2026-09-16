@@ -74,12 +74,15 @@ namespace Project51.UIV2.Screens
             if (nameLabel != null) nameLabel.text = data.PlayerName;
             if (infoLabel != null)
             {
-                infoLabel.text = string.IsNullOrEmpty(data.PlayerId)
-                    ? $"{levelPrefix} {data.Level}"
-                    : $"{levelPrefix} {data.Level} {MiddleDot} {data.PlayerId}";
+                string status = data.HasProgress ? $"{levelPrefix} {data.Level}" : (data.IsGuest ? "Ospite" : "Account");
+                infoLabel.text = string.IsNullOrEmpty(data.PlayerId) ? status : $"{status} {MiddleDot} {data.PlayerId}";
             }
 
             SetXp(data.XpCurrent, data.XpMax, data.Level + 1);
+            if (xpBar != null) xpBar.gameObject.SetActive(data.HasProgress && data.XpMax > 0);
+            if (!data.HasProgress && xpLabel != null) xpLabel.text = "Progressi non disponibili";
+            if (xpLabel != null) xpLabel.gameObject.SetActive(!data.IsGuest);
+            if (data.IsGuest && xpBar != null) xpBar.gameObject.SetActive(false);
             SetStats(data);
             SetTrophies(data.Trophies);
 
@@ -98,12 +101,19 @@ namespace Project51.UIV2.Screens
             float winRate = data.WinRate >= 0f ? data.WinRate
                 : (data.MatchesPlayed > 0 ? (float)data.Wins / data.MatchesPlayed : 0f);
 
-            SetTile(matchesTile, data.MatchesPlayed.ToString());
-            SetTile(winsTile, data.Wins.ToString());
-            SetTile(winRateTile, Mathf.RoundToInt(winRate * 100f) + "%");
-            SetTile(scopasTile, data.TotalScopas.ToString());
-            SetTile(settebelloTile, data.SettebelloCount.ToString());
-            SetTile(pointRecordTile, data.PointRecord.ToString());
+            SetTile(matchesTile, data.HasMatchStats ? data.MatchesPlayed.ToString() : "—");
+            SetTile(winsTile, data.HasMatchStats ? data.Wins.ToString() : "—");
+            SetTile(winRateTile, data.HasMatchStats ? Mathf.RoundToInt(winRate * 100f) + "%" : "—");
+            SetTile(scopasTile, data.HasAdvancedStats ? data.TotalScopas.ToString() : "—");
+            SetTile(settebelloTile, data.HasAdvancedStats ? data.SettebelloCount.ToString() : "—");
+            SetTile(pointRecordTile, data.HasAdvancedStats ? data.PointRecord.ToString() : "—");
+        }
+
+        public void SetActionsAvailable(bool settings, bool register, bool share)
+        {
+            if (settingsButton != null) settingsButton.interactable = settings;
+            if (registerButton != null && registerButton.Button != null) registerButton.Button.interactable = register;
+            if (shareButton != null && shareButton.Button != null) shareButton.Button.interactable = share;
         }
 
         public void SetTrophies(IReadOnlyList<CollectionItemViewData> trophies)

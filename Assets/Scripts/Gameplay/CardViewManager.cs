@@ -362,8 +362,14 @@ namespace Project51.Unity
             }
         }
 
+        private CardDeckDefinition matchDeck;
+        private CardDeckDefinition MatchDeck => matchDeck != null ? matchDeck :
+            (matchDeck = CardDecks.Load(GameSceneInitializer.ActiveConfig?.DeckBackId ?? CardDecks.SelectedId));
+
         public Sprite GetSpriteForCard(Card card)
         {
+            var selectedFace = MatchDeck != null ? MatchDeck.GetFace(card) : null;
+            if (selectedFace != null) return selectedFace;
             // 1) Do NOT rely on array index ordering; many packs are unordered.
             // Prefer explicit mappings or name-based resolution.
 
@@ -781,6 +787,8 @@ namespace Project51.Unity
         /// </summary>
         private Sprite GetMattaSpecialSprite(int rank)
         {
+            if (MatchDeck != null && MatchDeck.Id != CardDecks.DefaultId)
+                return MatchDeck.GetFace(new Card(Suit.Coppe, rank));
             if (mattaSpecialSprites == null || mattaSpecialSprites.Length == 0)
             {
                 return null;
@@ -1504,9 +1512,10 @@ namespace Project51.Unity
             }
 
             // If manager has a default back assigned use it
-            if (defaultCardBack != null)
+            var selectedBack = MatchDeck != null ? MatchDeck.Back : defaultCardBack;
+            if (selectedBack != null)
             {
-                view.SetDefaultBack(defaultCardBack);
+                view.SetDefaultBack(selectedBack);
             }
 
             // Get correct sprite for this card if cardSprites has been populated

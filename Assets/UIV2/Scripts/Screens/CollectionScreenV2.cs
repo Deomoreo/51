@@ -63,6 +63,13 @@ namespace Project51.UIV2.Screens
             ApplyTab(initialTab);
         }
 
+        public void SetTabInteractable(CollectionTab tab, bool interactable)
+        {
+            int index = (int)tab;
+            if (tabs != null && index >= 0 && index < tabs.Length && tabs[index]?.Button != null)
+                tabs[index].Button.interactable = interactable;
+        }
+
         public void SetTab(CollectionTab tab)
         {
             bool changed = tab != CurrentTab;

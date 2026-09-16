@@ -205,6 +205,12 @@ namespace Project51.Unity
                 return;
             }
 
+            if (AppLoading.IsAvailable)
+            {
+                GoToSceneForConfig(config);
+                return;
+            }
+
             if (useFakeMatchmakingForTraining)
             {
                 StartFakeMatchmakingAndLoad(config);
@@ -519,7 +525,7 @@ namespace Project51.Unity
             // For now: training (offline) uses normal scene load.
             if (config == null || config.Intent == MatchIntent.Training)
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+                if (!AppLoading.LoadScene(sceneName)) UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
                 return;
             }
 

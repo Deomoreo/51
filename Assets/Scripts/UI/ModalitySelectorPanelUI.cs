@@ -99,6 +99,17 @@ namespace Project51.Unity
 
         #region Difficulty Selector
 
+        /// <summary>Restores a selection without launching or animating the panel.</summary>
+        public void SetSelection(MatchConfig config)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            CurrentSelection = config.Clone();
+            _currentDifficulty = CurrentSelection.BotDifficulty;
+            UpdateDifficultyUI();
+            UpdateSelectionText();
+            OnSelectionChanged?.Invoke(CurrentSelection);
+        }
+
         public void SetDifficulty(BotDifficulty difficulty)
         {
             _currentDifficulty = difficulty;

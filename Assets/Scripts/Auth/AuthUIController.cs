@@ -552,6 +552,7 @@ namespace Project51.Auth
         
         private void SetLoading(bool show, string message = null)
         {
+            Project51.Core.AppLoading.SetAuthenticationBusy(show, message);
             if (loadingOverlay != null)
             {
                 loadingOverlay.SetActive(show);
