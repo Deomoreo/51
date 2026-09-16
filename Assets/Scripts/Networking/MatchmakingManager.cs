@@ -326,6 +326,7 @@ namespace Project51.Networking
 
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
+            if (CurrentConfig == null) return;
             Debug.Log($"[Matchmaking] Join random failed: {message}. Creating new room...");
             
             // Nessuna stanza disponibile, creane una
@@ -345,6 +346,7 @@ namespace Project51.Networking
 
         public override void OnJoinedRoom()
         {
+            if (CurrentConfig == null) { PhotonNetwork.LeaveRoom(); return; }
             Debug.Log($"[Matchmaking] Joined room: {PhotonNetwork.CurrentRoom.Name}, Players: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
             // Chi si unisce con un codice arriva con il Format scelto nella PROPRIA UI locale
@@ -409,9 +411,9 @@ namespace Project51.Networking
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
-            Debug.LogError($"[Matchmaking] Join room failed: {message}");
+            Debug.LogWarning($"[Matchmaking] Join room failed: {message}");
             SetState(MatchmakingState.Idle);
-            OnError?.Invoke($"Impossibile entrare nella stanza: {message}");
+            OnError?.Invoke(returnCode == 32765 ? "La stanza è piena. Chiedi un altro codice." : returnCode == 32764 ? "La partita è già iniziata o la stanza è chiusa." : "Codice non valido o stanza non più disponibile.");
         }
 
         public override void OnCreateRoomFailed(short returnCode, string message)

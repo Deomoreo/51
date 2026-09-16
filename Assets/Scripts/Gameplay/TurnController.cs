@@ -364,7 +364,8 @@ namespace Project51.Unity
             }
         }
 
-        // Reset GameState to ensure consistent initialization
+        // Preserve only the round sequence; each smazzata has its own score state.
+        int nextRoundIndex = (gameState != null ? gameState.RoundIndex : 0) + 1;
         gameState = null;
 
         // Scarta qualunque mossa di rete accodata da una mano/partita precedente: non ha piu'
@@ -392,6 +393,7 @@ namespace Project51.Unity
 
         // starting new game
         gameState = Rules51.CreateNewGame(numPlayers);
+        gameState.RoundIndex = nextRoundIndex;
         Debug.Log($"[TurnController] GameState created: {gameState.NumPlayers} players, dealer={gameState.DealerIndex}, current={gameState.CurrentPlayerIndex}");
         
         roundManager = new RoundManager(gameState);

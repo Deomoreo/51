@@ -62,7 +62,10 @@ namespace Project51.Networking
             var player = gs.Players[playerIndex];
             // AccusoType: assume Cirulla=3, Decino=10
             int points = accusoType == (int)AccusoType.Decino ? 10 : 3;
+            int newlyAwarded = Mathf.Max(0, points - player.AccusiPoints);
+            player.RoundAccusiPoints += newlyAwarded;
             player.AccusiPoints = Mathf.Max(player.AccusiPoints, points);
+            if (newlyAwarded > 0) GamePresentation.ShowAccuso(playerIndex, accusoType);
 
             // Segna il giocatore come "gia' risolto" anche su QUESTO client: se questo e' il Master
             // e la dichiarazione era manuale (arrivata da un altro client), il fallback automatico
@@ -84,6 +87,24 @@ namespace Project51.Networking
             cardViewMgr?.ForceRefresh();
         }
 
+        private readonly Dictionary<int, float> emoticonLastSeen = new Dictionary<int, float>();
+        public void SendEmoticon(int emoticon)
+        {
+            if (!PhotonNetwork.InRoom || emoticon < 0 || emoticon >= 6) return;
+            photonView.RPC(nameof(RPC_Emoticon), RpcTarget.All, emoticon);
+        }
+        [PunRPC]
+        private void RPC_Emoticon(int emoticon, PhotonMessageInfo info)
+        {
+            if (info.Sender == null || emoticon < 0 || emoticon >= 6) return;
+            var initializer = FindObjectOfType<GameSceneInitializer>();
+            int player = initializer != null ? initializer.GetPlayerIndexForActor(info.Sender.ActorNumber) : -1;
+            if (player < 0) return;
+            float lastTime;
+            if (emoticonLastSeen.TryGetValue(player, out lastTime) && Time.unscaledTime - lastTime < 1.5f) return;
+            emoticonLastSeen[player] = Time.unscaledTime;
+            GamePresentation.ShowEmoticon(player, emoticon);
+        }
         private void FlushPendingAccusi()
         {
             if (pendingAccusi == null || pendingAccusi.Count == 0) return;
@@ -411,6 +432,9 @@ namespace Project51.Networking
                 parts.Add(SerializePlayer(gs.Players[i]));
             }
             
+            parts.Add(gs.LastCapturePlayerIndex.ToString());
+            parts.Add(gs.RoundEnded ? "1" : "0");
+            parts.Add(gs.RoundIndex.ToString());
             return string.Join("||", parts);
         }
 
@@ -439,6 +463,11 @@ namespace Project51.Networking
             var parts = new List<string>();
             parts.Add(SerializeCardList(player.Hand));
             parts.Add(SerializeCardList(player.CapturedCards));
+            parts.Add(player.ScopaCount.ToString());
+            parts.Add(player.AccusiPoints.ToString());
+            parts.Add(player.RoundAccusiPoints.ToString());
+            parts.Add(player.TotalScore.ToString());
+            parts.Add(SerializeCardList(player.ScopaCards));
             return string.Join(";", parts);
         }
 
@@ -498,8 +527,24 @@ namespace Project51.Networking
                     
                     gameState.Players[i].CapturedCards.Clear();
                     gameState.Players[i].CapturedCards.AddRange(playerDataList[i].captured);
+                    var values = parts[5 + i].Split(';');
+                    var player = gameState.Players[i];
+                    if (values.Length > 5)
+                    {
+                        player.ScopaCount = int.Parse(values[2]);
+                        player.AccusiPoints = int.Parse(values[3]);
+                        player.RoundAccusiPoints = int.Parse(values[4]);
+                        player.TotalScore = int.Parse(values[5]);
+                        if (values.Length > 6) player.ScopaCards.AddRange(DeserializeCardList(values[6]));
+                    }
                 }
 
+                if (parts.Length > 7 + numPlayers)
+                {
+                    gameState.LastCapturePlayerIndex = int.Parse(parts[5 + numPlayers]);
+                    gameState.RoundEnded = parts[6 + numPlayers] == "1";
+                    gameState.RoundIndex = int.Parse(parts[7 + numPlayers]);
+                }
                 return gameState;
             }
             catch (System.Exception ex)

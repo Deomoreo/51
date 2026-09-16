@@ -108,7 +108,7 @@ namespace Project51.Core
             TotalHands = (deckSize - state.Table.Count) / (cardsPerPlayerPerHand * state.NumPlayers);
 
             foreach (var p in state.Players)
-                p.AccusiPoints = 0;
+            { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; }
 
             OnInitialHandsDealt?.Invoke();
 
@@ -188,6 +188,7 @@ namespace Project51.Core
         private void DeclareDealerAccuso(int dealer, AccusoType type, int basePoints)
         {
             state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(basePoints);
+            state.Players[dealer].RoundAccusiPoints += ApplyAccusiRulePoints(basePoints);
             // Copia PRIMA di svuotare il tavolo: TakeTableByPlayer chiama state.Table.Clear().
             var sweptCards = new List<Card>(state.Table);
             TakeTableByPlayer(dealer);
@@ -219,6 +220,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsCirulla(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(3);
+                    state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(3);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Cirulla, new List<Card>(hand));
                     return true;
                 }
@@ -230,6 +232,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsDecino(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(10);
+                    state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(10);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Decino, new List<Card>(hand));
                     return true;
                 }
@@ -308,6 +311,7 @@ namespace Project51.Core
 
         public void EndSmazzata()
         {
+            if(state.RoundEnded)return;
             // Assign remaining table cards to last capture player
             if (state.LastCapturePlayerIndex >= 0 && state.Table.Count > 0)
             {
@@ -344,7 +348,7 @@ namespace Project51.Core
             // Add accusi points and apply to totals
             for (int i = 0; i < state.NumPlayers; i++)
             {
-                points[i] += state.Players[i].AccusiPoints;
+                points[i] += System.Math.Max(state.Players[i].RoundAccusiPoints, state.Players[i].AccusiPoints);
                 state.Players[i].TotalScore += points[i];
             }
 

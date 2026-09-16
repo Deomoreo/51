@@ -71,16 +71,19 @@
     <Compile Include="Assets\Editor\EmoticonWireframeBuilder.cs" />
     <Compile Include="Assets\Editor\EmoticonKitBuilder.cs" />
     <Compile Include="Assets\Editor\ProfiloBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\ProfileV2BindingTests.cs" />
     <Compile Include="Assets\Editor\ImpostazioniBuilder.cs" />
     <Compile Include="Assets\Editor\DragonsHoardThemeApplier.cs" />
     <Compile Include="Assets\Editor\PostaBuilder.cs" />
     <Compile Include="Assets\Editor\NegozioBuilder.cs" />
     <Compile Include="Assets\Editor\PanelMazzoBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\FrontendExpansionTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAndAccusiRulesTests.cs" />
     <Compile Include="Assets\Editor\ClassificaBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAccusiCombinationsTests.cs" />
     <Compile Include="Assets\Tests\Editor\AceAndCaptureRulesTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerHandNumberTests.cs" />
+    <Compile Include="Assets\Tests\Editor\MatchConfigStorageTests.cs" />
     <Compile Include="Assets\Editor\DealerAccusoRevealBuilder.cs" />
     <Compile Include="Assets\Editor\PanelModalitaBuilder.cs" />
     <Compile Include="Assets\Editor\DragonsHoardSprites.cs" />
@@ -90,14 +93,17 @@
     <Compile Include="Assets\Editor\GameSceneStrayCleanup.cs" />
     <Compile Include="Assets\Editor\TablePlayerBannersBuilder.cs" />
     <Compile Include="Assets\Editor\SceneSetup\CreateCirullaScene.cs" />
+    <Compile Include="Assets\Editor\FrontendExpansionBuilder.Rooms.cs" />
     <Compile Include="Assets\Editor\TableFeltBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\CardDeckTests.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51IntegrationTests.cs" />
     <Compile Include="Assets\Editor\GameCanvasResolutionFixer.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiAndPunteggioComprehensiveTests.cs" />
     <Compile Include="Assets\Editor\EmoticonScreenExactBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51CoreTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerEdgeTests.cs" />
+    <Compile Include="Assets\Editor\FrontendExpansionBuilder.cs" />
     <Compile Include="Assets\Editor\AmiciBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\TurnControllerResolveAIDifficultyTests.cs" />
     <Compile Include="Assets\Editor\PremiBuilder.cs" />
@@ -107,7 +113,9 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Shop.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Collection.cs" />
     <Compile Include="Assets\Tests\Editor\PlayerSelectionTests.cs" />
+    <Compile Include="Assets\Editor\FrontendExpansionBuilder.Game.cs" />
     <Compile Include="Assets\Editor\DealerRouletteBuilder.cs" />
+    <Compile Include="Assets\Editor\FrontendFlowBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\CirullaRulesTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Profile.cs" />
   </ItemGroup>

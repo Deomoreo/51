@@ -81,6 +81,7 @@ namespace Project51.Unity
                 return;
             }
 
+            if (GamePresentation.ShowRound(gameState, () => OnContinueClicked?.Invoke(), () => OnMainMenuClicked?.Invoke())) return;
             StartCoroutine(ShowWithAnimation(gameState));
         }
 
@@ -163,6 +164,7 @@ namespace Project51.Unity
         /// </summary>
         public void Hide()
         {
+            GamePresentation.CloseResults();
             if (panelRoot != null)
                 panelRoot.SetActive(false);
 
@@ -310,7 +312,7 @@ namespace Project51.Unity
         /// <summary>
         /// Calculates detailed score breakdown for each player.
         /// </summary>
-        private ScoreDetails[] CalculateScoreDetails(GameState state)
+        public ScoreDetails[] CalculateScoreDetails(GameState state)
         {
             int n = state.NumPlayers;
             var details = new ScoreDetails[n];
@@ -334,7 +336,7 @@ namespace Project51.Unity
                 details[i].DenariCount = captured.Count(c => c.Suit == Suit.Denari);
 
                 // Primiera score
-                details[i].PrimieraScore = ComputePrimieraScore(captured);
+                details[i].PrimieraScore = captured.Select(c => c.Suit).Distinct().Count() == 4 ? ComputePrimieraScore(captured) : -1;
 
                 // Grande (Re, Cavallo, Fante di Denari)
                 var denariRanks = captured.Where(c => c.Suit == Suit.Denari).Select(c => c.Rank).ToHashSet();
@@ -350,7 +352,7 @@ namespace Project51.Unity
                 }
 
                 // Accusi points
-                details[i].AccusiPoints = player.AccusiPoints;
+                details[i].AccusiPoints = System.Math.Max(player.AccusiPoints, player.RoundAccusiPoints);
             }
 
             // Determine winners for comparative categories
@@ -366,7 +368,7 @@ namespace Project51.Unity
             {
                 details[i].WonDenari = maxDenari >= 6 && denariCounts[i] == maxDenari && denariCounts.Count(x => x == maxDenari) == 1;
                 details[i].WonCards = maxCards >= 21 && cardCounts[i] == maxCards && cardCounts.Count(x => x == maxCards) == 1;
-                details[i].WonPrimiera = primieraScores[i] == maxPrimiera && primieraScores.Count(x => x == maxPrimiera) == 1;
+                details[i].WonPrimiera = maxPrimiera >= 0 && primieraScores[i] == maxPrimiera && primieraScores.Count(x => x == maxPrimiera) == 1;
             }
 
             return details;

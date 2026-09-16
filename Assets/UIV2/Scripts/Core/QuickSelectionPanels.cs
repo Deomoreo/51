@@ -20,6 +20,7 @@ namespace Project51.UIV2.Core
         public Button CreateRoom;
         public Button JoinRoom;
         public ScrollRect ModeScroll;
+        public RoomFlowV2 RoomFlow;
         private string pendingDeck;
         public bool IsOpen => DeckModal.IsOpen || ModeModal.IsOpen;
 
@@ -29,8 +30,8 @@ namespace Project51.UIV2.Core
             for (int i = 0; i < ModeButtons.Length; i++) { int index = i; ModeButtons[i].onClick.AddListener(() => ChooseMode(index)); }
             for (int i = 0; i < DifficultyButtons.Length; i++) { int index = i; DifficultyButtons[i].onClick.AddListener(() => ChooseDifficulty(index)); }
             Confirm.onClick.AddListener(ConfirmDeck);
-            CreateRoom.onClick.AddListener(() => { ModeModal.Close(); Modes.Select_CreatePrivateRoom(); });
-            JoinRoom.onClick.AddListener(() => { ModeModal.Close(); Modes.Select_JoinPrivateRoom(); });
+            CreateRoom.onClick.AddListener(() => { ModeModal.Close(); if(RoomFlow!=null)RoomFlow.OpenCreate();else Modes.Select_CreatePrivateRoom(); });
+            JoinRoom.onClick.AddListener(() => { ModeModal.Close(); if(RoomFlow!=null)RoomFlow.OpenJoin();else Modes.Select_JoinPrivateRoom(); });
         }
         public void OpenDecks()
         {

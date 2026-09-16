@@ -19,6 +19,7 @@ namespace Project51.UIV2.Core
         public RectTransform[] Cards;
         public Button RetryButton;
         public Button CancelButton;
+        [Min(0)] public float MinimumDuration = 3f;
         public bool IsVisible => View != null && View.gameObject.activeSelf;
         private Coroutine operation;
         private Tween fade;
@@ -79,8 +80,13 @@ namespace Project51.UIV2.Core
             }
             Status.text = "Preparazione delle carte…";
             yield return PreloadDeck();
-            indeterminate = false; Progress.fillAmount = 1;
-            while (Time.realtimeSinceStartup - started < .4f) yield return null;
+            indeterminate = false;
+            while (Time.realtimeSinceStartup - started < MinimumDuration)
+            {
+                Progress.fillAmount = Mathf.Clamp01((Time.realtimeSinceStartup-started)/MinimumDuration);
+                yield return null;
+            }
+            Progress.fillAmount = 1;
             var ready = entranceReady; entranceReady = null; operation = null;
             ready?.Invoke(); Hide();
         }
@@ -108,10 +114,9 @@ namespace Project51.UIV2.Core
             if (scene == "GameScene") yield return PreloadDeck();
             var load = SceneManager.LoadSceneAsync(scene);
             load.allowSceneActivation = false;
-            while (load.progress < .9f || Time.realtimeSinceStartup - started < .4f)
+            while (load.progress < .9f || Time.realtimeSinceStartup - started < MinimumDuration)
             {
-                Progress.fillAmount = Mathf.Clamp01(load.progress / .9f) * .95f;
-                Status.text = "Caricamento… " + Mathf.RoundToInt(Progress.fillAmount * 100) + "%";
+                Progress.fillAmount = Mathf.Min(Mathf.Clamp01(load.progress / .9f), Mathf.Clamp01((Time.realtimeSinceStartup-started)/Mathf.Max(.01f,MinimumDuration))) * .95f;
                 yield return null;
             }
             load.allowSceneActivation = true;

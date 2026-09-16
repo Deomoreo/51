@@ -19,6 +19,7 @@ namespace Project51.Core
         public List<PlayerState> Players { get; }
 
         public bool RoundEnded { get; set; }
+        public int RoundIndex { get; set; }
 
         public GameState(int numPlayers)
         {

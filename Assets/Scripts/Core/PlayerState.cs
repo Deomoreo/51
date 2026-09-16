@@ -16,6 +16,7 @@ namespace Project51.Core
 
         public int TotalScore { get; set; }
         public int AccusiPoints { get; set; }
+        public int RoundAccusiPoints { get; set; }
 
         public PlayerState(int playerId)
         {

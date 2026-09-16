@@ -63,8 +63,8 @@ namespace Project51.UIV2.Core
             if (collection != null)
             {
                 collection.DecksPanel.OnDeckActionPressed += SelectDeck;
-                collection.SetTabInteractable(CollectionTab.Emoticons, false);
-                collection.SetTabInteractable(CollectionTab.Accusi, false);
+                collection.SetTabInteractable(CollectionTab.Emoticons, true);
+                collection.SetTabInteractable(CollectionTab.Accusi, true);
                 collection.DecksPanel.SetFooter(string.Empty);
             }
             modes.OnSelectionChanged += SelectionChanged;
@@ -75,7 +75,7 @@ namespace Project51.UIV2.Core
             navigation.SetItems(new List<UIV2NavItemData>
             {
                 new UIV2NavItemData { Id = "gioca", Label = "Gioca" },
-                new UIV2NavItemData { Id = "cards", Label = "Carte" },
+                new UIV2NavItemData { Id = "cards", Label = "Collezione" },
                 new UIV2NavItemData { Id = "shop", Label = "Negozio" },
                 new UIV2NavItemData { Id = "profile", Label = "Profilo" }
             });
@@ -181,6 +181,7 @@ namespace Project51.UIV2.Core
 
         private bool CanNavigate()
         {
+            if(quickPanels.RoomFlow!=null&&quickPanels.RoomFlow.IsOpen)return false;
             if (modes.IsOpen || quickPanels.IsOpen || (settings != null && settings.IsOpen)) return false;
             if (AppLoadingView.Instance != null && AppLoadingView.Instance.IsVisible) return false;
             if (startScreen != null && startScreen.View.blocksRaycasts) return false;

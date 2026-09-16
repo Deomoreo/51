@@ -320,6 +320,12 @@ namespace Project51.Unity
             }
         }
 
+        public void JoinPrivateRoom(string roomCode, MatchConfig config)
+        {
+            _pendingConfig = config;
+            OnJoinRoomCodeEntered(roomCode);
+        }
+
         private void OnJoinRoomCodeEntered(string roomCode)
         {
             if (logEvents)
@@ -362,7 +368,7 @@ namespace Project51.Unity
             if (waitingRoomUI != null)
             {
                 waitingRoomUI.gameObject.SetActive(true);
-                int requiredPlayers = _pendingConfig?.PlayerCount ?? 4;
+                int requiredPlayers = MatchmakingManager.Instance?.CurrentConfig?.PlayerCount ?? _pendingConfig?.PlayerCount ?? 4;
                 waitingRoomUI.Initialize(roomCode, isHost, requiredPlayers);
             }
         }
@@ -420,7 +426,7 @@ namespace Project51.Unity
 
         private void OnMatchmakingError(string error)
         {
-            Debug.LogError($"[GameLaunchController] Matchmaking error: {error}");
+            Debug.LogWarning($"[GameLaunchController] Matchmaking error: {error}");
 
             if (matchmakingStatusUI != null)
             {

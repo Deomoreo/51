@@ -45,7 +45,7 @@ namespace Project51.Unity.UI
 
         private void OnEmojiClicked()
         {
-            Debug.Log("[TableActionButtonsController] Emoji: pannello di selezione non ancora implementato.");
+            Project51.Core.GamePresentation.RequestEmoticons();
         }
 
         private void OnAccusoClicked()
