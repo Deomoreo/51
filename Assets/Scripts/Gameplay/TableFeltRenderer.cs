@@ -69,6 +69,22 @@ namespace Project51.Unity
             Rebuild();
         }
 
+        private float builtOrthoSize = -1f;
+        private float builtCameraAspect = -1f;
+
+        private void LateUpdate()
+        {
+            // CameraResponsiveFit cambia la camera dopo Start (e il Game view dell'Editor cambia
+            // risoluzione all'avvio del Play): senza questo il feltro restava con proporzioni vecchie,
+            // piu' alto del previsto.
+            if (targetCamera == null || spriteRenderer == null) return;
+            if (Mathf.Abs(targetCamera.orthographicSize - builtOrthoSize) > 0.001f || Mathf.Abs(targetCamera.aspect - builtCameraAspect) > 0.001f)
+            {
+                texture = null;
+                Rebuild();
+            }
+        }
+
         private void OnValidate()
         {
             // Aggiorna live in Editor quando si tarano gli slider in Inspector (grazie a [ExecuteAlways]).
@@ -85,8 +101,12 @@ namespace Project51.Unity
             if (targetCamera == null) targetCamera = Camera.main;
             if (targetCamera == null || !targetCamera.orthographic || spriteRenderer == null) return;
 
-            float visibleHeight = targetCamera.orthographicSize * 2f;
-            float visibleWidth = visibleHeight * targetCamera.aspect;
+            builtOrthoSize = targetCamera.orthographicSize;
+            builtCameraAspect = targetCamera.aspect;
+            // Misure dall'area di design (CameraResponsiveFit), non da tutto il visibile: su un telefono
+            // piu' alto del 9:16 il feltro deve restare dov'e' rispetto ai banner, non allungarsi.
+            float visibleHeight = Mathf.Min(targetCamera.orthographicSize * 2f, CameraResponsiveFit.DesignWorldSize.y);
+            float visibleWidth = Mathf.Min(targetCamera.orthographicSize * 2f * targetCamera.aspect, CameraResponsiveFit.DesignWorldSize.x);
 
             float feltWidth = visibleWidth * widthRatio;
             float feltHeight = visibleHeight * heightRatio;

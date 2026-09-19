@@ -3,17 +3,25 @@ using UnityEngine;
 namespace Project51.Unity
 {
     /// <summary>
-    /// Adatta la camera ortografica al rapporto d'aspetto del dispositivo,
-    /// mantenendo sempre visibile un'area di gioco di riferimento.
+    /// G1 - Il tavolo vive in un'area di design fissa: il mockup 1080x1920 = DesignWorldSize
+    /// (5,625 x 10 unita' mondo, cioe' la vecchia camera a orthographicSize 5 su 9:16), centrata
+    /// sullo schermo. La camera mostra sempre tutta l'area di design con la stessa scala dei Canvas
+    /// del tavolo (PortraitCanvasMatch: larghezza sui telefoni piu' stretti del 9:16, altezza sui
+    /// tablet), quindi un pixel di design e' sempre lo stesso pezzo di mondo e banner, pulsanti e
+    /// carte restano allineati su ogni proporzione. Lo spazio in piu' resta attorno (sfondo).
+    ///
+    /// Prima la camera era ferma a orthographicSize 5: su un telefono 19,5:9 il tavolo era il 18% piu'
+    /// grande dello schermo e la UI (match 0,5) scivolava rispetto alle carte.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     [ExecuteAlways]
     public class CameraResponsiveFit : MonoBehaviour
     {
-        [Header("Reference Play Area")]
-        [SerializeField] private float referenceWidth = 12f;
-        [SerializeField] private float referenceHeight = 8.5f;
-        [SerializeField, Range(0f, 0.25f)] private float safeMarginPercent = 0.06f;
+        public const float DesignWidthPx = 1080f;
+        public const float DesignHeightPx = 1920f;
+        public const float DesignWorldHeight = 10f;
+        public static readonly Vector2 DesignWorldSize =
+            new Vector2(DesignWorldHeight * DesignWidthPx / DesignHeightPx, DesignWorldHeight);
 
         private Camera cachedCamera;
         private float lastAspect = -1f;
@@ -33,70 +41,35 @@ namespace Project51.Unity
 
         private void LateUpdate()
         {
-            if (!Application.isPlaying)
-            {
-                Apply();
-                return;
-            }
-
-            float aspect = GetAspect();
-            if (!Mathf.Approximately(lastAspect, aspect))
-            {
-                Apply();
-            }
+            if (!Mathf.Approximately(lastAspect, GetAspect())) Apply();
         }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            referenceWidth = Mathf.Max(1f, referenceWidth);
-            referenceHeight = Mathf.Max(1f, referenceHeight);
-            Apply();
-        }
-#endif
 
         public void Apply()
         {
             EnsureCamera();
-            if (cachedCamera == null)
-            {
-                return;
-            }
-
-            cachedCamera.orthographic = true;
+            if (cachedCamera == null) return;
 
             float aspect = GetAspect();
-            if (aspect <= 0f)
-            {
-                return;
-            }
+            if (aspect <= 0f) return;
 
-            float marginMultiplier = 1f + safeMarginPercent;
-            float referenceAspect = referenceWidth / referenceHeight;
-
-            float targetSize = aspect < referenceAspect
-                ? (referenceWidth * marginMultiplier) / (2f * aspect)
-                : (referenceHeight * marginMultiplier) * 0.5f;
-
-            cachedCamera.orthographicSize = targetSize;
+            cachedCamera.orthographic = true;
+            float designAspect = DesignWidthPx / DesignHeightPx;
+            // Piu' stretto del design: si blocca la larghezza e si vede piu' tavolo in altezza.
+            // Piu' largo (tablet): si blocca l'altezza, come prima.
+            cachedCamera.orthographicSize = aspect < designAspect
+                ? DesignWorldHeight * 0.5f * designAspect / aspect
+                : DesignWorldHeight * 0.5f;
             lastAspect = aspect;
         }
 
         private void EnsureCamera()
         {
-            if (cachedCamera == null)
-            {
-                cachedCamera = GetComponent<Camera>();
-            }
+            if (cachedCamera == null) cachedCamera = GetComponent<Camera>();
         }
 
         private float GetAspect()
         {
-            if (cachedCamera != null)
-            {
-                return cachedCamera.aspect;
-            }
-
+            if (cachedCamera != null) return cachedCamera.aspect;
             return Screen.height > 0 ? (float)Screen.width / Screen.height : 0f;
         }
     }

@@ -52,7 +52,7 @@ namespace Project51.Core
         public int CurrentHandNumber { get; private set; } = 1;
 
         /// <summary>
-        /// Numero totale di mani della smazzata corrente. Calcolato una volta in StartSmazzata.
+        /// Numero totale di mani della smazzata corrente.
         /// </summary>
         public int TotalHands { get; private set; }
 
@@ -60,55 +60,43 @@ namespace Project51.Core
         {
             this.state = state ?? throw new ArgumentNullException(nameof(state));
             this.rng = rng ?? new Random();
+            // Stato gia' distribuito (client in rete che lo riceve dall'host): il contatore delle mani
+            // si ricava dalle carte rimaste nel mazzo, altrimenti si leggeva "Mano 1 di 0".
+            RecountHands();
         }
 
+        /// <summary>Mani totali e mano corrente ricavate dallo stato (mazzo rimasto).</summary>
+        private void RecountHands()
+        {
+            int perHand = CardsPerPlayerPerHand * state.NumPlayers;
+            if (perHand <= 0) return;
+            TotalHands = (DeckSize - InitialTableCards) / perHand;
+            if (state.Deck.Count >= DeckSize) return; // mazzo non ancora distribuito
+            CurrentHandNumber = Math.Max(1, TotalHands - state.Deck.Count / perHand);
+        }
+
+        // Le regole viaggiano con lo stato (impostate da TurnController e sincronizzate in rete).
+        // Prima venivano cercate via reflection in "Assembly-CSharp", ma GameSceneInitializer vive in
+        // Project51.Gameplay: la ricerca falliva sempre e si giocava con MatchRules.Default.
         private MatchRules GetRules()
         {
-            try
-            {
-                var t = System.Type.GetType("Project51.Unity.GameSceneInitializer, Assembly-CSharp");
-                if (t != null)
-                {
-                    var prop = t.GetProperty("ActiveConfig", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var cfg = prop?.GetValue(null) as MatchConfig;
-                    if (cfg?.Rules != null)
-                        return cfg.Rules;
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-
-            return MatchRules.Default;
+            return state.Rules ?? MatchRules.Default;
         }
 
         private int ApplyAccusiRulePoints(int basePoints)
         {
-            var rules = GetRules();
-            if (rules == null)
-                return basePoints;
-
-            if (!rules.EnableAccusi)
-                return 0;
-
-            float mul = rules.AccusiPointMultiplier;
-            if (mul <= 0f)
-                return 0;
-
-            return (int)System.Math.Round(basePoints * mul, MidpointRounding.AwayFromZero);
+            return GetRules().AccusoPoints(basePoints);
         }
 
         public void StartSmazzata()
         {
             Rules51.DealInitialCards(state);
 
-            const int deckSize = 40;
-            const int cardsPerPlayerPerHand = 3;
-            TotalHands = (deckSize - state.Table.Count) / (cardsPerPlayerPerHand * state.NumPlayers);
+            CurrentHandNumber = 1;
+            TotalHands = (DeckSize - state.Table.Count) / (CardsPerPlayerPerHand * state.NumPlayers);
 
             foreach (var p in state.Players)
-                p.AccusiPoints = 0;
+            { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; }
 
             OnInitialHandsDealt?.Invoke();
 
@@ -117,77 +105,101 @@ namespace Project51.Core
 
         private void ProcessDealerInitialAccuso()
         {
-            int dealer = state.DealerIndex;
-            var table = state.Table;
-            if (table == null || table.Count == 0) return;
-
-            bool hasMatta = table.Any(c => c.IsMatta);
-
-            int baseSum = table.Sum(c => c.IsMatta ? 0 : c.Value);
-
-            // If no matta, straightforward checks
-            if (!hasMatta)
+            var type = DealerAccusoFor(state.Table);
+            if (type == AccusoType.Dealer15)
             {
-                if (baseSum == 15)
-                {
-                    DeclareDealerAccuso(dealer, AccusoType.Dealer15, 1);
-                }
-                else if (baseSum == 30)
-                {
-                    DeclareDealerAccuso(dealer, AccusoType.Dealer30, 2);
-                }
-                return;
+                DeclareDealerAccuso(state.DealerIndex, AccusoType.Dealer15, 1);
+            }
+            else if (type == AccusoType.Dealer30)
+            {
+                DeclareDealerAccuso(state.DealerIndex, AccusoType.Dealer30, 2);
+            }
+        }
+
+        /// <summary>Carte messe in tavolo a inizio smazzata.</summary>
+        public const int InitialTableCards = 4;
+
+        private const int DeckSize = 40;
+        private const int CardsPerPlayerPerHand = 3;
+
+        /// <summary>
+        /// Accuso del mazziere sulle carte in tavolo a inizio smazzata: somma 15 o 30, con la matta che
+        /// vale da 1 a 10 quanto serve (prima possibilita' trovata, come sempre). Null se non c'e'.
+        /// </summary>
+        public static AccusoType? DealerAccusoFor(IReadOnlyList<Card> table)
+        {
+            if (table == null || table.Count == 0) return null;
+
+            int baseSum = table.Where(c => !c.IsMatta).Sum(c => c.Value);
+            int mattaCount = table.Count(c => c.IsMatta);
+            if (mattaCount == 0)
+            {
+                if (baseSum == 15) return AccusoType.Dealer15;
+                if (baseSum == 30) return AccusoType.Dealer30;
+                return null;
             }
 
-            // With matta(s), try to find an assignment (matta can be 1..10) that yields 15 or 30
-            int mattaCount = table.Count(c => c.IsMatta);
-            // brute force small search: mattaCount <= number of matta on table (normally 0 or 1)
-            var values = Enumerable.Range(1, 10).ToArray();
-            bool assigned = false;
-            int bestType = 0; // 15 -> 1, 30 -> 2
-            // Try to see if any combination yields 15 or 30
-            int[] assign = new int[mattaCount];
+            // Ricerca su tutte le assegnazioni 1..10 delle matte (in pratica 0 o 1 matta).
+            AccusoType? found = null;
+            var assign = new int[mattaCount];
             void Recurse(int idx)
             {
-                if (assigned) return;
+                if (found != null) return;
                 if (idx == mattaCount)
                 {
-                    int s = baseSum + assign.Sum();
-                    if (s == 15)
-                    {
-                        assigned = true; bestType = 15; return;
-                    }
-                    if (s == 30)
-                    {
-                        assigned = true; bestType = 30; return;
-                    }
+                    int sum = baseSum + assign.Sum();
+                    if (sum == 15) found = AccusoType.Dealer15;
+                    else if (sum == 30) found = AccusoType.Dealer30;
                     return;
                 }
-                for (int v = 1; v <= 10; v++)
+                for (int v = 1; v <= 10 && found == null; v++)
                 {
                     assign[idx] = v;
                     Recurse(idx + 1);
-                    if (assigned) return;
                 }
             }
             Recurse(0);
+            return found;
+        }
 
-            if (assigned)
-            {
-                if (bestType == 15)
-                {
-                    DeclareDealerAccuso(dealer, AccusoType.Dealer15, 1);
-                }
-                else if (bestType == 30)
-                {
-                    DeclareDealerAccuso(dealer, AccusoType.Dealer30, 2);
-                }
-            }
+        /// <summary>
+        /// Smazzata appena distribuita: tutti con 3 carte, 4 carte in tavolo (o gia' prese dal mazziere
+        /// con il suo accuso) e nessuna carta giocata. Serve ai client in rete per mostrare roulette e
+        /// distribuzione quando ricevono lo stato dal Master.
+        /// </summary>
+        public static bool IsFreshSmazzata(GameState state)
+        {
+            if (state == null || state.RoundEnded || state.Players == null || state.Players.Count != state.NumPlayers) return false;
+            if (state.Players.Any(p => p.Hand.Count != 3)) return false;
+            if (state.DealerIndex < 0 || state.DealerIndex >= state.NumPlayers) return false;
+
+            int captured = state.Players.Sum(p => p.CapturedCards.Count);
+            if (state.Table.Count + captured != InitialTableCards) return false;
+            if (captured > 0 && (state.Table.Count > 0 || state.Players[state.DealerIndex].CapturedCards.Count != captured)) return false;
+            return state.Deck.Count == 40 - 3 * state.NumPlayers - InitialTableCards;
+        }
+
+        /// <summary>
+        /// In uno stato appena distribuito, l'accuso del mazziere gia' avvenuto: le carte che ha preso
+        /// dal tavolo e il tipo (15 o 30). False se non c'e' stato.
+        /// </summary>
+        public static bool TryGetDealerAccusoAtStart(GameState state, out AccusoType type, out List<Card> sweptCards)
+        {
+            type = default(AccusoType);
+            sweptCards = null;
+            if (!IsFreshSmazzata(state) || state.Table.Count > 0) return false;
+            var taken = state.Players[state.DealerIndex].CapturedCards;
+            var found = DealerAccusoFor(taken);
+            if (found == null) return false;
+            type = found.Value;
+            sweptCards = new List<Card>(taken);
+            return true;
         }
 
         private void DeclareDealerAccuso(int dealer, AccusoType type, int basePoints)
         {
             state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(basePoints);
+            state.Players[dealer].RoundAccusiPoints += ApplyAccusiRulePoints(basePoints);
             // Copia PRIMA di svuotare il tavolo: TakeTableByPlayer chiama state.Table.Clear().
             var sweptCards = new List<Card>(state.Table);
             TakeTableByPlayer(dealer);
@@ -219,6 +231,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsCirulla(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(3);
+                    state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(3);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Cirulla, new List<Card>(hand));
                     return true;
                 }
@@ -230,6 +243,7 @@ namespace Project51.Core
                 if (AccusiChecker.IsDecino(hand))
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(10);
+                    state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(10);
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Decino, new List<Card>(hand));
                     return true;
                 }
@@ -245,24 +259,21 @@ namespace Project51.Core
         {
             Rules51.ApplyMove(state, move);
 
-            // Check cappotto: if any player captured all denari (10)
-            for (int i = 0; i < state.NumPlayers; i++)
+            // Cappotto immediato: scatta solo sulla presa che completa i 10 denari del giocatore (o
+            // della coppia), non a ogni mossa successiva. La variante con bonus la gestisce
+            // EndSmazzata, una volta sola.
+            bool tookDenari = move.Type != MoveType.PlayOnly
+                && (move.PlayedCard.Suit == Suit.Denari || (move.CapturedCards != null && move.CapturedCards.Any(c => c.Suit == Suit.Denari)));
+            if (GetRules().CappottoEndsGameImmediately && tookDenari)
             {
-                int denari = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
-                if (denari == 10)
+                int entry = MatchScore.EntryOf(state, move.PlayerIndex);
+                var members = MatchScore.MembersOf(state, entry);
+                if (members.Sum(i => state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari)) == 10)
                 {
-                    var rules = GetRules();
-                    if (rules != null && !rules.CappottoEndsGameImmediately)
-                    {
-                        if (rules.CappottoBonusPoints > 0)
-                            state.Players[i].TotalScore += rules.CappottoBonusPoints;
-                    }
-                    else
-                    {
-                        // Immediate game-level win; for now mark RoundEnded and give large bonus
-                        state.RoundEnded = true;
-                        state.Players[i].TotalScore += 1000; // sentinel for immediate win
-                    }
+                    foreach (int member in members)
+                        state.Players[member].TotalScore += MatchScore.CappottoScore;
+                    state.RoundEnded = true;
+                    return;
                 }
             }
 
@@ -308,6 +319,7 @@ namespace Project51.Core
 
         public void EndSmazzata()
         {
+            if(state.RoundEnded)return;
             // Assign remaining table cards to last capture player
             if (state.LastCapturePlayerIndex >= 0 && state.Table.Count > 0)
             {
@@ -316,36 +328,33 @@ namespace Project51.Core
                 state.Table.Clear();
             }
 
-            // Check cappotto: if any player has captured all 10 denari -> immediate win
-            for (int i = 0; i < state.NumPlayers; i++)
-            {
-                int denari = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
-                if (denari == 10)
-                {
-                    var rules = GetRules();
-                    if (rules != null && !rules.CappottoEndsGameImmediately)
-                    {
-                        if (rules.CappottoBonusPoints > 0)
-                            state.Players[i].TotalScore += rules.CappottoBonusPoints;
-                        // continue scoring normally
-                        break;
-                    }
+            var rules = GetRules();
+            var entries = PunteggioManager.CalculateBreakdown(state);
 
+            // Cappotto: un giocatore (o una coppia) con tutti e 10 i denari
+            for (int e = 0; e < entries.Length; e++)
+            {
+                if (entries[e].DenariCount != 10) continue;
+                var members = MatchScore.MembersOf(state, e);
+                if (rules.CappottoEndsGameImmediately)
+                {
+                    foreach (int member in members)
+                        state.Players[member].TotalScore += MatchScore.CappottoScore;
                     state.RoundEnded = true;
-                    // give sentinel big score to indicate immediate win
-                    state.Players[i].TotalScore += 1000;
                     return;
+                }
+                if (rules.CappottoBonusPoints > 0)
+                {
+                    foreach (int member in members)
+                        state.Players[member].TotalScore += rules.CappottoBonusPoints;
                 }
             }
 
-            // Compute points
-            var points = PunteggioManager.CalculateSmazzataScores(state);
-
-            // Add accusi points and apply to totals
+            // Punti della smazzata piu' accusi; a coppie ogni compagno riceve il punteggio della squadra.
             for (int i = 0; i < state.NumPlayers; i++)
             {
-                points[i] += state.Players[i].AccusiPoints;
-                state.Players[i].TotalScore += points[i];
+                var entry = entries[MatchScore.EntryOf(state, i)];
+                state.Players[i].TotalScore += entry.Points + entry.AccusiPoints;
             }
 
             state.RoundEnded = true;

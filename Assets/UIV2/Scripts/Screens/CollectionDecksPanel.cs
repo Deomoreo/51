@@ -60,7 +60,7 @@ namespace Project51.UIV2.Screens
             {
                 foreach (var card in heroArtCards)
                 {
-                    if (card != null) card.sprite = deck.Artwork;
+                    if (card != null) { card.sprite = deck.Artwork; card.preserveAspect = true; }
                 }
             }
             if (heroNameLabel != null) heroNameLabel.text = deck != null ? deck.Name : "-";
@@ -93,7 +93,11 @@ namespace Project51.UIV2.Screens
         {
             for (int i = _spawned.Count - 1; i >= 0; i--)
             {
-                if (_spawned[i] != null) Destroy(_spawned[i].gameObject);
+                if (_spawned[i] != null)
+                {
+                    _spawned[i].gameObject.SetActive(false);
+                    Destroy(_spawned[i].gameObject);
+                }
             }
             _spawned.Clear();
         }

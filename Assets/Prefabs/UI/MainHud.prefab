@@ -367,8 +367,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: MICHELE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: e73a58f6e2794ae7b1b7e50b7fb811b0, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: c51679c24e2099e4f80de82250c78e80, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -638,6 +638,7 @@ MonoBehaviour:
   - {fileID: 3681573413977566744}
   - {fileID: 5427539660517456316}
   bottomBar: {fileID: 0}
+  topBar: {fileID: 0}
   respectSafeArea: 0
   bottomBarFixedHeightPx: 0
   extraBottomPaddingPx: 0

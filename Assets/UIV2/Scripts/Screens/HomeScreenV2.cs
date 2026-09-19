@@ -18,6 +18,8 @@ namespace Project51.UIV2.Screens
         [SerializeField] private UIV2QuickActionButton rewardsButton;
         [SerializeField] private UIV2QuickActionButton rankingButton;
         [SerializeField] private UIV2QuickActionButton mailButton;
+        [Tooltip("Opzioni, sotto a Posta. Sempre attivo: non fa parte delle azioni ancora da fare.")]
+        [SerializeField] private UIV2QuickActionButton settingsButton;
         [SerializeField] private UIV2SelectorChip modeSelector;
         [SerializeField] private UIV2SelectorChip deckSelector;
         [SerializeField] private UIV2Button playButton;
@@ -28,6 +30,7 @@ namespace Project51.UIV2.Screens
         public event Action OnRewardsPressed;
         public event Action OnRankingPressed;
         public event Action OnMailPressed;
+        public event Action OnSettingsPressed;
         public event Action OnPlayPressed;
         public event Action<SelectorOptionViewData> OnModePressed;
         public event Action<SelectorOptionViewData> OnDeckPressed;
@@ -37,6 +40,7 @@ namespace Project51.UIV2.Screens
             if (rewardsButton != null) rewardsButton.OnClicked += () => OnRewardsPressed?.Invoke();
             if (rankingButton != null) rankingButton.OnClicked += () => OnRankingPressed?.Invoke();
             if (mailButton != null) mailButton.OnClicked += () => OnMailPressed?.Invoke();
+            if (settingsButton != null) settingsButton.OnClicked += () => OnSettingsPressed?.Invoke();
             if (playButton != null && playButton.Button != null)
             {
                 playButton.Button.onClick.AddListener(() => OnPlayPressed?.Invoke());
@@ -90,6 +94,22 @@ namespace Project51.UIV2.Screens
         public void SetMailBadge(int count)
         {
             if (mailButton != null) mailButton.SetBadgeCount(count);
+        }
+
+        public void SetDeckInteractable(bool interactable)
+        {
+            if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
+        }
+
+        public void SetPendingActionsInteractable(bool interactable)
+        {
+            if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
+            foreach (var action in new[] { rewardsButton, rankingButton, mailButton })
+            {
+                if (action == null) continue;
+                var button = action.Button;
+                if (button != null) button.interactable = interactable;
+            }
         }
 
         /// <summary>

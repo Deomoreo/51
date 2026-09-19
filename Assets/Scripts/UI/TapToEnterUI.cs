@@ -54,8 +54,9 @@ namespace Project51.UI
 
         private void Start()
         {
-            // Always show this screen on app start.
-            Show();
+            // A match return resumes Home; a fresh app start still shows the gate.
+            if (Project51.Unity.AppFlowManager.ConsumeReturnToHome()) Hide();
+            else Show();
 
             // Listen: when auth UI finishes (user chose guest/login/register) -> enter home.
             if (authUI != null)
@@ -88,7 +89,7 @@ namespace Project51.UI
         /// <summary>Hide TapToEnter screen and show the Home/HUD underneath.</summary>
         public void Hide()
         {
-            Debug.Log("[TapToEnterUI] Hide() called. StackTrace:\n" + Environment.StackTrace);
+            Debug.Log("[TapToEnterUI] Entering Home.");
 
             if (thisCanvas != null)
                 thisCanvas.enabled = false;

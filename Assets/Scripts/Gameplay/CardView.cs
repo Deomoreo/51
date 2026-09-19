@@ -399,6 +399,33 @@ namespace Project51.Unity
         private bool isMouseOver = false; // Track if mouse is currently over this card
         private SpriteRenderer markerRenderer; // small overlay marker
 
+        /// <summary>
+        /// Rimette la carta esattamente nella posa di riposo decisa dal layout (dopo animazioni
+        /// "decorative" come il salto del pugno, che non devono spostare le carte).
+        /// </summary>
+        public void SnapToRestPose()
+        {
+            if (isSelected || isDragging) return;
+            transform.position = originalPosition;
+            transform.localScale = displayScale;
+        }
+
+        /// <summary>
+        /// Ordine di disegno a riposo, deciso dal layout (es. carta centrale del ventaglio davanti).
+        /// Prima tutte le carte avevano ordine 0 e la sovrapposizione era casuale.
+        /// </summary>
+        public void SetBaseSortingOrder(int order)
+        {
+            if (originalSortingOrder == order) return;
+            originalSortingOrder = order;
+            // Oltre 400 la carta e' in volo (CardAnimationController): l'ordine a riposo verra'
+            // ripristinato a fine animazione, non va abbassata a meta' volo.
+            if (spriteRenderer != null && spriteRenderer.sortingOrder < 400)
+            {
+                spriteRenderer.sortingOrder = isSelected ? order + selectionSortingBoost : order;
+            }
+        }
+
         // When clicked we toggle selection elevation animation
         public void SetSelected(bool selected)
         {
@@ -679,6 +706,166 @@ namespace Project51.Unity
             SetMarkerVisible(false);
         }
 
+        // ==== Matta (7 di coppe) usata come jolly per l'accuso ====
+        private SpriteRenderer mattaHalo;
+        private Sprite shownMattaTarget;
+        private Coroutine mattaFlip;
+        private float mattaHaloBurst;
+
+        /// <summary>
+        /// La matta diventa targetSprite per l'accuso: la carta si gira e cambia faccia, dietro resta un
+        /// alone dorato che pulsa. Passandoci sopra si vede ancora il 7 di coppe vero.
+        /// Richiamabile a ogni refresh: l'animazione parte solo quando il valore cambia.
+        /// </summary>
+        public void ShowMattaTransform(Sprite targetSprite, Sprite haloSprite)
+        {
+            if (targetSprite == null || CardRenderer == null) return;
+            EnsureMattaHalo(haloSprite);
+            if (shownMattaTarget == targetSprite) return;
+            shownMattaTarget = targetSprite;
+
+            if (mattaFlip != null) StopCoroutine(mattaFlip);
+            if (gameObject.activeInHierarchy)
+            {
+                mattaFlip = StartCoroutine(MattaFlipRoutine(targetSprite));
+            }
+            else
+            {
+                ShowTemporaryValue(targetSprite, null);
+            }
+        }
+
+        public void ClearMattaTransform()
+        {
+            if (shownMattaTarget == null && (mattaHalo == null || !mattaHalo.gameObject.activeSelf)) return;
+            shownMattaTarget = null;
+            if (mattaFlip != null)
+            {
+                StopCoroutine(mattaFlip);
+                mattaFlip = null;
+                SetFlipFactor(1f);
+            }
+            if (mattaHalo != null) mattaHalo.gameObject.SetActive(false);
+            ClearTemporaryValue();
+        }
+
+        private System.Collections.IEnumerator MattaFlipRoutine(Sprite target)
+        {
+            const float half = 0.16f;
+            for (float t = 0f; t < half; t += Time.deltaTime)
+            {
+                SetFlipFactor(1f - t / half);
+                yield return null;
+            }
+
+            SetFlipFactor(0f);
+            ShowTemporaryValue(target, null);
+            mattaHaloBurst = 1f;
+
+            for (float t = 0f; t < half; t += Time.deltaTime)
+            {
+                SetFlipFactor(t / half);
+                yield return null;
+            }
+
+            SetFlipFactor(1f);
+            mattaFlip = null;
+        }
+
+        /// <summary>Larghezza apparente della carta durante il giro (1 = normale, 0 = di taglio).</summary>
+        private void SetFlipFactor(float factor)
+        {
+            var target = CardRenderer.transform;
+            if (target == transform)
+            {
+                var scale = transform.localScale;
+                float restX = scale.y * (displayScale.x / Mathf.Max(0.0001f, displayScale.y));
+                transform.localScale = new Vector3(restX * Mathf.Clamp01(factor), scale.y, scale.z);
+            }
+            else
+            {
+                var scale = target.localScale;
+                target.localScale = new Vector3(Mathf.Abs(scale.y) * Mathf.Clamp01(factor), scale.y, scale.z);
+            }
+        }
+
+        private void EnsureMattaHalo(Sprite haloSprite)
+        {
+            if (haloSprite == null || CardRenderer == null) return;
+            if (mattaHalo == null)
+            {
+                var child = new GameObject("MattaHalo");
+                child.transform.SetParent(CardRenderer.transform, false);
+                child.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+                mattaHalo = child.AddComponent<SpriteRenderer>();
+                mattaHalo.sortingLayerID = CardRenderer.sortingLayerID;
+            }
+
+            mattaHalo.sprite = haloSprite;
+            var cardSize = CardRenderer.sprite != null ? CardRenderer.sprite.bounds.size : Vector3.one;
+            var haloSize = haloSprite.bounds.size;
+            mattaHalo.transform.localScale = new Vector3(cardSize.x * 2f / haloSize.x, cardSize.y * 1.7f / haloSize.y, 1f);
+            mattaHalo.gameObject.SetActive(true);
+        }
+
+        // ==== Suggerimenti mosse: bagliore dietro alle carte in mano che fanno una presa ====
+        private SpriteRenderer moveHintGlow;
+        private Color moveHintColor = MoveHintColor;
+        private static readonly Color MoveHintColor = new Color(0.45f, 0.92f, 1f);
+
+        /// <summary>Impostazioni in partita, "Suggerimenti mosse". Senza sprite il bagliore non compare.</summary>
+        public void SetMoveHint(bool on, Sprite glowSprite) => SetGlow(on, glowSprite, MoveHintColor);
+
+        /// <summary>Alone colorato dietro alla carta (suggerimenti, accuso del mazziere).</summary>
+        public void SetGlow(bool on, Sprite glowSprite, Color color)
+        {
+            moveHintColor = color;
+            if (!on || glowSprite == null || CardRenderer == null)
+            {
+                if (moveHintGlow != null) moveHintGlow.gameObject.SetActive(false);
+                return;
+            }
+
+            if (moveHintGlow == null)
+            {
+                var child = new GameObject("MoveHintGlow");
+                child.transform.SetParent(CardRenderer.transform, false);
+                child.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+                moveHintGlow = child.AddComponent<SpriteRenderer>();
+                moveHintGlow.sortingLayerID = CardRenderer.sortingLayerID;
+            }
+
+            moveHintGlow.sprite = glowSprite;
+            var cardSize = CardRenderer.sprite != null ? CardRenderer.sprite.bounds.size : Vector3.one;
+            var glowSize = glowSprite.bounds.size;
+            moveHintGlow.transform.localScale = new Vector3(cardSize.x * 2.1f / glowSize.x, cardSize.y * 1.6f / glowSize.y, 1f);
+            moveHintGlow.gameObject.SetActive(true);
+        }
+
+        public bool HasMoveHint => moveHintGlow != null && moveHintGlow.gameObject.activeSelf;
+
+        private void LateUpdate()
+        {
+            bool haloOn = mattaHalo != null && mattaHalo.gameObject.activeSelf;
+            if (moveHintGlow != null && moveHintGlow.gameObject.activeSelf)
+            {
+                // La matta trasformata ha gia' il suo alone dorato.
+                moveHintGlow.enabled = !haloOn && CardRenderer != null && CardRenderer.enabled;
+                // Sotto a tutte le carte della mano (ordini 40+), sopra al tavolo: il bagliore della carta
+                // centrale non copre le carte ai lati.
+                moveHintGlow.sortingOrder = CardRenderer.sortingOrder - 10;
+                float glow = 0.7f + 0.3f * (Mathf.Sin(Time.time * 3f) + 1f) * 0.5f;
+                moveHintGlow.color = new Color(moveHintColor.r, moveHintColor.g, moveHintColor.b, glow);
+            }
+
+            if (!haloOn) return;
+            mattaHalo.enabled = CardRenderer != null && CardRenderer.enabled;
+            mattaHalo.sortingOrder = CardRenderer.sortingOrder - 1;
+            mattaHaloBurst = Mathf.MoveTowards(mattaHaloBurst, 0f, Time.deltaTime * 2.5f);
+            float pulse = 0.6f + 0.25f * (Mathf.Sin(Time.time * 4f) + 1f) * 0.5f;
+            mattaHalo.color = new Color(1f, 0.8f, 0.35f, Mathf.Clamp01(pulse + mattaHaloBurst));
+        }
+
         /// <summary>
         /// Flips this card to face-up, showing the real card sprite.
         /// Used when bot cards are played on the table.
@@ -691,6 +878,18 @@ namespace Project51.Unity
             // Update to face-up sprite
             spriteRenderer.sprite = faceSprite;
             originalFaceSprite = faceSprite;
+        }
+
+        /// <summary>
+        /// Rigira la carta a faccia in giu'. Serve quando una vista gia' scoperta (mia mano o tavolo)
+        /// viene riusata per la mano di un avversario nella smazzata successiva: senza questo, le sue
+        /// carte restavano visibili.
+        /// </summary>
+        public void FlipToFaceDown()
+        {
+            if (spriteRenderer == null || defaultCardBack == null) return;
+            ClearTemporaryValue();
+            spriteRenderer.sprite = defaultCardBack;
         }
 
         /// <summary>

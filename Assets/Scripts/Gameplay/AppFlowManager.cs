@@ -16,20 +16,37 @@ namespace Project51.Unity
         public const string SCENE_LOBBY = "LobbyScene";
         public const string SCENE_WAITING_ROOM = "WaitingRoom";
 
-        /// <summary>
-        /// Carica il Main Menu.
-        /// </summary>
+        private static bool returnToHome;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetNavigation() => returnToHome = false;
+
+        public static bool ConsumeReturnToHome()
+        {
+            bool value = returnToHome;
+            returnToHome = false;
+            return value;
+        }
+
+        /// <summary>Return from a match to Home without repeating the entry gate.</summary>
         public static void GoToMainMenu()
         {
+            returnToHome = SceneManager.GetActiveScene().name == SCENE_GAME;
             Debug.Log("[AppFlow] Loading Main Menu...");
             
-            // Se siamo connessi a Photon, disconnetti
-            if (PhotonNetwork.IsConnected)
+            // Uscita volontaria da una partita online: LeaveRoom(false) lascia subito il posto (niente
+            // finestra di rientro, gli altri vedono "ha lasciato la partita"). Disconnettersi invece
+            // renderebbe il giocatore solo "inattivo" per tutta la PlayerTtl.
+            if (PhotonNetwork.InRoom)
+            {
+                PhotonNetwork.LeaveRoom(false);
+            }
+            else if (PhotonNetwork.IsConnected && PhotonNetwork.NetworkClientState != Photon.Realtime.ClientState.Leaving)
             {
                 PhotonNetwork.Disconnect();
             }
 
-            SceneManager.LoadScene(SCENE_MAIN_MENU);
+            if (!Core.AppLoading.LoadScene(SCENE_MAIN_MENU)) SceneManager.LoadScene(SCENE_MAIN_MENU);
         }
 
         /// <summary>
@@ -47,7 +64,7 @@ namespace Project51.Unity
             }
             else
             {
-                SceneManager.LoadScene(SCENE_GAME);
+                if (!Core.AppLoading.LoadScene(SCENE_GAME)) SceneManager.LoadScene(SCENE_GAME);
             }
         }
 
@@ -76,10 +93,7 @@ namespace Project51.Unity
             Debug.Log("[AppFlow] Leaving game and going to menu...");
 
             // Se siamo in una stanza Photon, esci
-            if (PhotonNetwork.InRoom)
-            {
-                PhotonNetwork.LeaveRoom();
-            }
+            // L'uscita dalla stanza Photon la gestisce GoToMainMenu.
 
             // Reset del GameModeService
             Core.GameModeService.Reset();

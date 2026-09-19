@@ -16,8 +16,12 @@ namespace Project51.Unity.UI
         [Tooltip("Indice 0=Locale, 1=Sinistra, 2=Alto, 3=Destra")]
         [SerializeField] private PlayerBanner[] banners = new PlayerBanner[4];
 
+        [Tooltip("panel_fill_r24 di PanelsNeutral_v2, usato per il cerchio del conteggio prese. Assegnato da Tools/UIV2/Apply Table Layout V4.")]
+        [SerializeField] private Sprite roundedFillSprite;
+
         private TurnController turnController;
         private CardViewManager cardViewManager;
+        private Sprite matchCardBack;
 
         private void Start()
         {
@@ -55,9 +59,11 @@ namespace Project51.Unity.UI
                 var banner = banners[relative];
                 banner.gameObject.SetActive(true);
                 banner.SetName(GetDisplayName(p));
-                banner.SetScore(player.TotalScore);
+                // Punteggio di partita (a coppie quello della squadra), non solo della smazzata in corso.
+                banner.SetScore(MatchScore.Totals(state)[MatchScore.EntryOf(state, p)]);
                 banner.SetTurnActive(p == turnController.CurrentPlayerIndex);
                 banner.SetScopeCards(GetScopeSprites(player));
+                banner.SetCapturedPile(turnController.GetDisplayedCapturedCount(p), GetMatchCardBack(), CardViewManager.GetCapturedPileDesignOffset(relative), roundedFillSprite);
             }
 
             for (int slot = 0; slot < banners.Length; slot++)
@@ -138,6 +144,16 @@ namespace Project51.Unity.UI
                 .Select(c => cardViewManager.GetSpriteForCard(c))
                 .Where(s => s != null)
                 .ToList();
+        }
+
+        private Sprite GetMatchCardBack()
+        {
+            if (matchCardBack == null)
+            {
+                var deck = CardDecks.LoadForMatch();
+                matchCardBack = deck != null ? deck.Back : Resources.Load<Sprite>("Cards/CardBack");
+            }
+            return matchCardBack;
         }
 
         private static string GetDisplayName(int playerIndex)

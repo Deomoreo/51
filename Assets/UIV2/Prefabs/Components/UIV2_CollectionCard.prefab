@@ -195,6 +195,18 @@ MonoBehaviour:
   equippedBadge: {fileID: 6391259481913859532}
   unlockedBorderColor: {r: 1, g: 1, b: 1, a: 1}
   equippedBorderColor: {r: 0.91, g: 0.7, b: 0.29, a: 1}
+  button: {fileID: 0}
+  fillRect: {fileID: 0}
+  fill: {fileID: 0}
+  unlockedFillColor: {r: 1, g: 1, b: 1, a: 1}
+  lockedFillColor: {r: 1, g: 1, b: 1, a: 1}
+  equippedBorderThickness: 4
+  normalBorderThickness: 3
+  overrideNameColors: 0
+  nameColor: {r: 1, g: 1, b: 1, a: 1}
+  equippedNameColor: {r: 1, g: 1, b: 1, a: 1}
+  lockedNameColor: {r: 1, g: 1, b: 1, a: 1}
+  lockedTitleText: 
 --- !u!1 &2488098908697969255
 GameObject:
   m_ObjectHideFlags: 0
@@ -358,8 +370,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Nome
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

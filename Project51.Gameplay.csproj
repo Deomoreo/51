@@ -66,6 +66,7 @@
     <Compile Include="Assets\Scripts\Gameplay\MoveSelectionUI.cs" />
     <Compile Include="Assets\Scripts\Gameplay\TurnController.cs" />
     <Compile Include="Assets\Scripts\Gameplay\PlayerScoreRow.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\Audio\GameAudio.cs" />
     <Compile Include="Assets\Scripts\Gameplay\RoundEndPanel.cs" />
     <Compile Include="Assets\Scripts\Gameplay\TableFeltRenderer.cs" />
     <Compile Include="Assets\Scripts\Gameplay\DealerRouletteController.cs" />
@@ -75,9 +76,11 @@
     <Compile Include="Assets\Scripts\Gameplay\GameBackgroundFitter.cs" />
     <Compile Include="Assets\Scripts\Gameplay\ProceduralShineStripeTexture.cs" />
     <Compile Include="Assets\Scripts\Gameplay\DealerAccusoRevealController.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\Audio\SoundLibrary.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardShineOverlayMove.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CardViewManager.cs" />
     <Compile Include="Assets\Scripts\Gameplay\CapturedPileManager.cs" />
+    <Compile Include="Assets\Scripts\Gameplay\BackdropBlur.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Scripts\Gameplay\Project51.Gameplay.asmdef" />

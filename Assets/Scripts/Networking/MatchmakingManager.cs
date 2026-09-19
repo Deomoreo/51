@@ -47,12 +47,70 @@ namespace Project51.Networking
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDestroy()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        // Tornati al menu fuori da una stanza, la config della partita finita non deve far ripartire
+        // da sola una ricerca/stanza alla prossima connessione (OnConnectedToMaster la riusa).
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "MainMenu" && !PhotonNetwork.InRoom)
+            {
+                CurrentConfig = null;
+                SetState(MatchmakingState.Idle);
+            }
+        }
+
+        /// <summary>Partita veloce: dopo questa attesa i posti vuoti vanno ai bot e si parte.</summary>
+        public const float QuickMatchBotFillSeconds = 30f;
+
+        /// <summary>Finestra di rientro dopo una disconnessione a partita iniziata (Photon PlayerTtl).</summary>
+        public const int RejoinWindowMilliseconds = 60000;
+
+        private float waitingSince = -1f;
+
+        /// <summary>Secondi mancanti al riempimento con bot, -1 se non si sta aspettando.</summary>
+        public float QuickMatchSecondsLeft => waitingSince < 0f ? -1f : Mathf.Max(0f, QuickMatchBotFillSeconds - (Time.unscaledTime - waitingSince));
+
+        private void Update()
+        {
+            if (State != MatchmakingState.WaitingForPlayers || CurrentConfig?.Intent != MatchIntent.QuickMatch || !PhotonNetwork.InRoom)
+                return;
+            if (waitingSince < 0f) waitingSince = Time.unscaledTime;
+            // Decide solo l'host; gli altri seguono il cambio scena sincronizzato.
+            if (PhotonNetwork.IsMasterClient && QuickMatchSecondsLeft <= 0f)
+            {
+                Debug.Log($"[Matchmaking] Quick match: {PhotonNetwork.CurrentRoom.PlayerCount}/{PhotonNetwork.CurrentRoom.MaxPlayers} players after {QuickMatchBotFillSeconds}s, filling with bots.");
+                LockRoomForMatch();
+                SetState(MatchmakingState.Starting);
+                OnMatchFound?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Chiude la stanza a partita iniziata e abilita il rientro: un giocatore che cade resta
+        /// "inattivo" per RejoinWindowMilliseconds e puo' riprendere il suo posto.
+        /// </summary>
+        private void LockRoomForMatch()
+        {
+            if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient) return;
+            var room = PhotonNetwork.CurrentRoom;
+            room.IsOpen = false;
+            room.IsVisible = false;
+            room.PlayerTtl = RejoinWindowMilliseconds;
+            room.EmptyRoomTtl = RejoinWindowMilliseconds;
         }
 
         private void SetState(MatchmakingState newState)
         {
             if (State == newState) return;
             State = newState;
+            if (newState != MatchmakingState.WaitingForPlayers) waitingSince = -1f;
             Debug.Log($"[Matchmaking] State changed to: {newState}");
             OnStateChanged?.Invoke(newState);
         }
@@ -177,7 +235,7 @@ namespace Project51.Networking
             
             if (PhotonNetwork.InRoom)
             {
-                PhotonNetwork.LeaveRoom();
+                PhotonNetwork.LeaveRoom(false);
             }
             else if (PhotonNetwork.IsConnected && State == MatchmakingState.Searching)
             {
@@ -208,9 +266,8 @@ namespace Project51.Networking
 
             Debug.Log("[Matchmaking] Host starting game...");
             
-            // Chiudi la stanza
-            PhotonNetwork.CurrentRoom.IsOpen = false;
-            PhotonNetwork.CurrentRoom.IsVisible = false;
+            // Chiudi la stanza e abilita il rientro dopo una disconnessione
+            LockRoomForMatch();
 
             SetState(MatchmakingState.Starting);
             OnMatchFound?.Invoke();
@@ -223,7 +280,7 @@ namespace Project51.Networking
         {
             if (PhotonNetwork.InRoom)
             {
-                PhotonNetwork.LeaveRoom();
+                PhotonNetwork.LeaveRoom(false);
             }
             SetState(MatchmakingState.Idle);
 
@@ -304,9 +361,11 @@ namespace Project51.Networking
         {
             Debug.Log("[Matchmaking] Connected to Master");
 
-            if (CurrentConfig == null)
+            // Solo una richiesta appena fatta dall'utente (Connecting) prosegue da sola: dopo l'uscita
+            // da una stanza/partita Photon torna comunque al Master e non deve ripartire nulla.
+            if (CurrentConfig == null || State != MatchmakingState.Connecting)
             {
-                SetState(MatchmakingState.Idle);
+                if (!PhotonNetwork.InRoom) SetState(MatchmakingState.Idle);
                 return;
             }
 
@@ -326,6 +385,7 @@ namespace Project51.Networking
 
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
+            if (CurrentConfig == null) return;
             Debug.Log($"[Matchmaking] Join random failed: {message}. Creating new room...");
             
             // Nessuna stanza disponibile, creane una
@@ -345,6 +405,13 @@ namespace Project51.Networking
 
         public override void OnJoinedRoom()
         {
+            // Rientro in una partita gia' iniziata (stanza chiusa): lo gestisce NetworkGameController.
+            if (!PhotonNetwork.CurrentRoom.IsOpen)
+            {
+                Debug.Log($"[Matchmaking] Rejoined match in progress: {PhotonNetwork.CurrentRoom.Name}");
+                return;
+            }
+            if (CurrentConfig == null) { PhotonNetwork.LeaveRoom(false); return; }
             Debug.Log($"[Matchmaking] Joined room: {PhotonNetwork.CurrentRoom.Name}, Players: {PhotonNetwork.CurrentRoom.PlayerCount}");
 
             // Chi si unisce con un codice arriva con il Format scelto nella PROPRIA UI locale
@@ -397,6 +464,7 @@ namespace Project51.Networking
                 // Controlla se la stanza ï¿½ piena
                 if (PhotonNetwork.CurrentRoom.PlayerCount >= PhotonNetwork.CurrentRoom.MaxPlayers)
                 {
+                    LockRoomForMatch();
                     SetState(MatchmakingState.Starting);
                     OnMatchFound?.Invoke();
                 }
@@ -409,9 +477,9 @@ namespace Project51.Networking
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
-            Debug.LogError($"[Matchmaking] Join room failed: {message}");
+            Debug.LogWarning($"[Matchmaking] Join room failed: {message}");
             SetState(MatchmakingState.Idle);
-            OnError?.Invoke($"Impossibile entrare nella stanza: {message}");
+            OnError?.Invoke(returnCode == 32765 ? "La stanza è piena. Chiedi un altro codice." : returnCode == 32764 ? "La partita è già iniziata o la stanza è chiusa." : "Codice non valido o stanza non più disponibile.");
         }
 
         public override void OnCreateRoomFailed(short returnCode, string message)
@@ -431,6 +499,7 @@ namespace Project51.Networking
             {
                 if (PhotonNetwork.CurrentRoom.PlayerCount >= PhotonNetwork.CurrentRoom.MaxPlayers)
                 {
+                    LockRoomForMatch();
                     SetState(MatchmakingState.Starting);
                     OnMatchFound?.Invoke();
                 }

@@ -455,8 +455,8 @@ namespace Project51.Unity
         
         private void PlaySound(AudioClip clip)
         {
-            if (clip == null) return;
-            
+            if (clip == null || !Project51.Core.GameAudioPreferences.EffectsEnabled) return;
+
             // Play at camera position or fallback
             Vector3 playPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
             AudioSource.PlayClipAtPoint(clip, playPos, audioVolume);

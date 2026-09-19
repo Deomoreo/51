@@ -15,6 +15,8 @@ namespace Project51.Unity
         [SerializeField] private bool positionPilesBesidePlayerHands = true;
         [SerializeField] private float scopeOffsetFromCapturedPile = 1.1f;
         [SerializeField, Range(0.5f, 1.5f)] private float sharedPileCardScale = 1.15f;
+        [Tooltip("Mazzetti di prese e scope disegnati sul tavolo. Spento: ora le prese stanno nel mazzetto accanto al banner e le scope dietro al banner (PlayerBanner).")]
+        [SerializeField] private bool renderWorldPiles = false;
 
         private PlayerCapturedPileView[] playerPileViews;
         private CardViewManager cardViewManager;
@@ -192,6 +194,11 @@ namespace Project51.Unity
         private void RefreshAllPiles()
         {
             if (turnController == null || turnController.GameState == null || playerPileViews == null) return;
+            if (!renderWorldPiles)
+            {
+                ClearAllPiles();
+                return;
+            }
 
             var players = turnController.GameState.Players;
             int numPlayers = players.Count;

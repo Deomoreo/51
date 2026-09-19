@@ -65,15 +65,14 @@ namespace Project51.EditorTools
             var rootRt = (RectTransform)root.transform;
             StretchFill(rootRt);
 
-            // Y rispetto alla spec originale: il tavolo e' stato centrato piu' in basso
-            // (TableFeltRenderer.verticalOffsetRatio) quindi Top/Left/Right seguono, poi ulteriori
-            // discese su Left/Right/Local su richiesta esplicita ripetuta (Top lasciato fermo).
+            // Centri dal mockup 09_tavolo_v4 (stessi valori di Tools/UIV2/Apply Table Layout V4):
+            // mani avversarie e mazzetti prese si posizionano a runtime rispetto a questi banner.
             var specs = new[]
             {
-                new BannerSpec { Name = "Banner_Top",   Center = new Vector2(470, 320),  Size = new Vector2(290, 88) },
-                new BannerSpec { Name = "Banner_Left",  Center = new Vector2(190, 738),  Size = new Vector2(270, 84) },
-                new BannerSpec { Name = "Banner_Right", Center = new Vector2(890, 738),  Size = new Vector2(270, 84) },
-                new BannerSpec { Name = "Banner_Local", Center = new Vector2(210, 1560), Size = new Vector2(300, 92) },
+                new BannerSpec { Name = "Banner_Top",   Center = new Vector2(470, 250),  Size = new Vector2(290, 88) },
+                new BannerSpec { Name = "Banner_Left",  Center = new Vector2(191, 589),  Size = new Vector2(270, 84) },
+                new BannerSpec { Name = "Banner_Right", Center = new Vector2(891, 589),  Size = new Vector2(270, 84) },
+                new BannerSpec { Name = "Banner_Local", Center = new Vector2(211, 1361), Size = new Vector2(300, 92) },
             };
 
             var byName = new System.Collections.Generic.Dictionary<string, PlayerBanner>();

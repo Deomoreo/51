@@ -23,5 +23,8 @@ namespace Project51.UIV2.Data
         public int PointRecord;
         public List<CollectionItemViewData> Trophies;
         public bool IsGuest;
+        public bool HasProgress = true;
+        public bool HasMatchStats = true;
+        public bool HasAdvancedStats = true;
     }
 }

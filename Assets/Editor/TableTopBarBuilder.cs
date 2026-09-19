@@ -124,13 +124,13 @@ namespace Project51.EditorTools
 
         private static Sprite FindSprite(string exactName)
         {
-            var guids = AssetDatabase.FindAssets($"{exactName} t:Sprite");
-            foreach (var guid in guids)
+            // Gli sprite UI ora sono sotto-asset dei fogli (Icons.png...): si cerca per nome dello
+            // sprite, non piu' per nome del file PNG (i PNG singoli sono stati rimossi).
+            foreach (var guid in AssetDatabase.FindAssets("t:Sprite", new[] { "Assets/UI/Sprites" }))
             {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                if (Path.GetFileNameWithoutExtension(path) == exactName)
+                foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
                 {
-                    return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                    if (asset is Sprite sprite && sprite.name == exactName) return sprite;
                 }
             }
             return null;
