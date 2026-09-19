@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using Project51.Core;
 using UnityEngine;
 
 namespace Project51.Unity
@@ -119,7 +120,9 @@ namespace Project51.Unity
                 onComplete?.Invoke();
             });
             sequence.OnKill(RestoreVisualState);
-            return sequence;
+            // Il colpo del suono cade quando la carta tocca il tavolo.
+            GameAudio.Play(SoundId.CardPlay, sync: GameAudio.Sync.Hit, hitIn: GamePreferences.Scaled(playDuration));
+            return Paced(sequence);
         }
 
         public Sequence CaptureSequence(
@@ -195,7 +198,10 @@ namespace Project51.Unity
                     .AppendCallback(() => renderer.sortingOrder = flightSortingOrderBase + cardIndex)
                     .Append(card.DOMove(destination, captureDuration).SetEase(captureEase))
                     .Join(card.DORotate(new Vector3(0f, 0f, UnityEngine.Random.Range(-6f, 6f)), captureDuration))
-                    .Join(card.DOScale(originalScales[cardIndex] * 0.7f, captureDuration));
+                    .Join(card.DOScale(originalScales[cardIndex] * 0.45f, captureDuration))
+                    // Sparisce entrando nel mazzetto accanto al banner, invece di restare grande
+                    // sopra al mazzetto per un frame quando la scala viene ripristinata.
+                    .Insert(captureDuration * 0.75f, DOTween.ToAlpha(() => renderer.color, c => renderer.color = c, 0f, captureDuration * 0.25f));
                 sequence.Join(flight);
             }
 
@@ -205,7 +211,8 @@ namespace Project51.Unity
                 onComplete?.Invoke();
             });
             sequence.OnKill(RestoreVisualState);
-            return sequence;
+            GameAudio.Play(SoundId.CardCapture);
+            return Paced(sequence);
         }
 
         /// <summary>
@@ -213,9 +220,9 @@ namespace Project51.Unity
         /// </summary>
         public Sequence CreateCapturePreview()
         {
-            return DOTween.Sequence()
+            return Paced(DOTween.Sequence()
                 .SetTarget(this)
-                .AppendInterval(capturePreviewDuration);
+                .AppendInterval(capturePreviewDuration));
         }
 
         public Sequence PlayDealtCardsReveal(IReadOnlyList<CardView> cardViews)
@@ -242,7 +249,8 @@ namespace Project51.Unity
                 sequence.Insert(startAt, cardTransform.DOScale(originalScale, dealRevealDuration).SetEase(Ease.OutBack));
             }
 
-            return sequence;
+            PlayDealSound(cardViews.Count, dealRevealStagger);
+            return Paced(sequence);
         }
 
         /// <summary>
@@ -289,7 +297,8 @@ namespace Project51.Unity
                 sequence.Insert(startAt, cardTransform.DOScale(finalScale, dealRevealDuration).SetEase(Ease.OutBack));
             }
 
-            return sequence;
+            PlayDealSound(stagedCards.Count, stagger);
+            return Paced(sequence);
         }
 
         /// <summary>
@@ -325,7 +334,8 @@ namespace Project51.Unity
                 sequence.Join(flight);
             }
 
-            return sequence;
+            GameAudio.Play(SoundId.CardCapture);
+            return Paced(sequence);
         }
 
         public Sequence FlipCard(SpriteRenderer renderer, Sprite frontSprite, Action onComplete = null)
@@ -359,7 +369,7 @@ namespace Project51.Unity
                 }
             });
             sequence.OnKill(() => cardTransform.localScale = originalScale);
-            return sequence;
+            return Paced(sequence);
         }
 
         public void KillTweensOn(Transform cardTransform)
@@ -368,6 +378,21 @@ namespace Project51.Unity
             {
                 cardTransform.DOKill();
             }
+        }
+
+        /// <summary>Distribuzione: suono breve per poche carte, lungo se l'animazione dura piu' di un secondo.</summary>
+        private void PlayDealSound(int cardCount, float stagger)
+        {
+            if (cardCount <= 0) return;
+            float seconds = GamePreferences.Scaled(Mathf.Max(0, cardCount - 1) * stagger + dealRevealDuration);
+            GameAudio.Play(seconds > 1f ? SoundId.CardDealLong : SoundId.CardDeal);
+        }
+
+        /// <summary>Impostazioni in partita: con "Animazioni veloci" la sequenza gira piu' veloce.</summary>
+        private static Sequence Paced(Sequence sequence)
+        {
+            sequence.timeScale = GamePreferences.AnimationSpeed;
+            return sequence;
         }
 
         private static Sequence CreateCompletedSequence(Action onComplete)

@@ -26,10 +26,6 @@ namespace Project51.Unity
 
         private MatchConfig _config;
 
-        // Cache per evitare FindObjectOfType ripetuti
-        private MonoBehaviour _networkController;
-        private bool _networkControllerSearched;
-
         /// <summary>
         /// Latest loaded match config for the active game scene.
         /// Useful for gameplay systems that need rules tweaks.
@@ -137,7 +133,46 @@ namespace Project51.Unity
         /// </summary>
         public int GetPlayerIndexForActor(int actorNumber)
         {
-            return _stableActorOrder?.IndexOf(actorNumber) ?? -1;
+            int joinIndex = _stableActorOrder?.IndexOf(actorNumber) ?? -1;
+            return SeatLayout.SeatForJoinOrder(_config.Format, joinIndex);
+        }
+
+        /// <summary>
+        /// Dopo il NOSTRO rientro in stanza: mentre eravamo scollegati possono essere usciti o
+        /// rientrati altri giocatori senza che ricevessimo gli eventi. Riallinea i posti bot con chi
+        /// e' davvero presente (attivo) nella stanza.
+        /// </summary>
+        public void SyncSeatsWithRoom()
+        {
+            if (_stableActorOrder == null || !PhotonNetwork.InRoom) return;
+            for (int join = 0; join < _stableActorOrder.Count; join++)
+            {
+                int seat = SeatLayout.SeatForJoinOrder(_config.Format, join);
+                var player = PhotonNetwork.CurrentRoom.GetPlayer(_stableActorOrder[join]);
+                if (player != null && !player.IsInactive) _disconnectedPlayerIndices.Remove(seat);
+                else _disconnectedPlayerIndices.Add(seat);
+            }
+            RefreshMultiplayerGameModeProvider();
+        }
+
+        /// <summary>
+        /// Il giocatore che occupava questo posto e' rientrato nella stanza (entro PlayerTtl): il bot
+        /// che lo sostituiva gli restituisce posto e carte. Chiamato su ogni client da
+        /// NetworkGameController.OnPlayerEnteredRoom, come MarkPlayerDisconnected.
+        /// </summary>
+        public void MarkPlayerReconnected(int playerIndex)
+        {
+            if (!_disconnectedPlayerIndices.Remove(playerIndex)) return;
+
+            Debug.Log($"[GameSceneInitializer] Player at seat {playerIndex} rejoined: bot released.");
+
+            RefreshMultiplayerGameModeProvider();
+
+            if (turnController == null)
+            {
+                turnController = FindObjectOfType<TurnController>();
+            }
+            turnController?.OnPlayerReconnected(playerIndex);
         }
 
         /// <summary>
@@ -196,12 +231,11 @@ namespace Project51.Unity
                 // questo calcolo trasformerebbe in bot un ULTERIORE posto (sempre l'ultimo indice),
                 // anche se il giocatore che lo occupa e' ancora presente e sta giocando - la vera
                 // disconnessione va gestita SOLO tramite _disconnectedPlayerIndices qui sotto.
-                var botIndices = new HashSet<int>();
                 int realPlayers = _stableActorOrder != null
                     ? Mathf.Clamp(_stableActorOrder.Count, 1, _config.PlayerCount)
                     : Mathf.Clamp(GetRealPlayerCountInRoom(), 1, _config.PlayerCount);
-                for (int i = realPlayers; i < _config.PlayerCount; i++)
-                    botIndices.Add(i);
+                // I posti dei giocatori reali dipendono dal formato (a coppie: vedi SeatLayout).
+                var botIndices = SeatLayout.BotSeats(_config.Format, _config.PlayerCount, realPlayers);
 
                 // Posti convertiti in bot per disconnessione REALE a partita avviata (vedi
                 // MarkPlayerDisconnected): si sommano sempre, indipendentemente da quale indice sia.
@@ -267,10 +301,20 @@ namespace Project51.Unity
         /// assegnato dal server, univoco e identico per tutti - ordiniamo esplicitamente su
         /// quello per avere una mappatura stabile e coerente su ogni device.
         /// </remarks>
+        private int _lockedLocalSeat = -1;
+
         private int GetLocalPlayerIndex()
         {
+            // Durante una riconnessione non siamo nella room, ma il nostro posto non cambia.
             if (!IsInRoom())
-                return 0;
+                return _lockedLocalSeat >= 0 ? _lockedLocalSeat : 0;
+            int seat = ComputeLocalPlayerIndex();
+            if (_stableActorOrder != null) _lockedLocalSeat = seat;
+            return seat;
+        }
+
+        private int ComputeLocalPlayerIndex()
+        {
 
             // Preferisci sempre la foto stabile, se gia' fissata: ricalcolare l'ordinamento sulla
             // PhotonNetwork.PlayerList LIVE dopo che un qualsiasi giocatore ha lasciato la room
@@ -279,7 +323,7 @@ namespace Project51.Unity
             if (_stableActorOrder != null)
             {
                 int idx = _stableActorOrder.IndexOf(PhotonNetwork.LocalPlayer.ActorNumber);
-                if (idx >= 0) return idx;
+                if (idx >= 0) return SeatLayout.SeatForJoinOrder(_config.Format, idx);
                 // Fallback estremo: il locale non e' nella foto iniziale (non dovrebbe succedere
                 // per chi sta gia' giocando una partita in corso) - prosegue col calcolo live sotto.
             }
@@ -290,7 +334,7 @@ namespace Project51.Unity
             for (int i = 0; i < players.Count; i++)
             {
                 if (players[i].IsLocal)
-                    return i;
+                    return SeatLayout.SeatForJoinOrder(_config.Format, i);
             }
 
             return 0;
@@ -311,50 +355,9 @@ namespace Project51.Unity
             // e' comunque un'operazione economica e mantiene i due percorsi coerenti).
             RefreshMultiplayerGameModeProvider();
 
+            // In multiplayer e' TurnController.StartNewGame a inviare lo stato agli altri client
+            // (prima veniva inviato una seconda volta anche da qui).
             turnController.StartNewGame();
-
-            // In multiplayer, invia il GameState agli altri client
-            if (_config.Intent != MatchIntent.Training && IsMasterClient())
-            {
-                SendInitialGameStateToClients();
-            }
-        }
-
-        /// <summary>
-        /// Invia il GameState ai client usando reflection per evitare dipendenza ciclica.
-        /// </summary>
-        private void SendInitialGameStateToClients()
-        {
-            if (turnController == null || turnController.GameState == null)
-                return;
-
-            // Cerca NetworkGameController senza import diretto
-            if (!_networkControllerSearched)
-            {
-                _networkControllerSearched = true;
-                
-                // Cerca il tipo NetworkGameController. NOTA: l'assembly "Project51.Networking" non
-                // esiste piu' (l'asmdef dedicato e' stato rimosso in precedenza) - gli script in
-                // Assets/Scripts/Networking compilano ora nell'assembly di default "Assembly-CSharp".
-                // Con il nome vecchio Type.GetType tornava sempre null: l'host non mandava MAI lo
-                // stato iniziale della partita agli altri client, che restavano con il tavolo vuoto.
-                var ngcType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
-                if (ngcType != null)
-                {
-                    _networkController = FindObjectOfType(ngcType) as MonoBehaviour;
-                }
-            }
-
-            if (_networkController != null)
-            {
-                // Chiama SendInitialGameState via reflection
-                var method = _networkController.GetType().GetMethod("SendInitialGameState");
-                if (method != null)
-                {
-                    method.Invoke(_networkController, new object[] { turnController.GameState });
-                    Debug.Log("[GameSceneInitializer] Sent initial GameState to clients");
-                }
-            }
         }
 
         private void EnsureResponsiveCamera()

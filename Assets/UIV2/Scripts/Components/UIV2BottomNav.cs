@@ -39,8 +39,9 @@ namespace Project51.UIV2.Components
         // solo cambiare sfondo - l'icona selezionata e' visibilmente piu' grande delle altre.
         // Rivisto 2026-09-13 (pass fedelta' home_B2): nel mockup le icone hanno quasi la stessa
         // taglia, la tab attiva emerge per la linguetta oro + label oro, non per l'icona gigante.
-        private const float NormalIconSize = 62f;
-        private const float SelectedIconSize = 72f;
+        // 2026-09-18: +16% su richiesta (icone e linguetta oro un po' piu' grandi, senza stirare).
+        private const float NormalIconSize = 72f;
+        private const float SelectedIconSize = 82f;
 
         [SerializeField] private Color normalLabelColor = new Color32(148, 172, 202, 255);
         [SerializeField] private Color selectedLabelColor = new Color32(255, 224, 140, 255);

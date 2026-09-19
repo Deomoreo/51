@@ -27,6 +27,76 @@ namespace Project51.Unity.UI
 
         private const float ScopeSlotStep = 36f; // 54px carta - 18px overlap (sezione 4)
 
+        // Mazzetto prese accanto al banner (mockup 09_tavolo_v4): due dorsi sfalsati + cerchio
+        // con il numero di carte prese. Creato al primo uso, posizionato dal PlayerBannerManager.
+        private RectTransform capturedPile;
+        private Image capturedBackFront;
+        private Image capturedBackRear;
+        private TMP_Text capturedCountText;
+
+        public void SetCapturedPile(int count, Sprite cardBack, Vector2 designOffsetFromCenter, Sprite roundedFill)
+        {
+            if (count <= 0)
+            {
+                if (capturedPile != null) capturedPile.gameObject.SetActive(false);
+                return;
+            }
+
+            if (capturedPile == null)
+            {
+                capturedPile = NewChild("CapturedPile", transform, new Vector2(56f, 72f));
+                capturedBackRear = NewChild("BackRear", capturedPile, new Vector2(44f, 62f)).gameObject.AddComponent<Image>();
+                capturedBackRear.rectTransform.anchoredPosition = new Vector2(-4f, 4f);
+                capturedBackRear.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 6f);
+                capturedBackFront = NewChild("BackFront", capturedPile, new Vector2(44f, 62f)).gameObject.AddComponent<Image>();
+
+                var badge = NewChild("CountBadge", capturedPile, new Vector2(40f, 40f));
+                badge.anchoredPosition = new Vector2(12f, -26f);
+                // Cerchio oro sotto e cerchio blu notte sopra, 3px piu' piccolo: anello oro come nel mockup.
+                var ring = badge.gameObject.AddComponent<Image>();
+                ring.color = new Color32(232, 178, 74, 255);
+                var fill = NewChild("Fill", badge, new Vector2(34f, 34f)).gameObject.AddComponent<Image>();
+                fill.color = new Color32(14, 28, 48, 255);
+                SetCircle(ring, roundedFill, 40f);
+                SetCircle(fill, roundedFill, 34f);
+
+                capturedCountText = NewChild("Count", badge, new Vector2(40f, 40f)).gameObject.AddComponent<TextMeshProUGUI>();
+                if (nameText != null) capturedCountText.font = nameText.font;
+                capturedCountText.fontSize = 20f;
+                capturedCountText.fontStyle = FontStyles.Bold;
+                capturedCountText.alignment = TextAlignmentOptions.Center;
+                capturedCountText.color = Color.white;
+                capturedCountText.raycastTarget = false;
+            }
+
+            capturedPile.gameObject.SetActive(true);
+            capturedPile.anchoredPosition = new Vector2(designOffsetFromCenter.x, -designOffsetFromCenter.y);
+            capturedBackFront.sprite = cardBack;
+            capturedBackRear.sprite = cardBack;
+            capturedBackFront.preserveAspect = capturedBackRear.preserveAspect = true;
+            capturedBackRear.gameObject.SetActive(count > 1);
+            capturedCountText.text = count.ToString();
+        }
+
+        private static RectTransform NewChild(string name, Transform parent, Vector2 size)
+        {
+            var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = size;
+            return rect;
+        }
+
+        /// <summary>panel_fill_r24 (PanelsNeutral_v2) a 9-slice con raggio pari a meta' lato = cerchio.</summary>
+        private static void SetCircle(Image image, Sprite roundedFill, float diameter)
+        {
+            image.raycastTarget = false;
+            if (roundedFill == null) return;
+            image.sprite = roundedFill;
+            image.type = Image.Type.Sliced;
+            image.pixelsPerUnitMultiplier = 48f / (diameter * 0.5f);
+        }
+
         public void SetName(string playerName)
         {
             if (nameText != null) nameText.text = playerName;

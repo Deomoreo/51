@@ -4,7 +4,12 @@ using UnityEngine.UI;
 
 namespace Project51.UIV2.Core
 {
-    public sealed class AnimatedModalV2 : MonoBehaviour
+    /// <summary>
+    /// Pannello modale animato (velo, dissolvenza e scivolata). Implementa IUIV2Modal cosi' che
+    /// UIV2ModalHost possa gestirlo come gli altri modal, tenendone aperto uno alla volta; chi
+    /// preferisce continua a chiamare Open/Close direttamente, il comportamento non cambia.
+    /// </summary>
+    public sealed class AnimatedModalV2 : MonoBehaviour, IUIV2Modal
     {
         public CanvasGroup Group;
         public RectTransform Frame;

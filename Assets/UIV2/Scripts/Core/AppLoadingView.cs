@@ -46,11 +46,15 @@ namespace Project51.UIV2.Core
             fade?.Kill(); View.gameObject.SetActive(true); View.alpha = 1;
             View.blocksRaycasts = true; View.interactable = true; Status.text = text;
             RetryButton.gameObject.SetActive(false); CancelButton.gameObject.SetActive(false);
+            AppLoading.SetCovering(true);
         }
         private void Hide()
         {
             fade?.Kill();
-            fade = View.DOFade(0, .2f).SetUpdate(true).OnComplete(() => View.gameObject.SetActive(false));
+            // Il velo conta come "alzato" finche' non e' davvero sparito: chi aspetta di poter
+            // partire (l'intro del tavolo) non deve cominciare durante la dissolvenza.
+            fade = View.DOFade(0, .2f).SetUpdate(true)
+                .OnComplete(() => { View.gameObject.SetActive(false); AppLoading.SetCovering(false); });
         }
         private void AuthenticationBusy(bool busy, string message)
         {
@@ -104,6 +108,9 @@ namespace Project51.UIV2.Core
         private IEnumerator SceneTransition(string scene)
         {
             Show(scene == "MainMenu" ? "Ritorno alla Home…" : "Preparazione del tavolo…");
+            // Gli effetti della schermata che si sta lasciando (fine partita, accusi, carte) non
+            // devono accompagnare il caricamento e riaffiorare sulla schermata nuova.
+            Project51.Unity.GameAudio.StopAllEffects();
             indeterminate = false; Progress.fillAmount = 0;
             yield return null; // Paint the overlay before loading assets.
             if (!Application.CanStreamedLevelBeLoaded(scene))

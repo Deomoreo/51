@@ -53,6 +53,7 @@ namespace Project51.UIV2.Core
             home.OnPlayPressed += Play;
             home.OnModePressed += OpenModes;
             home.OnDeckPressed += OpenDecks;
+            home.OnSettingsPressed += OpenSettings;
             CardDecks.SelectionChanged += RefreshDecks;
             if (profile != null)
             {
@@ -275,7 +276,7 @@ namespace Project51.UIV2.Core
 
         private void OnDestroy()
         {
-            if (home != null) { home.OnPlayPressed -= Play; home.OnModePressed -= OpenModes; home.OnDeckPressed -= OpenDecks; }
+            if (home != null) { home.OnPlayPressed -= Play; home.OnModePressed -= OpenModes; home.OnDeckPressed -= OpenDecks; home.OnSettingsPressed -= OpenSettings; }
             CardDecks.SelectionChanged -= RefreshDecks;
             if (profile != null)
             {

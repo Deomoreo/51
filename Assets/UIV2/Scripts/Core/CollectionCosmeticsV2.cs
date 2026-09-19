@@ -12,6 +12,7 @@ namespace Project51.UIV2.Core
         public Sprite[] Emoticons;
         public TMP_Text Feedback;
         public AccusoImpactV2 Preview;
+        public Sprite PugnoArtwork;
         public static readonly string[] Names = { "Risata", "Arrabbiato", "Sorpreso", "Pensieroso", "Triste", "Furbo" };
         public static int[] Equipped => PlayerPrefs.GetString("Collection.Emoticons", "0,1,2").Split(',')
             .Select(s => int.TryParse(s,out var i)?i:-1).Where(i=>i>=0&&i<6).Distinct().Take(3).ToArray();
@@ -45,7 +46,7 @@ namespace Project51.UIV2.Core
         {
             var equipped=Equipped;
             Screen.EmoticonsPanel.Bind(Names.Select((name,i)=>new CollectionItemViewData{Id=i.ToString(),Title=name,Icon=Emoticons[i],Unlocked=true,Equipped=equipped.Contains(i)}).ToArray(),6);
-            Screen.AccusiPanel.Bind(new[]{new AccusoViewData{Id="pugno",Title="Pugno sul tavolo",Subtitle="Standard · disponibile",Description="Un colpo sul tavolo accompagna il tuo accuso.",ShortDescription="Impatto e salto delle carte",Unlocked=true,Equipped=true}},1);
+            Screen.AccusiPanel.Bind(new[]{new AccusoViewData{Id="pugno",Title="Pugno sul tavolo",Subtitle="Standard · disponibile",Description="Un colpo sul tavolo accompagna il tuo accuso.",ShortDescription="Impatto e salto delle carte",Artwork=PugnoArtwork,Unlocked=true,Equipped=true}},1);
         }
         private void OnDestroy()
         {

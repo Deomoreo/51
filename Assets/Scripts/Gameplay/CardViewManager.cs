@@ -56,18 +56,24 @@ namespace Project51.Unity
         [SerializeField, Range(0f, 0.15f)] private float sideOpponentAdditionalScreenDownOffsetRatio = 0.05f;
         [SerializeField, Range(0f, 0.1f)] private float capturedPileScreenDownOffsetRatio = 0.035f;
 
-        [Header("Player Hierarchy")]
-        [SerializeField, Range(1f, 2f)] private float localPlayerCardScale = 1.7f;
-        [SerializeField, Range(0.5f, 1.4f)] private float opponentCardScale = 1.12f;
-        [SerializeField, Range(0.5f, 1.4f)] private float tableCardScale = 1.1f;
+        // G1 - Dimensioni delle carte in pixel del mockup 09 (altezza della carta), non piu' scale fisse:
+        // le scale 2,2 / 1,1 erano tarate su sprite molto piu' piccoli e con i mazzi attuali (1,8 unita'
+        // di altezza) la mano copriva il 40% del tavolo. Con l'area di design di CameraResponsiveFit un
+        // pixel di mockup vale sempre DesignWorldHeight / 1920 unita', su ogni schermo e con ogni mazzo.
+        private const float LocalHandCardDesignHeight = 272f;
+        private const float TableCardDesignHeight = 157f;
+        private const float WorldPerMockupPixel = CameraResponsiveFit.DesignWorldHeight / CameraResponsiveFit.DesignHeightPx;
 
-        private const float MinimumLocalPlayerCardScale = 2.2f;
-        private const float MinimumOpponentCardScale = 1.12f;
-        private const float MinimumTableCardScale = 1.1f;
+        private float EffectiveLocalPlayerCardScale => ScaleForDesignHeight(LocalHandCardDesignHeight);
+        private float EffectiveOpponentCardScale => ScaleForDesignHeight(opponentCardHeight);
+        private float EffectiveTableCardScale => ScaleForDesignHeight(TableCardDesignHeight);
 
-        private float EffectiveLocalPlayerCardScale => Mathf.Max(localPlayerCardScale, MinimumLocalPlayerCardScale);
-        private float EffectiveOpponentCardScale => Mathf.Max(opponentCardScale, MinimumOpponentCardScale);
-        private float EffectiveTableCardScale => Mathf.Max(tableCardScale, MinimumTableCardScale);
+        private static float ScaleForDesignHeight(float designHeight)
+        {
+            var back = CardDecks.LoadForMatch()?.Back;
+            float spriteHeight = back != null ? back.bounds.size.y : 1.8f;
+            return Mathf.Max(0.05f, designHeight * WorldPerMockupPixel / Mathf.Max(0.01f, spriteHeight));
+        }
 
         public float GetTableCardScale() => EffectiveTableCardScale;
 
@@ -83,8 +89,12 @@ namespace Project51.Unity
         [SerializeField] private Sprite defaultCardBack;
         [SerializeField] private bool enableSpriteDebug = false;
         [SerializeField] private CardSpriteMapping[] explicitMappings;
-        [Header("Matta Special Sprites")]
-        [SerializeField] private Sprite[] mattaSpecialSprites; // Special sprites for Matta transformations (Matta_1, Matta_2, etc.)
+        [Header("Matta")]
+        [Tooltip("Alone dietro alla matta quando vale come un'altra carta (Bagliore morbido cerchio). Assegnato da Tools/UIV2/Build Accuso Window.")]
+        [SerializeField] private Sprite mattaHaloSprite;
+        [Header("Suggerimenti mosse")]
+        [Tooltip("Bagliore dietro alle carte in mano che fanno una presa (Bagliore morbido cerchio). Assegnato da Tools/UIV2/Build In-Game Settings.")]
+        [SerializeField] private Sprite moveHintGlowSprite;
         [Header("UI")]
         [SerializeField] private MoveSelectionUI moveSelectionUI;
         [Header("Feedback")]
@@ -108,9 +118,17 @@ namespace Project51.Unity
         /// </summary>
         private bool suppressNewCardVisibility = false;
 
-        public void SetSuppressNewCardVisibility(bool suppress)
+        /// <summary>
+        /// Come suppressNewCardVisibility ma per le carte sul tavolo. Separato perche' nei redeal a
+        /// meta' smazzata arrivano solo carte nuove in mano: prima la sospensione valeva per tutto
+        /// e il tavolo spariva dall'ultima carta del giro fino alla fine della finestra Accuso.
+        /// </summary>
+        private bool suppressTableCardVisibility = false;
+
+        public void SetSuppressNewCardVisibility(bool suppress, bool includeTable = true)
         {
             suppressNewCardVisibility = suppress;
+            suppressTableCardVisibility = suppress && includeTable;
         }
 
         /// <summary>
@@ -166,7 +184,6 @@ namespace Project51.Unity
         private Card selectionPlayedCard = null;
         private List<Card> selectionTableCards = new List<Card>();
         // Visual helpers for alternative highlighting
-        private List<GameObject> currentMarkers = new List<GameObject>();
         private List<Card> currentlyHighlightedCards = new List<Card>();
         private bool helpShownForCurrentSelection = false;
 
@@ -195,19 +212,6 @@ namespace Project51.Unity
             }
         }
 
-        private Sprite markerSpriteCache = null;
-        private Sprite GetMarkerSprite()
-        {
-            if (markerSpriteCache != null) return markerSpriteCache;
-            // create a 8x8 white texture sprite at runtime
-            var tex = new Texture2D(8, 8);
-            var cols = new Color[8 * 8];
-            for (int i = 0; i < cols.Length; i++) cols[i] = Color.white;
-            tex.SetPixels(cols);
-            tex.Apply();
-            markerSpriteCache = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-            return markerSpriteCache;
-        }
         /// <summary>
         /// Renders non-local players' hands around the table (face-down by default).
         /// Dealer 15/30 accuso (1-2 points) does NOT reveal cards; Cirulla/Decino do.
@@ -255,8 +259,14 @@ namespace Project51.Unity
                             cardView.FlipToFaceUp(faceSprite);
                         }
                     }
-
-                    cardView.SetDisplayScale(EffectiveOpponentCardScale);
+                    else if (!faceUp && cardView.IsFaceUp)
+                    {
+                        // Vista riusata da una smazzata precedente (era in mano mia o sul tavolo):
+                        // in mano a un avversario deve tornare coperta.
+                        cardView.FlipToFaceDown();
+                        cardView.ClearMattaTransform();
+                        cardView.SetMoveHint(false, null);
+                    }
 
                     // Difensivo: stesso motivo di RenderTableCards.
                     if (cardView.CardRenderer != null)
@@ -268,6 +278,34 @@ namespace Project51.Unity
                     float baseRotation = 0f;
 
                     int numPlayers = players.Count;
+                    int relative = (p - localIndex + numPlayers) % numPlayers;
+                    int slot = SeatSlot(relative, numPlayers);
+                    if (TryGetBannerHandCenter(slot, out var handCenter, out _))
+                    {
+                        // Mockup 09: carte piccole sotto al banner in alto, coricate sul bordo ai lati.
+                        cardView.SetDisplayScale(CompactOpponentScale(cardView));
+                        float k = WorldPerDesignPixel();
+                        float t = FanT(hand.Count, i);
+                        float centered = i - (hand.Count - 1) / 2f;
+                        if (slot == 2)
+                        {
+                            position = handCenter + Vector3.right * (centered * topHandStep * k);
+                            cardView.transform.rotation = Quaternion.Euler(0, 0, 180f + Mathf.Lerp(topHandFanDegrees, -topHandFanDegrees, t));
+                        }
+                        else
+                        {
+                            position = handCenter + Vector3.down * (centered * sideHandStep * k);
+                            float tilt = (i % 2 == 0 ? 1f : -1f) * 3f;
+                            cardView.transform.rotation = Quaternion.Euler(0, 0, (slot == 1 ? 90f : -90f) + tilt);
+                        }
+                        cardView.SetPosition(position);
+                        cardView.SetBaseSortingOrder(20 + i);
+                        cardView.IsClickable = false;
+                        cardView.EnableHover = hasAccuso;
+                        continue;
+                    }
+
+                    cardView.SetDisplayScale(EffectiveOpponentCardScale);
 
                     // Layout 1v1: avversario in alto capovolto
                     if (numPlayers == 2)
@@ -328,8 +366,9 @@ namespace Project51.Unity
                     cardView.EnableHover = hasAccuso;
                 }
 
-                if (hasAccuso && hand.Count == 3)
+                if (hasAccuso)
                 {
+                    // Con 3 carte mostra la matta trasformata, dopo la prima giocata torna un 7 normale.
                     ApplyMattaSpecialVisual(hand);
                 }
             }
@@ -364,7 +403,7 @@ namespace Project51.Unity
 
         private CardDeckDefinition matchDeck;
         private CardDeckDefinition MatchDeck => matchDeck != null ? matchDeck :
-            (matchDeck = CardDecks.Load(GameSceneInitializer.ActiveConfig?.DeckBackId ?? CardDecks.SelectedId));
+            (matchDeck = CardDecks.LoadForMatch());
 
         public Sprite GetSpriteForCard(Card card)
         {
@@ -504,14 +543,10 @@ namespace Project51.Unity
             // Auto-load sprites if not assigned
             EnsureCardSpritesLoaded();
 
-            // Auto-load Matta special sprites if not assigned
-            if (mattaSpecialSprites == null || mattaSpecialSprites.Length == 0)
-            {
-                LoadMattaSpecialSprites();
-            }
-
             // Build explicit mapping cache from inspector entries
             BuildExplicitMapCache();
+
+            GamePreferences.Changed += OnGamePreferencesChanged;
 
             // No global provider usage; mapping handled locally
 
@@ -563,9 +598,11 @@ namespace Project51.Unity
         {
             ApplyResponsiveCameraIfAvailable();
 
+            // Area di design (CameraResponsiveFit), non tutto il visibile: il layout resta identico al
+            // mockup su ogni proporzione, lo spazio in piu' rimane attorno.
             if (layoutCamera != null && layoutCamera.orthographic)
             {
-                return Mathf.Max(1f, layoutCamera.orthographicSize * 2f * layoutCamera.aspect);
+                return Mathf.Max(1f, Mathf.Min(layoutCamera.orthographicSize * 2f * layoutCamera.aspect, CameraResponsiveFit.DesignWorldSize.x));
             }
 
             return 12f;
@@ -577,7 +614,7 @@ namespace Project51.Unity
 
             if (layoutCamera != null && layoutCamera.orthographic)
             {
-                return Mathf.Max(1f, layoutCamera.orthographicSize * 2f);
+                return Mathf.Max(1f, Mathf.Min(layoutCamera.orthographicSize * 2f, CameraResponsiveFit.DesignWorldSize.y));
             }
 
             return 8f;
@@ -647,6 +684,12 @@ namespace Project51.Unity
         /// </summary>
         public Vector3 GetPlayerHandAnchor(int relativePlayerIndex, int playerCount)
         {
+            EnsureLayoutCameraCached();
+            if (TryGetBannerHandCenter(SeatSlot(relativePlayerIndex, playerCount), out var bannerHandCenter, out _))
+            {
+                return bannerHandCenter;
+            }
+
             if (relativePlayerIndex == 0)
             {
                 return GetHumanHandBasePosition();
@@ -702,9 +745,185 @@ namespace Project51.Unity
             return Vector3.down * (GetVisibleHeight() * capturedPileScreenDownOffsetRatio);
         }
 
+        #region Layout ancorato ai banner (mockup 09_tavolo_v4)
+
+        // Tutte le misure sono pixel del mockup 1080x1920 (y verso il basso), relative al centro
+        // del banner del posto. Mani e mazzetti seguono i banner veri della scena: se un banner
+        // viene spostato, carte e prese lo seguono senza toccare questi numeri.
+        [Header("Layout tavolo ancorato ai banner (mockup 09_tavolo_v4)")]
+        [SerializeField] private bool anchorLayoutToBanners = true;
+        [SerializeField] private float localHandBelowBanner = 335f;
+        [SerializeField] private float localHandStep = 165f;
+        [SerializeField] private float localHandSideDrop = 30f;
+        [SerializeField] private float localHandFanDegrees = 8f;
+        [SerializeField] private float topHandBelowBanner = 128f;
+        [SerializeField] private float topHandStep = 65f;
+        [SerializeField] private float topHandFanDegrees = 8f;
+        [SerializeField] private float sideHandBelowBanner = 182f;
+        [SerializeField] private float sideHandInsetFromBannerEdge = 48f;
+        [SerializeField] private float sideHandStep = 60f;
+        [SerializeField] private float opponentCardHeight = 80f;
+        [SerializeField] private float tableCardStepX = 136f;
+        [SerializeField] private float tableCardStepY = 185f;
+
+        private static readonly string[] BannerNamesBySlot = { "Banner_Local", "Banner_Left", "Banner_Top", "Banner_Right" };
+        private static readonly Vector2[] CapturedPileOffsetsBySlot =
+        {
+            new Vector2(244f, -6f),   // locale: a destra del banner
+            new Vector2(105f, 101f),  // sinistra: sotto il banner, verso il centro
+            new Vector2(255f, -5f),   // alto: a destra del banner
+            new Vector2(-91f, 101f),  // destra: sotto il banner, verso il centro
+        };
+
+        private readonly RectTransform[] bannerRects = new RectTransform[4];
+        private Canvas bannerCanvas;
+        private float nextBannerLookupTime;
+
+        /// <summary>Posto visivo 0=locale, 1=sinistra, 2=alto, 3=destra (in 1v1 l'avversario sta in alto).</summary>
+        public static int SeatSlot(int relativePlayerIndex, int playerCount)
+        {
+            return playerCount == 2 && relativePlayerIndex == 1 ? 2 : relativePlayerIndex;
+        }
+
+        private bool TryGetBannerRect(int slot, out RectTransform rect)
+        {
+            rect = null;
+            if (!anchorLayoutToBanners || slot < 0 || slot > 3) return false;
+            EnsureLayoutCameraCached();
+
+            if (bannerRects[slot] == null && Time.unscaledTime >= nextBannerLookupTime)
+            {
+                nextBannerLookupTime = Time.unscaledTime + 1f;
+                var canvasObject = GameObject.Find("GameCanvas");
+                var banners = canvasObject != null ? canvasObject.transform.Find("PlayerBanners") : null;
+                if (banners != null)
+                {
+                    bannerCanvas = canvasObject.GetComponent<Canvas>();
+                    for (int i = 0; i < BannerNamesBySlot.Length; i++)
+                    {
+                        bannerRects[i] = banners.Find(BannerNamesBySlot[i]) as RectTransform;
+                    }
+                }
+            }
+
+            rect = bannerRects[slot];
+            return rect != null && bannerCanvas != null && layoutCamera != null;
+        }
+
+        /// <summary>Unita' mondo per pixel del mockup, alla risoluzione corrente.</summary>
+        private float WorldPerDesignPixel()
+        {
+            float screenPerDesign = bannerCanvas != null ? bannerCanvas.scaleFactor : 1f;
+            float worldPerScreen = layoutCamera != null && layoutCamera.orthographic
+                ? layoutCamera.orthographicSize * 2f / Mathf.Max(1f, layoutCamera.pixelHeight)
+                : 0.01f;
+            return screenPerDesign * worldPerScreen;
+        }
+
+        private Vector3 BannerCenterWorld(RectTransform rect)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            Vector3 screenCenter = (corners[0] + corners[2]) * 0.5f;
+            Vector3 world = layoutCamera.ScreenToWorldPoint(screenCenter);
+            world.z = 0f;
+            return world;
+        }
+
+        private Vector3 BannerOffsetWorld(RectTransform rect, Vector2 designOffset)
+        {
+            float k = WorldPerDesignPixel();
+            return BannerCenterWorld(rect) + new Vector3(designOffset.x * k, -designOffset.y * k, 0f);
+        }
+
+        /// <summary>
+        /// Posizione mondo del mazzetto prese del posto (accanto al banner, come nel mockup).
+        /// E' anche il punto d'arrivo delle carte catturate.
+        /// </summary>
+        public bool TryGetCapturedPileWorldPosition(int relativePlayerIndex, int playerCount, out Vector3 position)
+        {
+            EnsureLayoutCameraCached();
+            int slot = SeatSlot(relativePlayerIndex, playerCount);
+            position = Vector3.zero;
+            if (!TryGetBannerRect(slot, out var rect)) return false;
+            position = BannerOffsetWorld(rect, CapturedPileOffsetsBySlot[slot]);
+            return true;
+        }
+
+        /// <summary>Offset del mazzetto prese rispetto al centro del banner, in pixel mockup (y verso il basso).</summary>
+        public static Vector2 GetCapturedPileDesignOffset(int slot)
+        {
+            return CapturedPileOffsetsBySlot[Mathf.Clamp(slot, 0, 3)];
+        }
+
+        private bool TryGetBannerHandCenter(int slot, out Vector3 center, out RectTransform rect)
+        {
+            center = Vector3.zero;
+            if (!TryGetBannerRect(slot, out rect)) return false;
+
+            float k = WorldPerDesignPixel();
+            Vector3 bannerCenter = BannerCenterWorld(rect);
+            float screenCenterX = GetTableCenterPosition().x;
+            switch (slot)
+            {
+                case 0:
+                    center = new Vector3(screenCenterX, bannerCenter.y - localHandBelowBanner * k, 0f);
+                    break;
+                case 2:
+                    center = new Vector3(screenCenterX, bannerCenter.y - topHandBelowBanner * k, 0f);
+                    break;
+                default:
+                    var corners = new Vector3[4];
+                    rect.GetWorldCorners(corners);
+                    float edgeScreenX = slot == 1 ? corners[0].x : corners[2].x;
+                    float edgeWorldX = layoutCamera.ScreenToWorldPoint(new Vector3(edgeScreenX, 0f, 0f)).x;
+                    float x = edgeWorldX + (slot == 1 ? 1f : -1f) * sideHandInsetFromBannerEdge * k;
+                    center = new Vector3(x, bannerCenter.y - sideHandBelowBanner * k, 0f);
+                    break;
+            }
+            return true;
+        }
+
+        private float CompactOpponentScale(CardView view)
+        {
+            var sprite = view != null && view.CardRenderer != null ? view.CardRenderer.sprite : null;
+            float spriteHeight = sprite != null ? sprite.bounds.size.y : 1.8f;
+            return Mathf.Max(0.05f, opponentCardHeight * WorldPerDesignPixel() / Mathf.Max(0.01f, spriteHeight));
+        }
+
+        private static float FanT(int totalCards, int cardIndex)
+        {
+            return totalCards > 1 ? (float)cardIndex / (totalCards - 1) : 0.5f;
+        }
+
+        /// <summary>Carta centrale davanti, poi a scalare verso i bordi (mockup: la centrale copre le laterali).</summary>
+        private static int CenterFirstSortingOrder(int baseOrder, int totalCards, int cardIndex)
+        {
+            float center = (totalCards - 1) * 0.5f;
+            // A pari distanza dal centro vince la carta piu' a destra, cosi' l'ordine non e' mai casuale.
+            return baseOrder + Mathf.RoundToInt((totalCards - Mathf.Abs(cardIndex - center)) * 2f) + (cardIndex > center ? 1 : 0);
+        }
+
+        #endregion
+
         private Vector3 CalculateTableCardPosition(int totalCards, int cardIndex)
         {
             Vector3 center = GetTableCenterPosition();
+            if (TryGetBannerRect(0, out _))
+            {
+                // Mockup: fino a 5 carte su una riga, poi due righe (7 carte = 4 + 3), tre oltre le 10.
+                float k = WorldPerDesignPixel();
+                int perRow = totalCards <= 5 ? Mathf.Max(1, totalCards) : totalCards <= 10 ? Mathf.CeilToInt(totalCards / 2f) : Mathf.CeilToInt(totalCards / 3f);
+                int rows = Mathf.CeilToInt(totalCards / (float)perRow);
+                int row = cardIndex / perRow;
+                int inRow = row < rows - 1 ? perRow : totalCards - perRow * (rows - 1);
+                int column = cardIndex - row * perRow;
+                float stepX = Mathf.Min(tableCardStepX, 960f / Mathf.Max(1, perRow)) * k;
+                float x = (column - (inRow - 1) / 2f) * stepX;
+                float y = ((rows - 1) / 2f - row) * tableCardStepY * k;
+                return center + new Vector3(x, y, 0f);
+            }
+
             float spacing = GetResponsiveHorizontalSpacing(totalCards, minTableCardSpacing, tableWidthUsage) * EffectiveTableCardScale;
             float offset = (cardIndex - (totalCards - 1) / 2f) * spacing;
             return center + Vector3.right * offset;
@@ -749,63 +968,6 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Loads the special Matta sprites from Resources/Cards.
-        /// Expected naming: Matta_1, Matta_2, ..., Matta_10
-        /// </summary>
-        private void LoadMattaSpecialSprites()
-        {
-            var mattaSprites = new List<Sprite>();
-            
-            // Try to load all Matta special sprites (ranks 1-10)
-            for (int rank = 1; rank <= 10; rank++)
-            {
-                string spriteName = $"Matta_{rank}";
-                var sprite = Resources.Load<Sprite>($"Cards/{spriteName}");
-                
-                if (sprite != null)
-                {
-                    mattaSprites.Add(sprite);
-                }
-                else
-                {
-                    // Sprite not found, log warning if debug enabled
-                    if (enableSpriteDebug)
-                    {
-                        Debug.LogWarning($"Matta special sprite not found: Cards/{spriteName}");
-                    }
-                    // Add null to maintain index alignment
-                    mattaSprites.Add(null);
-                }
-            }
-            
-            mattaSpecialSprites = mattaSprites.ToArray();
-        }
-
-        /// <summary>
-        /// Gets the special Matta sprite for a specific rank.
-        /// Returns null if not found.
-        /// </summary>
-        private Sprite GetMattaSpecialSprite(int rank)
-        {
-            if (MatchDeck != null && MatchDeck.Id != CardDecks.DefaultId)
-                return MatchDeck.GetFace(new Card(Suit.Coppe, rank));
-            if (mattaSpecialSprites == null || mattaSpecialSprites.Length == 0)
-            {
-                return null;
-            }
-            
-            // Rank 1-10 maps to index 0-9
-            int index = rank - 1;
-            
-            if (index >= 0 && index < mattaSpecialSprites.Length)
-            {
-                return mattaSpecialSprites[index];
-            }
-            
-            return null;
-        }
-
-        /// <summary>
         /// Refreshes all card views to match the current game state.
         /// </summary>
         private void RefreshCardViews()
@@ -823,7 +985,13 @@ namespace Project51.Unity
             }
 
             var state = turnController.GameState;
-            
+
+            // Il pannello di scelta presa non deve restare aperto se il turno e' passato.
+            if (moveSelectionUI != null && moveSelectionUI.IsVisible && !IsMyTurnToPlay)
+            {
+                moveSelectionUI.Hide();
+            }
+
             // Refresh card views
 
             // Clear old views that are no longer in the game
@@ -966,13 +1134,15 @@ namespace Project51.Unity
 
                     // Disable hover when card moves from hand to table
                     cardView.EnableHover = false;
+                    cardView.SetMoveHint(false, null);
+                    if (card.IsMatta) cardView.ClearMattaTransform();
 
                     // Difensivo: una carta riposizionata sul tavolo deve sempre essere visibile,
                     // anche se un'animazione precedente aveva disabilitato il renderer (a meno che
                     // non sia sospeso apposta per l'animazione di distribuzione dal mazziere).
                     if (cardView.CardRenderer != null)
                     {
-                        cardView.CardRenderer.enabled = !suppressNewCardVisibility;
+                        cardView.CardRenderer.enabled = !suppressTableCardVisibility;
                     }
                 }
 
@@ -980,7 +1150,8 @@ namespace Project51.Unity
 
                 cardView.SetDisplayScale(EffectiveTableCardScale);
                 cardView.SetPosition(position);
-                
+                cardView.SetBaseSortingOrder(10 + i);
+
                 // IMPORTANT: Table cards are ALWAYS straight (rotation 0) - no fan layout
                 cardView.transform.rotation = Quaternion.Euler(0, 0, 0);
             }
@@ -1010,53 +1181,24 @@ namespace Project51.Unity
 
         private void ApplyMattaSpecialVisual(List<Card> handCards)
         {
-            // Only aid when human has exactly 3 cards in hand
-            if (handCards == null || handCards.Count != 3) return;
+            if (handCards == null) return;
             var matta = handCards.FirstOrDefault(c => c.IsMatta);
-            if (matta == null) return;
+            if (matta == null || !activeCardViews.TryGetValue(matta, out var mattaView)) return;
 
-            // Evaluate the other two cards
-            var others = handCards.Where(c => !c.IsMatta).ToList();
-            if (others.Count != 2) return;
-
-            // Decino aid: the other two ranks are equal
-            bool isDecino = others[0].Value == others[1].Value;
-            int decinoRank = isDecino ? others[0].Value : -1;
-
-            // Accuso aid: show Ace visual only if the sum of all 3 cards, counting Matta as 1, is <= 9
-            // i.e., others[0].Value + others[1].Value + 1 <= 9
-            int othersSum = (others[0].Value + others[1].Value);
-            bool showAceForAccuso = !isDecino && (othersSum + 1) <= 9;
-            int specialRank = isDecino ? decinoRank : (showAceForAccuso ? 1 : -1);
-
-            if (activeCardViews.TryGetValue(matta, out var mattaView))
+            // La matta diventa un'altra carta solo quando serve per l'accuso (coppia per il Decino,
+            // asso per la Cirulla): si gira con l'alone dorato. Prima c'erano vecchie immagini gialle a
+            // bassa risoluzione con un quadratino bianco sopra.
+            int specialRank = AccusiChecker.MattaValueForAccuso(handCards);
+            if (specialRank <= 0)
             {
-                if (specialRank > 0)
-                {
-                    // Try to get the special Matta sprite first
-                    var tempSprite = GetMattaSpecialSprite(specialRank);
-                    
-                    // Fallback to normal card sprite if special sprite not found
-                    if (tempSprite == null)
-                    {
-                        tempSprite = GetSpriteForRank(specialRank, matta.Suit);
-                        if (enableSpriteDebug)
-                        {
-                            Debug.LogWarning($"Using fallback sprite for Matta rank {specialRank}");
-                        }
-                    }
-                    
-                    var marker = GetMarkerSprite();
-                    if (tempSprite != null)
-                    {
-                        mattaView.ShowTemporaryValue(tempSprite, marker);
-                    }
-                }
-                else
-                {
-                    // No special visual needed; ensure Matta shows its real face
-                    mattaView.ClearTemporaryValue();
-                }
+                mattaView.ClearMattaTransform();
+                return;
+            }
+
+            var targetSprite = GetSpriteForCard(new Card(matta.Suit, specialRank));
+            if (targetSprite != null)
+            {
+                mattaView.ShowMattaTransform(targetSprite, mattaHaloSprite);
             }
         }
 
@@ -1092,7 +1234,7 @@ namespace Project51.Unity
                 {
                     // show suggestion: highlight all possible captures for the played card
                     // only show help on the first wrong selection
-                    if (!helpShownForCurrentSelection)
+                    if (GamePreferences.MoveHints && !helpShownForCurrentSelection)
                     {
                         var allMatches = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, null);
                         if (allMatches.Count > 0)
@@ -1138,15 +1280,8 @@ namespace Project51.Unity
                 }
             }
 
-            // Create markers above each captured card (do not draw lines from hand)
-            foreach (var c in currentlyHighlightedCards)
-            {
-                if (!activeCardViews.TryGetValue(c, out var toView)) continue;
-                var marker = CreateMarkerAt(toView.transform.position);
-                if (marker != null) currentMarkers.Add(marker);
-            }
-
-            // Tooltips removed - we rely on bounce animation for visual feedback
+            // Niente piu' quadratini gialli sopra le carte: restavano a schermo se il pannello si
+            // chiudeva senza PointerExit (tocco su mobile). Basta il sollevamento delle carte.
         }
 
         /// <summary>
@@ -1212,55 +1347,11 @@ namespace Project51.Unity
             }
         }
 
-        private GameObject CreateMarkerAt(Vector3 pos)
-        {
-            var canvas = FindObjectOfType<Canvas>();
-            if (canvas != null && Camera.main != null)
-            {
-                var ui = new GameObject("MarkerUI");
-                ui.transform.SetParent(canvas.transform, false);
-                var rt = ui.AddComponent<RectTransform>();
-                Vector2 screen = Camera.main.WorldToScreenPoint(pos + Vector3.up * 0.6f);
-                // convert screen point to canvas local point
-                Vector2 localPoint;
-                var canvasRect = canvas.GetComponent<RectTransform>();
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out localPoint);
-                rt.anchoredPosition = localPoint;
-                rt.sizeDelta = new Vector2(28, 28);
-                var img = ui.AddComponent<UnityEngine.UI.Image>();
-                // assign a simple generated white sprite if builtin not available
-                img.sprite = GetMarkerSprite();
-                img.color = Color.yellow;
-                img.raycastTarget = false;
-                return ui;
-            }
-
-            // fallback: small sphere in world
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "Marker";
-            go.transform.position = pos + Vector3.up * 0.6f + (Camera.main != null ? (Camera.main.transform.forward * -0.01f) : Vector3.back * 0.01f);
-            go.transform.localScale = Vector3.one * 0.25f;
-            var mr = go.GetComponent<Renderer>();
-            if (mr != null)
-            {
-                mr.material = new Material(Shader.Find("Sprites/Default")) { color = Color.yellow };
-            }
-            var col = go.GetComponent<Collider>();
-            if (col != null) Destroy(col);
-            return go;
-        }
-
         // CreateTooltip method removed - tooltips caused memory leaks and visual clutter
         // We now rely on card bounce animations for visual feedback
 
         private void ClearArrowsAndHighlights()
         {
-            foreach (var m in currentMarkers)
-            {
-                if (m == null) continue;
-                try { Destroy(m); } catch { }
-            }
-            currentMarkers.Clear();
             foreach (var c in currentlyHighlightedCards)
             {
                 if (activeCardViews.TryGetValue(c, out var v)) v.SetSelected(false);
@@ -1336,10 +1427,23 @@ namespace Project51.Unity
                     cardView.CardRenderer.enabled = !suppressNewCardVisibility;
                 }
 
+                cardView.SetBaseSortingOrder(CenterFirstSortingOrder(40, handCards.Count, i));
+
+                if (TryGetBannerHandCenter(0, out var handCenter, out _))
+                {
+                    // Mockup 09: ventaglio leggero, laterali un po' piu' in basso, centrale davanti.
+                    float k = WorldPerDesignPixel();
+                    float centered = i - (handCards.Count - 1) / 2f;
+                    float edge = handCards.Count > 1 ? Mathf.Abs(centered) / ((handCards.Count - 1) / 2f) : 0f;
+                    cardView.SetPosition(handCenter + new Vector3(centered * localHandStep * k, -edge * localHandSideDrop * k, 0f));
+                    cardView.transform.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(localHandFanDegrees, -localHandFanDegrees, FanT(handCards.Count, i)));
+                    continue;
+                }
+
                 // Calculate position with fan layout
                 Vector3 position = CalculateFanPosition(GetHumanHandBasePosition(), handCards.Count, i, 0f, EffectiveLocalPlayerCardScale);
                 cardView.SetPosition(position);
-                
+
                 // Apply rotation for fan effect - INVERTED for bottom player
                 if (useFanLayout)
                 {
@@ -1352,6 +1456,49 @@ namespace Project51.Unity
 
             // After positioning human hand, apply Matta special visual if applicable
             ApplyMattaSpecialVisual(handCards);
+            ApplyMoveHints(handCards);
+        }
+
+        /// <summary>
+        /// Impostazioni in partita, "Suggerimenti mosse": nel proprio turno le carte in mano che fanno
+        /// una presa hanno un bagliore dietro. Fuori turno, o con l'opzione spenta, nessun bagliore.
+        /// </summary>
+        private void ApplyMoveHints(List<Card> handCards)
+        {
+            if (handCards == null) return;
+            bool active = GamePreferences.MoveHints && IsMyTurnToPlay && !suppressNewCardVisibility
+                && turnController.GameState != null && !turnController.GameState.RoundEnded;
+            // Calcolate qui dalle regole: il refresh arriva prima che TurnController aggiorni le sue
+            // mosse valide per il nuovo turno.
+            var captures = active
+                ? Rules51.GetValidMoves(turnController.GameState, turnController.CurrentPlayerIndex)
+                    .Where(m => m.Type != MoveType.PlayOnly).Select(m => m.PlayedCard).ToList()
+                : new List<Card>();
+            foreach (var card in handCards)
+            {
+                if (!activeCardViews.TryGetValue(card, out var view) || view == null) continue;
+                view.SetMoveHint(captures.Contains(card), moveHintGlowSprite);
+            }
+        }
+
+        /// <summary>Alone oro attorno alle carte che il mazziere sta per prendere (accuso 15/30).</summary>
+        public void SetDealerAccusoGlow(IReadOnlyList<CardView> views, bool on)
+        {
+            if (views == null) return;
+            foreach (var view in views)
+            {
+                if (view != null) view.SetGlow(on, moveHintGlowSprite, DealerAccusoGlowColor);
+            }
+        }
+
+        private static readonly Color DealerAccusoGlowColor = new Color(1f, 0.8f, 0.35f);
+
+        private void OnGamePreferencesChanged()
+        {
+            var state = turnController != null ? turnController.GameState : null;
+            if (state == null) return;
+            int localIndex = GameModeService.Current.LocalPlayerIndex;
+            if (localIndex >= 0 && localIndex < state.Players.Count) ApplyMoveHints(state.Players[localIndex].Hand);
         }
 
         /// <summary>
@@ -1547,6 +1694,7 @@ namespace Project51.Unity
 
         private void OnDestroy()
         {
+            GamePreferences.Changed -= OnGamePreferencesChanged;
         }
 
         /// <summary>
@@ -1663,17 +1811,32 @@ namespace Project51.Unity
             // Show UI with move options
             if (moveSelectionUI != null)
             {
-                var descriptions = uniqueMoves.Select(m => FormatMoveDescription(m)).ToList();
-                moveSelectionUI.ShowMoves(descriptions, idx =>
+                var choices = uniqueMoves.Select(m => new MoveSelectionUI.CaptureChoice
                 {
-                    if (idx >= 0 && idx < uniqueMoves.Count)
+                    Title = FormatMoveTitle(m),
+                    Detail = FormatMoveDetail(m),
+                    Cards = (m.CapturedCards ?? new List<Card>()).Select(GetSpriteForCard).Where(sprite => sprite != null).ToList(),
+                }).ToList();
+
+                moveSelectionUI.ShowCaptureChoices(choices,
+                    idx =>
                     {
-                        turnController.ExecuteMove(uniqueMoves[idx]);
-                    }
-                    // Clear selection state
-                    foreach (var kv in activeCardViews)
-                        kv.Value?.SetSelected(false);
-                }, autoHideOnChoose: true, onHover: hoveredIndex => HighlightAlternative(uniqueMoves, hoveredIndex, null));
+                        ClearArrowsAndHighlights();
+                        foreach (var kv in activeCardViews)
+                            kv.Value?.SetSelected(false);
+                        if (idx >= 0 && idx < uniqueMoves.Count)
+                        {
+                            turnController.ExecuteMove(uniqueMoves[idx]);
+                        }
+                    },
+                    hoveredIndex => HighlightAlternative(uniqueMoves, hoveredIndex, null),
+                    () =>
+                    {
+                        // Annulla: si puo' scegliere un'altra carta dalla mano.
+                        ClearArrowsAndHighlights();
+                        foreach (var kv in activeCardViews)
+                            kv.Value?.SetSelected(false);
+                    });
             }
             else
             {
@@ -1684,49 +1847,25 @@ namespace Project51.Unity
             }
         }
 
-        /// <summary>
-        /// Formats a move description for display in the UI.
-        /// </summary>
-        private string FormatMoveDescription(Move move)
+        private static string FormatMoveTitle(Move move)
         {
-            if (move.CapturedCards == null || move.CapturedCards.Count == 0)
+            switch (move.Type)
             {
-                return "Play only";
+                case MoveType.CaptureEqual: return "Carta uguale";
+                case MoveType.Capture15: return "Somma 15";
+                case MoveType.CaptureSum: return "Somma";
+                case MoveType.AceCapture: return "Asso piglia tutto";
+                default: return "Gioca la carta";
             }
+        }
 
-            var cardNames = move.CapturedCards.Select(c => 
-            {
-                string rankName = c.Rank switch
-                {
-                    1 => "A",
-                    8 => "J",
-                    9 => "Q", 
-                    10 => "K",
-                    _ => c.Rank.ToString()
-                };
-                string suitName = c.Suit switch
-                {
-                    Suit.Denari => "?",
-                    Suit.Coppe => "?",
-                    Suit.Bastoni => "?",
-                    Suit.Spade => "?",
-                    _ => c.Suit.ToString()
-                };
-                return $"{rankName}{suitName}";
-            }).ToList();
-
-            string captureDesc = string.Join(" + ", cardNames);
-            
-            string typeDesc = move.Type switch
-            {
-                MoveType.CaptureEqual => "=",
-                MoveType.Capture15 => "?15",
-                MoveType.CaptureSum => "?",
-                MoveType.AceCapture => "A?",
-                _ => ""
-            };
-
-            return $"{captureDesc} {typeDesc}";
+        private string FormatMoveDetail(Move move)
+        {
+            int count = move.CapturedCards?.Count ?? 0;
+            if (count == 0) return "Nessuna presa";
+            var tableCount = turnController != null && turnController.GameState != null ? turnController.GameState.Table.Count : -1;
+            string cards = count == 1 ? "Prendi 1 carta" : $"Prendi {count} carte";
+            return count == tableCount ? cards + " - pulisci il tavolo" : cards;
         }
 
         private void EnterSelectionMode(CardView clickedCardView)
@@ -1817,7 +1956,7 @@ namespace Project51.Unity
 
                 // Show help markers on first invalid confirm, otherwise show an invalid message
                 var allMatches = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, null);
-                if (!helpShownForCurrentSelection && allMatches.Count > 0)
+                if (GamePreferences.MoveHints && !helpShownForCurrentSelection && allMatches.Count > 0)
                 {
                     helpShownForCurrentSelection = true;
                     HighlightAlternative(allMatches, 0, null);

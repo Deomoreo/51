@@ -64,6 +64,7 @@
     <Compile Include="Assets\UIV2\Scripts\Data\FriendViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\DeckCardView.cs" />
     <Compile Include="Assets\Photon\PhotonRealtime\Demos\DemoLoadBalancing\ConnectAndJoinRandomLb.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\LobbySlotRowV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\SettingsV2Integration.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Root.cs" />
     <Compile Include="Assets\Scripts\UI\RawImageUVScroll.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Assets\Scripts\UI\PlayerBanner.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UICollectionGrid.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\DesignCanvasFit.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\VersionLabelV2.cs" />
     <Compile Include="Assets\Scripts\UI\ModeSelectPopupUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaBottomOnly.cs" />
     <Compile Include="Assets\Scripts\UI\WaitingRoomUI.cs" />
@@ -117,11 +119,14 @@
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Pager.cs" />
     <Compile Include="Assets\Scripts\UI\PanelPostaController.cs" />
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
+    <Compile Include="Assets\Scripts\Auth\AccountDeletionService.cs" />
     <Compile Include="Assets\Scripts\UI\PanelClassificaController.cs" />
     <Compile Include="Assets\UIV2\Tests\HomeV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
     <Compile Include="Assets\UIV2\Tests\ProfileV2PreviewBootstrap.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\NewsItemViewV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopScreenV2.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\ResultRowV2.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableMultiToggleGroup.cs" />
@@ -132,6 +137,7 @@
     <Compile Include="Assets\Scripts\UI\ThemedButton.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2SectionHeader.cs" />
     <Compile Include="Assets\Scripts\UI\TableTopBarController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\LegalModalV2.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthBootstrapper.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\DeckViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2StatTile.cs" />
@@ -155,14 +161,16 @@
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\FriendItem.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIScreenRoot.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\CollectionItemViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\InGameSettingsV2.cs" />
     <Compile Include="Assets\Scripts\Networking\SceneLoadManager.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Core\FistGraphic.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\UIV2MoteField.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoPanelController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AccusoImpactV2.cs" />
     <Compile Include="Assets\UIV2\Tests\ShopV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\Networking\GameManager.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ShopItemViewData.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkTypes.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\DismissOnBackdrop.cs" />
     <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
     <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
@@ -178,6 +186,7 @@
     <Compile Include="Assets\Scripts\UI\ScrollFadeIndicator.cs" />
     <Compile Include="Assets\Scripts\UI\GameLaunchController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2BottomNav.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\AuthScreensV2.cs" />
     <Compile Include="Assets\Scripts\UI\TurnIndicator.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2TopBar.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopOfferView.cs" />
@@ -186,11 +195,14 @@
     <Compile Include="Assets\Scripts\UI\ModalitySelectorPanelUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopProductCardView.cs" />
     <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\BottomNavSafeAreaBleed.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\ConnectionNoticeV2.cs" />
     <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\RankingEntryViewData.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\NewsScreenV2.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ShopProductViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ModalFrame.cs" />
@@ -204,16 +216,19 @@
     <Compile Include="Assets\UIV2\Scripts\Data\ResourceViewData.cs" />
     <Compile Include="Assets\Scripts\UI\PanelMazzoController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\AccusoRowView.cs" />
+    <Compile Include="Assets\Scripts\UI\LocalSeatBottomShift.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIBottomNavBar.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AnimatedModalV2.cs" />
     <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\IUIV2Modal.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\PageSwipeSurface.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\RingArcGraphic.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayerProgressLocal.cs" />
     <Compile Include="Assets\JsonDotNetWrapper\JsonDotNetWrapper.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\ChatIdCheckerUI.cs" />
     <Compile Include="Assets\Scripts\UI\PrivateRoomOptionsUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\DeleteAccountModalV2.cs" />
     <Compile Include="Assets\Scripts\UI\HomeNavBarController.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkManager.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\GameResultEntryViewData.cs" />
@@ -222,6 +237,7 @@
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\RoundResultEntryViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2PlayerRow.cs" />
+    <Compile Include="Assets\Scripts\UI\PortraitCanvasMatch.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableToggleGroup.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionScreenV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2ModalHost.cs" />
@@ -229,6 +245,7 @@
     <Compile Include="Assets\Scripts\UI\ThemedPanel.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\AccusoViewData.cs" />
     <Compile Include="Assets\Scripts\UI\TableActionButtonsController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\NativeShare.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\MatchmakingPlayerViewData.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthUIController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\LoadingProgressBar.cs" />
@@ -237,10 +254,12 @@
     <Compile Include="Assets\Scripts\UI\PanelImpostazioniController.cs" />
     <Compile Include="Assets\Scripts\UI\PanelManager.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\MailMessageViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Components\CodeCellsV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\RoomFlowV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileTrophyView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\PlayerSummaryViewData.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayFabAuthService.cs" />
+    <Compile Include="Assets\Scripts\Auth\NewsService.cs" />
     <Compile Include="Assets\Scripts\UI\SimpleToggleSwitch.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimationHooks.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\FriendRowView.cs" />
@@ -249,6 +268,7 @@
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />
+    <None Include="Assets\Audio\README_v02.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Resources\OpenSans\Apache License.txt" />
     <None Include="Assets\Photon\PhotonUnityNetworking\changelog.txt" />
@@ -258,7 +278,9 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\Shaders\SpritesHoloFoil.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
+    <None Include="Assets\Audio\README.txt" />
     <None Include="Assets\GooglePlayGames\com.google.play.games\Proguard\games.txt" />
+    <None Include="Assets\Legal\PrivacyPolicy.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />
@@ -280,9 +302,11 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
+    <None Include="Assets\Legal\TerminiDiServizio.txt" />
     <None Include="Assets\Photon\PhotonUnityNetworking\link.xml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
+    <None Include="Assets\Audio\README_Unity.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

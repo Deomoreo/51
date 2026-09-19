@@ -30,9 +30,26 @@ namespace Project51.UIV2.Core
             for (int i = 0; i < ModeButtons.Length; i++) { int index = i; ModeButtons[i].onClick.AddListener(() => ChooseMode(index)); }
             for (int i = 0; i < DifficultyButtons.Length; i++) { int index = i; DifficultyButtons[i].onClick.AddListener(() => ChooseDifficulty(index)); }
             Confirm.onClick.AddListener(ConfirmDeck);
-            CreateRoom.onClick.AddListener(() => { ModeModal.Close(); if(RoomFlow!=null)RoomFlow.OpenCreate();else Modes.Select_CreatePrivateRoom(); });
-            JoinRoom.onClick.AddListener(() => { ModeModal.Close(); if(RoomFlow!=null)RoomFlow.OpenJoin();else Modes.Select_JoinPrivateRoom(); });
+            CreateRoom.onClick.AddListener(() => OpenRoomFlow(true));
+            JoinRoom.onClick.AddListener(() => OpenRoomFlow(false));
         }
+        /// <summary>
+        /// Crea/entra in stanza privata: il pannello Modalita' si chiude per lasciare il posto al
+        /// flusso online, ma si riapre se da li' si annulla - annullando si torna indietro di un
+        /// passo, non fino alla Home.
+        /// </summary>
+        private void OpenRoomFlow(bool create)
+        {
+            ModeModal.Close();
+            if (RoomFlow == null)
+            {
+                if (create) Modes.Select_CreatePrivateRoom(); else Modes.Select_JoinPrivateRoom();
+                return;
+            }
+            if (create) RoomFlow.OpenCreate(); else RoomFlow.OpenJoin();
+            RoomFlow.ReturnOnCancel = ShowModes;
+        }
+
         public void OpenDecks()
         {
             if (IsOpen) return;
@@ -53,6 +70,16 @@ namespace Project51.UIV2.Core
         public void OpenModes()
         {
             if (IsOpen) return;
+            ShowModes();
+        }
+
+        /// <summary>
+        /// Riapre Modalita' tornando indietro dal flusso stanze. Senza il controllo "e' gia'
+        /// aperto" di OpenModes: qui si sta rientrando, e il pannello potrebbe risultare ancora
+        /// aperto per la manciata di centesimi della sua animazione di chiusura.
+        /// </summary>
+        private void ShowModes()
+        {
             ModeModal.Open(); ModeScroll.verticalNormalizedPosition = 1; RefreshMode();
         }
         private void ChooseMode(int index)

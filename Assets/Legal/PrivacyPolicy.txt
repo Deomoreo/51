@@ -1,0 +1,46 @@
+# Privacy Policy di 51
+
+Ultimo aggiornamento: 18/09/2026
+
+La presente Privacy Policy descrive come 51 tratta le informazioni degli utenti durante l'utilizzo dell'app.
+
+**Titolare del trattamento**  
+Francesco Marotta  
+Deomoreo@gmail.com  
+Italia
+
+## 1. Dati trattati
+A seconda delle funzionalità utilizzate, 51 può trattare: indirizzo email usato per registrazione e recupero account; nome utente e nome visualizzato; identificativi tecnici associati all'account; progressi, statistiche, partite e impostazioni di gioco; informazioni tecniche necessarie a funzionamento, sicurezza e diagnostica.
+
+## 2. Finalità
+I dati vengono utilizzati per creare e gestire l'account, autenticare l'utente, salvare progressi e statistiche, fornire funzionalità online e multiplayer, recuperare l'accesso all'account, mantenere la sicurezza del servizio, diagnosticare problemi tecnici e migliorare il funzionamento del gioco.
+
+## 3. Servizi di terze parti
+51 si appoggia ai seguenti servizi esterni, ciascuno dei quali tratta i dati necessari al proprio funzionamento secondo le proprie condizioni e informative sulla privacy:
+
+- **Microsoft PlayFab**: autenticazione, gestione degli account, progressi e dati di gioco.
+- **Photon (Exit Games)**: partite multiplayer in tempo reale. Per collegare i giocatori tratta l'indirizzo IP, un identificativo di sessione, il nome visualizzato e i dati scambiati durante la partita.
+- **Google Play Games Services** (solo su Android): accesso con l'account Google Play e identificativo del giocatore, se scegli di usarlo per entrare.
+
+51 non utilizza servizi di analisi statistica, di pubblicità o di segnalazione automatica dei crash.
+
+## 4. Conservazione
+I dati vengono conservati per il tempo necessario a fornire il servizio, rispettare obblighi legali, garantire la sicurezza e gestire eventuali controversie. Quando un account viene eliminato, i dati associati vengono cancellati o anonimizzati salvo quelli che devono essere conservati per obblighi di legge o legittime esigenze di sicurezza.
+
+## 5. Cancellazione dell'account
+L'utente può avviare la cancellazione del proprio account e dei dati associati tramite **Impostazioni → Account → Elimina account** all'interno dell'app. È inoltre disponibile una pagina web dedicata: **{DELETE_ACCOUNT_URL}**. Per assistenza: Deomoreo@gmail.com. La cancellazione può richiedere un breve periodo tecnico di elaborazione. Potrà essere richiesta una verifica dell'identità per evitare eliminazioni non autorizzate.
+
+## 6. Sicurezza
+Adottiamo misure tecniche e organizzative ragionevoli per proteggere le informazioni da accessi, utilizzi, modifiche o divulgazioni non autorizzate. Nessun sistema informatico può tuttavia garantire una sicurezza assoluta.
+
+## 7. Diritti dell'utente
+Nei casi previsti dalla normativa applicabile, l'utente può richiedere accesso, rettifica, cancellazione o limitazione del trattamento dei propri dati e può esercitare gli altri diritti riconosciuti dalla normativa sulla protezione dei dati. Le richieste possono essere inviate a: Deomoreo@gmail.com.
+
+## 8. Minori
+51 non è progettato per raccogliere consapevolmente dati personali di utenti che non abbiano l'età minima richiesta dalla normativa applicabile senza le necessarie autorizzazioni.
+
+## 9. Modifiche
+La presente Privacy Policy può essere aggiornata in seguito a modifiche dell'app, dei servizi utilizzati o della normativa applicabile. La versione aggiornata sarà resa disponibile all'interno dell'app e all'indirizzo pubblico dedicato alla Privacy Policy.
+
+## 10. Contatti
+Per domande relative alla privacy: Deomoreo@gmail.com

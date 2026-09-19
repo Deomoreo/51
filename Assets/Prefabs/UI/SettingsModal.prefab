@@ -67,6 +67,13 @@ MonoBehaviour:
   window: {fileID: 5210912041063653441}
   btnClose: {fileID: 7530081887367912291}
   dimmerButton: {fileID: 6983348122349768188}
+  dimmerRect: {fileID: 0}
+  fadeTargets: []
+  fadeTargetsOpenAlpha: 0.35
+  fadeTargetsDuration: 0.18
+  headerDragArea: {fileID: 0}
+  scrollRect: {fileID: 0}
+  respectSafeArea: 1
   duration: 0.25
 --- !u!1 &910190348999360979
 GameObject:
@@ -375,8 +382,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: X
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -509,8 +516,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1115,8 +1122,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Button
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

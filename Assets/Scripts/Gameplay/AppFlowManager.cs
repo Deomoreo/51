@@ -34,8 +34,14 @@ namespace Project51.Unity
             returnToHome = SceneManager.GetActiveScene().name == SCENE_GAME;
             Debug.Log("[AppFlow] Loading Main Menu...");
             
-            // Se siamo connessi a Photon, disconnetti
-            if (PhotonNetwork.IsConnected)
+            // Uscita volontaria da una partita online: LeaveRoom(false) lascia subito il posto (niente
+            // finestra di rientro, gli altri vedono "ha lasciato la partita"). Disconnettersi invece
+            // renderebbe il giocatore solo "inattivo" per tutta la PlayerTtl.
+            if (PhotonNetwork.InRoom)
+            {
+                PhotonNetwork.LeaveRoom(false);
+            }
+            else if (PhotonNetwork.IsConnected && PhotonNetwork.NetworkClientState != Photon.Realtime.ClientState.Leaving)
             {
                 PhotonNetwork.Disconnect();
             }
@@ -87,10 +93,7 @@ namespace Project51.Unity
             Debug.Log("[AppFlow] Leaving game and going to menu...");
 
             // Se siamo in una stanza Photon, esci
-            if (PhotonNetwork.InRoom)
-            {
-                PhotonNetwork.LeaveRoom();
-            }
+            // L'uscita dalla stanza Photon la gestisce GoToMainMenu.
 
             // Reset del GameModeService
             Core.GameModeService.Reset();

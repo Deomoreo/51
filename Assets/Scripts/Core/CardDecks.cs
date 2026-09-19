@@ -32,6 +32,14 @@ namespace Project51.Core
             return true;
         }
 
+        /// <summary>
+        /// Mazzo da usare al tavolo: sempre quello scelto dal giocatore. Il mazzo e' solo estetico e
+        /// ognuno vede il proprio. Prima il tavolo leggeva MatchConfig.DeckBackId, salvato in PlayerPrefs
+        /// da chi avviava la partita: valeva "default" (= napoletano) o un mazzo vecchio in ogni percorso
+        /// che non lo riscriveva, quindi si vedeva il dorso napoletano qualunque mazzo avessi scelto.
+        /// </summary>
+        public static CardDeckDefinition LoadForMatch() => Load(SelectedId);
+
         public static CardDeckDefinition Load(string id)
         {
             var entry = Catalog != null ? Catalog.Find(id) ?? Catalog.Find(DefaultId) : null;

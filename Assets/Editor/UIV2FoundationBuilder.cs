@@ -1240,9 +1240,9 @@ namespace Project51.EditorTools
         /// Material preset TMP (stesso atlas del font di default) con outline, salvato come asset
         /// cosi' il riferimento sopravvive nel prefab (un fontMaterial istanziato no).
         /// </summary>
-        private static Material GetOutlineMaterial(string presetName, Color outlineColor, float outlineWidth, float faceDilate)
+        private static Material GetOutlineMaterial(string presetName, Color outlineColor, float outlineWidth, float faceDilate, TMP_FontAsset fontOverride = null)
         {
-            var font = TMP_Settings.defaultFontAsset;
+            var font = fontOverride != null ? fontOverride : TMP_Settings.defaultFontAsset;
             if (font == null || font.material == null) return null;
 
             CreateFolderRecursive(FontMaterialDir);

@@ -16,7 +16,13 @@ namespace Project51.UIV2.Core
         public AuthUIController AuthUI;
         public SettingsV2Integration Settings;
         public Canvas SettingsCanvas;
+        [Tooltip("Pulsante Novita' in alto e la pagina che apre (Tools/UIV2/Build News Screen).")]
+        public Button NewsButton;
+        public NewsScreenV2 News;
         private bool entered;
+
+        /// <summary>Vero dopo che si e' entrati in Home: la schermata iniziale non tornera' piu'.</summary>
+        public bool HasEntered => entered;
 
         private void Start()
         {
@@ -24,6 +30,7 @@ namespace Project51.UIV2.Core
             LoginButton.onClick.AddListener(Login);
             RegisterButton.onClick.AddListener(Register);
             OptionsButton.onClick.AddListener(Options);
+            if (NewsButton != null && News != null) NewsButton.onClick.AddListener(News.Open);
             AuthUI.OnPlayPressed += Enter;
             AuthUI.OnLoginSuccess += Enter;
             AuthUI.OnRegistrationSuccess += Enter;
@@ -31,7 +38,10 @@ namespace Project51.UIV2.Core
             if (AppFlowManager.ConsumeReturnToHome()) CompleteEntrance();
             else { View.alpha = 1; View.blocksRaycasts = true; View.interactable = true; }
         }
-        private void Guest()
+        private void Guest() => PlayAsGuest();
+
+        /// <summary>Identita' ospite temporanea e ingresso in Home. Anche dal pulsante "Accedi come ospite" della schermata Accesso (mockup 23).</summary>
+        public void PlayAsGuest()
         {
             AuthBootstrapper.Instance?.PlayFabAuth?.ForceGuestIdentity();
             Enter();

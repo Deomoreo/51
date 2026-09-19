@@ -34,6 +34,40 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void EveryDeckHasItsOwnBack()
+        {
+            var backs = new System.Collections.Generic.Dictionary<Sprite, string>();
+            foreach (string id in new[] { "napoletano", "classico", "giada" })
+            {
+                var back = CardDecks.Load(id).Back;
+                Assert.IsFalse(backs.ContainsKey(back), id + " usa il dorso di " + (backs.ContainsKey(back) ? backs[back] : ""));
+                backs[back] = id;
+            }
+        }
+
+        [Test]
+        public void TableAlwaysUsesTheSelectedDeckNotTheSavedMatchConfig()
+        {
+            bool exists = PlayerPrefs.HasKey(CardDecks.PreferenceKey);
+            string previous = PlayerPrefs.GetString(CardDecks.PreferenceKey);
+            try
+            {
+                // Un MatchConfig salvato prima con "default"/"napoletano" non deve piu' imporre il napoletano.
+                foreach (string id in new[] { "giada", "classico", "napoletano" })
+                {
+                    Assert.IsTrue(CardDecks.Select(id));
+                    Assert.AreEqual(id, CardDecks.LoadForMatch().Id);
+                }
+            }
+            finally
+            {
+                if (exists) PlayerPrefs.SetString(CardDecks.PreferenceKey, previous);
+                else PlayerPrefs.DeleteKey(CardDecks.PreferenceKey);
+                PlayerPrefs.Save();
+            }
+        }
+
+        [Test]
         public void SelectionPersistsAndInvalidIdsCannotReplaceIt()
         {
             bool exists = PlayerPrefs.HasKey(CardDecks.PreferenceKey);

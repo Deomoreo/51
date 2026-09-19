@@ -60,22 +60,27 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.60f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Core\LegalDocuments.cs" />
     <Compile Include="Assets\Scripts\Core\GameModeService.cs" />
     <Compile Include="Assets\Scripts\Core\IGameModeProvider.cs" />
     <Compile Include="Assets\Scripts\Core\Move.cs" />
     <Compile Include="Assets\Scripts\Core\MatchConfig.cs" />
     <Compile Include="Assets\Scripts\Core\PunteggioManager.cs" />
     <Compile Include="Assets\Scripts\Core\MoveType.cs" />
+    <Compile Include="Assets\Scripts\Core\GameStateSerializer.cs" />
     <Compile Include="Assets\Scripts\Core\AccusiChecker.cs" />
     <Compile Include="Assets\Scripts\Core\CardDeckDefinition.cs" />
     <Compile Include="Assets\Scripts\Core\Card.cs" />
     <Compile Include="Assets\Scripts\Core\AppLoading.cs" />
+    <Compile Include="Assets\Scripts\Core\SeatLayout.cs" />
+    <Compile Include="Assets\Scripts\Core\MatchScore.cs" />
     <Compile Include="Assets\Scripts\Core\GameState.cs" />
+    <Compile Include="Assets\Scripts\Core\GamePreferences.cs" />
     <Compile Include="Assets\Scripts\Core\RoundManager.cs" />
     <Compile Include="Assets\Scripts\Core\PlayerState.cs" />
+    <Compile Include="Assets\Scripts\Core\AppConfig.cs" />
     <Compile Include="Assets\Scripts\Core\CardDecks.cs" />
     <Compile Include="Assets\Scripts\Core\CardDeckCatalog.cs" />
-    <Compile Include="Assets\Scripts\Core\MatchScoreTracker.cs" />
     <Compile Include="Assets\Scripts\Core\GameAudioPreferences.cs" />
     <Compile Include="Assets\Scripts\Core\Suit.cs" />
     <Compile Include="Assets\Scripts\Core\CirullaAI.cs" />

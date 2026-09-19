@@ -167,3 +167,90 @@ Verifiche: **16 test EditMode superati, 0 falliti**, incluso il caso di dati XP 
 Limiti: verifica in Unity Editor, senza build Android o gesture su dispositivo. Non sono state inviate credenziali né creati account. Il caricamento multiplayer gestito da Photon e il flusso stanze richiedono ancora una prova con due client; questa consegna non completa il multiplayer. Grafica del tavolo e risultati resta quella precedente. Modifiche salvate localmente, senza commit o push.
 
 Controllo visivo finale: corretta la conversione dell'area sicura del Device Simulator dalla risoluzione nativa 1170×2532 alla vista 1080×1920, riusando SafeAreaUtil. Logo, Opzioni e contenuti del caricamento verificati dentro lo schermo. Unity lasciato in Play Mode sulla nuova schermata iniziale.
+
+### Consegna multiplayer, punteggio di partita e grafica online (16 settembre 2026, versione 1.78)
+
+Regole decise: 2v2 a prese comuni con compagni di fronte (posti 0+2 e 1+3); in stanza privata i primi due entrati sono compagni; partita veloce con bot dopo 30 secondi; rientro entro 60 secondi dopo una disconnessione.
+
+- **Regole finalmente applicate.** RoundManager cercava le regole con un nome di assembly sbagliato e usava sempre quelle predefinite. Ora le regole viaggiano nello stato di gioco e arrivano identiche a tutti i client. Corretto anche il bonus cappotto, che veniva sommato a ogni mossa.
+- **Punteggio di partita condiviso.** I totali fino a 51 stanno nello stato inviato dall'host (MatchScore). Il mazzo passa al giocatore di mano, a pari merito sopra il traguardo si gioca un'altra smazzata. I banner del tavolo mostrano il totale di partita.
+- **2v2 a coppie.** Carte, denari, settebello, primiera, grande e piccola si calcolano sulle prese unite; scope e accusi si sommano; i due compagni ricevono lo stesso punteggio.
+- **Rete.** Stato serializzato in Core (GameStateSerializer, compatibile con il formato precedente). Stanza chiusa all'avvio con PlayerTtl ed EmptyRoomTtl di 60 secondi. Chi cade viene sostituito da un bot e si riconnette da solo; al rientro il bot libera il posto. L'uscita volontaria usa LeaveRoom(false). In partita compare un avviso di connessione. Corretti: pulsante "Attendi l'host" bloccato dopo il cambio host, bot annullati da tocchi rapidi in sala, stato iniziale inviato due volte.
+- **Grafica V2 dai mockup.** Crea stanza, Entra in stanza, Ricerca partita, Sala d'attesa host e ospite (MainMenu: Tools/UIV2/Build Online Flow). Fine smazzata e fine partita con coriandoli (GameScene: Tools/UIV2/Build Match Results). Pugno dell'accuso con PugnoIcon (Tools/UIV2/Apply Pugno Icon). Riparati gli sprite del tavolo persi con il passaggio ai fogli Icons.png (Tools/UIV2/Repair Table HUD).
+
+Verifiche: **177 test EditMode superati, 0 falliti** (11 nuovi su coppie, totali, regole, cappotto, posti e serializzazione; riparati i 3 vecchi test MattaVisualHints). Prove dal vivo con due Editor collegati a Photon (clone ParrelSync):
+- 1v1 in stanza privata: stati identici a fine smazzata, totali portati alla seconda smazzata.
+- Disconnessione simulata del clone: sostituzione con bot, rientro automatico e stato di nuovo identico.
+- Uscita dell'host: il ruolo passa all'altro client.
+- 2v2 con due amici e due bot: posti 0 e 2, punteggio di squadra nei risultati.
+- Partita veloce da soli: dopo 30 secondi il tavolo parte con un bot che gioca.
+
+Schermate confrontate con i mockup 03, 04, 12, 13, screen_1 e screen_3.
+
+Limiti e scostamenti:
+- Nel fine smazzata c'è un pulsante ESCI non previsto dal mockup: l'ingranaggio del tavolo non apre ancora nulla.
+- In sala d'attesa Link e Amici sono disattivati (nessun servizio dietro); Condividi apre la condivisione di Android o copia l'invito.
+- Font Poppins assente; manca il bagliore dietro il trofeo e il pulsante Accuso (glow_soft).
+- Il riconoscimento del rientro funziona solo con l'app aperta.
+- Nessuna build Android e nessuna prova su dispositivo.
+- Modifiche locali senza commit dopo il checkpoint b21dc11.
+
+### Consegna tavolo: bug dello sprint 1 e roulette del mazziere (17 settembre 2026, versione 1.79)
+
+Lista completa e stato di tutto il lavoro rimanente: `SPRINT_BACKLOG.md`.
+
+- **Ultima carta del giro.** Durante la nuova distribuzione la sospensione della visibilità valeva anche per il tavolo: le carte sparivano fino alla fine della finestra Accuso. Ora riguarda solo le mani.
+- **Layout del tavolo dal mockup 09_tavolo_v4.** Banner, Emoji/Accuso, feltro e centro delle carte portati alle posizioni del mockup (Tools/UIV2/Apply Table Layout V4). Mani avversarie piccole sotto al banner in alto e coricate sul bordo ai lati; ventaglio locale con la carta centrale davanti. Mani e mazzetti si calcolano a runtime dai banner veri (`CardViewManager`, campi "Layout tavolo ancorato ai banner"). Carte in tavolo su due righe oltre le 5. Il feltro si ricostruisce quando cambia la camera.
+- **Prese.** Mazzetto con numero accanto al banner (`PlayerBanner.SetCapturedPile`); le carte catturate volano lì e sfumano. Le pile disegnate sul tavolo sono spente (`CapturedPileManager.renderWorldPiles`). Le scope restano dietro al banner.
+- **Scelta tra più prese.** Nuovo pannello "SCEGLI LA PRESA" con le miniature delle carte (Tools/UIV2/Build Capture Choice). Tenendo premuto le carte si alzano sul tavolo, rilasciando si gioca; X per annullare. Rimossi i quadratini gialli.
+- **Emoticon in partita.** Solo le 3 equipaggiate, su una riga.
+- **Roulette del mazziere dai mockup 27–28** (Tools/UIV2/Build Dealer Roulette, sostituisce Tools/51/Build Dealer Roulette). Solo i posti occupati (2 in 1v1), trofeo e chip MAZZIERE, CONTINUA che si chiude da solo dopo 4 secondi.
+- **Font.** I file Poppins-Bold SDF e Poppins-ExtraBold SDF avevano i nomi invertiti: corretti, con LiberationSans come riserva.
+
+Verifiche: **177 test EditMode superati, 0 falliti**. In Play (Editor 1080×1920, partite contro bot a 2 e 4 giocatori, gioco automatico): tavolo sempre visibile dall'ultima carta a fine finestra Accuso; confronto visivo con i mockup 09, 15, 27 e 28; mano di prova con 7 carte in tavolo e 4 prese possibili, anteprima, conferma e annulla; CONTINUA e chiusura automatica.
+
+Limiti: nessuna prova su dispositivo né con due client. Il bagliore del mockup dietro al vincitore della roulette manca (asset). Il font predefinito di TextMesh Pro è vuoto: i builder che non impostano il font creano testi invisibili (decidere con C4). Modifiche locali senza commit.
+
+### Consegna tavolo: piccoli bug, accuso manuale, pugno e matta (17 settembre 2026, versione 1.80)
+
+- **Asset e font.** Poppins Regular, Medium e SemiBold con LiberationSans come riserva; Poppins Medium è il font predefinito di TextMesh Pro (prima era vuoto). Bagliore rettangolare con bordi 9-slice impostati.
+- **A8–A10, A12.** Tolto il vecchio indicatore di turno che copriva "Mano X di Y". Chip MAZZIERE come pillola oro sotto al banner. Accuso del mazziere: il mazzetto si aggiorna solo quando le carte ci arrivano, testo "Fai Scopa da 30!" per chi gioca. Icona di chiusura del mockup nel pannello emoticon. Tutto in Tools/UIV2/Apply Table Layout V4.
+- **Accuso manuale (B2).** Finestra di 5 secondi. Il pulsante ACCUSO pulsa con il bagliore rotondo e un anello che si svuota, con il numero dei secondi e l'avviso "Hai un accuso? Premi ACCUSO" sopra la mano. Compare sempre, anche senza accuso, per non rivelare nulla. Senza accuso il pulsante dà una scossa (Tools/UIV2/Build Accuso Window).
+- **Pugno (B3).** Due colpi con l'esplosione di luce; a ogni colpo tutte le carte saltano e ruotano e poi tornano esattamente al loro posto. Il gioco aspetta la fine (`GamePresentation.IsBusy`): bot, mosse di rete e finestra accuso si fermano per circa 2,6 secondi. Il gruppo del pugno è nella parte alta del feltro, così non copre le carte in tavolo.
+- **Matta (B4, A11).** `AccusiChecker.MattaValueForAccuso`: coppia per il Decino, asso per la Cirulla, nessuna trasformazione se non serve. In mano (e nelle mani scoperte dopo un accuso) il 7 di coppe si gira e diventa quella carta con un alone dorato; passandoci sopra si vede ancora il 7. Durante il pugno la carta grande della matta si gira allo stesso modo. Tolte le vecchie immagini gialle a bassa risoluzione e il quadratino bianco (i file `Resources/Cards/Matta_*.asset` non sono più usati).
+
+Verifiche: **181 test EditMode superati, 0 falliti** (4 nuovi sulla matta). In Play: barra in alto e chip MAZZIERE; accuso del mazziere forzato con conteggio 0 durante l'animazione e 4 dopo; pannello emoticon; finestra accuso a metà tempo; pugno con 10 carte campionate (salto massimo circa 55 px, spostamento finale 0) e attesa del gioco; mano di prova 3 + matta + 4 con il giro a metà e l'asso finale.
+
+Limiti: nessuna prova su dispositivo né con due client. Durante le prove un comando dall'esterno che blocca Unity per un attimo fa saltare il primo colpo del pugno (l'animazione usa il tempo reale); nel gioco normale non succede.
+
+### Consegna tavolo: impostazioni in partita e sfocatura vera (17 settembre 2026, versione 1.81)
+
+- **Impostazioni in partita (B5, mockup 26).** L'ingranaggio della barra in alto apre il pannello (Tools/UIV2/Build In-Game Settings, `InGameSettingsV2`). Cornice oro, nastro, sezioni PARTITA e AUDIO, X e tocco fuori per chiudere. La partita non si ferma.
+  - *Animazioni veloci* (`GamePreferences`): animazioni delle carte, pugno, roulette e attese dei bot circa il 40% più brevi. La finestra accuso resta di 5 secondi.
+  - *Suggerimenti mosse*: nel proprio turno le carte in mano che fanno una presa hanno un bagliore azzurro dietro; spento, sparisce anche l'aiuto dopo una selezione sbagliata.
+  - *Musica* ed *Effetti sonori* (`GameAudioPreferences`): la scelta si salva e gli effetti la rispettano, ma nel progetto non c'è nessun file audio (G5).
+  - *Abbandona partita*: primo tocco chiede conferma per 3 secondi, il secondo esce dalla partita e torna alla Home. La sconfitta non viene ancora registrata (arriva con D1/E1).
+  - Testi cambiati rispetto al mockup: "Evidenzia le carte che fanno una presa" (tutte le carte sono giocabili) e "Per tornare alla partita chiudi con la X in alto" (la X non porta al menu).
+- **Fine smazzata.** Tolto il pulsante ESCI non previsto dal mockup 13: si abbandona dalle impostazioni.
+- **Sfocatura vera (`BackdropBlur`).** Foto dello schermo presa prima che il pannello compaia, rimpicciolita e sfocata, con sopra il velo "Sfocatura sfondo". Usata dalle impostazioni e dalla roulette del mazziere.
+- **Roulette (B1).** Bagliore morbido rettangolare dietro al riquadro evidenziato (più forte sul vincitore) e dietro CONTINUA, come nel mockup 28.
+
+- **Regole predefinite condivise (bug trovato dai test).** `MatchRules.Default` era un unico oggetto: leggendo la configurazione salvata (1v1 con cappotto spento) veniva modificato e il cappotto restava spento per tutta la sessione, anche nelle partite a 4. Ora `Default` restituisce sempre regole nuove.
+
+Verifiche: **184 test EditMode superati, 0 falliti** (3 nuovi: preferenze, canali audio, sfocatura), anche subito dopo una sessione di Play. In Play (Editor 1080×1920, 1v1 contro bot): confronto al pixel con il mockup 26 a pannello fermo (cornice, righe, divisori e interruttori coincidono; testi e icone entro 1–2 px); roulette con sfocatura e bagliore confrontata con il mockup 28; bagliore dei suggerimenti solo sulle carte che prendono (6 e asso sì, 7 no con 6-6 in tavolo); interruttori salvati e applicati subito; animazioni a 1,6× con il bot che risponde in circa 2 secondi; abbandono: primo tocco chiede conferma e torna normale dopo 3 secondi, doppio tocco porta alla Home.
+
+Limiti: nessuna prova su dispositivo né con due client. La sfocatura è una foto: se la partita va avanti con il pannello aperto, lo sfondo non si aggiorna. Nell'Editor la finta safe area rimpicciolisce un po' il pannello (non succede sul telefono).
+
+### Consegna: audio del gioco, accuso del mazziere e sequenza sui client (17 settembre 2026, versione 1.82)
+
+- **Audio (G5).** I 31 file di `Assets/Audio` sono collegati tramite `Resources/Audio/SoundLibrary` (Tools/Audio/Build Sound Library): impostazioni di importazione dai README (musica in streaming Vorbis, effetti decompressi ADPCM/PCM, niente normalizzazione) e volumi di partenza dei README, ritoccabili dall'Inspector.
+  - *Musica*: `home_theme_loop` in loop, 0,30 in Home e 0,15 al tavolo, con dissolvenza al cambio scena; segue l'interruttore Musica e l'audio generale.
+  - *Effetti*: carta giocata (il colpo del file cade sull'atterraggio), presa, scopa, distribuzione (breve o lunga secondo la durata), due colpi del pugno dell'accuso, "tocca a te", inizio partita, tic della roulette e conferma sul vincitore, vittoria e sconfitta, apertura/chiusura pannelli, errore, emoticon ricevuta, avvisi di connessione.
+  - *Click dei pulsanti*: agganciati da soli a ogni pulsante della scena, con il suono scelto dal nome (indietro, scheda, conferma, click). Nello stesso frame suona solo il più importante, così il pannello che si apre non si somma al click.
+- **Accuso del mazziere (B6).** Cartello ricostruito (Tools/UIV2/Build Dealer Accuso Reveal): cornice oro con bagliore morbido, "SCOPA DA 30!" in Poppins ExtraBold e riga "X prende le carte del tavolo". Entra a scatto, resta 1,5 s e sfuma mentre le carte volano nel mazzetto; le carte prese hanno un alone oro. Attesa dopo l'ultima carta ridotta da 1,5 a 1,2 s.
+- **Sequenza del mazziere sui client (B7).** Chi non ospita ora rivede la stessa introduzione quando riceve dall'host uno stato appena distribuito: roulette, distribuzione dal mazziere, accuso del mazziere e finestra Accuso (prima il tavolo compariva già pronto). Le mosse che arrivano nel frattempo restano in coda e vengono applicate subito dopo. Nuove regole in `RoundManager`: `IsFreshSmazzata`, `DealerAccusoFor`, `TryGetDealerAccusoAtStart`; l'host usa la stessa funzione per l'accuso del mazziere, così i due calcoli non possono divergere. Un doppio invio dello stesso stato non fa ripartire l'introduzione.
+- **Due bug trovati durante le prove.** Una carta già scoperta che nella smazzata dopo finisce in mano a un avversario restava visibile (ora torna coperta). Sui client la barra in alto diceva "Mano 1 di 0": il conteggio delle mani si ricava dallo stato ricevuto.
+
+Verifiche: **194 test EditMode superati, 0 falliti** (5 nuovi: accuso del mazziere con e senza matta, riconoscimento della smazzata appena distribuita, conteggio delle mani). In Play: registro di tutti i suoni durante una partita intera contro i bot (volumi, file scelto a rotazione e punto di partenza di ogni file); prova dei pannelli (ingranaggio, interruttori, emoticon); partita normale a 4 giocatori; client simulato (`MultiplayerGameModeProvider` non-host) con uno stato costruito apposta con accuso del mazziere: roulette, distribuzione, cartello "SCOPA DA 15!", carte avversarie coperte (0 scoperte), "Mano 1 di 3", mazzetto del mazziere a 4 carte e tavolo pulito a fine sequenza.
+
+Limiti: la prova di B7 è simulata nell'Editor, non con due dispositivi veri. Nessuna prova su dispositivo. I suoni dei premi (monete e gemme) restano inutilizzati finché non c'è il sistema di ricompense.

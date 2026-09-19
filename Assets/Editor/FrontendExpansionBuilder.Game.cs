@@ -35,21 +35,30 @@ namespace Project51.EditorTools
             social.Impact=Impact(design);social.Impact.Fist.anchoredPosition=new Vector2(0,-195);social.Impact.Fist.sizeDelta=new Vector2(100,110);
             social.Impact.Caption.rectTransform.anchoredPosition=new Vector2(0,-310);
             social.AccusoCards=new UnityEngine.UI.Image[3];for(int i=0;i<3;i++)social.AccusoCards[i]=Pic(At("AccusoCard"+i,social.Impact.Group.transform,(i-1)*105,45,90,140),Icon("card_back_green"));
-            var results=root.gameObject.AddComponent<MatchResultsV2>();results.Panel=Modal("Results",root,"FINE SMAZZATA",out frame).gameObject;
-            results.Title=frame.Find("Title").GetComponent<TMP_Text>();results.Subtitle=Label(frame,"Subtitle","",0,180,850,90,31);
-            results.Trophy=Pic(At("Trophy",frame,0,295,115,115),Icon("ic_trophy")).gameObject;
-            results.Names=new TMP_Text[4];results.Scores=new TMP_Text[4];results.Deltas=new TMP_Text[4];results.Progress=new UnityEngine.UI.Image[4];
-            for(int i=0;i<4;i++)
-            {var r=At("Score"+i,frame,0,420+i*125,870,112);var bg=Pic(r,Panel,new Color32(33,54,80,255));bg.type=UnityEngine.UI.Image.Type.Sliced;bg.preserveAspect=false;
-                results.Names[i]=Label(r,"Name","",-75,31,650,50,32);results.Names[i].alignment=TextAlignmentOptions.Left;
-                results.Deltas[i]=Label(r,"Delta","",-70,70,640,35,22);results.Deltas[i].alignment=TextAlignmentOptions.Left;
-                results.Scores[i]=Label(r,"Points","",340,39,170,60,38);results.Scores[i].color=new Color32(255,213,130,255);
-                var track=At("Progress",r,-40,96,690,13);var source=Pic(track,Icon("bar_knob"));source.enabled=false;results.Progress[i]=source;
-                var graphicRect=Rect("Vector",track);Fill(graphicRect);var graphic=graphicRect.gameObject.AddComponent<LoadingProgressBar>();graphic.Source=source;graphic.raycastTarget=false;}
-            results.Details=Label(frame,"Details","",0,1060,850,360,27);results.Details.alignment=TextAlignmentOptions.TopLeft;
-            results.Continue=Button(frame,"Continue","CONTINUA",-220,1375,420,105,"btn_gold_long");results.ContinueLabel=results.Continue.GetComponentInChildren<TMP_Text>();results.ContinueLabel.enableAutoSizing=true;results.ContinueLabel.fontSizeMin=20;results.ContinueLabel.fontSizeMax=34;
-            results.Menu=Button(frame,"Menu","MENU",220,1375,420,105);
-            EditorUtility.SetDirty(social);EditorUtility.SetDirty(results);
+            // I risultati (MatchResultsV2) li costruisce UIV2FoundationBuilder.Online: Tools/UIV2/Build Match Results.
+            EditorUtility.SetDirty(social);
+        }
+
+        // Avviso al tavolo per disconnessioni/rientri (GamePresentation.ConnectionNotice). Rilanciabile.
+        [MenuItem("Tools/UIV2/Build Connection Notice")]
+        public static void ConnectionNotice()
+        {
+            if(!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;
+            var scene=UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/GameScene.unity",UnityEditor.SceneManagement.OpenSceneMode.Single);
+            var design=Object.FindObjectOfType<GameSocialV2>(true).transform.Find("Design");
+            var old=design.Find("ConnectionNotice");if(old!=null)Object.DestroyImmediate(old.gameObject);
+            // Il componente resta su un contenitore sempre attivo: il banner figlio si accende/spegne.
+            var host=Rect("ConnectionNotice",design);Fill(host);var notice=host.gameObject.AddComponent<ConnectionNoticeV2>();
+            var banner=At("Banner",host,0,190,940,104);
+            var border=Pic(banner,Panel,new Color32(229,179,69,255));border.type=UnityEngine.UI.Image.Type.Sliced;border.preserveAspect=false;
+            var inner=Rect("Fill",banner);Fill(inner);inner.offsetMin=new Vector2(5,5);inner.offsetMax=new Vector2(-5,-5);
+            var fill=Pic(inner,Panel,new Color32(17,32,51,245));fill.type=UnityEngine.UI.Image.Type.Sliced;fill.preserveAspect=false;
+            notice.Group=banner.gameObject.AddComponent<CanvasGroup>();notice.Group.blocksRaycasts=false;
+            notice.Message=Label(banner,"Message","",0,52,900,90,30);notice.Message.enableAutoSizing=true;notice.Message.fontSizeMin=20;notice.Message.fontSizeMax=30;
+            banner.gameObject.SetActive(false);
+            EditorUtility.SetDirty(notice);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
         }
     }
 }

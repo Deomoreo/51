@@ -143,8 +143,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Copiato!
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -174,7 +174,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -277,8 +277,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: ESCI
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -308,7 +308,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
@@ -411,8 +411,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: In attesa di giocatori...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -442,7 +442,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -619,6 +619,9 @@ MonoBehaviour:
   iconImage: {fileID: 0}
   glowImage: {fileID: 0}
   IsActive: 0
+  backgroundSpriteOverride: {fileID: 0}
+  overrideLabelColor: 0
+  labelColorOverride: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &3032118023804454896
 GameObject:
   m_ObjectHideFlags: 0
@@ -835,6 +838,9 @@ MonoBehaviour:
   iconImage: {fileID: 0}
   glowImage: {fileID: 0}
   IsActive: 0
+  backgroundSpriteOverride: {fileID: 0}
+  overrideLabelColor: 0
+  labelColorOverride: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &5383211111589942512
 GameObject:
   m_ObjectHideFlags: 0
@@ -979,8 +985,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Riempi i posti vuoti con bot
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1010,7 +1016,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
@@ -1113,8 +1119,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: COPIA CODICE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1144,7 +1150,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
@@ -1247,8 +1253,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: AVVIA PARTITA
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1278,7 +1284,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 4096
   m_textAlignment: 65535
@@ -1608,8 +1614,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: AB12C
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1639,7 +1645,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -1816,3 +1822,6 @@ MonoBehaviour:
   iconImage: {fileID: 0}
   glowImage: {fileID: 0}
   IsActive: 0
+  backgroundSpriteOverride: {fileID: 0}
+  overrideLabelColor: 0
+  labelColorOverride: {r: 1, g: 1, b: 1, a: 1}

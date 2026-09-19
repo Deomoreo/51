@@ -274,7 +274,11 @@ namespace Project51.Core
     [Serializable]
     public class MatchRules
     {
-        public static readonly MatchRules Default = new MatchRules();
+        /// <summary>
+        /// Regole standard, sempre un oggetto nuovo: prima era un'istanza condivisa e chi la modificava
+        /// (es. il cappotto spento per la 1v1) la cambiava per tutte le partite della sessione.
+        /// </summary>
+        public static MatchRules Default => new MatchRules();
 
         /// <summary>
         /// If false, Cirulla/Decino are disabled entirely.
@@ -296,6 +300,14 @@ namespace Project51.Core
         /// Points granted for Cappotto when not ending the game.
         /// </summary>
         public int CappottoBonusPoints { get; set; } = 0;
+
+        /// <summary>Punti effettivi di un accuso (3 Cirulla, 10 Decino...) con queste regole.</summary>
+        public int AccusoPoints(int basePoints)
+        {
+            if (!EnableAccusi || AccusiPointMultiplier <= 0f)
+                return 0;
+            return (int)System.Math.Round(basePoints * AccusiPointMultiplier, System.MidpointRounding.AwayFromZero);
+        }
 
         public MatchRules Clone()
         {

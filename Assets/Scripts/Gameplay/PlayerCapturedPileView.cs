@@ -84,7 +84,7 @@ namespace Project51.Unity
 
         private CardDeckDefinition matchDeck;
         private CardDeckDefinition MatchDeck => matchDeck != null ? matchDeck :
-            (matchDeck = CardDecks.Load(GameSceneInitializer.ActiveConfig?.DeckBackId ?? CardDecks.SelectedId));
+            (matchDeck = CardDecks.LoadForMatch());
 
         private void UpdateNormalPile(int totalCaptured)
         {

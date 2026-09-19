@@ -4,100 +4,100 @@ using System.Linq;
 
 namespace Project51.Core
 {
+    /// <summary>
+    /// Dettaglio del punteggio di una smazzata per un concorrente: un giocatore oppure, a coppie,
+    /// una squadra (prese, scope e accusi dei due compagni uniti).
+    /// </summary>
+    public sealed class SmazzataScore
+    {
+        public int CardCount;
+        public int DenariCount;
+        public int ScopaCount;
+        /// <summary>-1 se non ha carte di tutti e quattro i semi (niente primiera).</summary>
+        public int PrimieraScore = -1;
+        public bool HasSetteBello;
+        public bool WonCards;
+        public bool WonDenari;
+        public bool WonPrimiera;
+        public bool HasGrande;
+        public bool HasPiccola;
+        public int PiccolaExtras;
+        public int AccusiPoints;
+
+        /// <summary>Punti della smazzata SENZA accusi (li somma RoundManager a fine smazzata).</summary>
+        public int Points =>
+            ScopaCount
+            + (HasSetteBello ? 1 : 0)
+            + (WonDenari ? 1 : 0)
+            + (WonCards ? 1 : 0)
+            + (WonPrimiera ? 1 : 0)
+            + (HasGrande ? 5 : 0)
+            + (HasPiccola ? 3 + PiccolaExtras : 0);
+    }
+
     public static class PunteggioManager
     {
+        /// <summary>
+        /// Punti della smazzata (senza accusi) per ciascun giocatore. A coppie ogni compagno riceve
+        /// il punteggio della propria squadra.
+        /// </summary>
         public static int[] CalculateSmazzataScores(GameState state)
         {
-            int n = state.NumPlayers;
-            var points = new int[n];
-
-            // Scopa: already counted in PlayerState.ScopaCount per player
-            for (int i = 0; i < n; i++)
-            {
-                points[i] += state.Players[i].ScopaCount;
-            }
-
-            // Sette Bello (7 of Denari)
-            for (int i = 0; i < n; i++)
-            {
-                if (state.Players[i].CapturedCards.Any(c => c.IsSetteBello))
-                    points[i] += 1;
-            }
-
-            // Denari majority (player with strictly most denari wins 1 point)
-            // No points awarded if there's a tie, even if someone has >= 6
-            int[] denariCount = new int[n];
-            for (int i = 0; i < n; i++)
-                denariCount[i] = state.Players[i].CapturedCards.Count(c => c.Suit == Suit.Denari);
-            int maxDenari = denariCount.Max();
-            // Only award point if there's a clear winner (no tie)
-            if (denariCount.Count(x => x == maxDenari) == 1)
-            {
-                var winner = Array.IndexOf(denariCount, maxDenari);
-                // Only award the point if the winner has at least 6 denari
-                if (denariCount[winner] >= 6)
-                    points[winner] += 1;
-            }
-
-            // Cards majority (player with strictly most captured cards wins 1 point)
-            // No points awarded if there's a tie, even if someone has >= 21
-            int[] cardCounts = new int[n];
-            for (int i = 0; i < n; i++)
-                cardCounts[i] = state.Players[i].CapturedCards.Count;
-            int maxCards = cardCounts.Max();
-            // Only award point if there's a clear winner (no tie)
-            if (cardCounts.Count(x => x == maxCards) == 1)
-            {
-                var winner = Array.IndexOf(cardCounts, maxCards);
-                // Only award the point if the winner has at least 21 cards
-                if (cardCounts[winner] >= 21)
-                    points[winner] += 1;
-            }
-
-            // Primiera: compute best primiera for each player; unique highest gets +1
-            // Player must have at least one card of each suit to be eligible for primiera
-            int[] primieraScores = new int[n];
-            bool[] hasAllSuits = new bool[n];
-            for (int i = 0; i < n; i++)
-            {
-                var playerSuits = state.Players[i].CapturedCards.Select(c => c.Suit).Distinct().Count();
-                hasAllSuits[i] = (playerSuits == 4);
-                if (hasAllSuits[i])
-                {
-                    primieraScores[i] = ComputePrimieraScore(state.Players[i].CapturedCards);
-                }
-                else
-                {
-                    primieraScores[i] = -1; // Mark as ineligible
-                }
-            }
-            int maxPrimiera = primieraScores.Max();
-            // Only award if max score is valid (>= 0) and unique
-            if (maxPrimiera >= 0 && primieraScores.Count(x => x == maxPrimiera) == 1)
-            {
-                var winner = Array.IndexOf(primieraScores, maxPrimiera);
-                points[winner] += 1;
-            }
-
-            // Grande (Re,Cavallo,Fante of denari) = +5; Piccola (Asso,2,3 of denari) = +3 plus +1 for each of 4/5/6 present
-            for (int i = 0; i < n; i++)
-            {
-                var denari = state.Players[i].CapturedCards.Where(c => c.Suit == Suit.Denari).Select(c => c.Rank).ToHashSet();
-                bool hasGrande = denari.Contains(10) && denari.Contains(9) && denari.Contains(8);
-                if (hasGrande) points[i] += 5;
-
-                bool hasPiccola = denari.Contains(1) && denari.Contains(2) && denari.Contains(3);
-                if (hasPiccola)
-                {
-                    int add = 3;
-                    // add +1 for each of 4..6 present
-                    for (int r = 4; r <= 6; r++)
-                        if (denari.Contains(r)) add += 1;
-                    points[i] += add;
-                }
-            }
-
+            var entries = CalculateBreakdown(state);
+            var points = new int[state.NumPlayers];
+            for (int i = 0; i < state.NumPlayers; i++)
+                points[i] = entries[MatchScore.EntryOf(state, i)].Points;
             return points;
+        }
+
+        /// <summary>
+        /// Dettaglio per concorrente (vedi MatchScore.EntryCount): categorie vinte, scope, accusi.
+        /// </summary>
+        public static SmazzataScore[] CalculateBreakdown(GameState state)
+        {
+            int count = MatchScore.EntryCount(state);
+            var entries = new SmazzataScore[count];
+            for (int e = 0; e < count; e++)
+            {
+                var members = MatchScore.MembersOf(state, e);
+                var captured = members.SelectMany(i => state.Players[i].CapturedCards).ToList();
+                var denari = captured.Where(c => c.Suit == Suit.Denari).Select(c => c.Rank).ToHashSet();
+                var entry = new SmazzataScore
+                {
+                    CardCount = captured.Count,
+                    DenariCount = captured.Count(c => c.Suit == Suit.Denari),
+                    ScopaCount = members.Sum(i => state.Players[i].ScopaCount),
+                    HasSetteBello = captured.Any(c => c.IsSetteBello),
+                    // Grande (Re, Cavallo, Fante di denari) = +5
+                    HasGrande = denari.Contains(10) && denari.Contains(9) && denari.Contains(8),
+                    // Piccola (Asso, 2, 3 di denari) = +3, piu' 1 per ciascun 4/5/6 consecutivo presente
+                    HasPiccola = denari.Contains(1) && denari.Contains(2) && denari.Contains(3),
+                    AccusiPoints = members.Sum(i => Math.Max(state.Players[i].RoundAccusiPoints, state.Players[i].AccusiPoints))
+                };
+                if (entry.HasPiccola)
+                {
+                    for (int r = 4; r <= 6; r++)
+                        if (denari.Contains(r)) entry.PiccolaExtras++;
+                }
+                // Primiera: serve almeno una carta per seme
+                if (captured.Select(c => c.Suit).Distinct().Count() == 4)
+                    entry.PrimieraScore = ComputePrimieraScore(captured);
+                entries[e] = entry;
+            }
+
+            // Maggioranze: il punto va solo a un vincitore unico (a pari merito nessuno),
+            // con le soglie minime di 6 denari e 21 carte.
+            AwardUniqueMaximum(entries, x => x.DenariCount, 6, x => x.WonDenari = true);
+            AwardUniqueMaximum(entries, x => x.CardCount, 21, x => x.WonCards = true);
+            AwardUniqueMaximum(entries, x => x.PrimieraScore, 0, x => x.WonPrimiera = true);
+            return entries;
+        }
+
+        private static void AwardUniqueMaximum(SmazzataScore[] entries, Func<SmazzataScore, int> value, int minimum, Action<SmazzataScore> award)
+        {
+            int max = entries.Max(value);
+            if (max < minimum || entries.Count(x => value(x) == max) != 1) return;
+            award(entries.First(x => value(x) == max));
         }
 
         private static int ComputePrimieraScore(List<Card> cards)

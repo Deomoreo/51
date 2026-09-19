@@ -60,8 +60,8 @@ namespace Project51.Networking
             var gs = turnController.GameState;
             if (playerIndex < 0 || playerIndex >= gs.NumPlayers) return;
             var player = gs.Players[playerIndex];
-            // AccusoType: assume Cirulla=3, Decino=10
-            int points = accusoType == (int)AccusoType.Decino ? 10 : 3;
+            // Stesse regole della partita (moltiplicatore / accusi disattivati) usate da RoundManager.
+            int points = (gs.Rules ?? MatchRules.Default).AccusoPoints(accusoType == (int)AccusoType.Decino ? 10 : 3);
             int newlyAwarded = Mathf.Max(0, points - player.AccusiPoints);
             player.RoundAccusiPoints += newlyAwarded;
             player.AccusiPoints = Mathf.Max(player.AccusiPoints, points);
@@ -221,7 +221,98 @@ namespace Project51.Networking
                 Debug.Log($"<color=orange>[NET] Player {otherPlayer.NickName} (seat {leftPlayerIndex}) left mid-match - converting to bot.</color>");
 
             gsi.MarkPlayerDisconnected(leftPlayerIndex);
+            // IsInactive: disconnessione (puo' rientrare entro PlayerTtl); altrimenti ha lasciato la partita.
+            GamePresentation.ShowConnectionNotice(otherPlayer.IsInactive
+                ? $"{otherPlayer.NickName} si è disconnesso: gioca un bot finché non rientra"
+                : $"{otherPlayer.NickName} ha lasciato la partita: gioca un bot", 4f);
         }
+
+        /// <summary>
+        /// Un giocatore del roster iniziale rientra entro PlayerTtl (stesso ActorNumber): riprende il
+        /// suo posto. Lo stato aggiornato lo chiede lui stesso al Master (RequestResync in OnJoinedRoom).
+        /// </summary>
+        public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
+        {
+            if (turnController == null || turnController.GameState == null || newPlayer == null) return;
+
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            int seat = gsi != null ? gsi.GetPlayerIndexForActor(newPlayer.ActorNumber) : -1;
+            if (seat < 0) return;
+
+            if (logNetworkMoves)
+                Debug.Log($"<color=green>[NET] Player {newPlayer.NickName} rejoined seat {seat}.</color>");
+            gsi.MarkPlayerReconnected(seat);
+            GamePresentation.ShowConnectionNotice($"{newPlayer.NickName} è rientrato in partita", 3f);
+        }
+
+        #region Reconnection
+
+        /// <summary>Tempo concesso per rientrare: deve coincidere con il PlayerTtl della stanza.</summary>
+        public const float RejoinWindowSeconds = 60f;
+
+        private Coroutine _reconnectCoroutine;
+
+        public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
+        {
+            // Uscita volontaria (menu) o partita non ancora iniziata: niente riconnessione.
+            if (cause == Photon.Realtime.DisconnectCause.DisconnectByClientLogic) return;
+            if (turnController == null || turnController.GameState == null || !GameModeService.Current.IsMultiplayer) return;
+            if (_reconnectCoroutine != null) return;
+
+            Debug.LogWarning($"[NET] Disconnected mid-match ({cause}): trying to rejoin for {RejoinWindowSeconds}s.");
+            _reconnectCoroutine = StartCoroutine(ReconnectAndRejoinLoop());
+        }
+
+        private System.Collections.IEnumerator ReconnectAndRejoinLoop()
+        {
+            float deadline = Time.unscaledTime + RejoinWindowSeconds;
+            float nextAttempt = 0f;
+            while (Time.unscaledTime < deadline && !PhotonNetwork.InRoom)
+            {
+                int secondsLeft = Mathf.CeilToInt(deadline - Time.unscaledTime);
+                GamePresentation.ShowConnectionNotice($"Connessione persa. Riconnessione in corso… {secondsLeft}s");
+                if (Time.unscaledTime >= nextAttempt && PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected)
+                {
+                    nextAttempt = Time.unscaledTime + 3f;
+                    PhotonNetwork.ReconnectAndRejoin();
+                }
+                yield return new WaitForSecondsRealtime(0.25f);
+            }
+
+            _reconnectCoroutine = null;
+            if (PhotonNetwork.InRoom) yield break; // OnJoinedRoom ha gia' gestito il rientro
+
+            GamePresentation.ShowConnectionNotice("Impossibile rientrare nella partita. Ritorno al menu…");
+            yield return new WaitForSecondsRealtime(2.5f);
+            AppFlowManager.GoToMainMenu();
+        }
+
+        public override void OnJoinedRoom()
+        {
+            // In GameScene l'unico ingresso in stanza possibile e' il rientro dopo una disconnessione.
+            if (turnController == null || turnController.GameState == null) return;
+
+            if (_reconnectCoroutine != null)
+            {
+                StopCoroutine(_reconnectCoroutine);
+                _reconnectCoroutine = null;
+            }
+            Debug.Log("<color=green>[NET] Rejoined the match room.</color>");
+            GamePresentation.ShowConnectionNotice("Sei di nuovo in partita!", 2.5f);
+
+            FindObjectOfType<GameSceneInitializer>()?.SyncSeatsWithRoom();
+            if (PhotonNetwork.IsMasterClient)
+            {
+                // Tutti gli altri sono usciti: questo client e' l'autorita', riparte da dove era.
+                turnController.OnBecameMasterClient();
+            }
+            else
+            {
+                RequestResync();
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Photon migra automaticamente il ruolo di Master Client quando quello attuale si
@@ -408,185 +499,23 @@ namespace Project51.Networking
             photonView.RPC(nameof(RPC_ReceiveInitialGameState), RpcTarget.Others, gameStateJson);
         }
 
-        /// <summary>
-        /// Serializza il GameState in formato JSON compatto.
-        /// </summary>
+        // Formato dello stato: vedi Project51.Core.GameStateSerializer (testato in EditMode).
         private string SerializeGameState(GameState gs)
         {
-            // Simple format: numPlayers|dealerIndex|currentPlayerIndex|deck|table|players
-            var parts = new List<string>();
-            
-            parts.Add(gs.NumPlayers.ToString());
-            parts.Add(gs.DealerIndex.ToString());
-            parts.Add(gs.CurrentPlayerIndex.ToString());
-            
-            // Serialize deck
-            parts.Add(SerializeCardList(gs.Deck));
-            
-            // Serialize table
-            parts.Add(SerializeCardList(gs.Table));
-            
-            // Serialize players
-            for (int i = 0; i < gs.NumPlayers; i++)
-            {
-                parts.Add(SerializePlayer(gs.Players[i]));
-            }
-            
-            parts.Add(gs.LastCapturePlayerIndex.ToString());
-            parts.Add(gs.RoundEnded ? "1" : "0");
-            parts.Add(gs.RoundIndex.ToString());
-            return string.Join("||", parts);
+            return GameStateSerializer.Serialize(gs);
         }
 
-        /// <summary>
-        /// Serializza una lista di carte.
-        /// </summary>
-        private string SerializeCardList(List<Card> cards)
-        {
-            if (cards == null || cards.Count == 0)
-                return "";
-            
-            var cardStrings = new List<string>();
-            foreach (var card in cards)
-            {
-                cardStrings.Add($"{card.Suit}:{card.Rank}");
-            }
-            return string.Join(",", cardStrings);
-        }
-
-        /// <summary>
-        /// Serializza un PlayerState.
-        /// </summary>
-        private string SerializePlayer(PlayerState player)
-        {
-            // Format: hand|capturedCards
-            var parts = new List<string>();
-            parts.Add(SerializeCardList(player.Hand));
-            parts.Add(SerializeCardList(player.CapturedCards));
-            parts.Add(player.ScopaCount.ToString());
-            parts.Add(player.AccusiPoints.ToString());
-            parts.Add(player.RoundAccusiPoints.ToString());
-            parts.Add(player.TotalScore.ToString());
-            parts.Add(SerializeCardList(player.ScopaCards));
-            return string.Join(";", parts);
-        }
-
-        /// <summary>
-        /// Deserializza il GameState da JSON.
-        /// </summary>
-        private GameState DeserializeGameState(string json)
+        private GameState DeserializeGameState(string data)
         {
             try
             {
-                string[] parts = json.Split(new[] { "||" }, System.StringSplitOptions.None);
-                if (parts.Length < 5)
-                {
-                    Debug.LogError($"Invalid GameState format: not enough parts ({parts.Length})");
-                    return null;
-                }
-
-                int numPlayers = int.Parse(parts[0]);
-                int dealerIndex = int.Parse(parts[1]);
-                int currentPlayerIndex = int.Parse(parts[2]);
-                
-                var deckCards = DeserializeCardList(parts[3]);
-                var tableCards = DeserializeCardList(parts[4]);
-                
-                var playerDataList = new List<(List<Card> hand, List<Card> captured)>();
-                for (int i = 0; i < numPlayers; i++)
-                {
-                    if (parts.Length <= 5 + i)
-                    {
-                        Debug.LogError($"Missing player {i} in GameState");
-                        return null;
-                    }
-                    var playerData = DeserializePlayerData(parts[5 + i]);
-                    playerDataList.Add(playerData);
-                }
-
-                // Create GameState (constructor creates empty lists)
-                var gameState = new GameState(numPlayers)
-                {
-                    DealerIndex = dealerIndex,
-                    CurrentPlayerIndex = currentPlayerIndex
-                };
-
-                // Populate Deck (it's a get-only property but we can add to the list)
-                gameState.Deck.Clear();
-                gameState.Deck.AddRange(deckCards);
-                
-                // Populate Table
-                gameState.Table.Clear();
-                gameState.Table.AddRange(tableCards);
-
-                // Populate Players
-                for (int i = 0; i < numPlayers; i++)
-                {
-                    gameState.Players[i].Hand.Clear();
-                    gameState.Players[i].Hand.AddRange(playerDataList[i].hand);
-                    
-                    gameState.Players[i].CapturedCards.Clear();
-                    gameState.Players[i].CapturedCards.AddRange(playerDataList[i].captured);
-                    var values = parts[5 + i].Split(';');
-                    var player = gameState.Players[i];
-                    if (values.Length > 5)
-                    {
-                        player.ScopaCount = int.Parse(values[2]);
-                        player.AccusiPoints = int.Parse(values[3]);
-                        player.RoundAccusiPoints = int.Parse(values[4]);
-                        player.TotalScore = int.Parse(values[5]);
-                        if (values.Length > 6) player.ScopaCards.AddRange(DeserializeCardList(values[6]));
-                    }
-                }
-
-                if (parts.Length > 7 + numPlayers)
-                {
-                    gameState.LastCapturePlayerIndex = int.Parse(parts[5 + numPlayers]);
-                    gameState.RoundEnded = parts[6 + numPlayers] == "1";
-                    gameState.RoundIndex = int.Parse(parts[7 + numPlayers]);
-                }
-                return gameState;
+                return GameStateSerializer.Deserialize(data);
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"Error deserializing GameState: {ex.Message}\n{ex.StackTrace}");
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Deserializza una lista di carte.
-        /// </summary>
-        private List<Card> DeserializeCardList(string data)
-        {
-            var cards = new List<Card>();
-            if (string.IsNullOrEmpty(data))
-                return cards;
-
-            string[] cardStrings = data.Split(',');
-            foreach (var cardString in cardStrings)
-            {
-                if (string.IsNullOrEmpty(cardString))
-                    continue;
-
-                string[] cardParts = cardString.Split(':');
-                Suit suit = (Suit)System.Enum.Parse(typeof(Suit), cardParts[0]);
-                int rank = int.Parse(cardParts[1]);
-                cards.Add(new Card(suit, rank));
-            }
-            return cards;
-        }
-
-        /// <summary>
-        /// Deserializza dati di un player.
-        /// Returns: (hand, capturedCards)
-        /// </summary>
-        private (List<Card> hand, List<Card> captured) DeserializePlayerData(string data)
-        {
-            string[] parts = data.Split(';');
-            var hand = DeserializeCardList(parts[0]);
-            var captured = DeserializeCardList(parts.Length > 1 ? parts[1] : "");
-            return (hand, captured);
         }
 
         #endregion

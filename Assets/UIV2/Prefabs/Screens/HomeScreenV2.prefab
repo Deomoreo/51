@@ -207,6 +207,7 @@ MonoBehaviour:
   rewardsButton: {fileID: 7095493850224665441}
   rankingButton: {fileID: 9222023896756792001}
   mailButton: {fileID: 2855722926361727448}
+  settingsButton: {fileID: 0}
   modeSelector: {fileID: 6409182735365758575}
   deckSelector: {fileID: 2450427487291524564}
   playButton: {fileID: 5314350839724793654}
@@ -362,8 +363,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: VIDEO LOOP A TUTTO SCHERMO
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -393,7 +394,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -667,8 +668,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: (scena animata dietro tutta la UI)
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1047,7 +1048,7 @@ PrefabInstance:
     - target: {fileID: 7869355305632965938, guid: fb0f4065df798c04f8658e1f52489a7f, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 2100000, guid: 86de0c43e12af794d961d8619e5251df, type: 2}
+      objectReference: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
     - target: {fileID: 7869355305632965938, guid: fb0f4065df798c04f8658e1f52489a7f, type: 3}
       propertyPath: m_enableVertexGradient
       value: 1
