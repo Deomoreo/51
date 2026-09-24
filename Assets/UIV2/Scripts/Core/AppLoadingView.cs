@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DG.Tweening;
+using Project51.UIV2.Animations;
 using Project51.Auth;
 using Project51.Core;
 using TMPro;
@@ -43,7 +44,10 @@ namespace Project51.UIV2.Core
         }
         private void Show(string text)
         {
-            fade?.Kill(); View.gameObject.SetActive(true); View.alpha = 1;
+            bool wasVisible = IsVisible;
+            fade?.Kill(); View.gameObject.SetActive(true);
+            if (!wasVisible) View.alpha = 0;
+            fade = View.DOFade(1, UIV2Motion.Fade).SetUpdate(true);
             View.blocksRaycasts = true; View.interactable = true; Status.text = text;
             RetryButton.gameObject.SetActive(false); CancelButton.gameObject.SetActive(false);
             AppLoading.SetCovering(true);
@@ -53,7 +57,7 @@ namespace Project51.UIV2.Core
             fade?.Kill();
             // Il velo conta come "alzato" finche' non e' davvero sparito: chi aspetta di poter
             // partire (l'intro del tavolo) non deve cominciare durante la dissolvenza.
-            fade = View.DOFade(0, .2f).SetUpdate(true)
+            fade = View.DOFade(0, UIV2Motion.Fade).SetUpdate(true)
                 .OnComplete(() => { View.gameObject.SetActive(false); AppLoading.SetCovering(false); });
         }
         private void AuthenticationBusy(bool busy, string message)
@@ -112,7 +116,8 @@ namespace Project51.UIV2.Core
             // devono accompagnare il caricamento e riaffiorare sulla schermata nuova.
             Project51.Unity.GameAudio.StopAllEffects();
             indeterminate = false; Progress.fillAmount = 0;
-            yield return null; // Paint the overlay before loading assets.
+            // Finish covering the old scene before loading/activation can replace it.
+            while (fade != null && fade.IsActive() && !fade.IsComplete()) yield return null;
             if (!Application.CanStreamedLevelBeLoaded(scene))
             {
                 loadingScene = false; operation = null; Fail("Impossibile aprire questa schermata."); yield break;
@@ -151,7 +156,8 @@ namespace Project51.UIV2.Core
         {
             if (!IsVisible) return;
             if (indeterminate) Progress.fillAmount = .25f + .35f * Mathf.PingPong(Time.unscaledTime * .45f, 1);
-            for (int i = 0; i < Cards.Length; i++) Cards[i].anchoredPosition = cardPositions[i] + Vector2.up * (Mathf.Sin(Time.unscaledTime * 3 + i * .7f) * 9);
+            for (int i = 0; i < Cards.Length; i++) Cards[i].anchoredPosition = cardPositions[i] + Vector2.up *
+                (Project51.Core.GamePreferences.ReducedGraphics ? 0f : Mathf.Sin(Time.unscaledTime * 3 + i * .7f) * 9);
         }
         private void OnDestroy()
         {

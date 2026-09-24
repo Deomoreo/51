@@ -68,7 +68,7 @@ namespace Project51.Auth
         public ProfileService Profile { get; private set; }
 
         /// <summary>
-        /// True se l'utente ha gi‡ fatto almeno un login su questo device (anche guest).
+        /// True se l'utente ha gi√† fatto almeno un login su questo device (anche guest).
         /// Se true, mostra TapToEnter; se false, mostra auth UI per la prima scelta.
         /// </summary>
         public bool ShouldShowTapToEnter => PlayFabAuth != null && PlayFabAuth.HasEverLoggedIn;
@@ -370,7 +370,7 @@ namespace Project51.Auth
 
                     _authUI?.ShowLoading(false);
                     _authUI?.ShowError(
-                        "Photon non Ë configurato su PlayFab (PhotonApplicationNotFound).\n" +
+                        "Photon non √® configurato su PlayFab (PhotonApplicationNotFound).\n" +
                         "Per il prototipo continuiamo senza multiplayer.\n\n" +
                         "Quando vorrai abilitarlo:\n" +
                         "1) PlayFab Game Manager > Add-ons > Photon > configura l'AppId\n" +

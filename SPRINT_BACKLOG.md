@@ -9,7 +9,134 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 19/09, versione 1.98
+## ▶ PUNTO DI RIPRESA — 24/09, versione 2.17
+
+**2.17:** sfondo Home rifatto sul mockup (Assets/Mockup, 941x1672). Artwork tra bordo alto della safe area e nav
+(Region/AboveNav, 170), cornice ancorata in alto: colonne intere sui telefoni alti, arco e gemma visibili su 9:16
+e iPad (l'eccedenza scende dietro la nav). Verde dell'arco (Filler) nella barra di stato, bordo alto sfumato
+(`Assets/Art/Generated/Home_TopFade.png`, 24 px d'artwork). Decorazioni ricollocate sul mockup; entrambi i nastri
+da home_ribbon_right (sinistro specchiato). Verificato nel Simulator: iPhone 12, iPhone SE, iPad Mini 4.
+Limiti: nastri non si avvolgono davanti/dietro le colonne, bastone con foglie (mockup liscio).
+
+**2.16:** Home top bar: per gli ospiti esagono livello + barra XP nascosti (XpMax=0 in HomeV2Integration), verificato live.
+
+**2.15:** sfondo Home a 1882x3344 (import 4096, ASTC). Stile icone scelto: CREMA. Rinominati ic_nav_back_cream,
+ic_close_cream, ic_settings_cream. Mancano in crema: ic_chest, ic_mail, ic_trophy, ic_exit (poi cambio set in un colpo solo).
+
+**2.13-2.14 (decisioni del report 24/09 + sfondo Home animato):**
+- Ospite: niente più ingresso automatico (il login vero può ancora entrare da solo). Gli ospiti non prendono
+  XP né ricompense: nel Profilo niente barra, al suo posto "Registrati per guadagnare XP". ID PlayFab nel
+  Profilo: nascosto per gli ospiti, "#" + 8 caratteri per gli account.
+- Musica: interruttore vero anche nelle Impostazioni della Home, stessa preferenza del tavolo.
+- Etichetta "v1.83" → versione reale (`VersionLabelV2`, legge `Application.version`).
+- Sfondo Home animato (`Tools/UIV2/Build Home Ambient`, `UIV2FoundationBuilder.HomeAmbient.cs`): base a
+  riempimento senza bande, bagliore che respira, gemma sull'arco, nastri/denari/coppe/bastoni/spade ai bordi con
+  micro-movimenti sfasati (`UIV2AmbientFloat`, DOTween, niente Update). Solo sulla pagina Gioca, fermo con Grafica
+  ridotta (pose di riposo esatte). Centro libero per la Home. Posizioni/escursioni nella tabella
+  `HomeAmbientLayers` del builder; decorazioni importate a 256/512 px con mipmap.
+- Non collegati per ora: ic_volume, ic_questionmark, bar_pill_cream, badge_red (aspetta Posta/Premio), divider_gold.
+- EditMode 281 passati, 0 falliti, 7 saltati. Verificato nel Simulator su iPhone 12 e iPhone SE.
+  **Prossimo passo:** centro della Home (lo fa l'utente), asset mancanti del report 24/09.
+
+**2.12 (E1+D1, 5 effetti, correzioni grafiche della sezione 1, asset nuovi):**
+- XP: una sola curva `PlayerXp` 100+20×(L−1); fine partita 40 vittoria / 20 sconfitta, +2 a scopa e +5 ad accuso
+  (max +20), metà in allenamento; l'abbandono conta come sconfitta. Riga "+XP" nei risultati con riempimento e lampo,
+  scoppio al level up. Ospite: nome "Ospite XXXX", XP locale (`PlayerProgressLocal` ora si crea da solo).
+- Home: numero del livello nell'esagono di bars.png; icone della colonna uniformi (riquadro 60×54), Premio non più tagliato.
+- Tavolo: panno 60 px troppo in basso (scala camera vecchia nel builder) → banner bot 2/4 e bagliore Emoji/ACCUSO
+  non stanno più sul bordo; intestazione più grande su sfumatura navy; ritratti avatar_0N nei banner.
+- Emoticon nuove animate (Animator, 10 fps) al tavolo, frame 0 nei pannelli di scelta; set icone v2 al posto delle vecchie.
+- Effetti: contorno che pulsa sulle carte giocabili, scia di 0,4 s sulla scopa, passaggi in dissolvenza di 0,25 s,
+  vecchi canvas del MainMenu spenti davvero. Tutti spenti con Grafica ridotta.
+- `SafeAreaFitter`/`SafeAreaTopOnly` ricalcolano anche al cambio di risoluzione: prima la Home restava schiacciata
+  nel 64% sinistro su 16:9 dopo un cambio schermo (barre Android, foldable, Simulator). Verificato iPhone 12 → SE.
+- EditMode 282 passati, 0 falliti, 7 saltati. **Prossimo passo: decisioni aperte nel report del 24/09**
+  (identità ospite stabile, uso di ic_volume/ic_questionmark e dei pezzi inutilizzati di bars.png, centro Home vuoto).
+
+**Fix 2.10 (robustezza flusso multiplayer, TurnController):** se il Master rifiuta una mossa del
+giocatore di turno, rimanda a tutti il suo GameState (resync autoritativo; i duplicati da doppio tocco
+fuori turno vengono ignorati). Il tocco del giocatore durante un'animazione non va più perso: viene
+tenuto e rigiocato appena finisce, e prima dell'invio in rete si scarta se non è più valido.
+**Da riprovare su due telefoni.**
+
+**Fix 2.09 (presa doppia bloccata in multiplayer):** il tocco sul pannello "scegli la presa"
+passava anche alla carta in mano sotto (`OnMouseDown` ignora la UI) e inviava uno scarto forzato
+illegale: chi giocava lo applicava, l'altro client lo rifiutava → partite divergenti. Ora:
+guard UI in `CardView.OnMouseDown`, niente più scarti forzati (CardViewManager/TurnController),
+validazione mosse uguale su tutti i client, `RoundEndPanel` non intercetta più i tocchi da nascosto.
+(I due punti aperti del 2.09 sono chiusi nel 2.10.)
+
+**Fix build 2.08:** rimosso `SettingsModalUI.cs` (inutilizzato), che causava i 4 avvisi
+"same field name is serialized multiple times". Multiplayer su dispositivo non funzionante:
+nell'Editor partita rapida e privata funzionano. Causa probabile: la build release sceglieva
+la regione Photon migliore per ogni telefono (l'Editor usa DevRegion eu), quindi i dispositivi
+finivano in regioni diverse. Ora `FixedRegion = eu` in PhotonServerSettings. **Da riprovare
+su due telefoni con la stessa build 2.08.**
+
+**K7 completato (2.07):** l'ospite già entrato salta la schermata iniziale e arriva
+alla Home; GIOCA avvia la partita con un tocco. Accesso e registrazione cancellano la
+scorciatoia. La roulette del mazziere fa un solo giro breve, con lo stesso mazziere e
+la stessa autorità. I risultati di smazzata proseguono da soli dopo un conto di 8 s,
+una sola volta, solo offline o sull'host. La rivincita finale resta manuale. Verificato
+con test EditMode e runtime su GameScene e MainMenu. Da provare con due client Photon
+reali. Dettagli: `docs/ui/k7-flow-progress.md`.
+
+**I5 completato (2.06):** Grafica ridotta è una scelta unica e persistente nelle
+Impostazioni di Home e tavolo, con migrazione di Animazioni veloci. Spegne particelle,
+coriandoli, shader decorativi, sfondo animato, sfocature e pulsazioni; accorcia i tempi
+senza interrompere il volo K5. Indicatori utili fermi e vibrazione indipendente.
+Ripristino anche a pannello aperto; effetti nuovi e riaperti rispettano la scelta.
+**271 EditMode passati, zero fallimenti; runtime I5, 3 K5 e controlli K6 passati.**
+Misure di batteria/prestazioni su telefono ancora da fare. Dettagli:
+`docs/ui/i5-reduced-graphics.md`.
+
+**K6 implementato (2.05):** feedback aptico sui tocchi accettati e sui momenti locali,
+interruttore Vibrazione condiviso tra Home e tavolo; particelle finite su scopa,
+accuso, vittoria locale e EXP realmente assegnata. Pool limitato a quattro emettitori,
+disattivabile per I5. Volo K5 preservato. **261 EditMode passati, zero fallimenti;
+3 runtime K5 e controlli runtime K6 passati.** Vibrazione fisica e build native ancora
+da verificare su telefono. Dettagli: `docs/ui/k6-feedback-plan.md`. I5 completato nella 2.06.
+
+**Correzione K5 (2.04):** segnalati scatti nel volo delle carte. La suddivisione della 2.03
+fermava quasi la carta a metà volo e interrompeva lo spostamento all'80% della durata.
+Ripristinata la traiettoria continua precedente, mantenendo ombre e cleanup; audio all'arrivo.
+Nuovo test di continuità fallito sulla 2.03 e passato dopo la correzione. **255 EditMode e
+3 runtime K5 passati**; campionamento del volo conferma assenza della pausa intermedia.
+
+**Ripresa del 23/09:** G4 verificato nei commit esistenti; K3 completato con UIEffect 5.9.0
+e UIParticle 4.11.4 già presente. Compilazione senza errori e **228/228 test EditMode passati**.
+**K1 completato (2.00):** tempi comuni, pressione/rilascio dei pulsanti, pannelli e pagine,
+contatori dei risultati, contatori valuta pronti e volo premi riutilizzabile. Builder
+`Tools/UIV2/Apply Motion Kit` sui prefab e completamento automatico una volta per scena.
+**Verifiche:** 229 test EditMode passati; test runtime esplicito passato separatamente in Play Mode.
+**K2 completato (2.01):** tema condiviso, pulsanti oro/blu/piatto/icona, due pannelli,
+scala Poppins 40/32/24/20; oro C9 anche su CONTINUA e RIVINCITA. Builder
+`Tools/UIV2/Apply Design System`, completamento a runtime senza risalvare scene.
+**Verifiche K2:** 237 test EditMode passati e test runtime K1 passato separatamente;
+controllo visivo in Play Mode di avvio, accesso, impostazioni, Home, Collezione, Profilo e risultati.
+Regole e compatibilità in `docs/ui/design-system.md`.
+**K4 consegnato (2.02, 23/09):** riflessi sui pulsanti oro e sulle carte selezionate/toccate,
+bagliori dalla silhouette reale, dissolvenza/bruciatura della matta, shader olografico opt-in,
+fondo Home con luce lenta e sfocatura GPU senza lettura dei pixel sulla CPU.
+Builder `Tools/UIV2/Apply Shader Kit` eseguito; completamento automatico a runtime.
+**Verifiche:** 249 test EditMode passati, zero fallimenti; 3 test runtime K4 passati separatamente.
+Il runtime K1 è rimasto esplicito e non rieseguito in questo giro. Avvio, Home, tavolo e sfocatura
+Impostazioni controllati in Play Mode; corretto e ricontrollato il capovolgimento Direct3D.
+**Da collegare più avanti:** olografico ai mazzi/oggetti realmente rari con F2/F5/J5 (oggi manca
+la rarità nei dati). **Da provare in G2/I7:** Android, costo GPU e orientamento sugli altri backend,
+giro visivo completo matta/accusi/risultati e bordi delle liste mascherate.
+Dettagli K4 in `docs/ui/k4-shaders-plan.md`.
+**K5 consegnato (2.03, 23/09):** panno con trama deterministica e luce centrale, ombre morbide
+condivise sulle carte e sulle copie animate, risposta della mano con piccolo assestamento,
+discesa più decisa e posa finale della giocata nei medesimi 0,35 secondi (audio all'impatto).
+Corretti conflitti hover/selezione/matta, ripristino su interruzione/riuso e rilascio del feltro
+rigenerato. Integrazione nei componenti esistenti: nessuna scena/prefab modificata a mano.
+**Verifiche K5:** 254 EditMode passati, zero fallimenti; 3 runtime K5 e 2 runtime carte K4
+passati separatamente. Tavolo e presa completa controllati in Play Mode; zero ombre isolate,
+zero copie residue e console senza errori. Android e multiplayer reale restano in G2/I7.
+Dettagli e immagini in `docs/ui/k5-table-plan.md`. **Prossimo task: K6 — vibrazione e particelle.**
+Il volo di premi reali attende E2/F1; nessuna
+valuta o ricompensa finta aggiunta. Nessuna build Android eseguita in questo giro.
 
 **Ultimo lavoro fatto (19/09):**
 - G1 chiuso (1.93): tavolo provato su tablet 3:4, 20:9 e iPhone; mano più vicina al fondo sui telefoni lunghi.
@@ -19,20 +146,20 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 - C9 chiuso (1.97): scritte GIOCA e GIOCA COME OSPITE con il contorno bruno del mockup.
 - G6 chiuso (1.98): tavolo sfocato dietro il fine smazzata.
 
-**⚠ ATTENZIONE, prima di tutto: G4.** Tutto il lavoro dopo il checkpoint `b21dc11` (circa 330 file:
-UIV2, audio, legale, builder, dorsi...) **non è ancora in un commit git**. Branch: `codex/home-v2-training`.
-Se il disco si rompe o qualcuno fa un reset, si perde. Va fatto un commit appena possibile.
+**G4 verificato il 23/09:** il lavoro dopo il checkpoint `b21dc11` è già salvato nei commit
+`b8d7b49` e `8743964` (415 file modificati rispetto al checkpoint), sul branch
+`codex/home-v2-training`. Il precedente avviso di lavoro non committato era rimasto obsoleto.
 
 **Come riprendere (per chiunque, anche senza Claude):**
 - Questo file è la lista viva. `UI_INTEGRATION_ROADMAP.md` è il resoconto dettagliato delle consegne.
 - La UI si costruisce con gli script del menu Unity `Tools/UIV2/...` (cartella `Assets/Editor`):
   non modificare a mano le scene o i prefab che quegli script generano, rilancia lo script.
 - Versione in `ProjectSettings > bundleVersion`: +0,01 a ogni giro di modifiche.
-- Test: `Window > General > Test Runner > EditMode`, oggi 228 su 228 passati.
+- Test: `Window > General > Test Runner > EditMode`, 255 passati; 3 runtime K5 passati nella 2.04. Ultima verifica dei 2 runtime carte K4 nella 2.03; runtime K1 e blur K4 non rieseguiti.
 - Mockup in `Assets/Mockup/`. Da ora sono un punto di partenza, non un vincolo (vedi I8).
 
 **Ordine deciso il 19/09 (prima la qualità, poi i sistemi):**
-1. **G4** commit di tutto (10 minuti, toglie il rischio più grosso)
+1. **G4** ☑ commit del lavoro precedente verificati il 23/09 (`b8d7b49`, `8743964`)
 2. **Qualità** sull'app che c'è già: K3 librerie → K1 kit di movimento → K2 sistema di design →
    K4 shader → K5 tavolo → K6 vibrazione e particelle → I5 grafica ridotta → K7 flusso veloce
 3. **I7** giro di prova vero dell'app (anche il bug della Cirulla a tavolo vuoto)
@@ -70,7 +197,7 @@ Se il disco si rompe o qualcuno fa un reset, si perde. Va fatto un commit appena
 | B2 | Accuso manuale più evidente, finestra di almeno 5 secondi | ☑ 1.80 |
 | B3 | Animazione pugno: tutte le carte (mani e tavolo) saltano a caso restando visibili al proprio posto, poi si riprende a giocare | ☑ 1.80 |
 | B4 | Effetto del 7 di coppe (matta) che si trasforma in un'altra carta per l'accuso | ☑ 1.80 |
-| B5 | Impostazioni in partita (mockup 26): animazioni veloci, suggerimenti mosse, musica, effetti, abbandona partita. Toglie anche l'ESCI in più dai risultati | ☑ 1.81 (musica ed effetti salvano solo la scelta: nel gioco non ci sono ancora suoni; l'abbandono non registra la sconfitta finché non c'è D1/E1) |
+| B5 | Impostazioni in partita (mockup 26): animazioni veloci, suggerimenti mosse, musica, effetti, abbandona partita. Toglie anche l'ESCI in più dai risultati | ☑ 1.81 (musica ed effetti salvano solo la scelta: nel gioco non ci sono ancora suoni; l'abbandono conta come sconfitta dal 2.12) |
 | B6 | Reveal accuso del mazziere: tempi e grafica definitivi | ☑ 1.82 |
 | B7 | Multiplayer: i client che non sono host non vedono la sequenza del mazziere | ☑ 1.82 (provato simulando un client nell'Editor, non ancora con due dispositivi veri) |
 
@@ -90,18 +217,18 @@ Se il disco si rompe o qualcuno fa un reset, si perde. Va fatto un commit appena
 | C10 | Bagliori dietro i pulsanti: sembravano una lastra rettangolare | ☑ 1.92 gradiente smoothstep generato (`glow_soft_pill`), parte sotto il pulsante e sfuma in 20-35 px |
 | C11 | Titoli sui nastri dei pannelli (Modalità, Mazzo, Impostazioni, stanze, risultati, roulette...) | ☑ 1.92 `Tools/UIV2/Calibrate Panel Titles`: 14 titoli in ExtraBold bianco con contorno verde scuro, centrati sul nastro come nei mockup |
 | C12 | Chiudere i pannelli toccando fuori | ☑ 1.92 `DismissOnBackdrop` (`Tools/UIV2/Build Backdrop Dismiss`): Modalità, Mazzo, Crea/Entra stanza, Emoticon, Personalizza. Esclusi di proposito ricerca partita, sale d'attesa, risultati, roulette |
-| C13 | Barra in basso sollevata dal fondo, icone piccole | ☑ 1.92 `BottomNavSafeAreaBleed`: sfondo fino al bordo e contenuto più in basso sui telefoni con barra di sistema; icone 62→72, linguetta oro 238x117→262x128 (9-slice) |
+| C13 | Barra in basso sollevata dal fondo, icone piccole | ☑ 1.92 `BottomNavSafeAreaBleed`: sfondo fino al bordo e contenuto più in basso sui telefoni con barra di sistema; icone 62→72, linguetta oro 238x117→262x128 (9-slice); 2.12: 254x119, riempimento oro 226x82 come il mockup |
 
 ## Sprint 4 — Profilo, social, progressione
 
 | # | Cosa | Stato |
 |---|------|-------|
-| D1 | Profilo: dati reali (livello, XP, statistiche) | ☐ |
+| D1 | Profilo: dati reali (livello, XP, statistiche) | ☑ 2.12 livello nell'esagono in Home, nome ospite "Ospite XXXX". 2.13: ospiti senza XP né ricompense (invito a registrarsi al posto della barra), ID accorciato a "#XXXXXXXX" e nascosto agli ospiti. Aperto: l'ospite è un account nuovo a ogni avvio (nome e statistiche cloud non restano) |
 | D2 | Scelta di icona e banner nel profilo, visibili al tavolo | ☐ |
 | D3 | Posta (mockup 06): messaggi e ricompense dal server | ☐ |
 | D4 | Amici (mockup 07): lista, richieste, invito in stanza (attiva "Amici" in sala d'attesa) | ☐ |
 | D5 | Classifica, tornei, eventi | ⏸ futuro |
-| E1 | XP a fine partita e livelli (compreso l'allenamento, oggi non assegna XP) | ☐ |
+| E1 | XP a fine partita e livelli (compreso l'allenamento, oggi non assegna XP) | ☑ 2.12 curva unica `PlayerXp` 100+20×(L−1) per locale, cloud e Home; 40 vittoria / 20 sconfitta, +2 scopa, +5 accuso (max +20), metà in allenamento; riga "+XP" nei risultati con riempimento, lampo e scoppio al level up |
 | E2 | Ricompense giornaliere (mockup 08) | ☐ |
 | E3 | Missioni (servono anche per sbloccare i mazzi) | ☐ |
 | E4 | Penalità per abbandoni ripetuti | ☐ |
@@ -128,11 +255,11 @@ Se il disco si rompe o qualcuno fa un reset, si perde. Va fatto un commit appena
 | I2 | Icone nei riquadri piccoli non centrate | ☑ 1.96 causa: i riquadri `sq_blue`/`sq_gold` hanno il bordo 3D più spesso sotto, quindi la faccia chiara sta 4-7 px più in alto del centro del rettangolo e le icone sembravano basse (più i margini trasparenti delle icone). `Tools/UIV2/Center Icons On Button Faces` mette il centro visibile di ogni icona sul centro della faccia: 14 icone (Home, Profilo, X di chiusura, schermata iniziale, tavolo). Controllato a schermo prima/dopo. Coperti solo i riquadri blu e oro in MainMenu e GameScene: se ne vedi altri storti, dimmi quali |
 | I3 | Emoticon al tavolo: si apriva un pannello che copriva il tavolo e fermava il gioco. Ora c'è una **scelta rapida** | ☑ 1.95 striscia sopra Emoji con le 3 equipaggiate (stile dei banner), un tocco invia e chiude, si chiude da sola dopo 3,5 s, un tocco fuori la chiude e passa comunque sotto, niente velo. `Tools/UIV2/Build Emoticon Quick Bar`. Segue il pulsante anche quando scende sui telefoni lunghi. Il vecchio pannello `GamePresentationV2/Emoticons` resta in scena ma non si apre più (è il ripiego se la striscia manca). Il tocco fuori non è stato provato con un dito vero (solo in Editor) |
 | I4 | Profilo rapido al tavolo: tocco sul banner di un giocatore → scheda piccola (mockup `10_profilo_rapido`) | ☐ non esiste ancora (dipende da D1/D2 per i dati veri) |
-| I5 | Impostazioni → **Grafica ridotta**: spegne particelle, bagliori pulsanti, sfocature, sfondo animato, shader e accorcia le animazioni (per telefoni lenti e batteria). Va fatta insieme a K1-K6, così ogni effetto nuovo nasce già spegnibile | ☐ oggi c'è solo "animazioni veloci" nelle impostazioni del tavolo. Proposta da confermare: una sola scelta, valida sia nelle Impostazioni della Home sia in quelle al tavolo |
-| I6 | Sfondo animato nella Home | ☐ c'è solo il pulviscolo oro (C6). Da decidere cosa si muove: gradiente lento, luci, parallasse. Può servire un asset |
-| I7 | **Giro di prova completo dell'app** (avvio → accesso → Home → partita → risultati → rivincita/Home, e online): trovare tutto ciò che è lento, macchinoso, poco chiaro o grezzo, e correggerlo. Obiettivo: velocità, fluidità e chiarezza al massimo | ☐ Già notato il 19/09: la Cirulla di un bot a inizio smazzata è partita (pugno e carte dell'accuso) quando al tavolo non c'era ancora nessuna carta, né mano né tavolo: il pugno "fa saltare" un tavolo vuoto. Da verificare l'ordine distribuzione → finestra accuso |
+| I5 | Impostazioni → **Grafica ridotta**: spegne particelle, bagliori pulsanti, sfocature, sfondo animato, shader e accorcia le animazioni (per telefoni lenti e batteria). Va fatta insieme a K1-K6, così ogni effetto nuovo nasce già spegnibile | ☑ 2.06 — unica scelta Home/tavolo con migrazione di Animazioni veloci; spegnimento e ripristino anche durante l'uso, inclusi effetti precedenti a K4/K6. Indicatori utili statici, volo K5 continuo, vibrazione indipendente. 271 EditMode passati, runtime I5/K5/K6 verificati. Misure su telefono ancora da fare. `docs/ui/i5-reduced-graphics.md` |
+| I6 | Sfondo animato nella Home | ☑ 2.02 — shader con gradiente/luci lenti sul BackgroundLayer, insieme al pulviscolo C6; nessun video o asset aggiuntivo |
+| I7 | **Giro di prova completo dell'app** (avvio → accesso → Home → partita → risultati → rivincita/Home, e online): trovare tutto ciò che è lento, macchinoso, poco chiaro o grezzo, e correggerlo. Obiettivo: velocità, fluidità e chiarezza al massimo | ◐ 2.12: chiusi numero livello in Home, targa oro barra in basso, vecchi canvas MainMenu (spenti; restano Canvas_Login e ModePanelRoot perché servono), avatar al tavolo, banner bot 2/4 e bagliore Emoji/ACCUSO sul bordo (panno 60 px troppo in basso), intestazione tavolo, riga XP nei risultati, etichetta GameFormat (ok). 2.11: Cirulla a tavolo vuoto e doppio accuso MP ☑. 2.13: "Musica" nelle Impostazioni della Home ☑, etichetta v1.83 → versione reale ☑; 2.14: sfondo Home animato ☑. Ancora aperti: monete e gemme (J4), centro Home vuoto (lo fa l'utente), resync a metà distribuzione che non ferma le coroutine, ritardo del pugno sul client in ritardo, riprova Cirulla a tavolo vuoto |
 | I8 | Direzione: i mockup servivano a dare vita all'app, da ora le migliorie le decidiamo noi. UI pulita, niente dettagli inutili | regola |
-| I9 | Icone nuove senza "quadrato + icona dentro" (non piacciono) | ⏸ futuro: servono asset nuovi |
+| I9 | Icone nuove senza "quadrato + icona dentro"; navigazione e chiusure coerenti | Brief aggiornato il 23/09: `docs/ui/asset-refresh-brief.md`. Confermati «Indietro» nelle schermate e «Chiudi» nei popup al posto delle X di chiusura. Proposta: icone illustrate libere, meno cornici e materiali coerenti. Asset e integrazione ancora da fare. 2.12: set icone v2 integrato (`Tools/UIV2/Apply Icon Set v2`), emoticon animate; resta la rimozione dei riquadri (non approvata) |
 
 ### Sistemi: ognuno parte solo con il tuo via
 
@@ -152,13 +279,13 @@ rifiniti da noi; l'artista UI arriva dopo il lancio (K10).
 
 | # | Cosa | Stato |
 |---|------|-------|
-| K1 | **Kit di movimento** unico, applicato ovunque da un builder: pulsanti che si schiacciano e rimbalzano al tocco, pannelli che entrano ed escono con un piccolo rimbalzo, numeri che contano, ricompense che volano verso il contatore, passaggi morbidi tra pagine e scene. Oggi quasi tutto compare di colpo | ☐ |
-| K2 | **Sistema di design fissato**: 3-4 tipi di pulsante (primario oro, secondario blu, piatto, icona), 2 tipi di pannello, scala dei testi (titolo, sottotitolo, testo, didascalia), palette. Poi ogni schermata si riallinea a quello. Comprende lo stile oro di C9 su tutti i pulsanti oro (CONTINUA, RIVINCITA...) | ☐ |
-| K3 | Librerie gratuite MIT: **UIEffect** (riflessi, dissolvenze, gradienti, ombre sulla UI) e **UIParticle** (particelle vere dentro i pannelli) | ☐ approvate |
-| K4 | **Shader nostri**: riflesso di luce che passa su pulsanti, carte e oggetti rari; bagliore calcolato sulla forma esatta del pulsante (sostituisce i bagliori allungati, mai più storti); dissolvenza o bruciatura per carte speciali (accuso, matta); olografico per i mazzi rari; sfondo animato della Home (I6); sfocatura su scheda video, più veloce | ☐ approvati |
-| K5 | **Tavolo più ricco**: panno con texture e luce al centro, ombre sotto le carte, mano che reagisce al tocco, carte giocate con più peso | ☐ |
-| K6 | **Risposta a ogni tocco**: vibrazione (con interruttore nelle Impostazioni) e particelle sui momenti forti (scopa, accuso, vittoria, premi) | ☐ |
-| K7 | **Flusso veloce**: dall'apertura alla partita in 2 tocchi (l'ospite già entrato salta la schermata iniziale), roulette del mazziere più breve o saltabile, risultati che proseguono da soli dopo qualche secondo | ☐ |
+| K1 | **Kit di movimento** unico, applicato ovunque da un builder: pulsanti che si schiacciano e rimbalzano al tocco, pannelli che entrano ed escono con un piccolo rimbalzo, numeri che contano, ricompense che volano verso il contatore, passaggi morbidi tra pagine e scene | ☑ 2.00 — `Tools/UIV2/Apply Motion Kit` + installazione una volta per scena. Contatori nei risultati e componenti pronti per valute/premi (dati reali con E2/F1). 229 test EditMode + test runtime esplicito passati; dettagli nella roadmap |
+| K2 | **Sistema di design fissato**: 3-4 tipi di pulsante (primario oro, secondario blu, piatto, icona), 2 tipi di pannello, scala dei testi (titolo, sottotitolo, testo, didascalia), palette. Poi ogni schermata si riallinea a quello. Comprende lo stile oro di C9 su tutti i pulsanti oro (CONTINUA, RIVINCITA...) | ☑ 2.01 — `Tools/UIV2/Apply Design System`, tema condiviso e completamento scene a runtime. Poppins 40/32/24/20 con eccezioni calibrate; materiali oro condivisi. 237 test EditMode + runtime K1 passati; regole in `docs/ui/design-system.md` |
+| K3 | Librerie gratuite MIT: **UIEffect** (riflessi, dissolvenze, gradienti, ombre sulla UI) e **UIParticle** (particelle vere dentro i pannelli) | ☑ 1.99 — UIEffect 5.9.0 installato tramite UPM, tag fissato; UIParticle 4.11.4 già presente, hash nel lockfile. Compilazione senza errori, 228/228 test EditMode |
+| K4 | **Shader nostri**: riflesso di luce che passa su pulsanti, carte e oggetti rari; bagliore calcolato sulla forma esatta del pulsante (sostituisce i bagliori allungati, mai più storti); dissolvenza o bruciatura per carte speciali (accuso, matta); olografico per i mazzi rari; sfondo animato della Home (I6); sfocatura su scheda video, più veloce | ☑ 2.02 — Shader Kit, silhouette alpha, matta, Home, blur GPU. 249 EditMode + 3 runtime K4 passati; avvio/Home/tavolo/blur controllati. Olografico e riflessi per oggetti rari pronti opt-in, collegamento a dati reali con F2/F5/J5. Prestazioni Android da misurare in G2 |
+| K5 | **Tavolo più ricco**: panno con texture e luce al centro, ombre sotto le carte, mano che reagisce al tocco, carte giocate con più peso | ☑ 2.04 — Panno e ombre K5; ripristinato volo continuo dopo gli scatti della 2.03. 255 EditMode + 3 runtime K5; dettagli in `docs/ui/k5-table-plan.md` |
+| K6 | **Risposta a ogni tocco**: vibrazione (con interruttore nelle Impostazioni) e particelle sui momenti forti (scopa, accuso, vittoria, premi) | ☑ 2.05 — toggle Home/tavolo, aptica locale, pool finito; 261 EditMode + runtime K5/K6 passati. Prova aptica/build su telefono pendente; dettagli in `docs/ui/k6-feedback-plan.md` |
+| K7 | **Flusso veloce**: dall'apertura alla partita in 2 tocchi (l'ospite già entrato salta la schermata iniziale), roulette del mazziere più breve o saltabile, risultati che proseguono da soli dopo qualche secondo | ☑ 2.07 (23/09): ospite diretto in Home, roulette a un giro, conto di 8 s solo host/offline, rivincita manuale. Manca la prova con due client reali. `docs/ui/k7-flow-progress.md` |
 | K8 | **Tutorial**: la prima volta una partita guidata contro un bot (prese, scope, accuso) + pagina Regole sempre consultabile | ☐ deciso |
 | K9 | Segnalazione crash e statistiche d'uso (dove la gente abbandona). Da dichiarare nella Privacy (H3) | ☐ |
 | K10 | Artista UI per guida di stile e pezzi chiave (pulsanti, pannelli, icone, cornici; vedi I9) | ⏸ dopo il lancio, quando i giocatori crescono |
@@ -206,7 +333,7 @@ Precisazioni sulle voci già esistenti:
 | G1 | Adattamento a schermi con proporzioni diverse | ☑ 1.93 — 1.92 tavolo su area di design 1080x1920 centrata: `CameraResponsiveFit` sulla camera (larghezza bloccata sui telefoni stretti, altezza sui tablet), `PortraitCanvasMatch` sui Canvas del tavolo, banner/pulsanti/roulette/bolle ancorati al centro (`Tools/UIV2/Apply Table Design Area`), carte in pixel del mockup (mano 272, tavolo 157: erano giganti). Verificato nel Simulator iPhone 1170x2532 e a 1080x1920. ☑ 1.93: provati in partita tablet 1536x2048 (3:4) e 1080x2400 (20:9), tutto allineato. Il limite 2,1 non è attivo (modalità "Native Aspect Ratio": il valore conta solo in Custom), quindi niente bande nere. Sui telefoni allungati il posto locale (banner, Emoji/Accuso, bolla, e con loro mano e prese) scende di metà dello spazio libero in basso, safe area esclusa, al massimo 120 px di design (`LocalSeatBottomShift`, applicato dal builder): 20:9 ≈ 120, iPhone ≈ 57, 9:16 e tablet 0 |
 | G2 | Build Android e prova su dispositivo | ☐ |
 | G3 | Invito tramite link in sala d'attesa | ☐ |
-| G4 | Commit del lavoro fatto dopo il checkpoint b21dc11 | ☐ |
+| G4 | Commit del lavoro fatto dopo il checkpoint b21dc11 | ☑ verificato il 23/09: `b8d7b49` e `8743964` |
 | G5 | Musica ed effetti sonori | ☑ 1.82 (31 file consegnati il 17/09 e collegati; `Resources/Audio/SoundLibrary` per regolare i volumi) |
 | G7 | Audio non ancora usato: premi in monete e gemme (servono con F1/E2), ui_confirm_01/03, match_start_TEMP e il doppione home_theme_loop.wav | ☐ |
 | G8 | Annulla/esci da "crea stanza" e "entra in stanza privata" tornava alla Home invece che al pannello Modalità | ☑ 1.83 |
@@ -292,6 +419,26 @@ Consiglio di **non** mettere l'energia che blocca le partite, almeno all'inizio.
 **Deciso (17/09):** niente energia, E5 diventa "tavoli con puntata in monete".
 
 ## Asset mancanti da creare
+
+**Aggiornamento 23/09 — revisione stile UI:** lista di produzione e specifiche in
+[`docs/ui/asset-refresh-brief.md`](docs/ui/asset-refresh-brief.md).
+Confermato: «Indietro» nelle schermate e «Chiudi» nei popup, nello stile del gioco.
+Le altre scelte del brief sono proposte di brainstorming; nessun nuovo asset ancora prodotto.
+
+| Priorità | Da preparare | Direzione |
+|---|---|---|
+| P0 | Campione coordinato: navigazione + Premio + Classifica + Posta | Validare insieme scala, materiali e leggibilità prima di produrre il set completo |
+| P1 | Chevron opzionale per «Indietro» | Panna, morbido, senza disco di legno, cornice o riquadro; testo separato |
+| P1 | Scrigno, coppa, busta | Silhouette autonome senza quadrato blu; oro e blu coerenti, etichetta sotto |
+| P1 | Ingranaggio, audio, aiuto, uscita, rimozione | Un'unica famiglia semplice; uscita/rimozione distinte dalla chiusura |
+| P2 | Carte, negozio, profilo/amici | Riallineare peso e materiali alle icone approvate, riusando ciò che funziona |
+| P2 | Indicatore di selezione, badge notifica, divisore | Piccoli supporti discreti; evitare una nuova cornice intorno a ogni elemento |
+
+**Non serve un PNG «Chiudi»:** testo localizzabile e componente esistente da adattare.
+Rimozione dei riquadri, area cliccabile, stati premuto/disabilitato e disposizione dei
+comandi sono lavoro UI, non illustrazioni da commissionare. Dettagli e criteri nel brief.
+
+### Consegne precedenti
 
 Consegnati il 17/09: Poppins Regular/Medium/SemiBold, bagliore morbido cerchio e rettangolo, velo "Sfocatura sfondo" (la sfocatura vera si fa via codice sotto al velo, fatta nella 1.81).
 

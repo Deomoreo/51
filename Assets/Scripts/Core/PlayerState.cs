@@ -17,6 +17,8 @@ namespace Project51.Core
         public int TotalScore { get; set; }
         public int AccusiPoints { get; set; }
         public int RoundAccusiPoints { get; set; }
+        /// <summary>Accusi dichiarati in questa smazzata (bonus XP di fine partita).</summary>
+        public int RoundAccusiCount { get; set; }
 
         public PlayerState(int playerId)
         {

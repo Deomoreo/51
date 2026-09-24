@@ -331,7 +331,7 @@ namespace Project51.EditorTools
             MockSprite(design, "Ribbon", LoadSprite(IconsPath, "ribbon_teal"), 230f, 116f, 620f, 227f, false);
             results.MatchTitle = MockText(design, "Title", "HAI VINTO!", 280f, 190f, 520f, 76f, 58f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             results.MatchTitle.fontSharedMaterial = NavyOutlineMaterial();
-            MockSprite(design, "Trophy", LoadSprite(IconsPath, "ic_trophy"), 445f, 300f, 190f, 200f, false);
+            MockSprite(design, "Trophy", NewIcon("ic_trophy"), 445f, 300f, 190f, 200f, false);
             results.MatchWinnerLine = MockText(design, "Winner", "", 90f, 542f, 900f, 52f, 34f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
 
             results.MatchRows = new ResultRowV2[4];
@@ -354,9 +354,36 @@ namespace Project51.EditorTools
             MockText(box, "TotalLabel", "Totale smazzata", 38f, 304f, 700f, 42f, 27f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
             results.DetailTotal = MockText(box, "TotalValue", "", 776f, 304f, 142f, 42f, 27f, FontStyles.Bold, OnScoreGold, TextAlignmentOptions.MidlineRight);
 
-            results.Rematch = MockButton(design, "Rematch", "btn_gold_long", 82f, 1595f, 442f, 95f, "RIVINCITA", 40f, BrownOutlineMaterial());
+            // E1: esperienza guadagnata, barra come nel Profilo. Scoppio di luce aggiunto da Build Mote Fields.
+            var xpRow = MockRect(design, "XpRow", 62f, 1574f, 956f, 52f);
+            results.XpRow = xpRow.gameObject;
+            results.XpGainLabel = MockText(xpRow, "Gain", "+40 XP", 0f, 0f, 200f, 52f, 34f, FontStyles.Bold, OnScoreGold, TextAlignmentOptions.MidlineLeft);
+            const float xpBarHeight = 40f;
+            var xpBar = (GameObject)PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{ComponentsPrefabDir}/UIV2_ProgressBar.prefab"), xpRow);
+            xpBar.name = "XpBar";
+            var xpBarRect = (RectTransform)xpBar.transform;
+            xpBarRect.anchorMin = xpBarRect.anchorMax = new Vector2(0f, 1f);
+            xpBarRect.pivot = new Vector2(0.5f, 0.5f);
+            xpBarRect.anchoredPosition = new Vector2(210f + 280f, -26f);
+            xpBarRect.sizeDelta = new Vector2(560f, xpBarHeight);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(xpBarRect);
+            StyleXpBar(xpBar, xpBarHeight);
+            results.XpBar = xpBar.GetComponent<UIV2ProgressBar>();
+            var flashRect = Stretch(xpBarRect, "Flash");
+            results.XpFlash = flashRect.gameObject.AddComponent<Image>();
+            var track = xpBar.GetComponent<Image>();
+            results.XpFlash.sprite = track.sprite;
+            results.XpFlash.type = Image.Type.Sliced;
+            results.XpFlash.pixelsPerUnitMultiplier = track.pixelsPerUnitMultiplier;
+            results.XpFlash.color = new Color(1f, 0.93f, 0.7f, 0f);
+            results.XpFlash.raycastTarget = false;
+            results.XpLevelLabel = MockText(xpRow, "Level", "Liv. 1", 786f, 0f, 170f, 52f, 32f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineRight);
+            xpRow.gameObject.SetActive(false);
+
+            results.Rematch = MockButton(design, "Rematch", "btn_gold_long", 82f, 1662f, 442f, 95f, "RIVINCITA", 40f, BrownOutlineMaterial());
             results.RematchLabel = results.Rematch.GetComponentInChildren<TMP_Text>();
-            results.MatchMenu = MockButton(design, "Menu", "btn_blue_long", 556f, 1595f, 442f, 95f, "MENU", 38f, NavyOutlineMaterial());
+            results.MatchMenu = MockButton(design, "Menu", "btn_blue_long", 556f, 1662f, 442f, 95f, "MENU", 38f, NavyOutlineMaterial());
         }
 
         // ------------------------------------------------------------------
@@ -402,7 +429,7 @@ namespace Project51.EditorTools
             label.fontSharedMaterial = NavyOutlineMaterial();
             if (!withClose) return null;
             var close = MockButton(design, "Close", "sq_blue", 935f, top + 36f, 80f, 72f, "", 0f, null);
-            MockSprite(close.transform, "Icon", LoadSprite(IconsPath, "ic_x"), 21f, 17f, 38f, 38f, false);
+            MockSprite(close.transform, "Icon", NewIcon("ic_X"), 21f, 17f, 38f, 38f, false);
             return close;
         }
 
@@ -495,7 +522,7 @@ namespace Project51.EditorTools
             row.Score.fontSizeMin = 24f;
             row.Score.fontSizeMax = 40f;
             row.Target = MockText(container, "Target", "/ 51", width - 190f, height * 0.5f + 8f, 166f, 30f, 19f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.MidlineRight);
-            row.Trophy = MockSprite(container, "Trophy", LoadSprite(IconsPath, "ic_trophy"), width - 128f, height * 0.5f - 40f, 44f, 44f, false).gameObject;
+            row.Trophy = MockSprite(container, "Trophy", NewIcon("ic_trophy"), width - 128f, height * 0.5f - 40f, 44f, 44f, false).gameObject;
             highlight.gameObject.SetActive(false);
             row.Trophy.SetActive(false);
             return row;

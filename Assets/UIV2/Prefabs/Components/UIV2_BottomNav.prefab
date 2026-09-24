@@ -514,6 +514,7 @@ GameObject:
   - component: {fileID: 5139536329040204527}
   - component: {fileID: 6432273958740050025}
   - component: {fileID: 2725893033260814458}
+  - component: {fileID: 7500090715492584952}
   m_Layer: 0
   m_Name: ProfileSlot
   m_TagString: Untagged
@@ -625,6 +626,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7500090715492584952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2265957320190194147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3070296825971496743
 GameObject:
   m_ObjectHideFlags: 0
@@ -808,6 +821,7 @@ GameObject:
   - component: {fileID: 5508942549938751166}
   - component: {fileID: 7820144469796039413}
   - component: {fileID: 1143783454276265998}
+  - component: {fileID: 6785745799376629003}
   m_Layer: 0
   m_Name: CardsSlot
   m_TagString: Untagged
@@ -919,6 +933,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6785745799376629003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3566455014309282190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3803792180145022582
 GameObject:
   m_ObjectHideFlags: 0
@@ -1558,6 +1584,7 @@ GameObject:
   - component: {fileID: 3218419424040504176}
   - component: {fileID: 3314485174482108048}
   - component: {fileID: 8241852836324301067}
+  - component: {fileID: 2661864974820895497}
   m_Layer: 0
   m_Name: ShopSlot
   m_TagString: Untagged
@@ -1669,6 +1696,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2661864974820895497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6987515447784762866}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7925438956580568671
 GameObject:
   m_ObjectHideFlags: 0
@@ -1681,6 +1720,7 @@ GameObject:
   - component: {fileID: 6490716072466996987}
   - component: {fileID: 42028204340832018}
   - component: {fileID: 1847592523525772757}
+  - component: {fileID: 5185929972625609547}
   m_Layer: 0
   m_Name: GiocaSlot
   m_TagString: Untagged
@@ -1792,6 +1832,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5185929972625609547
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7925438956580568671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8537574039846103312
 GameObject:
   m_ObjectHideFlags: 0

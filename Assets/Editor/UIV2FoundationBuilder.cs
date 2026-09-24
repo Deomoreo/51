@@ -544,7 +544,7 @@ namespace Project51.EditorTools
             AddLayoutElement(iconRect, preferredHeight: 80f);
             var icon = iconRect.gameObject.AddComponent<Image>();
             // Icona di default generica: SetStat() la sovrascrive per-statistica a runtime.
-            ApplySpriteOrColor(icon, LoadSprite(IconsPath, "ic_trophy"), _theme.BorderGold, sliced: false);
+            ApplySpriteOrColor(icon, NewIcon("ic_trophy"), _theme.BorderGold, sliced: false);
 
             var valueRect = CreateUIObject("ValueLabel", rect);
             AddLayoutElement(valueRect, preferredHeight: 40f);
@@ -995,8 +995,82 @@ namespace Project51.EditorTools
             SetPrivateField(comp, "resourcePillPrefab", resourcePillPrefab);
             SetPrivateField(comp, "energyBar", energyBar);
             SetPrivateField(comp, "xpBar", xpBar);
+            AddLevelStar(rowRect, comp);
 
             SaveAsPrefab(go, $"{ComponentsPrefabDir}/UIV2_TopBar.prefab");
+        }
+
+        private const string BarsSheetPath = SheetsDir + "/bars.png";
+
+        /// <summary>
+        /// Numero livello (D1): l'esagono blu/oro di bars.png (bar_level_hex) a sinistra della barra XP,
+        /// disegnato SOPRA di essa cosi' copre il tappo sinistro come nei giochi di riferimento.
+        /// </summary>
+        private static void AddLevelStar(RectTransform rowRect, UIV2TopBar comp)
+        {
+            var xp = rowRect.Find("XpBar");
+            var hexRect = CreateUIObject("LevelStar", rowRect);
+            hexRect.SetSiblingIndex(xp.GetSiblingIndex() + 1);
+            hexRect.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            // XpBar e' l'ultimo figlio della riga: a -204 l'esagono copre ~6px del tappo sinistro
+            // (misurato nel Simulator). 62x67 = proporzione dell'alone alfa dell'esagono (423x459).
+            Place(hexRect, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-204f, 0f), new Vector2(62f, 67f));
+            var hex = hexRect.gameObject.AddComponent<Image>();
+            hex.sprite = LoadSprite(BarsSheetPath, "bar_level_hex");
+            hex.preserveAspect = true;
+            hex.raycastTarget = false;
+
+            var labelRect = CreateUIObject("LevelLabel", hexRect);
+            Place(labelRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(44f, 40f));
+            var label = AddText(labelRect, "1", 26f, FontStyles.Bold, HomeTextLight, TextAlignmentOptions.Center);
+            label.enableWordWrapping = false;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 16f;
+            label.fontSizeMax = 26f;
+            ApplyOutline(label, NavyOutlineMaterial());
+            SetPrivateField(comp, "levelLabel", label);
+        }
+
+        /// <summary>
+        /// bars.png arriva come immagine singola con quattro pezzi: la divide in sprite con nome.
+        /// Rettangoli = alone alfa misurato + 2px, origine in basso a sinistra (foglio 1448x1086).
+        /// </summary>
+        private static void SliceBarsSheet()
+        {
+            var importer = (TextureImporter)AssetImporter.GetAtPath(BarsSheetPath);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Multiple;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            SpriteMetaData Piece(string name, float x, float y, float w, float h) =>
+                new SpriteMetaData { name = name, rect = new Rect(x, y, w, h), alignment = (int)SpriteAlignment.Center, pivot = new Vector2(.5f, .5f) };
+#pragma warning disable 618
+            importer.spritesheet = new[]
+            {
+                Piece("bar_level_hex", 514, 39, 423, 459),
+                Piece("bar_pill_cream", 194, 753, 598, 155),
+                Piece("badge_red", 950, 678, 313, 312),
+                Piece("divider_gold", 73, 522, 1301, 86),
+            };
+#pragma warning restore 618
+            importer.SaveAndReimport();
+            _sheetCache.Remove(BarsSheetPath);
+        }
+
+        /// <summary>Aggiunge l'esagono livello al prefab esistente senza ricostruire la foundation.</summary>
+        [MenuItem("Tools/UIV2/Upgrade Top Bar Level")]
+        private static void UpgradeTopBarLevel()
+        {
+            SliceBarsSheet();
+            string path = $"{ComponentsPrefabDir}/UIV2_TopBar.prefab";
+            var root = PrefabUtility.LoadPrefabContents(path);
+            var row = (RectTransform)root.transform.Find("ResourceRow");
+            var old = row.Find("LevelStar");
+            if (old != null) Object.DestroyImmediate(old.gameObject);
+            AddLevelStar(row, root.GetComponent<UIV2TopBar>());
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+            Debug.Log("[UIV2FoundationBuilder] Stella livello aggiunta a " + path);
         }
 
         // ------------------------------------------------------------------
@@ -1460,9 +1534,10 @@ namespace Project51.EditorTools
             AddText(placeholderSubtitleRect, "(scena animata dietro tutta la UI)", 23f, FontStyles.Normal, HomePlaceholderSubtitle, TextAlignmentOptions.Center);
 
             // ---- Quick action colonna destra (Premio/Classifica/Posta): visual top a y=250,
-            // passo 146.5, centro x=1000 ----
+            // passo 146.5, centro x=1000. y=-8: con y>0 il primo tile esce dal RectMask2D di ScreenHost
+            // e il bordo alto del Premio viene tagliato ----
             var quickActionsRect = CreateUIObject("QuickActionsColumn", rect);
-            Place(quickActionsRect, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-15f, 12f), new Vector2(130f, 440f));
+            Place(quickActionsRect, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-15f, -8f), new Vector2(130f, 440f));
             var quickActionsLayout = quickActionsRect.gameObject.AddComponent<VerticalLayoutGroup>();
             quickActionsLayout.childAlignment = TextAnchor.UpperCenter;
             quickActionsLayout.spacing = 12.5f;
@@ -1473,17 +1548,18 @@ namespace Project51.EditorTools
 
             var rewardsInstance = (GameObject)PrefabUtility.InstantiatePrefab(quickActionButtonPrefab, quickActionsRect);
             var rewardsButton = rewardsInstance.GetComponent<UIV2QuickActionButton>();
-            rewardsButton.SetContent(LoadSprite(IconsPath, "chest_green"), "Premio");
+            rewardsButton.SetContent(NewIcon("ic_chest"), "Premio");
+            SetQuickActionIconBox(rewardsInstance);
 
             var rankingInstance = (GameObject)PrefabUtility.InstantiatePrefab(quickActionButtonPrefab, quickActionsRect);
             var rankingButton = rankingInstance.GetComponent<UIV2QuickActionButton>();
-            rankingButton.SetContent(LoadSprite(IconsPath, "ic_trophy"), "Classifica");
-            SetQuickActionIconBox(rankingInstance, new Vector2(60f, 58f));
+            rankingButton.SetContent(NewIcon("ic_trophy"), "Classifica");
+            SetQuickActionIconBox(rankingInstance);
 
             var mailInstance = (GameObject)PrefabUtility.InstantiatePrefab(quickActionButtonPrefab, quickActionsRect);
             var mailButton = mailInstance.GetComponent<UIV2QuickActionButton>();
-            mailButton.SetContent(LoadSprite(IconsPath, "ic_mail"), "Posta");
-            SetQuickActionIconBox(mailInstance, new Vector2(60f, 52f));
+            mailButton.SetContent(NewIcon("ic_mail"), "Posta");
+            SetQuickActionIconBox(mailInstance);
 
             // ---- Selettori + CTA ancorati in basso: parte visibile di GIOCA finisce 95px sopra il
             // nav, selettori visibili 72px sopra GIOCA (valori rect compensano l'alpha trasparente) (l'area centrale si allarga/stringe sopra di loro) ----
@@ -1569,12 +1645,20 @@ namespace Project51.EditorTools
             AssetDatabase.SaveAssets();
         }
 
-        private static void SetQuickActionIconBox(GameObject quickActionInstance, Vector2 size)
+        // Stesso riquadro per tutte le icone della colonna (sprite gia' ritagliati sulla parte visibile):
+        // senza, lo scrigno usciva ~70 px e l'ingranaggio ~43, con pesi visivi molto diversi.
+        private static readonly Vector2 QuickActionIconBox = new Vector2(60f, 54f);
+
+        private static void SetQuickActionIconBox(GameObject quickActionInstance)
         {
             var iconRect = quickActionInstance.transform.Find("Visual/Icon") as RectTransform;
             if (iconRect == null) return;
-            iconRect.sizeDelta = size;
+            var icon = iconRect.GetComponent<Image>();
+            icon.preserveAspect = true;
+            iconRect.sizeDelta = QuickActionIconBox;
+            iconRect.anchoredPosition = new Vector2(0f, 4f);
             PrefabUtility.RecordPrefabInstancePropertyModifications(iconRect);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(icon);
         }
 
         // ------------------------------------------------------------------

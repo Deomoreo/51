@@ -55,7 +55,7 @@ namespace Project51.EditorTools
             var iconRect = CreateUIObject("Icon", rect);
             Place(iconRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -1f), new Vector2(98f, 98f));
             var icon = iconRect.gameObject.AddComponent<Image>();
-            icon.sprite = LoadSprite(IconsPath, "ic_trophy");
+            icon.sprite = NewIcon("ic_trophy");
             icon.preserveAspect = true;
             icon.raycastTarget = false;
 
@@ -67,6 +67,52 @@ namespace Project51.EditorTools
             SetPrivateField(comp, "button", button);
 
             return SaveAsPrefab(go, $"{ScreensPrefabDir}/ProfileTrophyTile.prefab").GetComponent<ProfileTrophyView>();
+        }
+
+        /// <summary>Stile della barra XP (UIV2_ProgressBar) condiviso da Profilo e risultati partita.</summary>
+        private static void StyleXpBar(GameObject xpInstance, float rectHeight)
+        {
+            var xpTrack = xpInstance.GetComponent<Image>();
+            if (xpTrack != null)
+            {
+                xpTrack.pixelsPerUnitMultiplier = 63f / rectHeight;
+                xpTrack.color = new Color(0.7f, 0.7f, 0.75f, 1f);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(xpTrack);
+            }
+            var xpFillArea = xpInstance.transform.Find("FillArea") as RectTransform;
+            if (xpFillArea != null)
+            {
+                float inset = 2.3f * rectHeight / 37f;
+                xpFillArea.offsetMin = new Vector2(inset, inset);
+                xpFillArea.offsetMax = new Vector2(-inset, -inset);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(xpFillArea);
+                var xpFillRect = xpFillArea.Find("Fill") as RectTransform;
+                if (xpFillRect != null)
+                {
+                    var xpFill = xpFillRect.GetComponent<Image>();
+                    xpFill.color = CollectionGold;
+                    xpFill.pixelsPerUnitMultiplier = 60f / ((rectHeight - inset * 2f) * 0.5f);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(xpFill);
+
+                    var stripeRect = CreateUIObject("Highlight", xpFillRect);
+                    stripeRect.anchorMin = new Vector2(0f, 0.53f);
+                    stripeRect.anchorMax = new Vector2(1f, 0.82f);
+                    stripeRect.offsetMin = new Vector2(8f, 0f);
+                    stripeRect.offsetMax = new Vector2(-8f, 0f);
+                    var stripe = stripeRect.gameObject.AddComponent<Image>();
+                    stripe.sprite = LoadSprite(PanelsNeutralPath, "panel_fill_r24");
+                    stripe.type = Image.Type.Sliced;
+                    stripe.pixelsPerUnitMultiplier = 10f;
+                    stripe.color = CollectionProgressHighlight;
+                    stripe.raycastTarget = false;
+                }
+            }
+            var xpValueLabel = xpInstance.transform.Find("ValueLabel");
+            if (xpValueLabel != null)
+            {
+                xpValueLabel.gameObject.SetActive(false);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(xpValueLabel.gameObject);
+            }
         }
 
         private static void BuildProfileScreenV2Prefab(ProfileTrophyView trophyTilePrefab, GameObject goldButtonPrefab,
@@ -109,7 +155,7 @@ namespace Project51.EditorTools
             var gearRect = CreateUIObject("GearIcon", settingsRect);
             Place(gearRect, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-1f, 1f), new Vector2(40f, 42f));
             var gear = gearRect.gameObject.AddComponent<Image>();
-            gear.sprite = LoadSprite(IconsPath, "ic_gear");
+            gear.sprite = NewIcon("ic_option");
             gear.preserveAspect = true;
             gear.raycastTarget = false;
 
@@ -134,47 +180,7 @@ namespace Project51.EditorTools
             var xpRect = (RectTransform)xpInstance.transform;
             Place(xpRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -399.5f), new Vector2(606f, xpRectHeight));
             PrefabUtility.RecordPrefabInstancePropertyModifications(xpRect);
-            var xpTrack = xpInstance.GetComponent<Image>();
-            if (xpTrack != null)
-            {
-                xpTrack.pixelsPerUnitMultiplier = 63f / xpRectHeight;
-                xpTrack.color = new Color(0.7f, 0.7f, 0.75f, 1f);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(xpTrack);
-            }
-            var xpFillArea = xpInstance.transform.Find("FillArea") as RectTransform;
-            if (xpFillArea != null)
-            {
-                float inset = 2.3f * xpRectHeight / 37f;
-                xpFillArea.offsetMin = new Vector2(inset, inset);
-                xpFillArea.offsetMax = new Vector2(-inset, -inset);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(xpFillArea);
-                var xpFillRect = xpFillArea.Find("Fill") as RectTransform;
-                if (xpFillRect != null)
-                {
-                    var xpFill = xpFillRect.GetComponent<Image>();
-                    xpFill.color = CollectionGold;
-                    xpFill.pixelsPerUnitMultiplier = 60f / ((xpRectHeight - inset * 2f) * 0.5f);
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(xpFill);
-
-                    var stripeRect = CreateUIObject("Highlight", xpFillRect);
-                    stripeRect.anchorMin = new Vector2(0f, 0.53f);
-                    stripeRect.anchorMax = new Vector2(1f, 0.82f);
-                    stripeRect.offsetMin = new Vector2(8f, 0f);
-                    stripeRect.offsetMax = new Vector2(-8f, 0f);
-                    var stripe = stripeRect.gameObject.AddComponent<Image>();
-                    stripe.sprite = LoadSprite(PanelsNeutralPath, "panel_fill_r24");
-                    stripe.type = Image.Type.Sliced;
-                    stripe.pixelsPerUnitMultiplier = 10f;
-                    stripe.color = CollectionProgressHighlight;
-                    stripe.raycastTarget = false;
-                }
-            }
-            var xpValueLabel = xpInstance.transform.Find("ValueLabel");
-            if (xpValueLabel != null)
-            {
-                xpValueLabel.gameObject.SetActive(false);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(xpValueLabel.gameObject);
-            }
+            StyleXpBar(xpInstance, xpRectHeight);
 
             var xpLabelRect = CreateUIObject("XpLabel", headerRect);
             Place(xpLabelRect, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -449.5f), new Vector2(800f, 32f));

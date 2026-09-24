@@ -54,6 +54,15 @@ namespace Project51.EditorTools
             var results = Object.FindObjectOfType<MatchResultsV2>(true);
             if (results == null) throw new System.Exception("MatchResultsV2 non trovato in GameScene");
             results.TrophyBurst = burst;
+            // E1: salita di livello, scoppio centrato sull'etichetta "Liv. X" della riga esperienza.
+            var level = FindInScene(scene, "MatchResults/Design/XpRow/Level");
+            var xpBurst = AddMoteField(level.parent, "XpMotes", level.parent.childCount, mote, MoteBurst);
+            xpBurst.rectTransform.anchorMin = xpBurst.rectTransform.anchorMax = level.anchorMin;
+            xpBurst.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            xpBurst.rectTransform.anchoredPosition = level.anchoredPosition;
+            xpBurst.rectTransform.sizeDelta = new Vector2(120f, 120f);
+            Configure(xpBurst, ambient: 0, burst: 24);
+            results.XpBurst = xpBurst;
             EditorUtility.SetDirty(results);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);

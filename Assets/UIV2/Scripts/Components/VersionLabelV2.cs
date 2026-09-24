@@ -8,6 +8,7 @@ namespace Project51.UIV2.Components
     /// pubblicazione (la schermata iniziale mostrava "v1.77" a versione 1.82): meglio leggerlo dal
     /// progetto che ricordarsi di riscriverlo a mano.
     /// </summary>
+    [ExecuteAlways] // anche nell'Editor: niente piu' "v1.83" vecchio nella scena
     [RequireComponent(typeof(TMP_Text))]
     public sealed class VersionLabelV2 : MonoBehaviour
     {

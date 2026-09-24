@@ -1,0 +1,9 @@
+{
+  "model": "opus",
+  "effortLevel": "high",
+  "env": {
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "150000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  }
+}

@@ -1,4 +1,5 @@
 using Project51.Auth;
+using Project51.Core;
 using Project51.Unity;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,6 +36,7 @@ namespace Project51.UIV2.Core
             AuthUI.OnLoginSuccess += Enter;
             AuthUI.OnRegistrationSuccess += Enter;
             AuthUI.OnClosed += AuthClosed;
+            // Guests always see this screen; only a real login keeps its account across launches.
             if (AppFlowManager.ConsumeReturnToHome()) CompleteEntrance();
             else { View.alpha = 1; View.blocksRaycasts = true; View.interactable = true; }
         }

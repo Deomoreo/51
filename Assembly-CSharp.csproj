@@ -66,15 +66,14 @@
     <Compile Include="Assets\Photon\PhotonRealtime\Demos\DemoLoadBalancing\ConnectAndJoinRandomLb.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\LobbySlotRowV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\SettingsV2Integration.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Core\UIV2Root.cs" />
     <Compile Include="Assets\Scripts\UI\RawImageUVScroll.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2Root.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\HomeScreenV2.cs" />
     <Compile Include="Assets\Scripts\Auth\NativePlatformAuth.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\DestroyOnStart.cs" />
     <Compile Include="Assets\Scripts\Auth\PhotonAuthConnector.cs" />
     <Compile Include="Assets\Scripts\Tests\TestDOTween.cs" />
     <Compile Include="Assets\Scripts\Auth\LoginGateUI.cs" />
-    <Compile Include="Assets\Scripts\UI\SettingsModalUI.cs" />
     <Compile Include="Assets\Scripts\UI\OpenPanelShortcut.cs" />
     <Compile Include="Assets\Scripts\UI\TabButtonUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\GameSocialV2.cs" />
@@ -111,6 +110,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\StartScreenV2.cs" />
     <Compile Include="Assets\Scripts\UI\SafeArea.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIEquippedRow.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2SurfaceEffect.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\HomeV2Integration.cs" />
     <Compile Include="Assets\Scripts\UI\PanelSwipeController.cs" />
     <Compile Include="Assets\Scripts\UI\PrimaryButtonUI.cs" />
@@ -126,9 +126,12 @@
     <Compile Include="Assets\UIV2\Tests\ProfileV2PreviewBootstrap.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\NewsItemViewV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopScreenV2.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2HapticButton.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\ResultRowV2.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ButtonFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AmbientFloat.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableMultiToggleGroup.cs" />
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Scripts\UI\PanelAmiciController.cs" />
@@ -144,6 +147,7 @@
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2QuickActionButton.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
     <Compile Include="Assets\Scripts\UI\UICardHoloFoilDriver.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2NumberCounter.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AppLoadingView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ProfileViewData.cs" />
     <Compile Include="Assets\Scripts\DEBUG\HierarchyDumper.cs" />
@@ -160,6 +164,7 @@
     <Compile Include="Assets\Scripts\Networking\PlayerDataManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\FriendItem.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIScreenRoot.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2PageEntrance.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\CollectionItemViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\InGameSettingsV2.cs" />
     <Compile Include="Assets\Scripts\Networking\SceneLoadManager.cs" />
@@ -172,7 +177,9 @@
     <Compile Include="Assets\Scripts\Networking\NetworkTypes.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\DismissOnBackdrop.cs" />
     <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2Motion.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2DesignCatalog.cs" />
     <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
@@ -181,6 +188,8 @@
     <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
     <Compile Include="Assets\Scripts\UI\PanelModalitaController.cs" />
     <Compile Include="Assets\Scripts\UI\ModalManager.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2ShaderKit.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2FeedbackParticles.cs" />
     <Compile Include="Assets\UIV2\Tests\CollectionV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\UI\DeckPageController.cs" />
     <Compile Include="Assets\Scripts\UI\ScrollFadeIndicator.cs" />
@@ -195,6 +204,7 @@
     <Compile Include="Assets\Scripts\UI\ModalitySelectorPanelUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopProductCardView.cs" />
     <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ShapeGlow.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\BottomNavSafeAreaBleed.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\ConnectionNoticeV2.cs" />
     <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
@@ -206,10 +216,12 @@
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ShopProductViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ModalFrame.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Core\UIV2DesignSystem.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Theme.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UITabsRow.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2SelectorChip.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOffset.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2MotionInstaller.cs" />
     <Compile Include="Assets\Scripts\UI\UITheme.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2AvatarBadge.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ProgressBar.cs" />
@@ -258,6 +270,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\RoomFlowV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileTrophyView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\PlayerSummaryViewData.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2RewardFlight.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayFabAuthService.cs" />
     <Compile Include="Assets\Scripts\Auth\NewsService.cs" />
     <Compile Include="Assets\Scripts\UI\SimpleToggleSwitch.cs" />
@@ -266,6 +279,7 @@
     <Compile Include="Assets\Scripts\UI\BottomNavController.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Resources\K4\BackdropBlur.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />
     <None Include="Assets\Audio\README_v02.txt" />
@@ -296,7 +310,9 @@
     <None Include="Assets\Photon\PhotonLibs\Photon3Unity3D.dll" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Photon\PhotonLibs\Metro\Photon3Unity3D.dll" />
+    <None Include="Assets\Resources\K4\UISurface.shader" />
     <None Include="Assets\Art\Decks\51_DEFAULT_DECK_Unity\51_LEGGIMI.txt" />
+    <None Include="Assets\Resources\K4\CardSurface.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
     <None Include="Assets\Photon\PhotonLibs\Photon3Unity3D.xml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
@@ -639,6 +655,10 @@
     </Reference>
     <Reference Include="DOTween">
       <HintPath>Assets\Plugins\Demigiant\DOTween\DOTween.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Coffee.UIEffect.R">
+      <HintPath>Library\PackageCache\com.coffee.ui-effect@bbb5ae0f3e\Runtime\Coffee.UIEffect.R.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
@@ -1175,6 +1195,10 @@
     </Reference>
     <Reference Include="Unity.2D.Common.Path.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.2D.Common.Path.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Coffee.UIEffect">
+      <HintPath>Library\ScriptAssemblies\Coffee.UIEffect.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.2D.PixelPerfect.Editor">

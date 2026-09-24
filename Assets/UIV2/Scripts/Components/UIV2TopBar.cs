@@ -28,8 +28,11 @@ namespace Project51.UIV2.Components
         [SerializeField] private UIV2ResourcePill resourcePillPrefab;
         [SerializeField] private UIV2ProgressBar energyBar;
         [SerializeField] private UIV2ProgressBar xpBar;
+        // Numero livello dentro la stella accanto alla barra XP (il genitore e' la stella).
+        [SerializeField] private TMP_Text levelLabel;
 
         private readonly List<UIV2ResourcePill> _spawned = new List<UIV2ResourcePill>();
+        private readonly List<string> _currencies = new List<string>();
 
         public void SetProfile(PlayerSummaryViewData player)
         {
@@ -43,6 +46,11 @@ namespace Project51.UIV2.Components
             if (nameLabel != null) nameLabel.text = player.DisplayName;
             if (energyBar != null) energyBar.gameObject.SetActive(player.EnergyMax > 0);
             if (xpBar != null) xpBar.gameObject.SetActive(player.XpMax > 0);
+            if (levelLabel != null)
+            {
+                levelLabel.text = player.Level.ToString();
+                levelLabel.transform.parent.gameObject.SetActive(player.XpMax > 0);
+            }
             SetEnergy(player.EnergyCurrent, player.EnergyMax);
             SetXp(player.XpCurrent, player.XpMax);
         }
@@ -52,19 +60,32 @@ namespace Project51.UIV2.Components
             if (resourcesContainer == null || resourcePillPrefab == null) return;
             resourcesContainer.gameObject.SetActive(resources != null && resources.Count > 0);
 
-            for (int i = _spawned.Count - 1; i >= 0; i--)
+            int count = resources != null ? resources.Count : 0;
+            for (int i = _spawned.Count - 1; i >= count; i--)
             {
-                if (_spawned[i] != null) Destroy(_spawned[i].gameObject);
+                if (_spawned[i] != null) { _spawned[i].gameObject.SetActive(false); Destroy(_spawned[i].gameObject); }
+                _spawned.RemoveAt(i);
+                _currencies.RemoveAt(i);
             }
-            _spawned.Clear();
 
             if (resources == null) return;
 
             for (int i = 0; i < resources.Count; i++)
             {
-                var pill = Instantiate(resourcePillPrefab, resourcesContainer);
+                if (i >= _spawned.Count)
+                {
+                    _spawned.Add(Instantiate(resourcePillPrefab, resourcesContainer));
+                    _currencies.Add(resources[i].CurrencyId);
+                }
+                else if (_spawned[i] == null || _currencies[i] != resources[i].CurrencyId)
+                {
+                    if (_spawned[i] != null) { _spawned[i].gameObject.SetActive(false); Destroy(_spawned[i].gameObject); }
+                    _spawned[i] = Instantiate(resourcePillPrefab, resourcesContainer);
+                    _currencies[i] = resources[i].CurrencyId;
+                }
+                var pill = _spawned[i];
+                pill.transform.SetSiblingIndex(i);
                 pill.SetResource(resources[i].Icon, resources[i].Amount);
-                _spawned.Add(pill);
             }
         }
 

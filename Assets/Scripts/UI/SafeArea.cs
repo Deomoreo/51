@@ -10,6 +10,7 @@ public class SafeAreaFitter : MonoBehaviour
 
     private RectTransform _rt;
     private Rect _lastSafeArea;
+    private Vector2Int _lastScreen;
 
     private void Awake()
     {
@@ -28,8 +29,11 @@ public class SafeAreaFitter : MonoBehaviour
         Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels(debugLog);
 
 
-        if (safe == _lastSafeArea) return;
+        // Anche lo schermo: puo' cambiare a safe area invariata (barre Android, foldable, Simulator).
+        var screen = new Vector2Int(Screen.width, Screen.height);
+        if (safe == _lastSafeArea && screen == _lastScreen) return;
         _lastSafeArea = safe;
+        _lastScreen = screen;
 
         Vector2 min = safe.position;
         Vector2 max = safe.position + safe.size;

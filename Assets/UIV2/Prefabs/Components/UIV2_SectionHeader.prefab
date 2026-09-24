@@ -88,8 +88,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: SEZIONE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
-  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
+  m_sharedMaterial: {fileID: 7634905335590103105, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -113,8 +113,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 40
+  m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

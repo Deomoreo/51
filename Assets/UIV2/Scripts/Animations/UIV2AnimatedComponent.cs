@@ -4,85 +4,98 @@ using UnityEngine;
 
 namespace Project51.UIV2.Animations
 {
-    /// <summary>
-    /// Base per componenti UIV2 animabili. Le animazioni agiscono sempre su "visualRoot"
-    /// (un child dedicato, di norma lo stesso GameObject se non diversamente assegnato),
-    /// mai sul RectTransform controllato da un LayoutGroup esterno - cosi' Show/Hide/Press/
-    /// ecc. non alterano mai la struttura del layout che le contiene.
-    /// </summary>
     public abstract class UIV2AnimatedComponent : MonoBehaviour,
         IUIV2Showable, IUIV2Selectable, IUIV2Pressable, IUIV2Unlockable, IUIV2Rewardable
     {
         [SerializeField] protected RectTransform visualRoot;
         [SerializeField] protected CanvasGroup visualCanvasGroup;
-
         protected RectTransform VisualRoot => visualRoot != null ? visualRoot : (RectTransform)transform;
+        private Tween motion;
+        private Vector3 originalScale;
+        private float originalAlpha;
+        private bool initialized;
+        private bool selected;
+        private Vector3 RestScale => originalScale * (selected ? 1.05f : 1f);
 
-        protected virtual void Reset()
+        protected virtual void Reset() => visualRoot = transform as RectTransform;
+
+        private void Initialize()
         {
-            visualRoot = transform as RectTransform;
+            if (initialized) return;
+            originalScale = VisualRoot.localScale;
+            originalAlpha = visualCanvasGroup != null ? visualCanvasGroup.alpha : 1f;
+            initialized = true;
+        }
+
+        private Sequence Begin()
+        {
+            Initialize();
+            UIV2Motion.Cancel(ref motion);
+            var sequence = DOTween.Sequence().SetUpdate(true);
+            motion = sequence;
+            return sequence;
         }
 
         public virtual void PlayShow(Action onComplete = null)
         {
-            var t = VisualRoot;
-            t.DOKill();
-            t.localScale = Vector3.one * 0.92f;
+            var sequence = Begin();
+            VisualRoot.localScale = RestScale * UIV2Motion.PanelScale;
             if (visualCanvasGroup != null)
             {
-                visualCanvasGroup.DOKill();
-                visualCanvasGroup.alpha = 0f;
-                visualCanvasGroup.DOFade(1f, 0.18f).SetUpdate(true);
+                visualCanvasGroup.alpha = 0;
+                sequence.Join(visualCanvasGroup.DOFade(originalAlpha, UIV2Motion.Enter));
             }
-            t.DOScale(1f, 0.22f).SetEase(Ease.OutBack).SetUpdate(true)
-                .OnComplete(() => onComplete?.Invoke());
+            sequence.Join(VisualRoot.DOScale(RestScale, UIV2Motion.Enter).SetEase(Ease.OutBack, 1.1f));
+            sequence.OnComplete(() => onComplete?.Invoke());
         }
 
         public virtual void PlayHide(Action onComplete = null)
         {
-            var t = VisualRoot;
-            t.DOKill();
-            if (visualCanvasGroup != null)
-            {
-                visualCanvasGroup.DOKill();
-                visualCanvasGroup.DOFade(0f, 0.15f).SetUpdate(true);
-            }
-            t.DOScale(0.92f, 0.15f).SetEase(Ease.InCubic).SetUpdate(true)
-                .OnComplete(() => onComplete?.Invoke());
+            var sequence = Begin();
+            if (visualCanvasGroup != null) sequence.Join(visualCanvasGroup.DOFade(0, UIV2Motion.Exit));
+            sequence.Join(VisualRoot.DOScale(RestScale * UIV2Motion.PanelScale, UIV2Motion.Exit).SetEase(Ease.InCubic));
+            sequence.OnComplete(() => onComplete?.Invoke());
         }
 
         public virtual void PlayPress()
         {
-            var t = VisualRoot;
-            t.DOKill();
-            t.localScale = Vector3.one;
-            t.DOPunchScale(new Vector3(-0.08f, -0.08f, 0f), 0.18f, 6, 0.7f).SetUpdate(true);
+            // A scene installer can add feedback after this component registered its click listener.
+            if (!isActiveAndEnabled || GetComponent<UIV2ButtonFeedback>() != null) return;
+            var sequence = Begin();
+            sequence.Append(VisualRoot.DOScale(RestScale * UIV2Motion.PressScale, UIV2Motion.Press).SetEase(Ease.OutQuad));
+            sequence.Append(VisualRoot.DOScale(RestScale, UIV2Motion.Release).SetEase(Ease.OutBack, 1.1f));
         }
 
-        public virtual void PlaySelected(bool selected)
+        public virtual void PlaySelected(bool value)
         {
-            var t = VisualRoot;
-            t.DOKill();
-            t.DOScale(selected ? 1.05f : 1f, 0.15f).SetEase(Ease.OutQuad).SetUpdate(true);
+            selected = value;
+            Begin().Append(VisualRoot.DOScale(RestScale, UIV2Motion.Exit).SetEase(Ease.OutQuad));
         }
 
         public virtual void PlayUnlock(Action onComplete = null)
         {
-            var t = VisualRoot;
-            t.DOKill();
-            t.localScale = Vector3.zero;
-            t.DOScale(1f, 0.35f).SetEase(Ease.OutBack).SetUpdate(true)
-                .OnComplete(() => onComplete?.Invoke());
+            var sequence = Begin();
+            VisualRoot.localScale = Vector3.zero;
+            sequence.Append(VisualRoot.DOScale(RestScale, UIV2Motion.Enter).SetEase(Ease.OutBack, 1.1f));
+            sequence.OnComplete(() => onComplete?.Invoke());
         }
 
         public virtual void PlayReward(Action onComplete = null)
         {
-            var t = VisualRoot;
-            t.DOKill();
-            var seq = DOTween.Sequence().SetUpdate(true);
-            seq.Append(t.DOScale(1.15f, 0.12f).SetEase(Ease.OutQuad));
-            seq.Append(t.DOScale(1f, 0.18f).SetEase(Ease.OutBack));
-            seq.OnComplete(() => onComplete?.Invoke());
+            var sequence = Begin();
+            sequence.Append(VisualRoot.DOScale(RestScale * 1.12f, UIV2Motion.Press).SetEase(Ease.OutQuad));
+            sequence.Append(VisualRoot.DOScale(RestScale, UIV2Motion.Release).SetEase(Ease.OutBack, 1.1f));
+            sequence.OnComplete(() => onComplete?.Invoke());
         }
+
+        protected virtual void OnDisable()
+        {
+            UIV2Motion.Cancel(ref motion);
+            if (!initialized) return;
+            if (VisualRoot != null) VisualRoot.localScale = RestScale;
+            if (visualCanvasGroup != null) visualCanvasGroup.alpha = originalAlpha;
+        }
+
+        protected virtual void OnDestroy() => UIV2Motion.Cancel(ref motion);
     }
 }

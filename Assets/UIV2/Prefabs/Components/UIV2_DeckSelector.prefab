@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1949402625085435031}
   - component: {fileID: 9026120423453979890}
   - component: {fileID: 8220657568431023828}
+  - component: {fileID: 7734286076643927929}
   m_Layer: 0
   m_Name: UIV2_DeckSelector
   m_TagString: Untagged
@@ -139,6 +140,18 @@ MonoBehaviour:
   smallLabel: {fileID: 2380451990519205922}
   valueLabel: {fileID: 3753745701839042002}
   button: {fileID: 4194807026134483368}
+--- !u!114 &7734286076643927929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1613342762091737404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3040657862644339365
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,8 +265,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22
-  m_fontSizeBase: 22
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

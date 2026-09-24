@@ -39,7 +39,7 @@ namespace Project51.Auth
         private static readonly string[] AccountPrefKeys =
         {
             "Project51_DeviceId", "Project51_SessionGuestId", "Project51_IsRegistered",
-            "Project51_HasRealLogin", "Project51_HasEverLogged",
+            "Project51_HasRealLogin", "Project51_HasEverLogged", "Navigation_GuestEntered",
             "progress_exp", "progress_level", "progress_pendingExp", "progress_wins", "progress_totalGames",
             "PlayerData_V1", "PlayerNickname", "PlayerId",
             "Collection.Emoticons"

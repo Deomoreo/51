@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4618533252402542333}
   - component: {fileID: 1758838612809222148}
   - component: {fileID: 3847417846450951333}
+  - component: {fileID: 797137136131922955}
   m_Layer: 0
   m_Name: UIV2_ModeSelector
   m_TagString: Untagged
@@ -139,6 +140,18 @@ MonoBehaviour:
   smallLabel: {fileID: 2184111741097090340}
   valueLabel: {fileID: 8536033813505508857}
   button: {fileID: 4348226068568814659}
+--- !u!114 &797137136131922955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 49072441725036642}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1729077482297614950
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,8 +265,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22
-  m_fontSizeBase: 22
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

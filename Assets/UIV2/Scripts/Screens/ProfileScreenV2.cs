@@ -74,15 +74,16 @@ namespace Project51.UIV2.Screens
             if (nameLabel != null) nameLabel.text = data.PlayerName;
             if (infoLabel != null)
             {
-                string status = data.HasProgress ? $"{levelPrefix} {data.Level}" : (data.IsGuest ? "Ospite" : "Account");
+                string status = data.IsGuest ? "Ospite" : data.HasProgress ? $"{levelPrefix} {data.Level}" : "Account";
                 infoLabel.text = string.IsNullOrEmpty(data.PlayerId) ? status : $"{status} {MiddleDot} {data.PlayerId}";
             }
 
             SetXp(data.XpCurrent, data.XpMax, data.Level + 1);
-            if (xpBar != null) xpBar.gameObject.SetActive(data.HasProgress && data.XpMax > 0);
+            if (xpBar != null) xpBar.gameObject.SetActive(!data.IsGuest && data.HasProgress && data.XpMax > 0);
             if (!data.HasProgress && xpLabel != null) xpLabel.text = "Progressi non disponibili";
-            if (xpLabel != null) xpLabel.gameObject.SetActive(!data.IsGuest);
-            if (data.IsGuest && xpBar != null) xpBar.gameObject.SetActive(false);
+            // Gli ospiti non guadagnano XP: al posto della barra, l'invito a registrarsi.
+            if (data.IsGuest && xpLabel != null) xpLabel.text = "Registrati per guadagnare XP";
+            if (xpLabel != null) xpLabel.gameObject.SetActive(true);
             SetStats(data);
             SetTrophies(data.Trophies);
 

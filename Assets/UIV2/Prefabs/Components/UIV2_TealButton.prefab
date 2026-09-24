@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7963332306657701654}
   - component: {fileID: 2551899137085410314}
   - component: {fileID: 6154238928983698391}
+  - component: {fileID: 2245782226418212820}
   m_Layer: 0
   m_Name: UIV2_TealButton
   m_TagString: Untagged
@@ -142,6 +143,18 @@ MonoBehaviour:
   background: {fileID: 7963332306657701654}
   label: {fileID: 2217794958309549816}
   keepLabelColor: 0
+--- !u!114 &2245782226418212820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3879266920554661342}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8807298890563024572
 GameObject:
   m_ObjectHideFlags: 0
@@ -209,8 +222,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: INVITA
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
-  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
+  m_sharedMaterial: {fileID: 7634905335590103105, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

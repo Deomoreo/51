@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using Project51.Unity;
 using Project51.UIV2.Components;
+using Project51.Core;
 
 namespace Project51.Unity.UI
 {
@@ -65,15 +66,17 @@ namespace Project51.Unity.UI
                 accusoRing.SetVerticesDirty();
             }
 
-            float wave = (Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * pulsesPerSecond) + 1f) * 0.5f;
+            bool reduced = GamePreferences.ReducedGraphics;
+            float wave = reduced ? 0f : (Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * pulsesPerSecond) + 1f) * 0.5f;
             if (accusoButton != null && !pressedThisWindow)
             {
-                float shake = Time.unscaledTime < shakeUntil ? Mathf.Sin(Time.unscaledTime * 60f) * 6f : 0f;
+                float shake = !reduced && Time.unscaledTime < shakeUntil ? Mathf.Sin(Time.unscaledTime * 60f) * 6f : 0f;
                 accusoButton.transform.localScale = Vector3.one * (1f + 0.1f * wave);
                 accusoButton.transform.localRotation = Quaternion.Euler(0f, 0f, shake);
             }
             if (accusoGlow != null)
             {
+                accusoGlow.gameObject.SetActive(!reduced);
                 var color = accusoGlow.color;
                 color.a = pressedThisWindow ? 0.25f : 0.45f + 0.5f * wave;
                 accusoGlow.color = color;
@@ -88,7 +91,7 @@ namespace Project51.Unity.UI
         {
             if (accusoCountdownBadge != null) accusoCountdownBadge.SetActive(open);
             else if (accusoCountdownText != null) accusoCountdownText.gameObject.SetActive(open);
-            if (accusoGlow != null) accusoGlow.gameObject.SetActive(open);
+            if (accusoGlow != null) accusoGlow.gameObject.SetActive(open && !GamePreferences.ReducedGraphics);
             if (accusoRing != null) accusoRing.gameObject.SetActive(open);
             if (accusoPrompt != null)
             {

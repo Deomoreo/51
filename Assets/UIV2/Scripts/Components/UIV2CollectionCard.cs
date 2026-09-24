@@ -48,7 +48,7 @@ namespace Project51.UIV2.Components
 
         private void HandleClick()
         {
-            PlayPress();
+            if (GetComponent<UIV2ButtonFeedback>() == null) PlayPress();
             OnClicked?.Invoke(_data);
         }
 

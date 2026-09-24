@@ -7,19 +7,19 @@ using Project51.UIV2.Animations;
 namespace Project51.UIV2.Components
 {
     /// <summary>
-    /// Un solo componente per le 4 varianti bottone dei mockup (Primary Gold / Secondary
-    /// Blue / Teal / Green Small) - stesso schema del ThemedButton legacy: lo stile decide
-    /// solo sprite/colore, non la struttura. UIV2_PrimaryGoldButton ecc. sono prefab
-    /// distinti che impostano "style" in modo diverso, non 4 script separati.
+    /// Primary, secondary, flat and icon buttons. Teal/GreenSmall keep their serialized
+    /// values for compatibility with existing selection controls.
     /// </summary>
     public class UIV2Button : UIV2AnimatedComponent
     {
         public enum Style
         {
-            PrimaryGold,
-            SecondaryBlue,
-            Teal,
-            GreenSmall
+            PrimaryGold = 0,
+            SecondaryBlue = 1,
+            Teal = 2,
+            GreenSmall = 3,
+            Flat = 4,
+            Icon = 5
         }
 
         [Header("Theme")]
@@ -39,12 +39,13 @@ namespace Project51.UIV2.Components
         private void OnEnable()
         {
             Apply();
-            if (button != null) button.onClick.AddListener(PlayPress);
+            if (button != null && GetComponent<UIV2ButtonFeedback>() == null) button.onClick.AddListener(PlayPress);
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
             if (button != null) button.onClick.RemoveListener(PlayPress);
+            base.OnDisable();
         }
 
         public void SetLabel(string text)
@@ -63,6 +64,14 @@ namespace Project51.UIV2.Components
 
             switch (style)
             {
+                case Style.Flat:
+                    sprite = null;
+                    flatColor = Color.clear;
+                    break;
+                case Style.Icon:
+                    sprite = theme.IconButtonBackground;
+                    flatColor = theme.ButtonSecondaryBlue;
+                    break;
                 case Style.SecondaryBlue:
                     sprite = theme.ButtonSecondarySprite;
                     flatColor = theme.ButtonSecondaryBlue;
@@ -78,7 +87,7 @@ namespace Project51.UIV2.Components
                 default:
                     sprite = theme.ButtonPrimarySprite;
                     flatColor = theme.ButtonPrimaryGold;
-                    textColor = theme.PanelBlue;
+                    textColor = theme.GoldLabelColor;
                     break;
             }
 
@@ -92,11 +101,13 @@ namespace Project51.UIV2.Components
                 }
                 else
                 {
+                    background.sprite = null;
                     background.color = flatColor;
                 }
             }
 
-            if (label != null && !keepLabelColor) label.color = textColor;
+            if (style == Style.PrimaryGold) theme.ApplyGoldLabel(label);
+            else if (label != null && !keepLabelColor) label.color = textColor;
         }
     }
 }

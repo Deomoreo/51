@@ -42,7 +42,8 @@ namespace Project51.EditorTools
             copy.transform.SetAsLastSibling();
             var settings = copy.GetComponent<UIV2QuickActionButton>();
             var so = new SerializedObject(settings);
-            ((Image)so.FindProperty("icon").objectReferenceValue).sprite = LoadSprite(IconsPath, "ic_gear");
+            ((Image)so.FindProperty("icon").objectReferenceValue).sprite = NewIcon("ic_option");
+            SetQuickActionIconBox(copy);
             ((TMP_Text)so.FindProperty("label").objectReferenceValue).text = "Opzioni";
             var badge = (GameObject)so.FindProperty("badgeRoot").objectReferenceValue;
             if (badge != null) badge.SetActive(false);

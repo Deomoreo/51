@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using Project51.Auth;
 using Project51.Core;
+using Project51.UIV2.Animations;
 using Project51.UIV2.Components;
 using Project51.UIV2.Data;
 using Project51.UIV2.Screens;
@@ -30,6 +32,7 @@ namespace Project51.UIV2.Core
         [SerializeField] private UIV2Pager pager;
         [SerializeField] private QuickSelectionPanels quickPanels;
         [SerializeField] private StartScreenV2 startScreen;
+        [SerializeField] private CanvasGroup homeAmbient;
 
         private static MatchConfig sessionSelection;
         private AuthBootstrapper auth;
@@ -37,6 +40,7 @@ namespace Project51.UIV2.Core
         private bool showingHome;
         private string profileOwnerId;
         private bool loadingProfile;
+        private Tween ambientFade;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSession() => sessionSelection = null;
@@ -112,11 +116,9 @@ namespace Project51.UIV2.Core
             progress = PlayerProgressLocal.Instance;
             if (progress != null) progress.OnExpChanged += ExpChanged;
             RefreshProfile();
+            // Spenti davvero (non solo trasparenti): niente disegno invisibile a tutto schermo ne' Update della vecchia HUD.
             foreach (var group in legacyVisuals)
-            {
-                if (group == null) continue;
-                group.alpha = 0; group.interactable = false; group.blocksRaycasts = false;
-            }
+                if (group != null) group.gameObject.SetActive(false);
             PageChanged(0);
         }
 
@@ -195,6 +197,17 @@ namespace Project51.UIV2.Core
             showingHome = index == 0;
             navigation.SelectIndex(index, notify: false);
             RefreshProfile();
+            ShowAmbient(showingHome);
+        }
+
+        // Sfondo animato solo sulla pagina Gioca: spento (non solo trasparente) altrove, cosi' i tween si fermano.
+        private void ShowAmbient(bool on)
+        {
+            if (homeAmbient == null) return;
+            UIV2Motion.Cancel(ref ambientFade);
+            if (on) homeAmbient.gameObject.SetActive(true);
+            ambientFade = homeAmbient.DOFade(on ? 1f : 0f, UIV2Motion.Page).SetUpdate(true)
+                .OnComplete(() => { ambientFade = null; homeAmbient.gameObject.SetActive(on); });
         }
 
         private void ModeVisibilityChanged(bool visible)
@@ -232,29 +245,27 @@ namespace Project51.UIV2.Core
         {
             if (topBar == null) return;
             string displayName = auth?.PlayFabAuth?.GetBestDisplayName();
-            int maxXp = progress != null ? progress.ExpToNextLevel : 0;
-            int level = progress != null ? progress.Level : 1;
-            int xp = progress != null ? Mathf.RoundToInt(progress.LevelProgress * maxXp) : 0;
             var cloud = auth?.Profile;
             bool isGuest = auth?.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin;
             bool cloudLoaded = !loadingProfile && cloud != null && cloud.IsLoaded
                 && profileOwnerId == auth?.PlayFabAuth?.PlayFabId;
-            if (cloudLoaded)
-            {
-                level = Mathf.Max(1, cloud.Level);
-                maxXp = 100 * level;
-                xp = Mathf.Clamp(cloud.XP - 50 * level * (level - 1), 0, maxXp);
-            }
-            if (isGuest) { xp = 0; maxXp = 0; }
+            // Gli ospiti non guadagnano XP (spinta a registrarsi): livello 1 fisso.
+            int totalXp = isGuest ? 0 : cloudLoaded ? cloud.XP : progress != null ? progress.Exp : 0;
+            string playFabId = auth?.PlayFabAuth?.PlayFabId;
+            int level = PlayerXp.LevelOf(totalXp);
+            int xp = PlayerXp.XpInLevel(totalXp);
+            int maxXp = PlayerXp.XpToNext(level);
             if (profile != null)
             {
                 profile.Bind(new ProfileViewData
                 {
                     PlayerName = string.IsNullOrEmpty(displayName) ? "Ospite" : displayName,
-                    PlayerId = auth?.PlayFabAuth?.PlayFabId,
+                    // ID breve solo per gli account; quello completo resta in "Il tuo account".
+                    PlayerId = isGuest || string.IsNullOrEmpty(playFabId) ? null
+                        : "#" + playFabId.Substring(0, Mathf.Min(8, playFabId.Length)).ToUpperInvariant(),
                     IsGuest = isGuest,
                     Level = level, XpCurrent = xp, XpMax = maxXp,
-                    HasProgress = !isGuest && (cloudLoaded || progress != null),
+                    HasProgress = cloudLoaded || progress != null,
                     HasMatchStats = !isGuest && cloudLoaded,
                     HasAdvancedStats = false,
                     MatchesPlayed = cloudLoaded ? cloud.TotalGames : 0,
@@ -266,7 +277,7 @@ namespace Project51.UIV2.Core
                 DisplayName = string.IsNullOrEmpty(displayName) ? "Ospite" : displayName,
                 Level = level,
                 XpCurrent = xp,
-                XpMax = maxXp,
+                XpMax = isGuest ? 0 : maxXp, // 0 = esagono livello e barra XP nascosti per gli ospiti
                 EnergyCurrent = 0,
                 EnergyMax = 0
             });
@@ -291,6 +302,7 @@ namespace Project51.UIV2.Core
             }
             if (navigation != null) navigation.OnItemSelected -= Navigate;
             if (pager != null) { pager.OnPageChanged -= PageChanged; pager.CanNavigate = null; }
+            UIV2Motion.Cancel(ref ambientFade);
             if (auth != null)
             {
                 auth.OnAuthReady -= RefreshProfile;

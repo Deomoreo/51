@@ -17,6 +17,7 @@ namespace Project51.Unity
 
         private RectTransform _rt;
         private Rect _lastSafeArea;
+        private Vector2Int _lastScreen;
 
         private void Awake()
         {
@@ -35,8 +36,11 @@ namespace Project51.Unity
             Rect safe = SafeAreaUtil.GetSafeAreaRenderingPixels();
 
 
-            if (safe == _lastSafeArea) return;
+            // Anche lo schermo: puo' cambiare a safe area invariata (barre Android, foldable, Simulator).
+            var screen = new Vector2Int(Screen.width, Screen.height);
+            if (safe == _lastSafeArea && screen == _lastScreen) return;
             _lastSafeArea = safe;
+            _lastScreen = screen;
 
             // Calcola i valori normalizzati
             float minX = applySides ? safe.xMin / Screen.width : 0f;

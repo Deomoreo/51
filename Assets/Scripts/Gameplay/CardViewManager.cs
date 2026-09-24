@@ -1462,12 +1462,15 @@ namespace Project51.Unity
         /// <summary>
         /// Impostazioni in partita, "Suggerimenti mosse": nel proprio turno le carte in mano che fanno
         /// una presa hanno un bagliore dietro. Fuori turno, o con l'opzione spenta, nessun bagliore.
+        /// Le altre carte in mano, nel proprio turno, hanno un alone oro tenue che pulsa (non con la grafica ridotta).
         /// </summary>
         private void ApplyMoveHints(List<Card> handCards)
         {
             if (handCards == null) return;
-            bool active = GamePreferences.MoveHints && IsMyTurnToPlay && !suppressNewCardVisibility
+            bool myTurn = IsMyTurnToPlay && !suppressNewCardVisibility
                 && turnController.GameState != null && !turnController.GameState.RoundEnded;
+            bool active = GamePreferences.MoveHints && myTurn;
+            bool turnGlow = myTurn && !GamePreferences.ReducedGraphics;
             // Calcolate qui dalle regole: il refresh arriva prima che TurnController aggiorni le sue
             // mosse valide per il nuovo turno.
             var captures = active
@@ -1477,9 +1480,13 @@ namespace Project51.Unity
             foreach (var card in handCards)
             {
                 if (!activeCardViews.TryGetValue(card, out var view) || view == null) continue;
-                view.SetMoveHint(captures.Contains(card), moveHintGlowSprite);
+                if (captures.Contains(card)) view.SetMoveHint(true, moveHintGlowSprite);
+                else view.SetGlow(turnGlow, moveHintGlowSprite, TurnGlowColor);
             }
         }
+
+        // Alfa = intensita' massima dell'alone (CardView.LateUpdate): piu' tenue del suggerimento.
+        private static readonly Color TurnGlowColor = new Color(1f, 0.85f, 0.45f, 0.5f);
 
         /// <summary>Alone oro attorno alle carte che il mazziere sta per prendere (accuso 15/30).</summary>
         public void SetDealerAccusoGlow(IReadOnlyList<CardView> views, bool on)
@@ -1720,13 +1727,12 @@ namespace Project51.Unity
             var validMoves = turnController.GetCurrentValidMoves();
             var movesForCard = validMoves.Where(m => m.PlayedCard.Equals(clickedCardView.Card)).ToList();
 
-            // If there are no valid moves for this specific card, allow a PlayOnly move
+            // Nessuna mossa valida per questa carta (c'e' una presa obbligata con un'altra):
+            // prima si forzava uno scarto col giocatore 0, che l'altro client rifiutava -> partite divergenti.
             if (movesForCard.Count == 0)
             {
-                var playOnlyMove = new Move(0, clickedCardView.Card, MoveType.PlayOnly, new List<Card>());
-                turnController.ExecuteMove(playOnlyMove);
-                foreach (var kv in activeCardViews)
-                    kv.Value?.SetSelected(false);
+                clickedCardView.SetSelected(false);
+                moveSelectionUI?.ShowInvalid("Devi prendere con un'altra carta");
                 return;
             }
 

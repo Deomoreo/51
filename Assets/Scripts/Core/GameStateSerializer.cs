@@ -88,7 +88,7 @@ namespace Project51.Core
             return gs;
         }
 
-        // Giocatore: mano;prese;scope;accusi;accusiSmazzata;punteggio;carteScopa
+        // Giocatore: mano;prese;scope;accusi;accusiSmazzata;punteggio;carteScopa;numeroAccusi
         private static string SerializePlayer(PlayerState player)
         {
             return string.Join(";",
@@ -98,7 +98,8 @@ namespace Project51.Core
                 player.AccusiPoints.ToString(),
                 player.RoundAccusiPoints.ToString(),
                 player.TotalScore.ToString(),
-                SerializeCards(player.ScopaCards));
+                SerializeCards(player.ScopaCards),
+                player.RoundAccusiCount.ToString());
         }
 
         private static void DeserializePlayer(string data, PlayerState player)
@@ -113,6 +114,7 @@ namespace Project51.Core
                 player.RoundAccusiPoints = int.Parse(values[4]);
                 player.TotalScore = int.Parse(values[5]);
                 if (values.Length > 6) player.ScopaCards.AddRange(DeserializeCards(values[6]));
+                if (values.Length > 7) player.RoundAccusiCount = int.Parse(values[7]);
             }
         }
 

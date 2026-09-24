@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using Project51.UIV2.Animations;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -23,7 +24,7 @@ namespace Project51.UIV2.Core
         private void Start() { Layout(); SetInteraction(true); }
         public void Select(int index)
         {
-            if (CanNavigate != null && !CanNavigate()) return;
+            if (pages == null || pages.Length == 0 || !isActiveAndEnabled || (CanNavigate != null && !CanNavigate())) return;
             Snap(Mathf.Clamp(index, 0, pages.Length - 1));
         }
         private void Snap(int index)
@@ -32,12 +33,12 @@ namespace Project51.UIV2.Core
             CurrentIndex = index;
             SetInteraction(false);
             OnPageChanged?.Invoke(index);
-            tween = DOTween.To(() => position, x => { position = x; Layout(); }, index, .3f)
+            tween = DOTween.To(() => position, x => { position = x; Layout(); }, index, UIV2Motion.Page)
                 .SetEase(Ease.OutCubic).SetUpdate(true).OnComplete(() => { tween = null; SetInteraction(true); });
         }
         public bool BeginSwipe(PointerEventData e)
         {
-            if (CanNavigate != null && !CanNavigate()) return false;
+            if (pages == null || pages.Length == 0 || viewport == null || (CanNavigate != null && !CanNavigate())) return false;
             tween?.Kill(); tween = null;
             startPointer = e.pressPosition; startPosition = position; dragging = true;
             SetInteraction(false);
@@ -69,8 +70,10 @@ namespace Project51.UIV2.Core
         }
         private void SetInteraction(bool enabled)
         {
+            if (pages == null) return;
             for (int i = 0; i < pages.Length; i++)
             {
+                if (pages[i] == null) continue;
                 var group = pages[i].GetComponent<CanvasGroup>();
                 if (group == null) group = pages[i].gameObject.AddComponent<CanvasGroup>();
                 group.interactable = enabled && i == CurrentIndex;
@@ -78,6 +81,7 @@ namespace Project51.UIV2.Core
             }
         }
         private void LateUpdate() { if (viewport != null && !Mathf.Approximately(lastWidth, viewport.rect.width)) Layout(); }
-        private void OnDisable() { tween?.Kill(); tween = null; dragging = false; position = CurrentIndex; Layout(); }
+        private void OnEnable() { Layout(); SetInteraction(true); }
+        private void OnDisable() { tween?.Kill(); tween = null; dragging = false; position = CurrentIndex; Layout(); SetInteraction(true); }
     }
 }

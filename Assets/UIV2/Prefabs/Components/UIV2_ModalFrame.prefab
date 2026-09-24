@@ -243,6 +243,7 @@ GameObject:
   - component: {fileID: 6779602971029661628}
   - component: {fileID: 7560175141110699404}
   - component: {fileID: 5487500798733897944}
+  - component: {fileID: 2811804890421975744}
   m_Layer: 0
   m_Name: CloseButton
   m_TagString: Untagged
@@ -352,6 +353,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2811804890421975744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2577476725122802271}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07b9ee4ddfe751439685fad1c5332a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3597037329732475039
 GameObject:
   m_ObjectHideFlags: 0
@@ -419,8 +432,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: TITOLO
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
-  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
+  m_sharedMaterial: {fileID: 7634905335590103105, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -553,8 +566,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: X
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
-  m_sharedMaterial: {fileID: -6746685869327729836, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
+  m_sharedMaterial: {fileID: 7634905335590103105, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -578,8 +591,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 40
+  m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -689,7 +702,7 @@ MonoBehaviour:
   dimmerButton: {fileID: 2001670549193838155}
   ribbonTitle: {fileID: 5472407287776400032}
   contentArea: {fileID: 8279676109651503361}
-  animDuration: 0.2
+  frame: {fileID: 0}
 --- !u!1 &5516215741559509949
 GameObject:
   m_ObjectHideFlags: 0

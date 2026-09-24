@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Project51.Core;
 
 namespace Project51.UIV2.Components
 {
@@ -52,9 +53,11 @@ namespace Project51.UIV2.Components
         protected override void OnEnable()
         {
             base.OnEnable();
+            GamePreferences.Changed += ApplyPreference;
             raycastTarget = false;
             lastTime = Time.unscaledTime;
-            SeedAmbient();
+            if (!GamePreferences.ReducedGraphics) SeedAmbient();
+            ApplyPreference();
             if (burstOnEnable && Application.isPlaying) Burst();
         }
 
@@ -64,7 +67,7 @@ namespace Project51.UIV2.Components
         /// <summary>Scoppio da un punto locale del rettangolo.</summary>
         public void Burst(Vector2 localCenter, int count)
         {
-            if (count <= 0) return;
+            if (count <= 0 || GamePreferences.ReducedGraphics) return;
             if (bursts.Length < burstAlive + count) System.Array.Resize(ref bursts, burstAlive + count);
             for (int i = 0; i < count; i++)
             {
@@ -109,6 +112,7 @@ namespace Project51.UIV2.Components
 
         private void Update()
         {
+            if (GamePreferences.ReducedGraphics) return;
             float now = Time.unscaledTime;
             float dt = Mathf.Min(now - lastTime, 0.1f);
             lastTime = now;
@@ -142,6 +146,7 @@ namespace Project51.UIV2.Components
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
+            if (GamePreferences.ReducedGraphics) return;
             var uv = moteSprite != null ? UnityEngine.Sprites.DataUtility.GetOuterUV(moteSprite) : new Vector4(0f, 0f, 1f, 1f);
             float t = Application.isPlaying ? Time.unscaledTime : 0f;
 
@@ -162,6 +167,25 @@ namespace Project51.UIV2.Components
                 float fade = Mathf.Clamp01((1f - life01) * 2.5f);
                 AddQuad(vh, m.Position, m.Size * (1f - 0.4f * life01), fade, uv);
             }
+        }
+
+        private void ApplyPreference()
+        {
+            lastTime = Time.unscaledTime;
+            if (GamePreferences.ReducedGraphics)
+            {
+                burstAlive = 0;
+                canvasRenderer.Clear();
+            }
+            else if (ambient.Length != ambientCount) SeedAmbient();
+            SetVerticesDirty();
+        }
+
+        protected override void OnDisable()
+        {
+            GamePreferences.Changed -= ApplyPreference;
+            burstAlive = 0;
+            base.OnDisable();
         }
 
         private void AddQuad(VertexHelper vh, Vector2 center, float size, float alpha, Vector4 uv)

@@ -53,7 +53,8 @@ namespace Project51.Auth
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Creato come figlio di AuthBootstrapper (gia' persistente): DDOL vale solo sulla radice.
+            if (transform.parent == null) DontDestroyOnLoad(gameObject);
         }
         
         private void Update()

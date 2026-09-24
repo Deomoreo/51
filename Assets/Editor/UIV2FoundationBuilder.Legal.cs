@@ -69,7 +69,7 @@ namespace Project51.EditorTools
             title.fontSizeMax = 30f;
 
             var close = MockButton(design, "Close", "sq_blue", 935f, frameTop + 36f, 80f, 72f, "", 0f, null);
-            MockSprite(close.transform, "Icon", LoadSprite(IconsPath, "ic_x"), 21f, 17f, 38f, 38f, false);
+            MockSprite(close.transform, "Icon", NewIcon("ic_X"), 21f, 17f, 38f, 38f, false);
 
             // Area di lettura: viewport ritagliato + contenuto che cresce con il testo. Comincia
             // sotto le code del nastro, che scendono dentro alla cornice e coprirebbero la prima riga.

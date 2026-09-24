@@ -1,7 +1,7 @@
-using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Project51.UIV2.Animations;
 
 namespace Project51.UIV2.Components
 {
@@ -13,18 +13,25 @@ namespace Project51.UIV2.Components
 
         public Button AddButton => addButton;
 
-        private static readonly CultureInfo ItalianCulture = CultureInfo.GetCultureInfo("it-IT");
+        private UIV2NumberCounter counter;
 
         public void SetResource(Sprite iconSprite, long amount)
         {
             // Icona opzionale: la moneta oro e' gia' cotta in bar_coin, quindi l'Image resta spenta
             // finche' un chiamante non passa un'icona per una valuta diversa.
-            if (icon != null && iconSprite != null)
+            if (icon != null)
             {
                 icon.sprite = iconSprite;
-                icon.enabled = true;
+                icon.enabled = iconSprite != null;
             }
-            if (amountLabel != null) amountLabel.text = amount.ToString("N0", ItalianCulture);
+            if (amountLabel == null) return;
+            if (counter == null)
+            {
+                counter = amountLabel.GetComponent<UIV2NumberCounter>();
+                if (counter == null) counter = amountLabel.gameObject.AddComponent<UIV2NumberCounter>();
+                counter.Label = amountLabel;
+            }
+            counter.SetValue(amount);
         }
     }
 }

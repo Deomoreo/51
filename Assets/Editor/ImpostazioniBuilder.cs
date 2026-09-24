@@ -84,7 +84,7 @@ namespace Project51.EditorTools
 
             CreateSectionLabel(panelFrame, "GIOCO", y);
             y += 46f;
-            var animazioniToggle = CreateToggleRow(panelFrame, "Row_AnimazioniVeloci", "Animazioni veloci", "Riduce i tempi delle animazioni", y);
+            var animazioniToggle = CreateToggleRow(panelFrame, "Row_AnimazioniVeloci", "Grafica ridotta", "Meno effetti e animazioni più brevi", y);
             y += 146f;
             var notificheToggle = CreateToggleRow(panelFrame, "Row_Notifiche", "Notifiche", "Turno, inviti, premi", y);
             y += 176f;

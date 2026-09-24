@@ -31,7 +31,6 @@ namespace Project51.EditorTools
         private const float TableFeltCenterY = 860f;
         private const float TableFeltWidth = 1030f;
         private const float TableFeltHeight = 810f;
-        private const float ReferenceOrthoSize = 11.30667f; // CameraResponsiveFit a 1080x1920
 
         /// <summary>
         /// Porta il tavolo alle posizioni del mockup 09_tavolo_v4: banner, Emoji/Accuso, centro delle
@@ -55,7 +54,14 @@ namespace Project51.EditorTools
             }
 
             var manager = Object.FindObjectOfType<Project51.Unity.UI.PlayerBannerManager>(true);
-            if (manager != null) SetPrivateField(manager, "roundedFillSprite", LoadSprite(PanelsNeutralPath, "panel_fill_r24"));
+            if (manager != null)
+            {
+                SetPrivateField(manager, "roundedFillSprite", LoadSprite(PanelsNeutralPath, "panel_fill_r24"));
+                // Stessi ritratti della sandbox (giocatore, Marco, Luca, Giulia), uno per posto assoluto.
+                SetPrivateField(manager, "seatAvatars", new[] {
+                    LoadSprite(AvatarsPath, "avatar_08"), LoadSprite(AvatarsPath, "avatar_03"),
+                    LoadSprite(AvatarsPath, "avatar_06"), LoadSprite(AvatarsPath, "avatar_01") });
+            }
 
             // Il mockup non ha una scritta di turno nella barra in alto (il turno si vede sul banner):
             // il vecchio TurnIndicator si sovrapponeva a "Mano X di Y".
@@ -65,6 +71,17 @@ namespace Project51.EditorTools
             var extraBold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(PoppinsExtraBoldPath);
             foreach (Transform banner in canvas.transform.Find("PlayerBanners"))
             {
+                // Ritratto al posto del cerchio frame_round: box 66x76 cosi' l'anello oro del ritratto
+                // (~81% dell'altezza sprite) resta ~62px come il cerchio del mockup; testa e cappello escono sopra.
+                var avatarFrame = banner.Find("AvatarFrame") as RectTransform;
+                var bannerView = banner.GetComponent<Project51.Unity.UI.PlayerBanner>();
+                if (avatarFrame != null && bannerView != null)
+                {
+                    avatarFrame.sizeDelta = new Vector2(66f, 76f);
+                    SetPrivateField(bannerView, "avatarImage", avatarFrame.GetComponent<Image>());
+                    EditorUtility.SetDirty(bannerView);
+                }
+
                 // Chip MAZZIERE: pillola oro a cavallo del bordo basso, non piu' sopra avatar e nome.
                 var chip = banner.Find("DealerLabel") as RectTransform;
                 if (chip == null) continue;
@@ -110,8 +127,8 @@ namespace Project51.EditorTools
                 EditorUtility.SetDirty(social.Close.gameObject);
             }
 
-            // Mondo: 1920 px di mockup = 2 * ReferenceOrthoSize unita'.
-            float worldPerPixel = ReferenceOrthoSize * 2f / 1920f;
+            // Mondo: 1920 px di mockup = DesignWorldHeight unita' (G1: area di design fissa, non l'ortho live).
+            const float worldPerPixel = Project51.Unity.CameraResponsiveFit.DesignWorldHeight / Project51.Unity.CameraResponsiveFit.DesignHeightPx;
             var tableCenter = GameObject.Find("TableCardsContainer");
             if (tableCenter != null)
             {
@@ -130,9 +147,70 @@ namespace Project51.EditorTools
                 so.ApplyModifiedProperties();
             }
 
+            // Barra in alto come nel mockup: "Mano" Bold 25pt crema, "Carte rimaste" 22pt azzurro.
+            var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(PoppinsBoldPath);
+            var handText = canvas.transform.Find("TableTopBar/HandText")?.GetComponent<TMP_Text>();
+            if (handText != null && bold != null)
+            {
+                handText.font = bold;
+                handText.fontSharedMaterial = bold.material;
+                handText.fontSize = 25f;
+                handText.fontStyle = FontStyles.Normal;
+                handText.color = new Color32(255, 250, 238, 255);
+                EditorUtility.SetDirty(handText);
+            }
+            var cardsLeftText = canvas.transform.Find("TableTopBar/CardsLeftText")?.GetComponent<TMP_Text>();
+            if (cardsLeftText != null)
+            {
+                cardsLeftText.fontSize = 22f;
+                cardsLeftText.color = new Color32(186, 205, 228, 255);
+                EditorUtility.SetDirty(cardsLeftText);
+            }
+
+            // Sfondo: sfumatura verticale misurata sul mockup (piu' chiara in alto), cosi' la barra
+            // scura in alto si stacca come nel mockup invece di sparire su un navy piatto.
+            var background = GameObject.Find("GameBackground")?.GetComponent<SpriteRenderer>();
+            if (background != null)
+            {
+                Undo.RecordObject(background, "Apply Table Layout V4");
+                background.sprite = CreateNavyGradientSprite(new Color32(16, 34, 56, 255), new Color32(7, 16, 28, 255));
+                EditorUtility.SetDirty(background);
+            }
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[UIV2FoundationBuilder] Layout tavolo V4 applicato in GameScene.");
+        }
+
+        private const string NavyGradientAssetPath = "Assets/Art/Generated/GameBackground_NavyGradient.png";
+
+        /// <summary>PNG quadrato (GameBackgroundFitter scala in Cover uniforme), rigenerato a ogni lancio.</summary>
+        private static Sprite CreateNavyGradientSprite(Color32 top, Color32 bottom)
+        {
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                var row = Color32.Lerp(bottom, top, y / (size - 1f)); // riga 0 = basso
+                for (int x = 0; x < size; x++) pixels[y * size + x] = row;
+            }
+            tex.SetPixels32(pixels);
+            tex.Apply();
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(NavyGradientAssetPath));
+            System.IO.File.WriteAllBytes(NavyGradientAssetPath, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+
+            AssetDatabase.ImportAsset(NavyGradientAssetPath);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(NavyGradientAssetPath);
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spritePixelsPerUnit = size;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.mipmapEnabled = false;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Sprite>(NavyGradientAssetPath);
         }
 
         /// <summary>Sprite del pannello "Scegli la presa" (MoveSelectionUI costruisce la grafica a runtime).</summary>
@@ -149,7 +227,7 @@ namespace Project51.EditorTools
             SetPrivateField(ui, "rowFill", LoadSprite(PanelsNeutralPath, "panel_fill_r24"));
             SetPrivateField(ui, "rowRing", LoadSprite(PanelsNeutralPath, "panel_ring_r24"));
             SetPrivateField(ui, "closeBackground", LoadSprite(IconsPath, "sq_blue"));
-            SetPrivateField(ui, "closeIcon", LoadSprite(IconsPath, "ic_x"));
+            SetPrivateField(ui, "closeIcon", NewIcon("ic_X"));
             EditorUtility.SetDirty(ui);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -167,7 +245,7 @@ namespace Project51.EditorTools
             var root = canvas.transform;
 
             SetTableSprite(root, "TableTopBar/SettingsButton", "sq_blue", sliced: true);
-            SetTableSprite(root, "TableTopBar/SettingsButton/Icon", "ic_gear", sliced: false);
+            SetTableSprite(root, "TableTopBar/SettingsButton/Icon", "ic_option", sliced: false);
             SetTableSprite(root, "TableActionButtons/EmojiButton", "sq_blue", sliced: true);
             SetTableSprite(root, "TableActionButtons/EmojiButton/Icon", "ic_person", sliced: false);
             SetTableSprite(root, "TableActionButtons/AccusoButton", "sq_gold", sliced: true);
@@ -240,7 +318,7 @@ namespace Project51.EditorTools
                 return;
             }
             var image = target.GetComponent<Image>();
-            image.sprite = LoadSprite(IconsPath, spriteName);
+            image.sprite = System.Array.IndexOf(IconSetV2, spriteName) >= 0 ? NewIcon(spriteName) : LoadSprite(IconsPath, spriteName);
             image.color = Color.white;
             image.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
             image.preserveAspect = !sliced;

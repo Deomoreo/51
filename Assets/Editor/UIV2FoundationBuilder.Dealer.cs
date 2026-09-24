@@ -93,7 +93,7 @@ namespace Project51.EditorTools
                 names[i] = MockText(box, "Name", "Giocatore", 10f, 88f, 260f, 44f, 26f, FontStyles.Normal, Color.white, TextAlignmentOptions.Center);
                 UseFont(names[i], bold, null);
 
-                var trophy = MockSprite(box, "Trophy", LoadSprite(IconsPath, "ic_trophy"), 115f, -48f, 50f, 50f, false);
+                var trophy = MockSprite(box, "Trophy", NewIcon("ic_trophy"), 115f, -48f, 50f, 50f, false);
                 trophies[i] = trophy.gameObject;
                 trophies[i].SetActive(false);
 

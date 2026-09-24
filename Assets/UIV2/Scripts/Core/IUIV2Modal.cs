@@ -4,6 +4,7 @@ namespace Project51.UIV2.Core
     {
         void Open();
         void Close();
+        void CloseImmediate();
         bool IsOpen { get; }
     }
 }

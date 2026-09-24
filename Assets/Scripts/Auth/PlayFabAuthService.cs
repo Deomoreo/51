@@ -42,7 +42,7 @@ namespace Project51.Auth
         // Costanti
         private const string DEVICE_ID_KEY = "Project51_DeviceId";
         private const string SESSION_GUEST_ID_KEY = "Project51_SessionGuestId";
-        private const string GUEST_NICKNAME_PREFIX = "Guest_";
+        private const string GUEST_NICKNAME_PREFIX = "Ospite ";
         private const string IS_REGISTERED_KEY = "Project51_IsRegistered";
         private const string HAS_REAL_LOGIN_KEY = "Project51_HasRealLogin";
         private const string HAS_EVER_LOGGED_KEY = "Project51_HasEverLogged";
@@ -132,7 +132,7 @@ namespace Project51.Auth
 
         /// <summary>
         /// Forces the current session to use a guest identity.
-        /// Clears DisplayName so GetBestDisplayName() returns Guest_xxxx.
+        /// Clears DisplayName so GetBestDisplayName() returns "Ospite XXXX".
         /// Also clears HasRealLogin and IsRegistered local flags.
         /// Call this when the user explicitly chooses "Play as Guest".
         /// </summary>
@@ -151,14 +151,17 @@ namespace Project51.Auth
                 return DisplayName;
 
             if (!string.IsNullOrWhiteSpace(PlayFabId))
-                return $"{GUEST_NICKNAME_PREFIX}{PlayFabId.Substring(0, Math.Min(8, PlayFabId.Length))}";
+                return GUEST_NICKNAME_PREFIX + ShortId(PlayFabId);
 
             string deviceId = GetOrCreateDeviceId();
             if (!string.IsNullOrWhiteSpace(deviceId))
-                return $"{GUEST_NICKNAME_PREFIX}{deviceId.Substring(0, Math.Min(8, deviceId.Length))}";
+                return GUEST_NICKNAME_PREFIX + ShortId(deviceId);
 
-            return $"{GUEST_NICKNAME_PREFIX}Player";
+            return GUEST_NICKNAME_PREFIX.TrimEnd();
         }
+
+        // Nome ospite leggibile: "Ospite 66B9" invece di "Guest_66B9B973".
+        private static string ShortId(string id) => id.Replace("-", "").Substring(0, Math.Min(4, id.Replace("-", "").Length)).ToUpperInvariant();
         
         // Eventi
         public event Action<string> OnLoginSuccess;

@@ -17,6 +17,8 @@ namespace Project51.Unity
     /// </summary>
     public class MoveSelectionUI : MonoBehaviour
     {
+        // Optional presentation hook; Gameplay cannot reference the UI assembly.
+        public static event Action<TMP_Text> TextCreated;
         public struct CaptureChoice
         {
             public string Title;
@@ -338,6 +340,7 @@ namespace Project51.Unity
             text.raycastTarget = false;
             text.enableWordWrapping = false;
             text.overflowMode = TextOverflowModes.Ellipsis;
+            TextCreated?.Invoke(text);
             return text;
         }
     }

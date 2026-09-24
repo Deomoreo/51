@@ -33,6 +33,23 @@ namespace Project51.Unity
         private int originalSortingOrder = 0;
         private Coroutine selectionCoroutine;
         private Coroutine hoverCoroutine;
+        private CardShaderEffect shaderEffect;
+        private CardDropShadow dropShadow;
+        private float flipFactor = 1f;
+
+        private CardShaderEffect SurfaceEffect
+        {
+            get
+            {
+                if (shaderEffect == null)
+                    shaderEffect = GetComponent<CardShaderEffect>() ?? gameObject.AddComponent<CardShaderEffect>();
+                shaderEffect.Bind(CardRenderer);
+                return shaderEffect;
+            }
+        }
+
+        /// <summary>Explicit deck decoration hook; current decks have no rarity metadata.</summary>
+        public void SetHolographic(bool enabled) => SurfaceEffect.SetHolographic(enabled);
 
         public Card Card => card;
 
@@ -90,6 +107,8 @@ namespace Project51.Unity
         /// </summary>
         public void Initialize(Card card, Sprite cardSprite = null, bool faceUp = true)
         {
+            ClearMattaTransform();
+            ClearTemporaryValue();
             this.card = card;
 
             if (spriteRenderer == null)
@@ -142,6 +161,9 @@ namespace Project51.Unity
             }
 
             // Ensure there is a Collider2D so OnMouse* callbacks fire for 2D sprites
+            if (dropShadow == null)
+                dropShadow = GetComponent<CardDropShadow>() ?? gameObject.AddComponent<CardDropShadow>();
+            dropShadow.Bind(spriteRenderer);
             InitCollider();
 
             // store original position for selection animation
@@ -208,6 +230,10 @@ namespace Project51.Unity
             {
                 // Prevent interactions when not local player's turn
                 if (!IsLocalPlayersTurn()) return;
+                // OnMouseDown ignora la UI: un tocco sul pannello "scegli la presa" (sopra la mano)
+                // giocava anche la carta sotto, inviando una seconda mossa diversa da quella scelta.
+                if (IsPointerOverUI()) return;
+                GameFeedback.TryHaptic(false);
                 var cam = Camera.main;
                 if (cam != null)
                 {
@@ -261,6 +287,8 @@ namespace Project51.Unity
             if (cam == null) return true;
 
             Vector3 mouseScreenPos = Input.mousePosition;
+            if (float.IsNaN(mouseScreenPos.x) || float.IsInfinity(mouseScreenPos.x) ||
+                float.IsNaN(mouseScreenPos.y) || float.IsInfinity(mouseScreenPos.y)) return false;
             mouseScreenPos.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
             Vector3 worldPos = cam.ScreenToWorldPoint(mouseScreenPos);
             return col.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
@@ -268,6 +296,10 @@ namespace Project51.Unity
 
         private void OnDisable()
         {
+            // Unity stops object coroutines on pooling: settle the current face and reset width/material.
+            if (mattaFlip != null && shownMattaTarget != null)
+                ShowTemporaryValue(shownMattaTarget, null);
+            CancelMattaAnimation();
             // Stessa difesa di Update/IsPointerActuallyOverCollider ma per il caso in cui la
             // carta venga disattivata (nascosta, distrutta, riusata) mentre il mouse era ancora
             // sopra: in quel caso OnMouseExit non scatta affatto.
@@ -281,17 +313,14 @@ namespace Project51.Unity
                     SetMarkerVisible(markerRenderer != null && markerRenderer.sprite != null);
                 }
 
-                if (!isSelected)
-                {
-                    if (hoverCoroutine != null)
-                    {
-                        StopCoroutine(hoverCoroutine);
-                        hoverCoroutine = null;
-                    }
-                    transform.localScale = displayScale;
-                    transform.position = originalPosition;
-                }
             }
+            StopPoseAnimations();
+            isSelected = false;
+            isDragging = false;
+            transform.localScale = displayScale;
+            transform.position = originalPosition;
+            if (spriteRenderer != null) spriteRenderer.sortingOrder = originalSortingOrder;
+            if (dropShadow != null) dropShadow.SetElevation(0f);
         }
 
         private void OnMouseEnter()
@@ -301,6 +330,7 @@ namespace Project51.Unity
             // Simple hover effect only when enabled: slightly scale up
             if (enableHover)
             {
+                SurfaceEffect.PlaySweep();
                 // if selected, keep selection animation; otherwise scale smoothly
                 if (!isSelected)
                     AnimateHover(true);
@@ -368,6 +398,17 @@ namespace Project51.Unity
             }
         }
 
+        private static bool IsPointerOverUI()
+        {
+            var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+            if (eventSystem == null) return false;
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                if (eventSystem.IsPointerOverGameObject(Input.GetTouch(i).fingerId)) return true;
+            }
+            return eventSystem.IsPointerOverGameObject();
+        }
+
         private TurnController _turnControllerCache;
 
         /// <summary>
@@ -430,7 +471,9 @@ namespace Project51.Unity
         public void SetSelected(bool selected)
         {
             if (isSelected == selected) return;
+            StopPoseAnimations();
             isSelected = selected;
+            if (selected) SurfaceEffect.PlaySweep();
             if (selectionCoroutine != null)
             {
                 StopCoroutine(selectionCoroutine);
@@ -444,7 +487,7 @@ namespace Project51.Unity
         private System.Collections.IEnumerator SelectionCoroutine(bool select)
         {
             float elapsed = 0f;
-            var startScale = transform.localScale;
+            var startScale = GetPoseScale();
             var targetScale = select ? displayScale * 1.12f : displayScale;
             var startPos = transform.position;
             var targetPos = select ? originalPosition + Vector3.up * raiseAmount : originalPosition;
@@ -459,9 +502,9 @@ namespace Project51.Unity
             while (elapsed < selectionAnimDuration)
             {
                 elapsed += Time.deltaTime;
-                var t = Mathf.Clamp01(elapsed / selectionAnimDuration);
-                transform.localScale = Vector3.Lerp(startScale, targetScale, t);
-                transform.position = Vector3.Lerp(startPos, targetPos, t);
+                var t = PoseEase(Mathf.Clamp01(elapsed / selectionAnimDuration), select);
+                transform.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
+                transform.position = Vector3.LerpUnclamped(startPos, targetPos, t);
                 yield return null;
             }
 
@@ -516,6 +559,7 @@ namespace Project51.Unity
 
         private void AnimateHover(bool enter)
         {
+            if (isSelected || isDragging) return;
             if (hoverCoroutine != null)
             {
                 StopCoroutine(hoverCoroutine);
@@ -527,7 +571,7 @@ namespace Project51.Unity
         private System.Collections.IEnumerator HoverCoroutine(bool enter)
         {
             float elapsed = 0f;
-            Vector3 startScale = transform.localScale;
+            Vector3 startScale = GetPoseScale();
             Vector3 startPosition = transform.position;
             Vector3 targetScale = enter ? displayScale * hoverScaleMultiplier : displayScale;
             Vector3 targetPosition = enter ? originalPosition + Vector3.up * hoverRaiseAmount : originalPosition;
@@ -535,15 +579,41 @@ namespace Project51.Unity
             while (elapsed < hoverAnimDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / hoverAnimDuration));
-                transform.localScale = Vector3.Lerp(startScale, targetScale, t);
-                transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+                float t = PoseEase(Mathf.Clamp01(elapsed / hoverAnimDuration), enter);
+                transform.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
+                transform.position = Vector3.LerpUnclamped(startPosition, targetPosition, t);
                 yield return null;
             }
 
             transform.localScale = targetScale;
             transform.position = targetPosition;
             hoverCoroutine = null;
+        }
+
+        private void StopPoseAnimations()
+        {
+            if (hoverCoroutine != null) StopCoroutine(hoverCoroutine);
+            if (selectionCoroutine != null) StopCoroutine(selectionCoroutine);
+            if (hintBounceCoroutine != null) StopCoroutine(hintBounceCoroutine);
+            hoverCoroutine = null;
+            selectionCoroutine = null;
+            hintBounceCoroutine = null;
+        }
+
+        private Vector3 GetPoseScale()
+        {
+            var scale = transform.localScale;
+            if (mattaFlip != null && CardRenderer != null && CardRenderer.transform == transform)
+                scale.x = scale.y * displayScale.x / Mathf.Max(.0001f, displayScale.y);
+            return scale;
+        }
+
+        private static float PoseEase(float t, bool lift)
+        {
+            if (!lift) return 1f - (1f - t) * (1f - t);
+            // Quick pickup with a restrained overshoot; final pose is always exact.
+            float u = t - 1f;
+            return 1f + 1.8f * u * u * u + .8f * u * u;
         }
 
         /// <summary>
@@ -686,6 +756,7 @@ namespace Project51.Unity
         // Clear only the visual overlay (used on hover). Keeps the temp sprite cached for restore on exit.
         public void ClearTemporaryOverlay()
         {
+            CancelMattaAnimation();
             showingTemporaryValue = false;
             if (spriteRenderer != null && originalFaceSprite != null)
             {
@@ -697,6 +768,7 @@ namespace Project51.Unity
         // Permanently clear any temporary value and cache.
         public void ClearTemporaryValue()
         {
+            CancelMattaAnimation();
             showingTemporaryValue = false;
             temporaryFaceSprite = null;
             if (spriteRenderer != null && originalFaceSprite != null)
@@ -724,7 +796,7 @@ namespace Project51.Unity
             if (shownMattaTarget == targetSprite) return;
             shownMattaTarget = targetSprite;
 
-            if (mattaFlip != null) StopCoroutine(mattaFlip);
+            CancelMattaAnimation();
             if (gameObject.activeInHierarchy)
             {
                 mattaFlip = StartCoroutine(MattaFlipRoutine(targetSprite));
@@ -737,16 +809,22 @@ namespace Project51.Unity
 
         public void ClearMattaTransform()
         {
+            CancelMattaAnimation();
             if (shownMattaTarget == null && (mattaHalo == null || !mattaHalo.gameObject.activeSelf)) return;
             shownMattaTarget = null;
+            if (mattaHalo != null) mattaHalo.gameObject.SetActive(false);
+            ClearTemporaryValue();
+        }
+
+        private void CancelMattaAnimation()
+        {
             if (mattaFlip != null)
             {
                 StopCoroutine(mattaFlip);
                 mattaFlip = null;
-                SetFlipFactor(1f);
+                if (CardRenderer != null) SetFlipFactor(1f);
             }
-            if (mattaHalo != null) mattaHalo.gameObject.SetActive(false);
-            ClearTemporaryValue();
+            if (shaderEffect != null) shaderEffect.ResetEffects();
         }
 
         private System.Collections.IEnumerator MattaFlipRoutine(Sprite target)
@@ -755,6 +833,7 @@ namespace Project51.Unity
             for (float t = 0f; t < half; t += Time.deltaTime)
             {
                 SetFlipFactor(1f - t / half);
+                SurfaceEffect.SetDissolve(t / half);
                 yield return null;
             }
 
@@ -765,16 +844,20 @@ namespace Project51.Unity
             for (float t = 0f; t < half; t += Time.deltaTime)
             {
                 SetFlipFactor(t / half);
+                SurfaceEffect.SetDissolve(1f - t / half);
                 yield return null;
             }
 
             SetFlipFactor(1f);
+            SurfaceEffect.SetDissolve(0f);
+            SurfaceEffect.PlaySweep();
             mattaFlip = null;
         }
 
         /// <summary>Larghezza apparente della carta durante il giro (1 = normale, 0 = di taglio).</summary>
         private void SetFlipFactor(float factor)
         {
+            flipFactor = Mathf.Clamp01(factor);
             var target = CardRenderer.transform;
             if (target == transform)
             {
@@ -846,6 +929,12 @@ namespace Project51.Unity
 
         private void LateUpdate()
         {
+            // Pose coroutines run before LateUpdate: keep Matta's width independent of
+            // hover/selection scale, regardless of the order those coroutines resumed.
+            if (mattaFlip != null && CardRenderer != null) SetFlipFactor(flipFactor);
+            if (dropShadow != null)
+                dropShadow.SetElevation(Mathf.Clamp01((transform.position.y - originalPosition.y) /
+                    Mathf.Max(.01f, raiseAmount)));
             bool haloOn = mattaHalo != null && mattaHalo.gameObject.activeSelf;
             if (moveHintGlow != null && moveHintGlow.gameObject.activeSelf)
             {
@@ -854,16 +943,16 @@ namespace Project51.Unity
                 // Sotto a tutte le carte della mano (ordini 40+), sopra al tavolo: il bagliore della carta
                 // centrale non copre le carte ai lati.
                 moveHintGlow.sortingOrder = CardRenderer.sortingOrder - 10;
-                float glow = 0.7f + 0.3f * (Mathf.Sin(Time.time * 3f) + 1f) * 0.5f;
-                moveHintGlow.color = new Color(moveHintColor.r, moveHintColor.g, moveHintColor.b, glow);
+                float glow = GamePreferences.ReducedGraphics ? 0.85f : 0.7f + 0.3f * (Mathf.Sin(Time.time * 3f) + 1f) * 0.5f;
+                moveHintGlow.color = new Color(moveHintColor.r, moveHintColor.g, moveHintColor.b, glow * moveHintColor.a);
             }
 
             if (!haloOn) return;
             mattaHalo.enabled = CardRenderer != null && CardRenderer.enabled;
             mattaHalo.sortingOrder = CardRenderer.sortingOrder - 1;
             mattaHaloBurst = Mathf.MoveTowards(mattaHaloBurst, 0f, Time.deltaTime * 2.5f);
-            float pulse = 0.6f + 0.25f * (Mathf.Sin(Time.time * 4f) + 1f) * 0.5f;
-            mattaHalo.color = new Color(1f, 0.8f, 0.35f, Mathf.Clamp01(pulse + mattaHaloBurst));
+            float pulse = GamePreferences.ReducedGraphics ? 0.75f : 0.6f + 0.25f * (Mathf.Sin(Time.time * 4f) + 1f) * 0.5f;
+            mattaHalo.color = new Color(1f, 0.8f, 0.35f, GamePreferences.ReducedGraphics ? pulse : Mathf.Clamp01(pulse + mattaHaloBurst));
         }
 
         /// <summary>

@@ -90,11 +90,11 @@ namespace Project51.EditorTools
             UseFont(title, extraBold, navyOutline);
 
             controller.Close = MockButton(window, "Close", "sq_blue", 924f, 407f, 80f, 73f, "", 0f, null);
-            var closeIcon = MockSprite(controller.Close.transform, "Icon", LoadSprite(IconsPath, "ic_x"), 23.5f, 20.5f, 33f, 33f, false);
+            var closeIcon = MockSprite(controller.Close.transform, "Icon", NewIcon("ic_X"), 23.5f, 20.5f, 33f, 33f, false);
             closeIcon.raycastTarget = false;
 
             SettingsSection(window, "PartitaHeader", "PARTITA", 504f, semiBold);
-            controller.FastAnimations = SettingsToggleRow(window, "FastAnimations", "Animazioni veloci", "Riduce i tempi delle animazioni", 560f, extraBold, thinNavyOutline, regular, false);
+            controller.FastAnimations = SettingsToggleRow(window, "FastAnimations", "Grafica ridotta", "Meno effetti e animazioni più brevi", 560f, extraBold, thinNavyOutline, regular, false);
             controller.MoveHints = SettingsToggleRow(window, "MoveHints", "Suggerimenti mosse", "Evidenzia le carte che fanno una presa", 678f, extraBold, thinNavyOutline, regular, true);
 
             SettingsSection(window, "AudioHeader", "AUDIO", 800f, semiBold);
@@ -110,7 +110,7 @@ namespace Project51.EditorTools
             abandonBorder.raycastTarget = true;
             controller.Abandon = abandon.gameObject.AddComponent<Button>();
             controller.Abandon.targetGraphic = abandonBorder;
-            MockSprite(abandon, "Icon", LoadSprite(IconsPath, "ic_x"), 36f, 48f, 43f, 43f, false);
+            MockSprite(abandon, "Icon", NewIcon("ic_exit"), 36f, 48f, 43f, 43f, false);
             controller.AbandonTitle = MockText(abandon, "Title", "Abbandona partita", 99f, 20f, 760f, 44f, 26f, FontStyles.Normal, SetDangerTitle, TextAlignmentOptions.MidlineLeft);
             UseFont(controller.AbandonTitle, extraBold, null);
             controller.AbandonSubtitle = MockText(abandon, "Subtitle", "Conta come sconfitta", 99f, 60f, 760f, 38f, 19f, FontStyles.Normal, SetDangerSubtitle, TextAlignmentOptions.MidlineLeft);
@@ -144,6 +144,7 @@ namespace Project51.EditorTools
             }
 
             EditorUtility.SetDirty(controller);
+            controller.EnsureVibrationToggle();
             HidePanels(panel);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);

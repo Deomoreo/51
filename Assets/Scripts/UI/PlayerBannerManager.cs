@@ -19,6 +19,9 @@ namespace Project51.Unity.UI
         [Tooltip("panel_fill_r24 di PanelsNeutral_v2, usato per il cerchio del conteggio prese. Assegnato da Tools/UIV2/Apply Table Layout V4.")]
         [SerializeField] private Sprite roundedFillSprite;
 
+        [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati da Tools/UIV2/Apply Table Layout V4.")]
+        [SerializeField] private Sprite[] seatAvatars = new Sprite[0];
+
         private TurnController turnController;
         private CardViewManager cardViewManager;
         private Sprite matchCardBack;
@@ -59,6 +62,8 @@ namespace Project51.Unity.UI
                 var banner = banners[relative];
                 banner.gameObject.SetActive(true);
                 banner.SetName(GetDisplayName(p));
+                // ponytail: ritratto per posto, non per profilo; serve un AvatarId sincronizzato per sceglierlo.
+                if (seatAvatars.Length > 0) banner.SetAvatar(seatAvatars[p % seatAvatars.Length]);
                 // Punteggio di partita (a coppie quello della squadra), non solo della smazzata in corso.
                 banner.SetScore(MatchScore.Totals(state)[MatchScore.EntryOf(state, p)]);
                 banner.SetTurnActive(p == turnController.CurrentPlayerIndex);

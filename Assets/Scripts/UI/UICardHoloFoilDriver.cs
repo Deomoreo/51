@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using Project51.Core;
 
 namespace Project51.Unity
 {
     /// <summary>
     /// Variante UI (Image) dei vecchi driver SpriteRenderer:
-    /// - Material instance per effetto holo (tilt su propriet‡)
+    /// - Material instance per effetto holo (tilt su propriet√†)
     /// - Drop shadow via Image figlia
     /// - Idle float (DOTween) su RectTransform
     /// 
@@ -47,8 +48,9 @@ namespace Project51.Unity
 
         private RectTransform _rt;
         private Material _runtimeMat;
+        private Material _originalMat;
         private float _currentTilt;
-        private Sequence _seq;
+        private Tween _seq;
 
         private Vector3 _baseLocalPos;
         private Quaternion _baseLocalRot;
@@ -59,30 +61,52 @@ namespace Project51.Unity
         private void Awake()
         {
             if (cardImage == null) cardImage = GetComponent<Image>();
+            _originalMat = cardImage.material;
             _rt = transform as RectTransform;
             CacheBasePose();
         }
 
         private void OnEnable()
         {
-            EnsureMaterialInstance();
-            EnsureShadow();
             CacheBasePose();
-
-            if (enableIdleFloat)
-                PlayIdle();
+            GamePreferences.Changed += ApplyGraphicsPreference;
+            ApplyGraphicsPreference();
         }
 
         private void OnDisable()
         {
+            GamePreferences.Changed -= ApplyGraphicsPreference;
             StopIdle();
             RestoreBasePose();
+            ReleaseMaterial();
+        }
 
+        private void ReleaseMaterial()
+        {
             if (_runtimeMat != null)
             {
-                Destroy(_runtimeMat);
+                if (cardImage != null && cardImage.material == _runtimeMat) cardImage.material = _originalMat;
+                if (Application.isPlaying) Destroy(_runtimeMat); else DestroyImmediate(_runtimeMat);
                 _runtimeMat = null;
             }
+        }
+
+        private void ApplyGraphicsPreference()
+        {
+            if (GamePreferences.ReducedGraphics)
+            {
+                StopIdle();
+                RestoreBasePose();
+                ReleaseMaterial();
+                // Some legacy prefabs already author the foil shader on the Image.
+                if (cardImage != null) cardImage.material = null;
+                if (_shadowImg != null) _shadowImg.enabled = false;
+                return;
+            }
+            EnsureMaterialInstance();
+            EnsureShadow();
+            if (_shadowImg != null) _shadowImg.enabled = enableShadow;
+            if (enableIdleFloat && (_seq == null || !_seq.IsActive())) PlayIdle();
         }
 
         private void LateUpdate()
@@ -107,12 +131,13 @@ namespace Project51.Unity
 
         private void EnsureMaterialInstance()
         {
+            if (GamePreferences.ReducedGraphics) return;
             if (cardImage == null) cardImage = GetComponent<Image>();
             if (cardImage == null) return;
 
             if (_runtimeMat != null) return;
 
-            var src = holoMaterial != null ? holoMaterial : cardImage.material;
+            var src = holoMaterial != null ? holoMaterial : _originalMat;
             if (src == null) return;
 
             _runtimeMat = Instantiate(src);
@@ -131,7 +156,7 @@ namespace Project51.Unity
                 _shadowRT = (RectTransform)go.transform;
 
                 // Importante: la shadow deve stare SOTTO la carta in ordine di rendering.
-                // Se la shadow Ë figlia, puÚ finire sopra per via di grafica/mesh/material; come sibling Ë deterministico.
+                // Se la shadow √® figlia, pu√≤ finire sopra per via di grafica/mesh/material; come sibling √® deterministico.
                 var parent = transform.parent as RectTransform;
                 if (parent != null)
                     _shadowRT.SetParent(parent, false);
@@ -206,33 +231,30 @@ namespace Project51.Unity
         public void PlayIdle()
         {
             StopIdle();
+            if (GamePreferences.ReducedGraphics) { RestoreBasePose(); return; }
             CacheBasePose();
 
             float floatDelay = Random.Range(0f, floatRandomOffset);
             float rotDelay = Random.Range(0f, rotationRandomOffset);
 
-            _seq = DOTween.Sequence();
-            _seq.SetUpdate(true);
-            _seq.SetTarget(this);
+            // Due tween indipendenti (DOTween non ammette loop infiniti dentro una Sequence);
+            // entrambi hanno target this, quindi StopIdle li ferma con DOTween.Kill(this).
+            _seq = transform.DOLocalMoveY(_baseLocalPos.y + floatAmplitude, floatDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetDelay(floatDelay)
+                .SetUpdate(true)
+                .SetTarget(this);
 
-            _seq.Join(
-                transform.DOLocalMoveY(_baseLocalPos.y + floatAmplitude, floatDuration)
-                    .SetEase(Ease.InOutSine)
-                    .SetLoops(-1, LoopType.Yoyo)
-                    .SetDelay(floatDelay)
-            );
-
-            _seq.Join(
-                _rt.DOLocalRotate(
-                        new Vector3(0f, 0f, zRotationAmplitude),
-                        zRotationDuration,
-                        RotateMode.Fast)
-                    .SetEase(Ease.InOutSine)
-                    .SetLoops(-1, LoopType.Yoyo)
-                    .SetDelay(rotDelay)
-            );
-
-            _seq.Play();
+            _rt.DOLocalRotate(
+                    new Vector3(0f, 0f, zRotationAmplitude),
+                    zRotationDuration,
+                    RotateMode.Fast)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetDelay(rotDelay)
+                .SetUpdate(true)
+                .SetTarget(this);
         }
 
         public void StopIdle()

@@ -45,6 +45,9 @@ namespace Project51.Unity
         {
             if (panelRoot != null)
                 panelRoot.SetActive(false);
+            // Image trasparente a tutto schermo sul root sempre attivo: da nascosto intercettava i tocchi
+            // e (con il guard UI di CardView.OnMouseDown) avrebbe bloccato ogni carta.
+            SetBlocksInput(false);
 
             if (continueButton != null)
                 continueButton.onClick.AddListener(() => OnContinueClicked?.Invoke());
@@ -120,6 +123,7 @@ namespace Project51.Unity
             // Show panel
             if (panelRoot != null)
                 panelRoot.SetActive(true);
+            SetBlocksInput(true);
 
             yield return new WaitForSeconds(showDelay);
 
@@ -167,8 +171,15 @@ namespace Project51.Unity
             GamePresentation.CloseResults();
             if (panelRoot != null)
                 panelRoot.SetActive(false);
+            SetBlocksInput(false);
 
             ClearRows();
+        }
+
+        private void SetBlocksInput(bool blocks)
+        {
+            var bg = GetComponent<Image>();
+            if (bg != null) bg.raycastTarget = blocks;
         }
 
         private void ClearRows()

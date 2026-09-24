@@ -450,10 +450,8 @@ namespace Project51.EditorTools
         }
 
         /// <summary>
-        /// Pulsante indietro: lo sprite ic_arrow_left e' un pulsante tondo gia' completo (disco di
-        /// legno con cornice oro e freccia dentro), non un'icona da mettere dentro una cornice - va
-        /// usato da solo, altrimenti si vedrebbe un pulsante dentro un pulsante. Il riquadro che
-        /// riceve il tocco e' piu' largo del disco visibile, per non avere un bersaglio minuscolo
+        /// Pulsante indietro: freccia ic_arrowback (icone v2) senza cornice. Il riquadro che
+        /// riceve il tocco e' piu' largo della freccia visibile, per non avere un bersaglio minuscolo
         /// sui telefoni. Lo sprite ha margini trasparenti asimmetrici: ci pensa MockSprite a far
         /// coincidere la parte VISIBILE con il riquadro chiesto.
         /// </summary>
@@ -467,7 +465,7 @@ namespace Project51.EditorTools
             button.targetGraphic = surface;
 
             float inset = (touchSize - visibleSize) * 0.5f;
-            MockSprite(rect, "Art", LoadSprite(SheetsDir + "/ic_arrow_left.png", "ic_arrow_left"), inset, inset, visibleSize, visibleSize, false);
+            MockSprite(rect, "Art", NewIcon("ic_arrowback"), inset, inset, visibleSize, visibleSize, false);
             return button;
         }
     }

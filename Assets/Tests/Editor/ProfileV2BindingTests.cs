@@ -49,15 +49,19 @@ namespace Project51.Tests
         }
 
         [Test]
-        public void GuestDoesNotShowExperienceEvenIfDataHasXp()
+        public void GuestNeverShowsExperienceAndIsInvitedToRegister()
         {
-            screen.Bind(new ProfileViewData { PlayerName = "Ospite", IsGuest = true,
-                Level = 5, XpCurrent = 250, XpMax = 500, HasProgress = false });
             var so = new SerializedObject(screen);
             var bar = (Component)so.FindProperty("xpBar").objectReferenceValue;
-            var label = (Component)so.FindProperty("xpLabel").objectReferenceValue;
-            Assert.IsFalse(bar.gameObject.activeSelf);
-            Assert.IsFalse(label.gameObject.activeSelf);
+            var label = (TMP_Text)so.FindProperty("xpLabel").objectReferenceValue;
+            foreach (bool progress in new[] { false, true })
+            {
+                screen.Bind(new ProfileViewData { PlayerName = "Ospite", IsGuest = true,
+                    Level = 5, XpCurrent = 250, XpMax = 500, HasProgress = progress });
+                Assert.IsFalse(bar.gameObject.activeSelf);
+                Assert.IsTrue(label.gameObject.activeSelf);
+                Assert.AreEqual("Registrati per guadagnare XP", label.text);
+            }
         }
 
         [Test]

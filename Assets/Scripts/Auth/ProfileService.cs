@@ -450,27 +450,7 @@ namespace Project51.Auth
             return _playerDataCache.TryGetValue(key, out string value) ? value : defaultValue;
         }
         
-        private int CalculateLevelFromXP(int xp)
-        {
-            // Formula semplice: 100 XP per livello, con scaling
-            // Level 1: 0 XP
-            // Level 2: 100 XP
-            // Level 3: 300 XP (100 + 200)
-            // Level 4: 600 XP (100 + 200 + 300)
-            // etc.
-            
-            int level = 1;
-            int xpRequired = 0;
-            int xpPerLevel = 100;
-            
-            while (xp >= xpRequired)
-            {
-                xpRequired += xpPerLevel * level;
-                level++;
-            }
-            
-            return level - 1;
-        }
+        private static int CalculateLevelFromXP(int xp) => Project51.Core.PlayerXp.LevelOf(xp);
         
         #endregion
     }

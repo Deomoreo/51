@@ -5,6 +5,164 @@ Base esaminata: commit `521b34e`, Unity 2022.3.60f1, destinazione Android.
 
 ## Obiettivo
 
+### I5 — Grafica ridotta (23 settembre 2026, versione 2.06)
+
+- Unico interruttore persistente nelle Impostazioni di Home e tavolo. Migrazione della
+  scelta Animazioni veloci, comprese le vecchie preferenze Home.
+- Spegnimento e ripristino di particelle, coriandoli, shader, sfondo animato, sfocature
+  e pulsazioni. Indicatori di gioco statici, vibrazione indipendente, durate ridotte
+  con il moltiplicatore esistente senza modificare le traiettorie K5.
+- Effetti nuovi/riaperti rispettano la scelta. Ripristino del blur nel pannello aperto
+  tramite snapshot conservato o cattura con pannello escluso.
+- 271 EditMode passati, zero fallimenti; runtime I5 generale e al tavolo, 3 K5 e K6
+  passati. Home/tavolo verificati in GameView. Prestazioni/batteria native non misurate.
+- Note durevoli e limiti: `docs/ui/i5-reduced-graphics.md`. Prossimo task: K7.
+
+### K6 — vibrazione e particelle (23 settembre 2026, versione 2.05)
+
+- Preferenza Vibrazione persistente e condivisa tra Home e tavolo. Tocchi accettati
+  e momenti locali producono impulsi brevi; bot e giocatori remoti non vibrano il telefono.
+- Particelle finite scopa/accuso/vittoria locale/EXP confermata: quattro emettitori
+  riutilizzati, massimo 48 particelle ciascuno, cleanup e interruttore tecnico per I5.
+- Accusi simultanei conservano i callback; i pulsanti che chiudono il pannello mantengono
+  il feedback. Gli impulsi nativi in coda vengono invalidati quando cambia la preferenza/focus.
+- 261 EditMode passati, zero fallimenti; 3 runtime K5 e controlli runtime K6 passati.
+  Layout impostazioni e particelle osservati in GameView. Build Android/iOS e sensazione
+  aptica su hardware non ancora verificate. Traiettoria e tempi del volo K5 preservati.
+- Dettagli durevoli: `docs/ui/k6-feedback-plan.md`. I5 completato nella 2.06.
+
+### Correzione K5 — continuità del volo (23 settembre 2026, versione 2.04)
+
+- Segnalazione utente: carte a scatti. I due DOMove della 2.03 frenavano a zero al punto
+  intermedio e fermavano la posizione al termine dell'80% della durata, prima della scala.
+- Ripristinato il DOPath continuo precedente lungo tutti gli 0,35s, con scala/rotazione
+  originali e audio all'arrivo. Ombra con altezza continua; cleanup K5 preservato.
+- Test aggiunto sulla continuità a metà volo e sull'arrivo: riproduce la regressione prima
+  della correzione. 255 EditMode e 3 runtime K5 passati. Campionamento a 60 Hz: sparita
+  la quasi-fermata intermedia; decelerazione continua fino alla destinazione.
+- Le verifiche della 2.03 sulla sola posa finale non coprivano questo difetto temporale.
+
+### K5 — tavolo (23 settembre 2026, versione 2.03)
+
+- `TableFeltRenderer`: trama procedurale deterministica e luce ellittica centrale; texture
+  con mipmap, rilascio degli asset sostituiti e rigenerazione differita dall'Inspector.
+- `CardDropShadow`: sprite e materiale condivisi, ombra morbida su carte e copie animate;
+  segue dimensioni, rotazione, ordine, visibilità, alpha e dissolvenza K4. Altezza percepita
+  maggiore durante sollevamento e volo, reset al riuso e rilascio delle risorse condivise.
+- `CardView`: presa al tocco più decisa con overshoot lieve, cancellazione dei movimenti
+  concorrenti e posa esatta al riuso. La larghezza della matta resta indipendente dalla
+  selezione, anche quando quest'ultima comincia verso la fine della trasformazione.
+- `CardAnimationController`: salita, discesa accelerata e breve assestamento entro gli
+  stessi 0,35 secondi; audio all'impatto, ripristino di posa e ordine all'interruzione.
+- Verifica: **254 EditMode passati**, **3 runtime K5 e 2 runtime carte K4 passati**;
+  tavolo e presa in allenamento verificati in Play Mode, nessuna copia/ombra residua,
+  console senza errori. Runtime K1 e blur K4 non ripetuti, nessuna build Android o
+  verifica multiplayer con più client. Dettagli e immagini: `docs/ui/k5-table-plan.md`.
+- Integrazione automatica nei componenti esistenti, senza modifica manuale di scene o
+  prefab generati. Prossimo task: K6.
+
+### K4 — shader (23 settembre 2026, versione 2.02)
+
+- `Tools/UIV2/Apply Shader Kit` applica gli effetti ai prefab; `UIV2ShaderKit` completa
+  le scene al caricamento. `UIV2SurfaceEffect` mantiene UV atlas, tint e maschere UI;
+  riflesso sui primari oro e luce lenta sul fondo Home (I6).
+- `UIV2ShapeGlow` riusa gli oggetti SoftGlow esistenti, con silhouette alpha del vero
+  sprite e della sua geometria sliced, preservando riferimenti di selezione e animazione.
+- `CardShaderEffect` introduce riflesso su selezione/hover, bruciatura nella trasformazione
+  matta e olografico opt-in. Reset su interruzione/pooling e ripristino del materiale originale.
+- `BackdropBlur` cattura e sfoca in RenderTexture sulla GPU: nessun readback CPU nel
+  percorso runtime, risorse liberate alla chiusura, fallback al velo. Corretto il verso
+  delle catture Direct3D. Shader in Resources per l'inclusione nel player.
+- Verifica: **249 EditMode passati**, **3 runtime K4 passati separatamente** in Play Mode;
+  avvio, Home, tavolo e blur Impostazioni controllati, console finale senza errori.
+  Il runtime esplicito K1 non è stato ripetuto. Nessuna build/profilazione Android.
+- Rarità assente nei dati: API pronte, collegamento con F2/F5/J5. Prove complete di
+  matta/accusi/risultati e scrolling mascherato restano nel giro I7; dispositivi/backend in G2.
+  Dettagli durevoli: `docs/ui/k4-shaders-plan.md`. Prossimo task K5.
+
+### K2 — sistema di design (23 settembre 2026, versione 2.01)
+
+- `UIV2Theme` centralizza palette, font Poppins, scala 40/32/24/20, varianti pannello
+  e materiale oro C9. Le label oro ripristinano ExtraBold/panna/contorno bruno anche
+  dopo riapertura: CONTINUA, RIVINCITA, accesso/registrazione e conferme inclusi.
+- `Tools/UIV2/Apply Design System` aggiorna i prefab e aggiunge pulsante piatto,
+  pulsante icona e pannello contenuti. I modali riusano il frame esistente.
+  `UIV2DesignCatalog` collega Resources al tema originale; `UIV2DesignSystem`
+  completa anche pannelli inattivi e UI al tavolo al caricamento delle scene.
+- Le varianti legacy teal/verde conservano gli indici serializzati e i controlli
+  di selezione conservano i loro colori. Annulla/Esci delle stanze diventano piatti;
+  azioni secondarie Registrati/Riprova/Copia adottano il blu.
+- Gerarchia tipografica allineata senza cambiare RectTransform, listener o stato input.
+  Dimensioni calibrate di GIOCA/OSPITE e nastri, nomi, piccoli badge e codici stanza
+  conservate. Nessuna modifica ai TMP 3D sulle carte. Gli outline mantengono l'atlante.
+- Font anche sui testi creati durante il gioco: scelte di presa, conteggio prese,
+  indicatore turno. Un evento mantiene Gameplay indipendente dall'assembly UI.
+- Revisione indipendente: corretti il riconoscimento del modale con immagini figlie
+  e la confusione fra pannelli e Fill delle barre; ripristinati anche gli override
+  oro dei prefab annidati. Test specifici sui prefab salvati impediscono la ricaduta.
+- Verifiche: **237 test EditMode passati, 0 falliti**; **runtime K1 esplicito passato**
+  separatamente (registratore `Temp/K1-motion-runtime.txt`). Seconda applicazione del
+  builder: 0 prefab modificati. MainMenu/GameScene identiche nei rispettivi SHA256.
+- Controllo visivo Play Mode: avvio, accesso, impostazioni, Home, Collezione, Profilo,
+  anteprime layout fine smazzata/fine partita. Risultati mostrati con dati template in
+  memoria, senza assegnare premi. Nessun errore Console durante le prove.
+- Regole durevoli in `docs/ui/design-system.md`. Nessuna build Android o prova fisica;
+  modifiche locali non committate. Prossimo punto **K4 — shader**.
+
+### K1 — kit di movimento (23 settembre 2026, versione 2.00)
+
+- Tempi e curve comuni in `UIV2Motion`, con tempo non scalato e rispetto di Animazioni veloci.
+  Pressione 0,07 s / scala 0,94, rilascio 0,18 s, pannelli 0,24/0,16 s,
+  pagine 0,28 s, dissolvenze 0,20 s, contatori 0,40 s, volo icone 0,55 s.
+- `UIV2ButtonFeedback`: risposta alla pressione e al rilascio, anche da tastiera;
+  ripristino quando si trascina fuori, si disabilita il pulsante o si chiude la schermata.
+  Veli e pulsanti con animazione legacy dedicata sono esclusi per evitare conflitti.
+- Il builder `Tools/UIV2/Apply Motion Kit` aggiorna i prefab. `UIV2MotionInstaller`
+  completa i pulsanti e gli ingressi delle pagine una volta al caricamento di ogni scena,
+  compresi elementi inizialmente inattivi. Seconda applicazione: 0 componenti aggiunti.
+  Le scene non vengono risalvate: preservati layout, camera e identificatori originali.
+- `AnimatedModalV2` e `UIV2ModalFrame` conservano posizione/scala originali, annullano
+  i propri tween alla disattivazione e supportano riapertura durante la chiusura.
+  Il cambio di modal elimina subito il vecchio velo. Impostazioni Home e in partita
+  usano la stessa animazione; mantenuta la cattura dello sfondo sfocato del tavolo.
+- Le pagine accesso/registrazione/account e Novità hanno un ingresso sfumato. Il pager
+  mantiene i propri controlli di navigazione e ripristina l'interazione dopo disattivazione.
+  Le stanze usano solo dissolvenza perché il loro `DesignCanvasFit` gestisce scala e posizione.
+  Il caricamento copre la scena prima di sostituirla e libera l'introduzione del tavolo
+  soltanto al termine della dissolvenza; le attese funzionali non cambiano.
+- `UIV2NumberCounter`: valore iniziale immediato, variazioni dal valore visualizzato,
+  risultato finale esatto anche per `long`, formattazione italiana. Collegato ai risultati
+  (conservando la dicitura Cappotto) e alle pillole valuta. La barra conserva le pillole
+  della stessa valuta fra aggiornamenti. `UIV2RewardFlight` anima soltanto un'icona decorativa:
+  annullamento/rimozione della destinazione non assegnano nulla e nascondono l'icona.
+- Verifiche: **229 test EditMode passati, 0 falliti**; il test runtime è esplicito e viene
+  saltato dalla suite ordinaria, poi eseguito separatamente con ingresso in Play Mode:
+  **passato**. Copre scale non unitarie, tween indipendenti, riapertura/interruzione modal,
+  pulsante disabilitato/trascinamento fuori, `timeScale = 0`, retarget dei contatori,
+  estremi `long`, arrivo e annullamento del volo. Esito runtime locale in
+  `Temp/K1-motion-runtime.txt` (rigenerato dal test).
+- Controllo in Play Mode di Impostazioni e Collezione; compilazione senza errori.
+  Revisione indipendente: rimossi il doppio punch di Abbandona e il conflitto con il layout
+  delle stanze. Nessuna prova Android o multiplayer su dispositivi.
+- Limite previsto: valute reali e collegamento dei voli ai premi appartengono a E2/F1.
+  Prossimo punto **K2**. Modifiche locali, ancora da committare.
+
+### Ripresa K3 — librerie UI (23 settembre 2026, versione 1.99)
+
+- G4 verificato: il lavoro successivo a `b21dc11` è nei commit `b8d7b49` e `8743964`.
+- Installato `com.coffee.ui-effect` 5.9.0 tramite il Package Manager dell'Editor,
+  da `https://github.com/mob-sakai/UIEffect.git?path=Packages/src#5.9.0`.
+  Manifest e lockfile aggiornati da UPM; impostazioni predefinite generate dal pacchetto
+  in `Assets/ProjectSettings/UIEffectProjectSettings.asset`.
+- `com.coffee.ui-particle` 4.11.4 era già installato, hash `04c1ca72cde82318e11eb1281dc4c3d314a2e68c`:
+  mantenuta la versione esistente. Entrambe le librerie dichiarano licenza MIT e supportano Unity 2022.3.
+- Verifiche: importazione e compilazione senza errori; **228 test EditMode passati, 0 falliti, 0 saltati**.
+  Restano avvisi di compilazione nel codice esistente. Nessuna build Android o prova su dispositivo.
+- Prossimo punto: **K1**. Nessun effetto applicato alle schermate in questa consegna;
+  eventuale supporto opzionale TextMeshPro di UIEffect da importare quando si applicheranno effetti ai testi.
+
+### Obiettivo dell'integrazione
+
 Collegare la UI V2 alla logica esistente e completare i mockup una funzione alla volta.
 Per ogni funzione distinguere: grafica presente, collegamenti reali, verifica in Play Mode.
 La presenza di un prefab non certifica la fedeltà grafica né il funzionamento.

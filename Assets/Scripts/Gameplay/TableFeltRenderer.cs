@@ -32,15 +32,19 @@ namespace Project51.Unity
         [SerializeField] private Color goldColor = new Color32(0xE8, 0xB2, 0x4A, 0xFF);
         [SerializeField] private Color woodColor = new Color32(0x3A, 0x26, 0x10, 0xFF);
         [SerializeField, Range(0f, 1f)] private float centerGlowStrength = 0.35f;
+        [SerializeField, Range(0f, 0.15f)] private float weaveStrength = 0.055f;
 
         [SerializeField] private int sortingOrder = -1;
 
         private SpriteRenderer spriteRenderer;
         private Texture2D texture;
+        private Sprite generatedSprite;
+        private bool rebuildRequested;
         private float builtAspect = -1f;
 
         private void Awake()
         {
+            ReleaseGeneratedAssets();
             if (targetCamera == null) targetCamera = Camera.main;
 
             // [ExecuteAlways] fa scattare di nuovo Awake ad ogni ricompilazione script mentre la
@@ -78,21 +82,17 @@ namespace Project51.Unity
             // risoluzione all'avvio del Play): senza questo il feltro restava con proporzioni vecchie,
             // piu' alto del previsto.
             if (targetCamera == null || spriteRenderer == null) return;
-            if (Mathf.Abs(targetCamera.orthographicSize - builtOrthoSize) > 0.001f || Mathf.Abs(targetCamera.aspect - builtCameraAspect) > 0.001f)
+            if (rebuildRequested || Mathf.Abs(targetCamera.orthographicSize - builtOrthoSize) > 0.001f || Mathf.Abs(targetCamera.aspect - builtCameraAspect) > 0.001f)
             {
-                texture = null;
                 Rebuild();
             }
         }
 
         private void OnValidate()
         {
-            // Aggiorna live in Editor quando si tarano gli slider in Inspector (grazie a [ExecuteAlways]).
-            if (spriteRenderer != null)
-            {
-                texture = null; // forza la rigenerazione anche se l'aspect ratio non e' cambiato
-                Rebuild();
-            }
+            // Validation can run while Unity imports/deserializes: release assets only
+            // on the next normal editor update, never inside OnValidate.
+            rebuildRequested = true;
         }
 
         [ContextMenu("Rebuild")]
@@ -100,6 +100,8 @@ namespace Project51.Unity
         {
             if (targetCamera == null) targetCamera = Camera.main;
             if (targetCamera == null || !targetCamera.orthographic || spriteRenderer == null) return;
+            if (rebuildRequested) builtAspect = -1f;
+            rebuildRequested = false;
 
             builtOrthoSize = targetCamera.orthographicSize;
             builtCameraAspect = targetCamera.aspect;
@@ -114,6 +116,7 @@ namespace Project51.Unity
 
             if (texture == null || Mathf.Abs(aspect - builtAspect) > 0.02f)
             {
+                ReleaseGeneratedAssets();
                 int texWidth = textureResolution;
                 int texHeight = Mathf.Max(8, Mathf.RoundToInt(texWidth / aspect));
                 texture = GenerateFrameTexture(texWidth, texHeight, cornerRadiusRatio * texWidth,
@@ -121,16 +124,19 @@ namespace Project51.Unity
                 builtAspect = aspect;
 
                 float pixelsPerUnit = texWidth / feltWidth;
-                spriteRenderer.sprite = Sprite.Create(texture, new Rect(0, 0, texWidth, texHeight),
+                generatedSprite = Sprite.Create(texture, new Rect(0, 0, texWidth, texHeight),
                     new Vector2(0.5f, 0.5f), pixelsPerUnit);
+                spriteRenderer.sprite = generatedSprite;
             }
             else
             {
                 // Stessa proporzione: basta ridimensionare lo sprite esistente invece di rigenerare la texture.
                 spriteRenderer.transform.localScale = Vector3.one;
                 float pixelsPerUnit = texture.width / feltWidth;
-                spriteRenderer.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height),
+                Release(generatedSprite);
+                generatedSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height),
                     new Vector2(0.5f, 0.5f), pixelsPerUnit);
+                spriteRenderer.sprite = generatedSprite;
             }
 
             Vector3 center = tableCenterReference != null ? tableCenterReference.position : transform.parent != null ? transform.parent.position : Vector3.zero;
@@ -139,8 +145,9 @@ namespace Project51.Unity
 
         private Texture2D GenerateFrameTexture(int width, int height, float cornerRadiusPx, float woodThicknessPx, float goldThicknessPx)
         {
-            var tex = new Texture2D(width, height, TextureFormat.ARGB32, false)
+            var tex = new Texture2D(width, height, TextureFormat.ARGB32, true)
             {
+                name = "K5 woven table felt", hideFlags = HideFlags.DontSave,
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear
             };
@@ -163,11 +170,18 @@ namespace Project51.Unity
                     Color color;
                     if (dFelt <= 0f)
                     {
-                        // Luce calda al centro-alto del feltro, cosmetica (sezione 1 della spec).
-                        Vector2 glowFocus = new Vector2(0f, halfSize.y * 0.4f);
-                        float glowDist = Vector2.Distance(p, glowFocus) / (halfSize.magnitude * 0.85f);
-                        float glow = Mathf.Clamp01(1f - glowDist) * centerGlowStrength;
+                        // Broad elliptical light, normalized so phone/tablet proportions do not
+                        // move the highlight. Grain is deterministic and never consumes game RNG.
+                        var normalized = new Vector2(p.x / halfSize.x, p.y / halfSize.y - .12f);
+                        float glow = Mathf.Exp(-normalized.sqrMagnitude * 1.7f) * centerGlowStrength;
                         color = Color.Lerp(feltColor, Color.Lerp(feltColor, Color.white, 0.35f), glow);
+                        uint hash = unchecked((uint)(x * 374761393 + y * 668265263));
+                        hash = unchecked((hash ^ (hash >> 13)) * 1274126177u);
+                        float grain = (hash & 1023) / 1023f - .5f;
+                        float weave = Mathf.Sin(x * 2.1f + (y % 2) * .7f) *
+                            Mathf.Sin(y * 1.7f) * .35f + grain * .65f;
+                        float shade = 1f + weave * weaveStrength;
+                        color = new Color(color.r * shade, color.g * shade, color.b * shade, color.a);
                     }
                     else if (dGold <= 0f)
                     {
@@ -196,6 +210,24 @@ namespace Project51.Unity
             tex.SetPixels32(pixels);
             tex.Apply();
             return tex;
+        }
+
+        private void OnDestroy() => ReleaseGeneratedAssets();
+
+        private void ReleaseGeneratedAssets()
+        {
+            if (spriteRenderer != null) spriteRenderer.sprite = null;
+            Release(generatedSprite);
+            Release(texture);
+            generatedSprite = null;
+            texture = null;
+        }
+
+        private static void Release(Object asset)
+        {
+            if (asset == null) return;
+            if (Application.isPlaying) Destroy(asset);
+            else DestroyImmediate(asset);
         }
 
         /// <summary>

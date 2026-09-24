@@ -12,12 +12,14 @@ namespace Project51.EditorTools
     ///   sistema (BottomNavSafeAreaBleed, dal vero Screen.safeArea);
     /// - linguetta oro 238x117 -> 262x128 (+10%, 9-slice: i bordi non si stirano) e icone 62 -> 72
     ///   (costante in UIV2BottomNav, preserveAspect); etichette spostate sotto la linguetta piu' alta.
+    ///   2026-09-24: linguetta 262x128 -> 254x119, riempimento oro misurato 226x82 come il mockup
+    ///   (a 262x128 era 234x91); icone invariate.
     /// Rilanciabile.
     /// </summary>
     public static class BottomNavPolishBuilder
     {
         private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
-        private static readonly Vector2 IndicatorSize = new Vector2(262f, 128f);
+        private static readonly Vector2 IndicatorSize = new Vector2(254f, 119f);
         private const float IconCenterY = -60f;
         private const float LabelCenterY = -134f;
 

@@ -18,6 +18,8 @@ namespace Project51.Unity.UI
         [SerializeField] private GameObject turnLabel;
         [Tooltip("Chip 'MAZZIERE', mostrato brevemente a inizio smazzata da TurnController (animazione di dichiarazione del dealer).")]
         [SerializeField] private GameObject dealerLabel;
+        [Tooltip("Image di AvatarFrame: riceve il ritratto del posto (PlayerBannerManager.seatAvatars).")]
+        [SerializeField] private Image avatarImage;
 
         [Header("Scope dietro il banner (Assets/UI_SPEC_Tavolo.md, sezione 4)")]
         [Tooltip("Fino a 4 slot carta miniatura, gia' posizionati in ordine da TablePlayerBannersBuilder; qui vengono solo mostrati/nascosti e centrati in base al conteggio.")]
@@ -33,6 +35,11 @@ namespace Project51.Unity.UI
         private Image capturedBackFront;
         private Image capturedBackRear;
         private TMP_Text capturedCountText;
+
+        public void SetAvatar(Sprite avatar)
+        {
+            if (avatarImage != null && avatar != null && avatarImage.sprite != avatar) avatarImage.sprite = avatar;
+        }
 
         public void SetCapturedPile(int count, Sprite cardBack, Vector2 designOffsetFromCenter, Sprite roundedFill)
         {
@@ -67,6 +74,7 @@ namespace Project51.Unity.UI
                 capturedCountText.alignment = TextAlignmentOptions.Center;
                 capturedCountText.color = Color.white;
                 capturedCountText.raycastTarget = false;
+                Project51.UIV2.Core.UIV2DesignSystem.ApplyRuntimeText(capturedCountText, Project51.UIV2.Core.UIV2Theme.TextRole.Subtitle, true);
             }
 
             capturedPile.gameObject.SetActive(true);

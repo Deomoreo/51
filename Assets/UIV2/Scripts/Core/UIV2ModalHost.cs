@@ -32,7 +32,7 @@ namespace Project51.UIV2.Core
         {
             if (_current != null && _current != modal)
             {
-                _current.Close();
+                _current.CloseImmediate();
             }
             _current = modal;
             _current?.Open();

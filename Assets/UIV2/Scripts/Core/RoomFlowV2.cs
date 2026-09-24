@@ -1,5 +1,6 @@
 using System.Linq;
 using DG.Tweening;
+using Project51.UIV2.Animations;
 using Photon.Pun;
 using Project51.Core;
 using Project51.Networking;
@@ -279,16 +280,19 @@ namespace Project51.UIV2.Core
             HideAll();
             panel.SetActive(true);
             var group = panel.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
-            group.DOFade(1f, 0.2f).SetUpdate(true).SetLink(panel);
+            group.alpha = 0;
+            // DesignCanvasFit owns the frame position and scale: fade the page only.
+            panelFade = group.DOFade(1, UIV2Motion.Enter).SetUpdate(true);
         }
+
+        private Tween panelFade;
 
         private void HideAll()
         {
+            UIV2Motion.Cancel(ref panelFade);
             foreach (var panel in Panels)
             {
                 if (panel == null) continue;
-                panel.GetComponent<CanvasGroup>().DOKill();
                 panel.SetActive(false);
             }
         }
@@ -462,6 +466,7 @@ namespace Project51.UIV2.Core
 
         private void OnDestroy()
         {
+            UIV2Motion.Cancel(ref panelFade);
             if (manager == null) return;
             manager.OnStateChanged -= State;
             manager.OnError -= Error;

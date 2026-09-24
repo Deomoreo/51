@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using DG.Tweening;
+using Project51.Auth;
+using Project51.UIV2.Animations;
 using Project51.Core;
 using Project51.UIV2.Components;
 using Project51.Unity;
@@ -44,11 +46,32 @@ namespace Project51.UIV2.Core
         /// <summary>Scoppio di luce dal trofeo quando vince il giocatore locale (C6).</summary>
         public UIV2MoteField TrophyBurst;
 
+        [Header("Esperienza (E1)")]
+        public GameObject XpRow;
+        public TMP_Text XpGainLabel;
+        public UIV2ProgressBar XpBar;
+        public TMP_Text XpLevelLabel;
+        public Image XpFlash;
+        /// <summary>Scoppio di luce sulla barra quando si sale di livello.</summary>
+        public UIV2MoteField XpBurst;
+
         private Action next, menu;
         private bool finished, clicked;
+        private GameState shownState, celebratedState;
+        private readonly RoundAdvanceCountdown autoAdvance = new RoundAdvanceCountdown();
+        private InGameSettingsV2 settings;
+        private TurnController turn;
+        private bool applicationPaused;
+        // ponytail: guardia per riferimento; un resync che rimanda la stessa fine smazzata come nuovo oggetto la conterebbe due volte.
+        private GameState countedState, recordedState;
+        private int matchScope, matchAccusi, xpFrom = -1, xpTo;
+        private bool guestXp;
+        private Tween xpTween;
 
         private void Awake()
         {
+            settings = FindObjectOfType<InGameSettingsV2>(true);
+            turn = FindObjectOfType<TurnController>();
             GamePresentation.RoundResults += Show;
             GamePresentation.HideResults += Hide;
             RoundContinue.onClick.AddListener(Next);
@@ -66,6 +89,8 @@ namespace Project51.UIV2.Core
 
         public void Show(GameState state, Action nextRound, Action mainMenu)
         {
+            autoAdvance.Cancel();
+            shownState = state;
             next = nextRound;
             menu = mainMenu;
             clicked = false;
@@ -76,6 +101,8 @@ namespace Project51.UIV2.Core
             int localEntry = MatchScore.EntryOf(state, GameModeService.Current.LocalPlayerIndex);
             var order = Enumerable.Range(0, totals.Length).OrderByDescending(e => totals[e]).ToArray();
             var rows = finished ? MatchRows : RoundRows;
+            CountLocalBonuses(state);
+            if (finished && recordedState != state) RecordMatch(order[0] == localEntry);
 
             for (int row = 0; row < rows.Length; row++)
             {
@@ -111,14 +138,101 @@ namespace Project51.UIV2.Core
         {
             var panel = finished ? MatchPanel : RoundPanel;
             panel.SetActive(true);
+            if (!finished) autoAdvance.Start();
             var group = panel.GetComponent<CanvasGroup>();
             group.alpha = 0f;
-            group.DOFade(1f, 0.3f).SetUpdate(true).SetLink(panel);
-            if (finished) PlayConfetti();
+            group.DOFade(1f, UIV2Motion.Enter).SetUpdate(true).SetLink(panel);
+            foreach (var row in finished ? MatchRows : RoundRows)
+                if (row != null && row.gameObject.activeInHierarchy) row.AnimateScore();
+            if (finished) { PlayConfetti(); ShowXp(); }
+            if (finished && winner == localEntry && celebratedState != shownState)
+            {
+                celebratedState = shownState;
+                GameFeedback.Present(FeedbackKind.Victory, true, new Vector2(.5f, .72f));
+            }
             if (finished && winner == localEntry && TrophyBurst != null)
                 DOVirtual.DelayedCall(0.25f, TrophyBurst.Burst).SetUpdate(true).SetLink(panel);
             if (!finished) GameAudio.PlayUi(SoundId.PopupOpen);
             else GameAudio.Play(winner == localEntry ? SoundId.Victory : SoundId.Defeat);
+        }
+
+        /// <summary>Scope e accusi del giocatore locale sommati sulle smazzate della partita (per il bonus XP).</summary>
+        private void CountLocalBonuses(GameState state)
+        {
+            if (countedState == state) return;
+            countedState = state;
+            if (state.RoundIndex <= 1) matchScope = matchAccusi = 0;
+            int local = GameModeService.Current.LocalPlayerIndex;
+            if (local < 0 || local >= state.NumPlayers) return;
+            matchScope += state.Players[local].ScopaCount;
+            matchAccusi += state.Players[local].RoundAccusiCount;
+        }
+
+        /// <summary>E1: una registrazione per partita, sullo stesso progresso che mostra la Home (cloud se caricato, altrimenti locale).</summary>
+        private void RecordMatch(bool won)
+        {
+            recordedState = shownState;
+            bool training = GameSceneInitializer.ActiveConfig?.Intent == MatchIntent.Training;
+            bool guest = AuthBootstrapper.Instance == null || AuthBootstrapper.Instance.PlayFabAuth == null || !AuthBootstrapper.Instance.PlayFabAuth.HasRealLogin;
+            // Gli ospiti non guadagnano XP ne' ricompense: la riga invita a registrarsi.
+            guestXp = guest;
+            int xp = guest ? 0 : PlayerXp.MatchAward(won, matchScope, matchAccusi, training);
+            var local = PlayerProgressLocal.Instance;
+            var cloud = AuthBootstrapper.Instance != null ? AuthBootstrapper.Instance.Profile : null;
+            bool cloudLoaded = cloud != null && cloud.IsLoaded;
+            xpFrom = cloudLoaded && !guest ? cloud.XP : local != null ? local.Exp : -1;
+            xpTo = xpFrom + xp;
+            if (local != null) local.RecordGameResult(won, xp);
+            if (cloudLoaded) cloud.RecordGameResult(won, xp);
+        }
+
+        /// <summary>B5: uscire da una partita non ancora finita conta come sconfitta, senza XP.</summary>
+        public static void RecordAbandon()
+        {
+            var turn = FindObjectOfType<TurnController>();
+            var state = turn != null ? turn.GameState : null;
+            if (state == null || MatchScore.IsFinished(state, (GameSceneInitializer.ActiveConfig ?? new MatchConfig()).TargetScore)) return;
+            if (PlayerProgressLocal.Instance != null) PlayerProgressLocal.Instance.RecordGameResult(false);
+            var cloud = AuthBootstrapper.Instance != null ? AuthBootstrapper.Instance.Profile : null;
+            if (cloud != null && cloud.IsLoaded) cloud.RecordGameResult(false, 0);
+        }
+
+        /// <summary>Riga "+XP": la barra si riempie rallentando, lampeggia alla fine e scoppia a ogni livello.</summary>
+        private void ShowXp()
+        {
+            xpTween?.Kill();
+            if (XpRow == null) return;
+            XpRow.SetActive(xpFrom >= 0);
+            if (xpFrom < 0) return;
+            XpBar.gameObject.SetActive(!guestXp);
+            XpLevelLabel.gameObject.SetActive(!guestXp);
+            XpGainLabel.enableWordWrapping = false;
+            XpGainLabel.text = guestXp ? "Registrati per guadagnare XP" : "+" + (xpTo - xpFrom) + " XP";
+            if (guestXp) return;
+            XpFlash.DOKill();
+            XpFlash.color = new Color(XpFlash.color.r, XpFlash.color.g, XpFlash.color.b, 0f);
+            if (GamePreferences.ReducedGraphics) { SetXp(xpTo); return; }
+            SetXp(xpFrom);
+            int level = PlayerXp.LevelOf(xpFrom);
+            xpTween = DOVirtual.Float(xpFrom, xpTo, 1.2f, v =>
+                {
+                    int total = Mathf.RoundToInt(v);
+                    SetXp(total);
+                    if (PlayerXp.LevelOf(total) == level) return;
+                    level = PlayerXp.LevelOf(total);
+                    XpLevelLabel.transform.DOKill(true);
+                    XpLevelLabel.transform.DOPunchScale(Vector3.one * .35f, .45f, 6).SetUpdate(true).SetLink(XpRow);
+                    if (XpBurst != null) XpBurst.Burst();
+                })
+                .SetDelay(.45f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(XpRow)
+                .OnComplete(() => XpFlash.DOFade(.6f, .12f).SetLoops(2, LoopType.Yoyo).SetUpdate(true).SetLink(XpRow));
+        }
+
+        private void SetXp(int total)
+        {
+            int level = PlayerXp.LevelOf(total);
+            XpBar.SetProgress(PlayerXp.XpInLevel(total), PlayerXp.XpToNext(level), animate: false);
+            XpLevelLabel.text = "Liv. " + level;
         }
 
         private void BindRoundEnd(GameState state, SmazzataScore[] breakdown)
@@ -171,6 +285,9 @@ namespace Project51.UIV2.Core
         private void PlayConfetti()
         {
             if (ConfettiRoot == null) return;
+            StopConfetti();
+            if (GamePreferences.ReducedGraphics) return;
+            ConfettiRoot.gameObject.SetActive(true);
             float height = ConfettiRoot.rect.height;
             foreach (RectTransform piece in ConfettiRoot)
             {
@@ -185,11 +302,39 @@ namespace Project51.UIV2.Core
             }
         }
 
+        private void StopConfetti()
+        {
+            if (ConfettiRoot == null) return;
+            foreach (RectTransform piece in ConfettiRoot) piece.DOKill();
+            ConfettiRoot.gameObject.SetActive(false);
+        }
+
+        private void OnEnable()
+        {
+            GamePreferences.Changed += RefreshConfetti;
+            RefreshConfetti();
+        }
+
+        private void OnDisable()
+        {
+            autoAdvance.Cancel();
+            GamePreferences.Changed -= RefreshConfetti;
+            StopConfetti();
+        }
+
+        private void RefreshConfetti()
+        {
+            if (GamePreferences.ReducedGraphics) StopConfetti();
+            else if (finished && MatchPanel != null && MatchPanel.activeInHierarchy &&
+                     ConfettiRoot != null && !ConfettiRoot.gameObject.activeSelf) PlayConfetti();
+        }
+
         // Solo l'host fa proseguire; se l'host esce, Photon passa il ruolo a un altro giocatore.
         private void RefreshContinue()
         {
             bool canAdvance = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
-            string label = canAdvance ? (finished ? "RIVINCITA" : "CONTINUA") : "ATTENDI L'HOST";
+            string label = canAdvance ? (finished ? "RIVINCITA" : autoAdvance.IsRunning
+                ? "CONTINUA · " + Mathf.CeilToInt(autoAdvance.Remaining) + "s" : "CONTINUA") : "ATTENDI L'HOST";
             var button = finished ? Rematch : RoundContinue;
             var text = finished ? RematchLabel : RoundContinueLabel;
             button.interactable = canAdvance;
@@ -210,31 +355,41 @@ namespace Project51.UIV2.Core
         {
             if (clicked) return;
             clicked = true;
+            RecordAbandon();
             menu?.Invoke();
         }
 
         private void Update()
         {
-            bool visible = RoundPanel.activeSelf || MatchPanel.activeSelf;
+            bool visible = RoundPanel.activeInHierarchy || MatchPanel.activeInHierarchy;
             if (!visible) return;
-            RefreshContinue();
-            // Il nuovo stato dell'host chiude i risultati anche sui client remoti.
-            if (GameModeService.Current.IsMultiplayer && !GameModeService.Current.IsMasterClient)
+            // Includes a just-promoted host: stale results must not start another round.
+            if (turn == null) turn = FindObjectOfType<TurnController>();
+            if (turn?.GameState != null && !turn.GameState.RoundEnded) { Hide(); return; }
+            if (!finished && RoundPanel.activeInHierarchy)
             {
-                var turn = FindObjectOfType<TurnController>();
-                if (turn?.GameState != null && !turn.GameState.RoundEnded) Hide();
+                bool blocked = applicationPaused || !Application.isFocused || AppLoading.IsCovering ||
+                    (settings != null && settings.IsOpen) || RoundPanel.GetComponent<CanvasGroup>().alpha < .99f;
+                bool authority = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
+                // Background/resume must not consume the entire reading interval in one frame.
+                if (autoAdvance.Advance(Mathf.Min(Time.unscaledDeltaTime, .25f), authority, blocked)) { Next(); return; }
             }
+            RefreshContinue();
         }
+
+        private void OnApplicationPause(bool paused) => applicationPaused = paused;
 
         public void Hide()
         {
+            autoAdvance.Cancel();
             showToken++; // annulla un fine smazzata ancora in attesa della foto sfocata
             foreach (var panel in new[] { RoundPanel, MatchPanel })
             {
                 panel.GetComponent<CanvasGroup>().DOKill();
                 panel.SetActive(false);
             }
-            if (ConfettiRoot != null) foreach (RectTransform piece in ConfettiRoot) piece.DOKill();
+            StopConfetti();
+            xpTween?.Kill();
         }
 
         private void OnDestroy()

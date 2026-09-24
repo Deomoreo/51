@@ -96,7 +96,7 @@ namespace Project51.Core
             TotalHands = (DeckSize - state.Table.Count) / (CardsPerPlayerPerHand * state.NumPlayers);
 
             foreach (var p in state.Players)
-            { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; }
+            { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; p.RoundAccusiCount = 0; }
 
             OnInitialHandsDealt?.Invoke();
 
@@ -200,6 +200,7 @@ namespace Project51.Core
         {
             state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(basePoints);
             state.Players[dealer].RoundAccusiPoints += ApplyAccusiRulePoints(basePoints);
+            state.Players[dealer].RoundAccusiCount++;
             // Copia PRIMA di svuotare il tavolo: TakeTableByPlayer chiama state.Table.Clear().
             var sweptCards = new List<Card>(state.Table);
             TakeTableByPlayer(dealer);
@@ -232,6 +233,7 @@ namespace Project51.Core
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(3);
                     state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(3);
+                    state.Players[playerIndex].RoundAccusiCount++;
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Cirulla, new List<Card>(hand));
                     return true;
                 }
@@ -244,6 +246,7 @@ namespace Project51.Core
                 {
                     state.Players[playerIndex].AccusiPoints += ApplyAccusiRulePoints(10);
                     state.Players[playerIndex].RoundAccusiPoints += ApplyAccusiRulePoints(10);
+                    state.Players[playerIndex].RoundAccusiCount++;
                     OnAccusoDeclared?.Invoke(playerIndex, AccusoType.Decino, new List<Card>(hand));
                     return true;
                 }

@@ -59,6 +59,9 @@ namespace Project51.Unity
             visualRenderer.color = sourceRenderer.color;
             visualRenderer.sortingLayerID = sourceRenderer.sortingLayerID;
             visualRenderer.sortingOrder = sourceRenderer.sortingOrder + flightSortingOrderBase;
+            visualRenderer.flipX = sourceRenderer.flipX;
+            visualRenderer.flipY = sourceRenderer.flipY;
+            visual.AddComponent<CardDropShadow>().Bind(visualRenderer);
             return true;
         }
 
@@ -90,8 +93,12 @@ namespace Project51.Unity
             Vector3 destinationScale = Vector3.one * Mathf.Max(0.01f, targetScale);
             Vector3 liftScale = Vector3.Lerp(originalScale, destinationScale, 0.5f) * 1.06f;
             Vector3 startPosition = cardTransform.position;
+            Quaternion startRotation = cardTransform.rotation;
             Vector3 midpoint = Vector3.Lerp(startPosition, targetPosition, 0.5f) + Vector3.up * playArcHeight;
             bool restored = false;
+            bool completed = false;
+            var shadow = cardTransform.GetComponent<CardDropShadow>();
+            float duration = Mathf.Max(.01f, playDuration);
 
             void RestoreVisualState()
             {
@@ -101,27 +108,41 @@ namespace Project51.Unity
                 }
 
                 restored = true;
-                cardRenderer.sortingOrder = originalSortingOrder;
+                if (cardRenderer != null) cardRenderer.sortingOrder = originalSortingOrder;
+                if (shadow != null) shadow.SetElevation(0f);
+                if (!completed && cardTransform != null)
+                {
+                    cardTransform.position = startPosition;
+                    cardTransform.rotation = startRotation;
+                    cardTransform.localScale = originalScale;
+                }
             }
 
             cardRenderer.sortingOrder = flightSortingOrderBase;
 
             Sequence sequence = DOTween.Sequence()
                 .SetTarget(cardTransform)
-                .Append(cardTransform.DOPath(new[] { midpoint, targetPosition }, playDuration, PathType.CatmullRom).SetEase(playEase))
-                .Join(cardTransform.DORotate(new Vector3(0f, 0f, targetRotationZ), playDuration))
+                // One continuous path: separate eased moves introduce a visible stop at
+                // the midpoint and an abrupt landing before the sequence has finished.
+                .Append(cardTransform.DOPath(new[] { midpoint, targetPosition }, duration, PathType.CatmullRom).SetEase(playEase))
+                .Join(cardTransform.DORotate(new Vector3(0f, 0f, targetRotationZ), duration))
                 .Join(DOTween.Sequence()
-                    .Append(cardTransform.DOScale(liftScale, playDuration * 0.45f).SetEase(Ease.OutQuad))
-                    .Append(cardTransform.DOScale(destinationScale, playDuration * 0.55f).SetEase(Ease.InOutQuad)));
+                    .Append(cardTransform.DOScale(liftScale, duration * .45f).SetEase(Ease.OutQuad))
+                    .Append(cardTransform.DOScale(destinationScale, duration * .55f).SetEase(Ease.InOutQuad)));
+
+            if (shadow != null)
+                sequence.Insert(0f, DOVirtual.Float(0f, 1f, duration,
+                    progress => shadow.SetElevation(Mathf.Sin(progress * Mathf.PI))).SetEase(Ease.Linear));
 
             sequence.OnComplete(() =>
             {
+                completed = true;
                 RestoreVisualState();
                 onComplete?.Invoke();
             });
             sequence.OnKill(RestoreVisualState);
             // Il colpo del suono cade quando la carta tocca il tavolo.
-            GameAudio.Play(SoundId.CardPlay, sync: GameAudio.Sync.Hit, hitIn: GamePreferences.Scaled(playDuration));
+            GameAudio.Play(SoundId.CardPlay, sync: GameAudio.Sync.Hit, hitIn: GamePreferences.Scaled(duration));
             return Paced(sequence);
         }
 

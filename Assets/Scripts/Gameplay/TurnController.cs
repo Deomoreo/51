@@ -68,6 +68,7 @@ namespace Project51.Unity
             // se questo client stava rianimando una mossa vecchia quando e' arrivato un resync
             // (es. dopo RequestNetworkResync), quello stato locale non ha piu' senso.
             pendingNetworkMoves.Clear();
+            pendingLocalMove = null;
             isMoveAnimationInProgress = false;
             isRedealPendingVisual = false;
             isRedealAnimationInProgress = false;
@@ -245,6 +246,9 @@ namespace Project51.Unity
         /// gioco in ordine non appena il client torna libero (vedi TryProcessNextQueuedNetworkMove).
         /// </summary>
         private readonly Queue<Move> pendingNetworkMoves = new Queue<Move>();
+
+        /// <summary>Ultima mossa del giocatore locale arrivata mentre eravamo occupati (vedi ExecuteMove).</summary>
+        private Move pendingLocalMove;
 
         /// <summary>Throttle per RequestNetworkResync, per non spammare il Master di richieste.</summary>
         private float lastResyncRequestTime = -999f;
@@ -436,6 +440,7 @@ namespace Project51.Unity
         // Scarta qualunque mossa di rete accodata da una mano/partita precedente: non ha piu'
         // senso applicarla al nuovo GameState che stiamo per creare.
         pendingNetworkMoves.Clear();
+        pendingLocalMove = null;
 
         // Initialize AI if not already done
         if (cirullaAI == null)
@@ -518,6 +523,7 @@ namespace Project51.Unity
         // lato del mazziere, non "gia' distribuita in mano".
         pendingInitialHandStagedCards = null;
         pendingInitialTableStagedCards = null;
+        accusoAlreadyResolvedThisHand.Clear();
         if (cardViewManager != null)
         {
             // IMPORTANT: Force immediate visual refresh AFTER StartSmazzata
@@ -602,7 +608,8 @@ namespace Project51.Unity
                 // veda dove si trova (bug segnalato: la roulette del mazziere partiva, con i suoi
                 // suoni, mentre il caricamento era ancora a schermo).
                 yield return WaitForLoadingCurtain();
-                yield return new WaitForSeconds(GamePreferences.Scaled(dealerIntroLeadSeconds));
+                float introLead = Mathf.Clamp(dealerIntroLeadSeconds, 0f, .2f);
+                yield return new WaitForSeconds(GameModeService.Current.IsMultiplayer ? introLead : GamePreferences.Scaled(introLead));
 
                 // 1) Dichiarazione dealer: chip "MAZZIERE" sul banner giusto (resta accesa per
                 // tutta la smazzata, non si spegne piu' da sola) - da qui il giocatore capisce
@@ -731,7 +738,8 @@ namespace Project51.Unity
             // dell'utente. PlayerBannerManager.SetDealerIndicatorForPlayer spegne automaticamente
             // quella del dealer precedente quando il ruolo passa a qualcun altro.
             SetDealerIndicatorViaReflection(true);
-            yield return new WaitForSeconds(GamePreferences.Scaled(dealerDeclareHoldSeconds));
+            float dealerHold = Mathf.Clamp(dealerDeclareHoldSeconds, 0f, .3f);
+            yield return new WaitForSeconds(GameModeService.Current.IsMultiplayer ? dealerHold : GamePreferences.Scaled(dealerHold));
         }
 
         /// <summary>
@@ -786,6 +794,7 @@ namespace Project51.Unity
                     // true = includeInactive, stesso motivo della roulette dealer.
                     dealerAccusoRevealController = FindObjectOfType<DealerAccusoRevealController>(true);
                 }
+                GameFeedback.ForPlayer(FeedbackKind.Scopa, dealerIndex, new Vector2(.5f, .48f));
                 if (dealerAccusoRevealController != null)
                 {
                     // Niente numero di punti: RoundManager applica un moltiplicatore (regole match)
@@ -907,7 +916,17 @@ namespace Project51.Unity
         /// </summary>
         private System.Collections.IEnumerator RunAccusoWindowCoroutine(bool refreshVisualsOnAutoDeclare)
         {
-            accusoAlreadyResolvedThisHand.Clear();
+            // Entrambi i chiamanti arrivano qui a distribuzione finita: la sospensione va tolta ORA,
+            // non nel loro finally. Altrimenti il ForceRefresh degli accusi (automatici o via rete)
+            // spegneva tutte le carte e il tavolo restava vuoto per tutto il pugno.
+            // accusoAlreadyResolvedThisHand NON si azzera qui ma alla distribuzione: un accuso
+            // arrivato da un client con la finestra aperta prima del Master verrebbe cancellato
+            // e il Master lo ridichiarerebbe (doppi punti).
+            if (cardViewManager != null)
+            {
+                cardViewManager.SetSuppressNewCardVisibility(false);
+                cardViewManager.ForceRefresh();
+            }
             isAccusoWindowOpen = true;
             accusoWindowSecondsRemaining = manualAccusoWindowSeconds;
 
@@ -984,8 +1003,13 @@ namespace Project51.Unity
                     // diverso da quello reale.
                     pendingNetworkMoves.Enqueue(move);
                 }
-                // Se invece e' un tentativo locale (umano o bot) mentre siamo occupati, va bene
-                // ignorarlo: non e' ancora stato inviato in rete, quindi non causa nessun disallineamento.
+                else if (GameModeService.Current.IsLocalPlayer(move.PlayerIndex) && GameModeService.Current.IsHumanPlayer(move.PlayerIndex))
+                {
+                    // Tocco del giocatore durante un'animazione: prima spariva senza feedback.
+                    // Lo teniamo (solo l'ultimo) e lo rigiochiamo appena liberi; se nel frattempo
+                    // non e' piu' valido la validazione lo scarta. I bot ritentano da soli.
+                    pendingLocalMove = move;
+                }
                 return;
             }
 
@@ -1001,6 +1025,9 @@ namespace Project51.Unity
 
                 if (isLocalPlayer && isHuman)
                 {
+                    // Mai inviare in rete una mossa gia' non valida qui (es. rigiocata dopo un'attesa).
+                    RefreshValidMoves();
+                    if (!currentValidMoves.Contains(move)) return;
                     OnLocalPlayerMoveRequested?.Invoke(move);
                     return;
                 }
@@ -1028,28 +1055,22 @@ namespace Project51.Unity
                 }
             }
 
-            // If move is not in precomputed valid moves, allow a human PlayOnly to be forced
+            // Stessa validazione su tutti i client: l'eccezione "scarto forzato solo per il giocatore
+            // locale" faceva applicare la mossa a chi la giocava e rifiutarla agli altri.
             if (!currentValidMoves.Contains(move))
             {
-                bool allowForcedHumanPlayOnly = move.Type == MoveType.PlayOnly
-                    && move.PlayerIndex == provider.LocalPlayerIndex
-                    && gameState.Players[move.PlayerIndex].Hand.Contains(move.PlayedCard);
-
-                if (!allowForcedHumanPlayOnly)
+                if (fromNetwork)
                 {
-                    if (fromNetwork)
-                    {
-                        // Una mossa arrivata dalla rete che non torna con lo stato locale non e'
-                        // un evento "normale" da ignorare in silenzio: significa che questo client
-                        // e' gia' divergente rispetto al resto della partita (es. per una mossa
-                        // persa in passato, prima di questo fix, o per qualunque altra causa non
-                        // ancora prevista). L'unica cosa sicura da fare e' richiedere al Master lo
-                        // stato completo e ripartire da li', invece di restare bloccati per sempre.
-                        Debug.LogError($"[TurnController] Mossa di rete non valida contro lo stato locale (probabile disallineamento): {move}. Richiedo un resync completo al Master.");
-                        RequestNetworkResync();
-                    }
-                    return;
+                    // Una mossa arrivata dalla rete che non torna con lo stato locale non e'
+                    // un evento "normale" da ignorare in silenzio: significa che questo client
+                    // e' gia' divergente rispetto al resto della partita (es. per una mossa
+                    // persa in passato, prima di questo fix, o per qualunque altra causa non
+                    // ancora prevista). L'unica cosa sicura da fare e' richiedere al Master lo
+                    // stato completo e ripartire da li', invece di restare bloccati per sempre.
+                    Debug.LogError($"[TurnController] Mossa di rete non valida contro lo stato locale (probabile disallineamento): {move}. Richiedo un resync completo al Master.");
+                    RequestNetworkResync(move);
                 }
+                return;
             }
 
             StartCoroutine(ExecuteMoveWithAnimation(move, fromNetwork));
@@ -1067,6 +1088,15 @@ namespace Project51.Unity
             if (pendingNetworkMoves.Count > 0 && !GamePresentation.IsBusy)
             {
                 TryProcessNextQueuedNetworkMove();
+            }
+
+            // Tocco locale fatto durante un'animazione: lo rigiochiamo appena siamo liberi.
+            if (pendingLocalMove != null && pendingNetworkMoves.Count == 0 &&
+                !(isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress || GamePresentation.IsBusy))
+            {
+                var localMove = pendingLocalMove;
+                pendingLocalMove = null;
+                ExecuteMove(localMove);
             }
         }
 
@@ -1093,10 +1123,19 @@ namespace Project51.Unity
         /// RPC_ReceiveInitialGameState -> SetNetworkGameState), tramite reflection per evitare la
         /// dipendenza circolare Gameplay -> Networking (stesso pattern di TrySendAccusoSync).
         /// </summary>
-        private void RequestNetworkResync()
+        private void RequestNetworkResync(Move rejectedMove)
         {
             var provider = GameModeService.Current;
-            if (!provider.IsMultiplayer || provider.IsMasterClient)
+            if (!provider.IsMultiplayer)
+            {
+                return;
+            }
+
+            // Sul Master: il mittente ha applicato/inviato una mossa che qui non e' valida, quindi
+            // e' lui a essere divergente. Il Master e' autoritativo: rimanda a tutti il suo stato.
+            // Un doppio tocco duplicato arriva quando il turno e' gia' passato: nessun resync.
+            bool isMaster = provider.IsMasterClient;
+            if (isMaster && (gameState == null || rejectedMove.PlayerIndex != gameState.CurrentPlayerIndex))
             {
                 return;
             }
@@ -1120,6 +1159,13 @@ namespace Project51.Unity
                 return;
             }
 
+            if (isMaster)
+            {
+                var sendMethod = netControllerType.GetMethod("SendInitialGameState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                sendMethod?.Invoke(netController, new object[] { gameState });
+                return;
+            }
+
             var requestMethod = netControllerType.GetMethod("RequestResync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
             requestMethod?.Invoke(netController, null);
         }
@@ -1130,6 +1176,7 @@ namespace Project51.Unity
         private System.Collections.IEnumerator ExecuteMoveWithAnimation(Move move, bool fromNetwork)
         {
             isMoveAnimationInProgress = true;
+            bool scopaFeedbackPending = IsScopaCapture(move);
 
             var hiddenRenderers = new List<SpriteRenderer>();
             var visualCopies = new List<Transform>();
@@ -1210,7 +1257,18 @@ namespace Project51.Unity
                                     + cardViewManager.GetCapturedPileScreenDownOffset();
                             }
 
-                            if (IsScopaCapture(move)) GameAudio.Play(SoundId.Scopa);
+                            if (scopaFeedbackPending)
+                            {
+                                GameAudio.Play(SoundId.Scopa);
+                                var camera = Camera.main;
+                                Vector2 point = camera != null ? (Vector2)camera.WorldToViewportPoint(playedVisual.position) : new Vector2(.5f, .48f);
+                                GameFeedback.ForPlayer(FeedbackKind.Scopa, move.PlayerIndex, point);
+                                // Scia di luce sulla carta che fa scopa, insieme alle scintille (niente con la grafica ridotta).
+                                var sweep = playedVisual.gameObject.AddComponent<CardShaderEffect>();
+                                sweep.Bind(playedVisualRenderer);
+                                sweep.PlaySweep(.4f);
+                                scopaFeedbackPending = false;
+                            }
                             Sequence captureSequence = cardAnimationController.CaptureSequence(
                                 playedVisual,
                                 playedVisualRenderer,
@@ -1227,6 +1285,8 @@ namespace Project51.Unity
                     }
                 }
 
+                if (scopaFeedbackPending)
+                    GameFeedback.ForPlayer(FeedbackKind.Scopa, move.PlayerIndex, new Vector2(.5f, .48f));
                 ApplyMoveInternal(move, fromNetwork);
 
                 if (playedVisualRendererForCrossfade != null && !isRedealPendingVisual)
@@ -1358,6 +1418,7 @@ namespace Project51.Unity
             }
 
             isRedealPendingVisual = true;
+            accusoAlreadyResolvedThisHand.Clear();
             StartCoroutine(HandleNewHandsRevealSequence());
         }
 
@@ -1848,9 +1909,9 @@ namespace Project51.Unity
                 return;
             }
 
-            // Otherwise perform a forced PlayOnly
-            var playOnly = new Move(0, card, MoveType.PlayOnly);
-            ExecuteMove(playOnly);
+            // Solo uno scarto davvero valido (mai forzato: l'altro client lo rifiuterebbe).
+            var playOnly = moves.FirstOrDefault(m => m.Type == MoveType.PlayOnly);
+            if (playOnly != null) ExecuteMove(playOnly);
         }
 
         /// <summary>
@@ -1913,4 +1974,3 @@ namespace Project51.Unity
         }
     }
 }
-

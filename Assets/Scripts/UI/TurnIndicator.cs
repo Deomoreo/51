@@ -35,6 +35,7 @@ namespace Project51.Unity.UI
                 turnText.alignment = TextAlignmentOptions.Center;
                 turnText.fontSize = 36;
                 turnText.color = Color.white;
+                Project51.UIV2.Core.UIV2DesignSystem.ApplyRuntimeText(turnText, Project51.UIV2.Core.UIV2Theme.TextRole.Subtitle);
             }
         }
 

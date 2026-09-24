@@ -1,4 +1,5 @@
 using System;
+using Project51.Core;
 using UnityEngine;
 
 namespace Project51.Auth
@@ -8,9 +9,8 @@ namespace Project51.Auth
     /// I dati sono salvati in PlayerPrefs.
     /// 
     /// REGOLE EXP:
-    /// - Utenti registrati: EXP aggiunto normalmente
-    /// - Utenti guest (non registrati): EXP accumulato in pendingExp
-    /// - Al momento della registrazione: pendingExp viene convertito in EXP reale
+    /// - Solo gli account registrati guadagnano EXP (i chiamanti passano 0 agli ospiti); curva e livello da Project51.Core.PlayerXp
+    /// - pendingExp resta solo per i salvataggi delle versioni precedenti e si riscatta alla registrazione
     /// 
     /// USO:
     /// - PlayerProgressLocal.Instance.TryAddExp(25);
@@ -19,6 +19,13 @@ namespace Project51.Auth
     public class PlayerProgressLocal : MonoBehaviour
     {
         public static PlayerProgressLocal Instance { get; private set; }
+
+        // Non e' in nessuna scena: senza questo l'XP ospite non veniva mai salvata ne' mostrata.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void CreateInstance()
+        {
+            if (Instance == null) new GameObject(nameof(PlayerProgressLocal)).AddComponent<PlayerProgressLocal>();
+        }
         
         #region PlayerPrefs Keys
         
@@ -35,22 +42,14 @@ namespace Project51.Auth
         
         #region Configuration
         
-        [Header("Leveling Configuration")]
-        [Tooltip("EXP base richiesta per il primo livello")]
-        [SerializeField] private int baseExpPerLevel = 100;
-        
-        [Tooltip("Moltiplicatore EXP per ogni livello (es: 1.2 = +20% per livello)")]
-        [SerializeField] private float expMultiplierPerLevel = 1.15f;
-        
-        [Tooltip("Livello massimo raggiungibile")]
-        [SerializeField] private int maxLevel = 100;
+        // Curva e livello massimo: PlayerXp (unica per locale, cloud e Home).
         
         #endregion
         
         #region Public Properties
         
         public int Exp => PlayerPrefs.GetInt(KEY_EXP, 0);
-        public int Level => PlayerPrefs.GetInt(KEY_LEVEL, 1);
+        public int Level => PlayerXp.LevelOf(Exp);
         public int PendingExp => PlayerPrefs.GetInt(KEY_PENDING_EXP, 0);
         public int TotalWins => PlayerPrefs.GetInt(KEY_TOTAL_WINS, 0);
         public int TotalGames => PlayerPrefs.GetInt(KEY_TOTAL_GAMES, 0);
@@ -58,22 +57,12 @@ namespace Project51.Auth
         /// <summary>
         /// EXP necessari per raggiungere il prossimo livello.
         /// </summary>
-        public int ExpToNextLevel => CalculateExpForLevel(Level + 1) - CalculateExpForLevel(Level);
+        public int ExpToNextLevel => PlayerXp.XpToNext(Level);
         
         /// <summary>
         /// Progressione nel livello corrente (0.0 - 1.0).
         /// </summary>
-        public float LevelProgress
-        {
-            get
-            {
-                int expForCurrentLevel = CalculateExpForLevel(Level);
-                int expForNextLevel = CalculateExpForLevel(Level + 1);
-                int expInCurrentLevel = Exp - expForCurrentLevel;
-                int expNeeded = expForNextLevel - expForCurrentLevel;
-                return expNeeded > 0 ? (float)expInCurrentLevel / expNeeded : 1f;
-            }
-        }
+        public float LevelProgress => (float)PlayerXp.XpInLevel(Exp) / ExpToNextLevel;
         
         /// <summary>
         /// True se l'utente ha EXP in pending (guadagnato come guest).
@@ -91,7 +80,6 @@ namespace Project51.Auth
         public event Action<int, int> OnExpChanged;
         
         /// <summary>Invocato quando pendingExp cambia (per utenti guest).</summary>
-        public event Action<int> OnPendingExpChanged;
         
         /// <summary>Invocato quando pendingExp viene riscattato dopo registrazione.</summary>
         public event Action<int> OnPendingExpClaimed;
@@ -110,13 +98,6 @@ namespace Project51.Auth
             
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            
-            // Inizializza livello se primo avvio
-            if (!PlayerPrefs.HasKey(KEY_LEVEL))
-            {
-                PlayerPrefs.SetInt(KEY_LEVEL, 1);
-                PlayerPrefs.Save();
-            }
         }
         
         private void Start()
@@ -141,35 +122,15 @@ namespace Project51.Auth
         #region Public Methods
         
         /// <summary>
-        /// Tenta di aggiungere EXP al giocatore.
-        /// - Se registrato: aggiunge EXP e controlla level up
-        /// - Se guest: accumula in pendingExp
+        /// Aggiunge EXP al giocatore (anche guest, cosi' la barra XP si riempie) e controlla il level up.
         /// </summary>
-        /// <param name="amount">Quantità di EXP da aggiungere.</param>
-        /// <returns>True se EXP aggiunto normalmente, false se accumulato come pending.</returns>
+        /// <returns>False se amount non e' positivo.</returns>
         public bool TryAddExp(int amount)
         {
             if (amount <= 0) return false;
-            
-            bool isRegistered = IsRegisteredLocal();
-            
-            if (isRegistered)
-            {
-                AddExpInternal(amount);
-                Debug.Log($"[PlayerProgress] Added {amount} EXP. Total: {Exp}, Level: {Level}");
-                return true;
-            }
-            else
-            {
-                // Utente guest: accumula EXP in pending
-                int newPending = PendingExp + amount;
-                PlayerPrefs.SetInt(KEY_PENDING_EXP, newPending);
-                PlayerPrefs.Save();
-                
-                OnPendingExpChanged?.Invoke(newPending);
-                Debug.Log($"[PlayerProgress] Guest user - {amount} EXP added to pending. Total pending: {newPending}");
-                return false;
-            }
+            AddExpInternal(amount);
+            Debug.Log($"[PlayerProgress] Added {amount} EXP. Total: {Exp}, Level: {Level}");
+            return true;
         }
         
         /// <summary>
@@ -239,21 +200,6 @@ namespace Project51.Auth
             Debug.Log("[PlayerProgress] All progress reset");
         }
         
-        /// <summary>
-        /// Calcola l'EXP totale necessario per raggiungere un certo livello.
-        /// </summary>
-        public int CalculateExpForLevel(int level)
-        {
-            if (level <= 1) return 0;
-            
-            int totalExp = 0;
-            for (int i = 1; i < level; i++)
-            {
-                totalExp += Mathf.RoundToInt(baseExpPerLevel * Mathf.Pow(expMultiplierPerLevel, i - 1));
-            }
-            return totalExp;
-        }
-        
         #endregion
         
         #region Private Methods
@@ -265,12 +211,10 @@ namespace Project51.Auth
             
             PlayerPrefs.SetInt(KEY_EXP, newExp);
             
-            // Controlla level up
-            int newLevel = CalculateLevelFromExp(newExp);
-            if (newLevel > oldLevel && newLevel <= maxLevel)
+            // Controlla level up (il livello si ricava sempre dagli EXP, vedi Level)
+            int newLevel = PlayerXp.LevelOf(newExp);
+            if (newLevel > oldLevel)
             {
-                PlayerPrefs.SetInt(KEY_LEVEL, newLevel);
-                
                 // Notifica tutti i level up intermedi
                 for (int lvl = oldLevel + 1; lvl <= newLevel; lvl++)
                 {
@@ -281,16 +225,6 @@ namespace Project51.Auth
             
             PlayerPrefs.Save();
             OnExpChanged?.Invoke(newExp, amount);
-        }
-        
-        private int CalculateLevelFromExp(int exp)
-        {
-            int level = 1;
-            while (level < maxLevel && exp >= CalculateExpForLevel(level + 1))
-            {
-                level++;
-            }
-            return level;
         }
         
         private bool IsRegisteredLocal()

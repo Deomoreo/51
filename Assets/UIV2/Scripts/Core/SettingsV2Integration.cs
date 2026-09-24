@@ -14,6 +14,9 @@ namespace Project51.UIV2.Core
         [SerializeField] private Button dimmerButton;
         [SerializeField] private Button accountButton;
         [SerializeField] private SimpleToggleSwitch audioToggle;
+        [SerializeField] private SimpleToggleSwitch musicToggle;
+        [SerializeField] private SimpleToggleSwitch vibrationToggle;
+        [SerializeField] private SimpleToggleSwitch reducedGraphicsToggle;
         [SerializeField] private TMP_Text accountName;
         [SerializeField] private TMP_Text accountSubtitle;
         [SerializeField] private AuthUIController authUI;
@@ -36,6 +39,7 @@ namespace Project51.UIV2.Core
         private bool layoutCaptured;
         private float frameHeight, footerY, deleteY, accountStep, deleteStep;
         private float[] rowsY;
+        private AnimatedModalV2 panelMotion;
 
         public bool IsOpen => panel != null && panel.activeSelf;
 
@@ -45,8 +49,15 @@ namespace Project51.UIV2.Core
             dimmerButton.onClick.AddListener(Close);
             accountButton.onClick.AddListener(OpenAccount);
             audioToggle.OnChanged += GameAudioPreferences.SetEnabled;
+            EnsureMusicToggle();
+            if (musicToggle != null) musicToggle.OnChanged += GameAudioPreferences.SetMusicEnabled;
+            EnsureVibrationToggle();
+            if (vibrationToggle != null) vibrationToggle.OnChanged += GamePreferences.SetVibrationEnabled;
+            EnsureReducedGraphicsToggle();
+            if (reducedGraphicsToggle != null) reducedGraphicsToggle.OnChanged += GamePreferences.SetReducedGraphics;
+            GamePreferences.Changed += RefreshGraphicsChoice;
             if (deleteAccountButton != null) deleteAccountButton.onClick.AddListener(OpenDeleteAccount);
-            Close();
+            panel.SetActive(false);
         }
 
         private void Start()
@@ -61,6 +72,9 @@ namespace Project51.UIV2.Core
             accountName.text = auth?.GetBestDisplayName() ?? "Ospite";
             accountSubtitle.text = auth != null && auth.HasRealLogin ? "Gestisci account" : "Accedi o registrati";
             audioToggle.SetOn(GameAudioPreferences.Enabled);
+            if (musicToggle != null) musicToggle.SetOn(GameAudioPreferences.MusicChoice);
+            if (vibrationToggle != null) vibrationToggle.SetOn(GamePreferences.VibrationEnabled);
+            RefreshGraphicsChoice();
 
             // Prima dell'ingresso non esiste un account da mostrare (la sessione ospite tecnica di
             // PlayFab resta invisibile). Eliminare l'account ha senso solo con un login vero: un
@@ -70,10 +84,23 @@ namespace Project51.UIV2.Core
             ApplyAccountLayout(entered, realAccount);
             var footerText = footer != null ? footer.GetComponent<TMP_Text>() : null;
             if (footerText != null) footerText.text = "51Cirulla · v" + Application.version;
-            panel.SetActive(true);
+            if (panelMotion == null)
+            {
+                panelMotion = panel.GetComponent<AnimatedModalV2>();
+                if (panelMotion == null) panelMotion = panel.AddComponent<AnimatedModalV2>();
+                panelMotion.Group = panel.GetComponent<CanvasGroup>();
+                if (panelMotion.Group == null) panelMotion.Group = panel.AddComponent<CanvasGroup>();
+                panelMotion.Frame = panelFrame;
+                panelMotion.HandleEscape = false; // this controller gives Delete Account first refusal
+            }
+            panelMotion.Open();
         }
 
-        public void Close() => panel.SetActive(false);
+        public void Close()
+        {
+            if (panelMotion != null) panelMotion.Close();
+            else panel.SetActive(false);
+        }
 
         /// <summary>
         /// Nasconde le righe Account / Elimina account e ricompatta la sezione: le righe sotto salgono,
@@ -111,13 +138,66 @@ namespace Project51.UIV2.Core
 
         private static void SetY(RectTransform rect, float y) => rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
 
+        private void RefreshGraphicsChoice()
+        {
+            if (reducedGraphicsToggle != null) reducedGraphicsToggle.SetOn(GamePreferences.ReducedGraphics);
+        }
+
+        public void EnsureReducedGraphicsToggle()
+        {
+            if (reducedGraphicsToggle == null && panelFrame != null)
+                reducedGraphicsToggle = panelFrame.Find("Row_AnimazioniVeloci")?.GetComponentInChildren<SimpleToggleSwitch>(true);
+            if (reducedGraphicsToggle == null) return;
+            var row = reducedGraphicsToggle.transform.parent;
+            row.gameObject.SetActive(true);
+            row.Find("Title").GetComponent<TMP_Text>().text = "Grafica ridotta";
+            row.Find("Subtitle").GetComponent<TMP_Text>().text = "Meno effetti e animazioni più brevi";
+            reducedGraphicsToggle.GetComponent<Button>().interactable = true;
+            var group = row.GetComponent<CanvasGroup>();
+            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
+            RefreshGraphicsChoice();
+        }
+
+        /// <summary>Stessa scelta Musica delle Impostazioni al tavolo (GameAudioPreferences.MusicKey).</summary>
+        public void EnsureMusicToggle()
+        {
+            if (musicToggle == null && panelFrame != null)
+                musicToggle = panelFrame.Find("Row_Musica")?.GetComponentInChildren<SimpleToggleSwitch>(true);
+            if (musicToggle == null) return;
+            var row = musicToggle.transform.parent;
+            row.gameObject.SetActive(true);
+            var subtitle = row.Find("Subtitle")?.GetComponent<TMP_Text>();
+            if (subtitle != null) subtitle.text = "Musica di sottofondo";
+            musicToggle.GetComponent<Button>().interactable = true;
+            var group = row.GetComponent<CanvasGroup>();
+            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
+            musicToggle.SetOn(GameAudioPreferences.MusicChoice);
+        }
+
+        public void EnsureVibrationToggle()
+        {
+            if (vibrationToggle == null && panelFrame != null)
+                vibrationToggle = panelFrame.Find("Row_Vibrazione")?.GetComponentInChildren<SimpleToggleSwitch>(true);
+            if (vibrationToggle == null) return;
+            vibrationToggle.transform.parent.gameObject.SetActive(true);
+            var subtitle = vibrationToggle.transform.parent.Find("Subtitle")?.GetComponent<TMP_Text>();
+            if (subtitle != null) subtitle.text = "Tocchi e momenti importanti";
+            vibrationToggle.GetComponent<Button>().interactable = true;
+            var group = vibrationToggle.transform.parent.GetComponent<CanvasGroup>();
+            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
+            vibrationToggle.SetOn(GamePreferences.VibrationEnabled);
+        }
+
+
+
         /// <summary>
         /// Ospite: la schermata Registrazione V2 (da li' si passa anche all'Accesso), come "Registrati
         /// per salvare" del Profilo. Con un login vero resta il pannello account di AuthUIController.
         /// </summary>
         private void OpenAccount()
         {
-            Close();
+            if (panelMotion != null) panelMotion.CloseImmediate();
+            else panel.SetActive(false);
             if (authUI == null) return;
             var auth = AuthBootstrapper.Instance?.PlayFabAuth;
             authUI.ShowAuthUI();
@@ -143,6 +223,10 @@ namespace Project51.UIV2.Core
             if (accountButton != null) accountButton.onClick.RemoveListener(OpenAccount);
             if (deleteAccountButton != null) deleteAccountButton.onClick.RemoveListener(OpenDeleteAccount);
             if (audioToggle != null) audioToggle.OnChanged -= GameAudioPreferences.SetEnabled;
+            if (musicToggle != null) musicToggle.OnChanged -= GameAudioPreferences.SetMusicEnabled;
+            if (vibrationToggle != null) vibrationToggle.OnChanged -= GamePreferences.SetVibrationEnabled;
+            if (reducedGraphicsToggle != null) reducedGraphicsToggle.OnChanged -= GamePreferences.SetReducedGraphics;
+            GamePreferences.Changed -= RefreshGraphicsChoice;
         }
     }
 }

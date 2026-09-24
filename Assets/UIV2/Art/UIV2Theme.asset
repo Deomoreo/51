@@ -21,6 +21,18 @@ MonoBehaviour:
   ButtonGreenSmall: {r: 0.24705882, g: 0.6509804, b: 0.36078432, a: 1}
   TextCream: {r: 0.98039216, g: 0.95686275, b: 0.8784314, a: 1}
   TextMuted: {r: 0.56078434, g: 0.6509804, b: 0.7372549, a: 1}
+  TitleFont: {fileID: 11400000, guid: e7a8acbc50c598c4cbb0b4c4ddcd4189, type: 2}
+  SubtitleFont: {fileID: 11400000, guid: bbcbd676b18259648b06cfd1da271209, type: 2}
+  BodyFont: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
+  GoldLabelMaterial: {fileID: 2100000, guid: 0b9dc5015b036f748b972e2f79745637, type: 2}
+  GoldLabelColor: {r: 1, g: 0.9882353, b: 0.9490196, a: 1}
+  TitleSize: 40
+  SubtitleSize: 32
+  BodySize: 24
+  CaptionSize: 20
+  ContentBackground: {fileID: -1235775825, guid: 56d056ad54bfcd44194af8a29750e81d, type: 3}
+  ContentBorder: {fileID: -619265052, guid: 56d056ad54bfcd44194af8a29750e81d, type: 3}
+  IconButtonBackground: {fileID: -1339102745, guid: cc69c7603a26e684c8f25079747f0296, type: 3}
   PanelBackground: {fileID: -839451552, guid: 56d056ad54bfcd44194af8a29750e81d, type: 3}
   PanelBorder: {fileID: 1763918225, guid: 56d056ad54bfcd44194af8a29750e81d, type: 3}
   RibbonSprite: {fileID: 796423206, guid: cc69c7603a26e684c8f25079747f0296, type: 3}

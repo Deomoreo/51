@@ -181,7 +181,7 @@ namespace Project51.EditorTools
 
             // Coordinate interne alla cornice.
             var close = MockButton(frame, "Close", "sq_blue", width - 110f, 30f, 80f, 72f, "", 0f, null);
-            MockSprite(close.transform, "Icon", LoadSprite(IconsPath, "ic_x"), 21f, 17f, 38f, 38f, false);
+            MockSprite(close.transform, "Icon", NewIcon("ic_X"), 21f, 17f, 38f, 38f, false);
 
             // ic_warn e ic_check hanno lo stesso riquadro: si scambia solo lo sprite (vedi DeleteAccountModalV2.Show).
             var icon = MockSprite(frame, "Icon", LoadSprite(IconsPath, "ic_warn"), width * 0.5f - 50f, 50f, 100f, 100f, false);

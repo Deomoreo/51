@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Project51.Core;
 
 namespace Project51.Unity
 {
@@ -30,7 +31,7 @@ namespace Project51.Unity
         [SerializeField] private BackdropBlur backdropBlur;
 
         [Header("Tempi")]
-        [SerializeField] private int loops = 3;
+        // K7 uses one lap; old serialized loop counts are intentionally ignored.
         [Tooltip("Pausa fra la comparsa del pannello e il primo scatto: prima si vede, poi si sente.")]
         [SerializeField] private float startDelaySeconds = 0.5f;
         [SerializeField] private float minStepDelay = 0.16f;
@@ -86,20 +87,23 @@ namespace Project51.Unity
 
             // Il pannello si mostra prima di cominciare a girare: senza questa pausa il primo
             // scatto (e il suo suono) arrivava nello stesso istante in cui compariva la grafica.
-            if (startDelaySeconds > 0f) yield return new WaitForSeconds(Project51.Core.GamePreferences.Scaled(startDelaySeconds));
+            bool online = GameModeService.Current.IsMultiplayer;
+            float Timing(float seconds) => online ? seconds : GamePreferences.Scaled(seconds);
+            if (startDelaySeconds > 0f) yield return new WaitForSeconds(Timing(Mathf.Clamp(startDelaySeconds, 0f, .15f)));
 
-            int totalSteps = loops * slots.Count + winnerStep + 1;
+            // Fixed duration across relative seats; the final highlight is the supplied dealer.
+            int totalSteps = slots.Count;
             int current = -1;
             for (int step = 0; step < totalSteps; step++)
             {
                 if (current >= 0) SetHighlight(current, false);
-                current = slots[step % slots.Count];
+                current = slots[(step + winnerStep + 1) % slots.Count];
                 SetHighlight(current, true);
                 GameAudio.Play(SoundId.UiTab, 0.6f);
 
                 // Rallenta sempre di piu' (t*t): l'ultimo tratto si legge come "sta per fermarsi".
                 float t = totalSteps > 1 ? (float)step / (totalSteps - 1) : 1f;
-                yield return new WaitForSeconds(Project51.Core.GamePreferences.Scaled(Mathf.Lerp(minStepDelay, maxStepDelay, t * t)));
+                yield return new WaitForSeconds(Timing(Mathf.Lerp(Mathf.Clamp(minStepDelay, 0f, .07f), Mathf.Clamp(maxStepDelay, .07f, .20f), t * t)));
             }
 
             SetActive(slotTrophies, current, true);
@@ -111,10 +115,11 @@ namespace Project51.Unity
                 string name = namesBySlot[current];
                 statusText.text = name == "Tu" ? "Distribuisci tu per primo/a" : $"{name} distribuirà per primo/a";
             }
-            if (continueButton != null) continueButton.gameObject.SetActive(true);
+            if (continueButton != null) continueButton.gameObject.SetActive(!online);
 
             float elapsed = 0f;
-            while (!continuePressed && elapsed < autoContinueSeconds)
+            float hold = Timing(Mathf.Clamp(autoContinueSeconds, 0f, .8f));
+            while ((online || !continuePressed) && elapsed < hold)
             {
                 elapsed += Time.deltaTime;
                 yield return null;

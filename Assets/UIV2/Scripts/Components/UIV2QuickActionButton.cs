@@ -27,18 +27,19 @@ namespace Project51.UIV2.Components
         {
             if (button != null)
             {
-                button.onClick.AddListener(PlayPress);
+                if (GetComponent<UIV2ButtonFeedback>() == null) button.onClick.AddListener(PlayPress);
                 button.onClick.AddListener(RaiseClicked);
             }
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
             if (button != null)
             {
                 button.onClick.RemoveListener(PlayPress);
                 button.onClick.RemoveListener(RaiseClicked);
             }
+            base.OnDisable();
         }
 
         private void RaiseClicked() => OnClicked?.Invoke();

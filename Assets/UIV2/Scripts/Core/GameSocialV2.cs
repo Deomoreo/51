@@ -148,6 +148,11 @@ namespace Project51.UIV2.Core
             if(index<0||index>=Sprites.Length)return;int seat=Seat(player);var bubble=Bubbles[seat];
             if(!GameModeService.Current.IsLocalPlayer(player))GameAudio.Play(SoundId.Notification,sync:GameAudio.Sync.Onset);
             bubble.DOKill();bubble.gameObject.SetActive(true);bubble.alpha=1;BubbleImages[seat].sprite=Sprites[index];BubbleNames[seat].text=PlayerName(player);
+            // Emoticon animate (Tools/UIV2/Build Animated Emoticons): stato "E"+indice. Senza stato o con grafica
+            // ridotta l'Animator resta spento e la nuvoletta mostra il frame 0.
+            var animator=BubbleImages[seat].GetComponent<Animator>();
+            if(animator!=null){int state=Animator.StringToHash("E"+index);animator.enabled=!GamePreferences.ReducedGraphics;
+                if(animator.enabled&&animator.HasState(0,state))animator.Play(state,0,0);else animator.enabled=false;}
             bubble.transform.DOKill();bubble.transform.localScale=Vector3.one*.65f; bubble.transform.DOScale(1,.2f).SetEase(Ease.OutBack);
             bubble.DOFade(0,.3f).SetDelay(2.3f).OnComplete(()=>bubble.gameObject.SetActive(false));
         }
@@ -163,7 +168,8 @@ namespace Project51.UIV2.Core
             }
             string name=type==AccusoType.Decino?"DECINO!":type==AccusoType.Cirulla?"CIRULLA!":"ACCUSO!";
             var cards=Resources.FindObjectsOfTypeAll<CardView>().Where(v=>v.gameObject.scene.IsValid()&&v.gameObject.activeInHierarchy).Select(v=>v.transform).ToArray();
-            Impact.Play(PlayerName(player)+" · "+name,cards);
+            Impact.Play(PlayerName(player)+" · "+name,cards, () =>
+                GameFeedback.ForPlayer(FeedbackKind.Accuso, player, new Vector2(.5f, .5f)));
             // La matta mostrata come 7 di coppe si trasforma nella carta che vale per l'accuso.
             int mattaValue=AccusiChecker.MattaValueForAccuso(hand);int mattaIndex=hand==null?-1:hand.FindIndex(c=>c.IsMatta);
             if(cv!=null&&mattaValue>0&&mattaIndex>=0&&mattaIndex<AccusoCards.Length)Impact.QueueMattaFlip(AccusoCards[mattaIndex],cv.GetSpriteForCard(new Card(hand[mattaIndex].Suit,mattaValue)));

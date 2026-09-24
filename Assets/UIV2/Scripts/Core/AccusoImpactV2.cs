@@ -32,6 +32,7 @@ namespace Project51.UIV2.Core
         private readonly List<Transform> jumpingCards = new List<Transform>();
         private Image mattaCard;
         private Sprite mattaTarget;
+        private System.Action firstImpact;
 
         /// <summary>Al primo colpo del pugno la carta della matta si gira e diventa target (accuso con il jolly).</summary>
         public void QueueMattaFlip(Image card, Sprite target)
@@ -40,9 +41,11 @@ namespace Project51.UIV2.Core
             mattaTarget = target;
         }
 
-        public void Play(string title, Transform[] cards)
+        public void Play(string title, Transform[] cards, System.Action onFirstImpact = null)
         {
             animation?.Kill();
+            // Several players can declare in the same frame, before the first slam.
+            firstImpact += onFirstImpact;
             RestCards();
             mattaCard = null;
             mattaTarget = null;
@@ -92,6 +95,9 @@ namespace Project51.UIV2.Core
 
         private void Impact()
         {
+            var feedback = firstImpact;
+            firstImpact = null;
+            feedback?.Invoke();
             // Il colpo del suono cade proprio sull'impatto; il secondo colpo e' un po' piu' piano.
             GameAudio.Play(SoundId.Accuso, slams == 0 ? 1f : 0.75f, GameAudio.Sync.Hit, 0.03f);
             slams++;

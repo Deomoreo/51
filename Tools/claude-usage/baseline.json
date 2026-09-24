@@ -1,0 +1,11 @@
+{
+  "sessions": 33,
+  "calls": 6105,
+  "avg_context_per_call": 351356,
+  "cache_read_per_call": 348698,
+  "output_per_call": 1040,
+  "opus_share_pct": 35.0,
+  "median_session_peak_ctx": 386137,
+  "total_cache_read": 2128806700,
+  "total_output": 6354571
+}

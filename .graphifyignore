@@ -1,0 +1,22 @@
+# Third-party SDKs: keep the graph focused on project 51 code
+Assets/Photon/
+Assets/PlayFabSDK/
+Assets/PlayFabEditorExtensions/
+Assets/GooglePlayGames/
+Assets/ParrelSync/
+Assets/Plugins/
+Assets/JsonDotNetWrapper/
+Assets/TextMesh Pro/
+Packages/
+UIElementsSchema/
+*.csproj
+*.sln
+# Unity generated folders
+Library/
+Temp/
+obj/
+Logs/
+UserSettings/
+Build/
+Builds/
+graphify-out/
