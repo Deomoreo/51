@@ -1220,27 +1220,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 60
+      value: 59.300205
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 54
+      value: 54.191574
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -0.12276201
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 4
+      value: 3.877238
       objectReference: {fileID: 0}
     - target: {fileID: 6559250966398036282, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -7846075898325899701, guid: 197cd4c15c4db414cbeb2aecc8c2286e, type: 3}
+      objectReference: {fileID: -5547510303602523115, guid: ce618b12576f2ab4a8b91606277be357, type: 3}
     - target: {fileID: 6559250966398036282, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_PreserveAspect
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1474,27 +1474,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 60
+      value: 58.37564
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 54
+      value: 50.265217
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 0.124747984
       objectReference: {fileID: 0}
     - target: {fileID: 4529945369447322878, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 4
+      value: 3.8810527
       objectReference: {fileID: 0}
     - target: {fileID: 6559250966398036282, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 8231667269440665454, guid: 1ec39b0eac7de154ea9fe0c128c691cc, type: 3}
+      objectReference: {fileID: -5101685253891090604, guid: 24db3ea1b9f28d4428d3fff64555a80d, type: 3}
     - target: {fileID: 6559250966398036282, guid: 4a0bd58c38de72149a3e2c05aeea1bff, type: 3}
       propertyPath: m_PreserveAspect
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

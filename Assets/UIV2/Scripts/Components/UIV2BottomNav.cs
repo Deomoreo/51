@@ -26,7 +26,7 @@ namespace Project51.UIV2.Components
     }
 
     /// <summary>
-    /// Bottom nav data-driven (Home/Cards/Shop/Profile): le celle sono slot gia' presenti
+    /// Bottom nav data-driven (Gioca/Collezione/Negozio/Profilo): le celle sono slot gia' presenti
     /// nel prefab (stessa idea del vecchio UIBottomNavBar), ma etichette/icone vengono
     /// scritte da SetItems invece di essere testo statico nel prefab, cosi' l'ordine o il
     /// numero di tab puo' cambiare senza toccare la UI a mano.
@@ -45,6 +45,9 @@ namespace Project51.UIV2.Components
 
         [SerializeField] private Color normalLabelColor = new Color32(148, 172, 202, 255);
         [SerializeField] private Color selectedLabelColor = new Color32(255, 224, 140, 255);
+        // 2.20: scritte ExtraBold con contorno e ombra (BottomNavPolishBuilder); vuoti = materiale del prefab.
+        [SerializeField] private Material normalLabelMaterial;
+        [SerializeField] private Material selectedLabelMaterial;
 
         private int _selectedIndex;
 
@@ -109,12 +112,16 @@ namespace Project51.UIV2.Components
                 }
                 if (slot.Icon != null)
                 {
-                    slot.Icon.rectTransform.sizeDelta = Vector2.one * NormalIconSize;
                     slot.Icon.rectTransform.DOKill();
                     if (Application.isPlaying) slot.Icon.rectTransform.DOScale(size / NormalIconSize, .2f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(slot.Icon.gameObject);
                     else slot.Icon.rectTransform.localScale = Vector3.one * (size / NormalIconSize);
                 }
-                if (slot.Label != null) slot.Label.color = selected ? selectedLabelColor : normalLabelColor;
+                if (slot.Label != null)
+                {
+                    slot.Label.color = selected ? selectedLabelColor : normalLabelColor;
+                    var material = selected ? selectedLabelMaterial : normalLabelMaterial;
+                    if (material != null) slot.Label.fontSharedMaterial = material;
+                }
             }
         }
     }

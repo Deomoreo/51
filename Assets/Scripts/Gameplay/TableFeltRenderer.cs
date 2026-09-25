@@ -34,9 +34,19 @@ namespace Project51.Unity
         [SerializeField, Range(0f, 1f)] private float centerGlowStrength = 0.35f;
         [SerializeField, Range(0f, 0.15f)] private float weaveStrength = 0.055f;
 
+        [Header("Kit tavolo 2.22 (Assets/Art/Table): se c'e' la cornice sostituisce la texture procedurale")]
+        [SerializeField] private Sprite feltSprite;
+        [SerializeField] private Sprite vignetteSprite;
+        [Tooltip("Sprite 9-slice: lo spessore del legno lo decidono bordi e pixelsPerUnit dell'import.")]
+        [SerializeField] private Sprite frameSprite;
+        [Tooltip("Rientro del feltro sotto il legno, in pixel dello sprite cornice (angoli arrotondati coperti, buco pieno).")]
+        [SerializeField] private float feltInsetPx = 50f;
+
         [SerializeField] private int sortingOrder = -1;
 
         private SpriteRenderer spriteRenderer;
+        private SpriteRenderer vignetteRenderer;
+        private SpriteRenderer frameRenderer;
         private Texture2D texture;
         private Sprite generatedSprite;
         private bool rebuildRequested;
@@ -114,7 +124,18 @@ namespace Project51.Unity
             float feltHeight = visibleHeight * heightRatio;
             float aspect = feltWidth / Mathf.Max(0.01f, feltHeight);
 
-            if (texture == null || Mathf.Abs(aspect - builtAspect) > 0.02f)
+            if (frameSprite != null)
+            {
+                // Stesso ordine di disegno (-1): i livelli si separano in z, piu' vicini alla camera = sopra.
+                float inset = feltInsetPx / frameSprite.pixelsPerUnit;
+                var feltSize = new Vector2(feltWidth - 2f * inset, feltHeight - 2f * inset);
+                if (vignetteRenderer == null) vignetteRenderer = AddKitLayer("TableVignette", -.01f);
+                if (frameRenderer == null) frameRenderer = AddKitLayer("TableFrame", -.02f);
+                SetKitLayer(spriteRenderer, feltSprite, feltSize);
+                SetKitLayer(vignetteRenderer, vignetteSprite, feltSize);
+                SetKitLayer(frameRenderer, frameSprite, new Vector2(feltWidth, feltHeight));
+            }
+            else if (texture == null || Mathf.Abs(aspect - builtAspect) > 0.02f)
             {
                 ReleaseGeneratedAssets();
                 int texWidth = textureResolution;
@@ -141,6 +162,23 @@ namespace Project51.Unity
 
             Vector3 center = tableCenterReference != null ? tableCenterReference.position : transform.parent != null ? transform.parent.position : Vector3.zero;
             spriteRenderer.transform.position = center + Vector3.up * (visibleHeight * verticalOffsetRatio);
+        }
+
+        private SpriteRenderer AddKitLayer(string layerName, float z)
+        {
+            var go = new GameObject(layerName);
+            go.transform.SetParent(spriteRenderer.transform, false);
+            go.transform.localPosition = new Vector3(0f, 0f, z);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = sortingOrder;
+            return sr;
+        }
+
+        private static void SetKitLayer(SpriteRenderer sr, Sprite sprite, Vector2 size)
+        {
+            sr.sprite = sprite;
+            sr.drawMode = SpriteDrawMode.Sliced;
+            sr.size = size;
         }
 
         private Texture2D GenerateFrameTexture(int width, int height, float cornerRadiusPx, float woodThicknessPx, float goldThicknessPx)

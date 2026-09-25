@@ -157,7 +157,7 @@ namespace Project51.UIV2.Core
             if (catalog == null) return;
             string selected = CardDecks.SelectedId;
             var entry = catalog.Find(selected);
-            if (entry != null) home.SetDeck(new SelectorOptionViewData { Id = entry.Id, DisplayName = entry.DisplayName });
+            if (entry != null) home.SetDeck(new SelectorOptionViewData { Id = entry.Id, DisplayName = entry.DisplayName, Icon = entry.Artwork });
             if (collection == null) return;
             var decks = new List<DeckViewData>();
             foreach (var item in catalog.Entries)
@@ -169,11 +169,7 @@ namespace Project51.UIV2.Core
         private void SelectionChanged(MatchConfig config)
         {
             sessionSelection = config.Clone();
-            string intent = config.Intent == MatchIntent.Training ? "Allenamento"
-                : config.Intent == MatchIntent.QuickMatch ? "Partita veloce" : "Stanza privata";
-            string format = config.Format == GameFormat.OneVsOne ? "1v1"
-                : config.Format == GameFormat.TwoVsTwo ? "2v2" : "4 giocatori";
-            home.SetMode(new SelectorOptionViewData { Id = config.Intent.ToString(), DisplayName = intent + " · " + format });
+            home.SetMode(quickPanels.ModeOption(config));
         }
 
         private void Navigate(int index)

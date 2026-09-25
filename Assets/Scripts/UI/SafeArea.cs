@@ -7,6 +7,8 @@ public class SafeAreaFitter : MonoBehaviour
 {
     [Tooltip("Logga Screen.width/height, Screen.safeArea e gli anchor risultanti ogni volta che vengono ricalcolati - utile per verificare la Safe Area nel Device Simulator.")]
     [SerializeField] private bool debugLog = false;
+    [Tooltip("Arriva al bordo alto dello schermo (sfondi a tutta pagina sotto la barra di stato).")]
+    [SerializeField] private bool ignoreTop = false;
 
     private RectTransform _rt;
     private Rect _lastSafeArea;
@@ -37,6 +39,7 @@ public class SafeAreaFitter : MonoBehaviour
 
         Vector2 min = safe.position;
         Vector2 max = safe.position + safe.size;
+        if (ignoreTop) max.y = Screen.height;
 
         min.x /= Screen.width; min.y /= Screen.height;
         max.x /= Screen.width; max.y /= Screen.height;

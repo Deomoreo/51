@@ -9,7 +9,79 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 24/09, versione 2.17
+## ▶ PUNTO DI RIPRESA — 25/09, versione 2.23
+
+**2.23:** correzioni chieste dall'utente dopo la 2.22.
+- La tab Negozio è tornata nella bottom bar (BottomNavPolishBuilder, RestoreShop). La 2.22 l'aveva tolta seguendo la revisione approvata. L'icona è ancora `ic_cart` arancio: manca `ic_cart_cream`.
+- Bottom bar più bassa, senza la striscia sopra.
+  - `BottomNavSafeAreaBleed`: sink 0.5; l'host si accorcia di quanto scende il contenuto.
+  - Effetto collaterale: nella Home GIOCA e le pillole scendono di ~51 px; lo spazio fino alla nav passa da ~190 a ~108 px.
+- Pile laterali degli avversari più verso il centro: `CardViewManager.sideHandInsetFromBannerEdge` = 78.
+  - Se cambia un valore predefinito del prefab, serve un reimport ForceUpdate.
+- Il velo scuro delle finestre copriva già la bottom bar, misurato in pixel. La barra è già blu notte, per questo sembrava scoperta. Non cambiato.
+- Icone rapide della Home: una sola striscia d'ombra morbida (`ShadowStrip`) dietro tutta la colonna al posto degli aloni per icona (Build Home Quick Actions).
+- Verificato nel Simulator su iPhone 12, SE e iPad Mini. G4 fatto: commit della 2.23 su `codex/home-v2-training`, non pushato.
+
+**Aperti (ognuno col via):**
+- Riportare GIOCA/pillole più in alto nella Home, se lo spazio in basso ora sembra poco.
+- Su iPad la scritta Opzioni finisce sotto la pillola MAZZO (già noto dalla 2.19).
+- Icona crema del carrello per la tab Negozio (asset dell'utente).
+
+**2.22:** collegati gli asset consegnati e fatte le correzioni rapide approvate della revisione 2.20.
+- Icone crema (16) collegate: rilanciato Tools/UIV2/Apply Icon Set v2. Al tavolo Emoji usa `ic_chat` e ACCUSO `ic_accuso`.
+- Tavolo: nuovo builder Tools/UIV2/Apply Room And Table Kit (2.22).
+  - Imposta lo sfondo stanza 2x (1882x3344, max 4096) su GameBackground con scala Cover salvata.
+  - Imposta il kit feltro/vignetta/cornice 9-slice (`Assets/Art/Table/`) su TableFeltRenderer, in modalità kit.
+  - Mette il contorno navy alle didascalie Emoji/ACCUSO; il materiale deve essere dello stesso font.
+  - Va rilanciato dopo Apply Table Layout V4, che non imposta più lo sfondo e rifà le didascalie senza contorno.
+  - La cornice sostituisce l'ammorbidimento del bordo del tavolo.
+- Accesso: ACCEDI e REGISTRATI funzionano (Canvas_Login riattivato in MainMenu; deve restare attivo).
+- Tolte le voci "prossimamente": Tools/UIV2/Hide Coming Soon (2.22), da rilanciare dopo Build Delete Account, Profile o Collection. Tolta anche la tab Negozio.
+- Lobby: stato di caricamento invece del codice KKKKK e di "Stanza di" vuota.
+- Verificato nel Simulator su iPhone 12, SE e iPad Mini.
+
+**Aperti:** chiusi nella 2.23.
+
+**2.21:** nuovo mazzo **Barocco** (nome provvisorio) dell'utente integrato: `Assets/Art/Decks/51_BAROCCO_PNG_Unity/`
+(facce 287x452, dorso 874x1376, PPU = altezza/1.8), `Resources/CardDecks/barocco.asset`, 4ª voce del catalogo.
+Polish Quick Deck Panel ora clona la cella per i mazzi nuovi (griglia 3 colonne, passo 310x286). Test mazzi estesi
+a barocco. Verificato nel Simulator (iPhone 12): pannello Mazzo, anteprima, tavolo (mano, carte in tavola, dorsi).
+Napoletano resta il predefinito così com'è (scelta dell'utente, 25/09).
+Consegnati dall'utente e **non ancora collegati:** 2 fogli icone crema (16 icone), kit tavolo (cornice, feltro,
+vignetta), sfondo sala (941x1672 RGB: serve 1882x3344).
+**Prossimo:** ritagliare e collegare le icone crema, kit tavolo, poi le correzioni rapide della revisione (ognuna con il via).
+
+**2.20:** fiamme Home provvisorie meno in risalto (nucleo spento verso l'arancio, un po' di trasparenza,
+ondeggiamento più calmo: devono leggersi come sfondo) in attesa dei frame flipbook dell'utente. Tolto lo spazio
+residuo sotto la bottom bar. Bottom bar rifinita (BottomNavPolishBuilder): icone centrate, linguetta del selettore
+119 -> 132 verso il basso, scritte ExtraBold con contorno e ombra attaccata. Icone rapide Home (Tools/UIV2/Build Home
+Quick Actions): niente quadrato blu (resta area di tocco a alfa 0), alone scuro morbido, scritte con contorno — le
+scritte restano. Schermata iniziale: ACCEDI/REGISTRATI ExtraBold crema con contorno scuro, REGISTRATI ciano.
+Pannello Mazzo (Tools/UIV2/Polish Quick Deck Panel): dorsi veri ovunque, anteprima arrotondata con anello,
+didascalia "Nome · 40 carte" a 32 su una riga (misurata sul mockup), scritte con contorno. Il chip MODALITÀ della
+Home ripete titolo e icona della riga scelta nel pannello Modalità. Verificato nel Simulator (iPhone 12).
+**Da rilanciare dopo un rebuild completo di Home/FrontendFlow:** Build Home Quick Actions e Polish Quick Deck Panel.
+**Aperti:** frame flipbook fiamme (utente), proposta swipe pannelli (sfondo condiviso dietro UIV2Pager + contenuto
+pagine vuote), proposta animazioni cambio tab (asset utente), cella mazzo selezionata con bagliore oro morbido invece
+del pulsante pieno, icone modalità per numero di giocatori (1v1/2v2/1v3). Commit G4 ancora da fare.
+
+**2.19:** set icone crema collegato in un colpo solo (mappa `CreamIcons` in `NewIcon`: chest/trophy/exit/nav_back/
+close/settings crema, ic_mail resta com'è; Tools/UIV2/Apply Icon Set v2 ripassa anche i riferimenti v2 oro).
+Fiamme: niente più accendi/spegni A/B, una fiamma per torcia con shader `UIV2/FlameWobble` (lingue che salgono,
+allungamento e tremolio, ferma con Grafica ridotta tramite `_UIV2Still`). Bagliore torce più piccolo (0.75) e tenue
+(alpha 0.1). Luci del castello riallineate alle finestre. Sfondo a tutta pagina: tolta la sfumatura in alto, la
+Region ignora il bordo alto della safe area e l'artwork arriva fino alla nav (AboveNav 124). Aggiunti home_bushes
+(in primo piano, costruiti per ultimi); esclusi home_vines (ingombranti, doppiano l'edera della base).
+Verificato nel Simulator: iPhone 12, iPhone SE, iPad Mini 4. Aperti: fiamma destra in parte dietro il tasto Opzioni,
+MODALITÀ/MAZZO sulla balaustra su iPad (centro Home, compito dell'utente). G4 commit ancora da fare.
+
+**2.18:** sfondo Home animato rifatto sui nuovi asset (BackgroundHome/, vecchi nastri/semi/gemma cancellati).
+Base + overlay 1:1 a tutto schermo: stelle e luci del castello che respirano, stella cadente ogni ~10 s
+(`UIV2AmbientFloat.pause`), bagliore torce leggero; due fiamme per torcia (home_flame_a/b) in dissolvenza incrociata,
+perno sul fondo visibile della fiamma. Valori in `HomeOverlayLayers`/`HomeFlameLayers` del builder, misurati in pixel
+sul mockup (coppe, fiamme, castello). Esclusi home_vines e home_bushes: nel mockup ci sono già quelli della base.
+Icone crema ic_chest/ic_trophy/ic_exit importate, NON ancora collegate: manca ic_mail crema (cambio set in un colpo solo).
+Verificato nel Simulator: iPhone 12, iPhone SE, iPad Mini 4 (anche Grafica ridotta = posa di riposo).
 
 **2.17:** sfondo Home rifatto sul mockup (Assets/Mockup, 941x1672). Artwork tra bordo alto della safe area e nav
 (Region/AboveNav, 170), cornice ancorata in alto: colonne intere sui telefoni alti, arco e gemma visibili su 9:16
@@ -439,6 +511,9 @@ Rimozione dei riquadri, area cliccabile, stati premuto/disabilitato e disposizio
 comandi sono lavoro UI, non illustrazioni da commissionare. Dettagli e criteri nel brief.
 
 ### Consegne precedenti
+
+Consegnati il 25/09 (dopo la revisione 2.20): 2 fogli icone crema 4x2, kit tavolo, sfondo sala (poi riconsegnato 2x),
+mazzo Barocco (collegato nella 2.21); il resto è collegato nella 2.22. File in `DragonsHoard/sprites_unity/sprites_unity/Immagine ChatGPT 25 set 2026*`.
 
 Consegnati il 17/09: Poppins Regular/Medium/SemiBold, bagliore morbido cerchio e rettangolo, velo "Sfocatura sfondo" (la sfocatura vera si fa via codice sotto al velo, fatta nella 1.81).
 

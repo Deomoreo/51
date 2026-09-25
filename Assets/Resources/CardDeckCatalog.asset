@@ -20,11 +20,16 @@ MonoBehaviour:
     ResourcePath: CardDecks/napoletano
   - Id: classico
     DisplayName: Classico
-    Subtitle: "40 carte \xB7 dorso provvisorio"
-    Artwork: {fileID: 21300000, guid: 4023091643064014dbf2b05b5310f549, type: 3}
+    Subtitle: 40 carte
+    Artwork: {fileID: 21300000, guid: f7aaf18236002a64fa9515a350047236, type: 3}
     ResourcePath: CardDecks/classico
   - Id: giada
     DisplayName: Corte di Giada
     Subtitle: 40 carte
     Artwork: {fileID: 21300000, guid: ffec71c57be6fdf41b984a766bd4e9b1, type: 3}
     ResourcePath: CardDecks/giada
+  - Id: barocco
+    DisplayName: Barocco
+    Subtitle: 40 carte
+    Artwork: {fileID: 21300000, guid: ca788779c7bd24c4fbdfabe4c5ca621c, type: 3}
+    ResourcePath: CardDecks/barocco

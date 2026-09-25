@@ -11,6 +11,7 @@ namespace Project51.Tests
         [TestCase("napoletano")]
         [TestCase("classico")]
         [TestCase("giada")]
+        [TestCase("barocco")]
         public void EverySuitAndRankHasTheCorrectFaceAndPlayableSize(string id)
         {
             var deck = CardDecks.Load(id);
@@ -27,7 +28,7 @@ namespace Project51.Tests
                 Assert.NotNull(face, card.ToString());
                 Assert.IsTrue(unique.Add(face), "Duplicate face: " + card);
                 string expected = id == "napoletano" ? card.Suit + "_" + rank + ".asset"
-                    : (id == "giada" ? "51_GIADA_" : "51_") + card.Suit.ToString().ToUpperInvariant() + "_" + rank.ToString("00") + ".png";
+                    : (id == "giada" ? "51_GIADA_" : id == "barocco" ? "51_BAROCCO_" : "51_") + card.Suit.ToString().ToUpperInvariant() + "_" + rank.ToString("00") + ".png";
                 StringAssert.EndsWith(expected, AssetDatabase.GetAssetPath(face));
                 Assert.That(face.bounds.size.y, Is.EqualTo(1.8f).Within(.01f));
             }
@@ -37,7 +38,7 @@ namespace Project51.Tests
         public void EveryDeckHasItsOwnBack()
         {
             var backs = new System.Collections.Generic.Dictionary<Sprite, string>();
-            foreach (string id in new[] { "napoletano", "classico", "giada" })
+            foreach (string id in new[] { "napoletano", "classico", "giada", "barocco" })
             {
                 var back = CardDecks.Load(id).Back;
                 Assert.IsFalse(backs.ContainsKey(back), id + " usa il dorso di " + (backs.ContainsKey(back) ? backs[back] : ""));
@@ -53,7 +54,7 @@ namespace Project51.Tests
             try
             {
                 // Un MatchConfig salvato prima con "default"/"napoletano" non deve piu' imporre il napoletano.
-                foreach (string id in new[] { "giada", "classico", "napoletano" })
+                foreach (string id in new[] { "giada", "barocco", "classico", "napoletano" })
                 {
                     Assert.IsTrue(CardDecks.Select(id));
                     Assert.AreEqual(id, CardDecks.LoadForMatch().Id);
@@ -74,7 +75,7 @@ namespace Project51.Tests
             string previous = PlayerPrefs.GetString(CardDecks.PreferenceKey);
             try
             {
-                foreach (string id in new[] { "classico", "giada", "napoletano" })
+                foreach (string id in new[] { "classico", "giada", "barocco", "napoletano" })
                 {
                     Assert.IsTrue(CardDecks.Select(id));
                     Assert.AreEqual(id, CardDecks.SelectedId);

@@ -10,22 +10,57 @@ namespace Project51.EditorTools
     /// Icone v2 (docs/ui/asset-refresh-brief.md): PNG singoli in SheetsDir che sostituiscono i vecchi sprite
     /// del kit. Importa i PNG a 256 px e scambia i riferimenti in MainMenu, GameScene e nei prefab UIV2;
     /// i builder caricano gia' i file nuovi con NewIcon. Rilanciabile dopo aver sostituito un PNG.
-    /// Restano sul vecchio sprite: la X "rimuovi" della Collezione (serve un meno, ic_remove) e l'icona
-    /// "Condividi" della fila inviti (le vicine lucchetto/persona sono ancora del kit vecchio).
+    /// Restano sul vecchio sprite: la X "rimuovi" della Collezione (serve un meno, ic_remove), l'icona
+    /// mazziere (ic_cards del kit) e le icone lucide delle righe di Modalita' (famiglia a se').
     /// </summary>
     public static partial class UIV2FoundationBuilder
     {
         private static readonly string[] IconSetV2 =
-            { "ic_chest", "ic_trophy", "ic_mail", "ic_option", "ic_arrowback", "ic_volume", "ic_questionmark", "ic_exit", "ic_X" };
+        {
+            "ic_chest", "ic_trophy", "ic_mail", "ic_option", "ic_arrowback", "ic_volume", "ic_questionmark", "ic_exit", "ic_X",
+            "ic_globe", "ic_copy", "ic_paste", "ic_link", "ic_chat", "ic_person", "ic_cards", "ic_home",
+            "ic_warn", "ic_share", "ic_lock", "ic_bot", "ic_check", "ic_accuso",
+        };
 
-        private static Sprite NewIcon(string name) => LoadSprite(SheetsDir + "/" + name + ".png", name);
+        // 24/09: l'utente ha scelto il set crema (ic_mail era gia' crema). I builder usano il nome logico.
+        // 25/09: set crema v3 consegnato (16 icone), da qui solo icone crema.
+        private static readonly Dictionary<string, string> CreamIcons = new Dictionary<string, string>
+        {
+            { "ic_chest", "ic_chest_cream" }, { "ic_trophy", "ic_trophy_cream" }, { "ic_exit", "ic_exit_cream" },
+            { "ic_arrowback", "ic_nav_back_cream" }, { "ic_X", "ic_close_cream" }, { "ic_option", "ic_settings_cream" },
+            { "ic_globe", "ic_globe_cream" }, { "ic_copy", "ic_copy_cream" }, { "ic_paste", "ic_paste_cream" },
+            { "ic_link", "ic_link_cream" }, { "ic_chat", "ic_chat_cream" }, { "ic_person", "ic_person_cream" },
+            { "ic_cards", "ic_cards_cream" }, { "ic_home", "ic_home_cream" }, { "ic_volume", "ic_volume_cream" },
+            { "ic_questionmark", "ic_question_cream" }, { "ic_warn", "ic_warn_cream" }, { "ic_share", "ic_share_cream" },
+            { "ic_lock", "ic_lock_cream" }, { "ic_bot", "ic_bot_cream" }, { "ic_check", "ic_check_cream" },
+            { "ic_accuso", "ic_accuso_cream" },
+        };
+
+        // Icona scelta per posizione (suffisso del percorso), dove il vecchio sprite era solo un ripiego
+        // condiviso con altro (ic_cards per Incolla/Copia, persona/avviso per Emoji/Accuso...).
+        private static readonly Dictionary<string, string> PathIcons = new Dictionary<string, string>
+        {
+            { "/Row_Lingua/Icon", "ic_globe" }, { "/Paste/Icon", "ic_paste" }, { "/Copy/Icon", "ic_copy" },
+            { "/InviteLink/Icon", "ic_link" }, { "/InviteCondividi/Icon", "ic_share" },
+            { "/EmojiButton/Icon", "ic_chat" }, { "/AccusoButton/Icon", "ic_accuso" },
+            { "/GiocaSlot/Icon", "ic_home" }, { "/CardsSlot/Icon", "ic_cards" },
+        };
+
+        private static string IconFile(string name) => CreamIcons.TryGetValue(name, out var cream) ? cream : name;
+
+        private static Sprite NewIcon(string name)
+        {
+            name = IconFile(name);
+            return LoadSprite(SheetsDir + "/" + name + ".png", name);
+        }
 
         [MenuItem("Tools/UIV2/Apply Icon Set v2")]
         private static void ApplyIconSetV2()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            foreach (var name in IconSetV2)
+            foreach (var logical in IconSetV2)
             {
+                string name = IconFile(logical);
                 string path = SheetsDir + "/" + name + ".png";
                 var importer = (TextureImporter)AssetImporter.GetAtPath(path);
                 importer.textureType = TextureImporterType.Sprite;
@@ -50,7 +85,17 @@ namespace Project51.EditorTools
                 { LoadSprite(IconsPath, "ic_gear"), NewIcon("ic_option") },
                 { LoadSprite(IconsPath, "ic_x"), NewIcon("ic_X") },
                 { LoadSprite(SheetsDir + "/ic_arrow_left.png", "ic_arrow_left"), NewIcon("ic_arrowback") },
+                { LoadSprite(IconsPath, "ic_check"), NewIcon("ic_check") },
+                { LoadSprite(IconsPath, "ic_warn"), NewIcon("ic_warn") },
+                { LoadSprite(IconsPath, "ic_lock"), NewIcon("ic_lock") },
+                { LoadSprite(IconsPath, "ic_person"), NewIcon("ic_person") },
             };
+            // Riferimenti gia' passati alle v2 oro -> crema (non tutte hanno un PNG oro).
+            foreach (var gold in CreamIcons.Keys)
+            {
+                var goldSprite = AssetDatabase.LoadAssetAtPath<Sprite>(SheetsDir + "/" + gold + ".png");
+                if (goldSprite != null) swap[goldSprite] = NewIcon(gold);
+            }
             var oldX = LoadSprite(IconsPath, "ic_x");
             var exit = NewIcon("ic_exit");
             int count = 0;
@@ -81,7 +126,11 @@ namespace Project51.EditorTools
             {
                 if (component == null || component is Transform) continue;
                 string path = AnimationUtility.CalculateTransformPath(component.transform, root.transform);
-                if (path.Contains("RemoveButton") || path.Contains("InviteCondividi")) continue;
+                if (path.Contains("RemoveButton")) continue;
+                Sprite forced = null;
+                if (component is Image)
+                    foreach (var pair in PathIcons)
+                        if (("/" + path).EndsWith(pair.Key)) forced = NewIcon(pair.Value);
                 var so = new SerializedObject(component);
                 var property = so.GetIterator();
                 bool changed = false;
@@ -90,7 +139,16 @@ namespace Project51.EditorTools
                 {
                     if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
                     var sprite = property.objectReferenceValue as Sprite;
-                    if (sprite == null || !swap.TryGetValue(sprite, out var replacement)) continue;
+                    if (sprite == null) continue;
+                    Sprite replacement;
+                    if (forced != null && property.propertyPath == "m_Sprite")
+                    {
+                        if (sprite == forced) continue;
+                        replacement = forced;
+                    }
+                    else if (!swap.TryGetValue(sprite, out replacement)) continue;
+                    // Le righe di Modalita' usano la famiglia lucida (persona/carte/gamepad): restano coerenti tra loro.
+                    else if (sprite.name == "ic_person" && path.Contains("/Row_1v")) continue;
                     // "Abbandona partita" e' un'uscita, non una chiusura: porta (ic_exit), come chiede il brief.
                     if (sprite == oldX && path.EndsWith("Abandon/Icon")) replacement = exit;
                     property.objectReferenceValue = replacement;

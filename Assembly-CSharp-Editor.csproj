@@ -69,6 +69,7 @@
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\InGameSettingsTests.cs" />
     <Compile Include="Assets\Editor\HomeScreenBuilder.cs" />
+    <Compile Include="Assets\Editor\UIV2FoundationBuilder.ComingSoon.cs" />
     <Compile Include="Assets\Editor\TableActionButtonsBuilder.cs" />
     <Compile Include="Assets\Editor\EmoticonWireframeBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Dealer.cs" />
@@ -99,6 +100,7 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Glows.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerHandNumberTests.cs" />
     <Compile Include="Assets\Editor\UIV2ShaderBuilder.cs" />
+    <Compile Include="Assets\Editor\UIV2FoundationBuilder.QuickDeckPolish.cs" />
     <Compile Include="Assets\Tests\Editor\MatchConfigStorageTests.cs" />
     <Compile Include="Assets\Tests\Editor\SmazzataStartTests.cs" />
     <Compile Include="Assets\Tests\Editor\K5TableTests.cs" />
@@ -124,6 +126,7 @@
     <Compile Include="Assets\Tests\Editor\CardDeckTests.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51IntegrationTests.cs" />
     <Compile Include="Assets\Editor\GameCanvasResolutionFixer.cs" />
+    <Compile Include="Assets\Editor\UIV2FoundationBuilder.HomeQuickActions.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiAndPunteggioComprehensiveTests.cs" />
     <Compile Include="Assets\Tests\Editor\K4CardShaderTests.cs" />
     <Compile Include="Assets\Editor\QuickModeRowsCalibration.cs" />
@@ -158,7 +161,9 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.AnimatedEmoticons.cs" />
     <Compile Include="Assets\Tests\Editor\GameAudioTests.cs" />
     <Compile Include="Assets\Tests\Editor\K4BlurTests.cs" />
+    <Compile Include="Assets\Editor\UIV2FoundationBuilder.RoomTable.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.DealerReveal.cs" />
+    <Compile Include="Assets\Editor\StartScreenAuthButtonsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\K7FlowTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.HomeSettings.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Settings.cs" />

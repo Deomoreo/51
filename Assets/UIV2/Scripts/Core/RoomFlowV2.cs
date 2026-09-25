@@ -357,9 +357,22 @@ namespace Project51.UIV2.Core
             roomFormat != GameFormat.TwoVsTwo ? ""
                 : SeatLayout.SeatForJoinOrder(GameFormat.TwoVsTwo, joinIndex) % 2 == 0 ? " · SQUADRA A" : " · SQUADRA B";
 
+        // 2.22: finche' Photon non ha la stanza niente dati del builder (KKKKK, "Stanza di").
+        private void ShowLobbyLoading()
+        {
+            HostCells.SetCode("");
+            GuestCells.SetCode("");
+            GuestSubtitle.text = "Sala d'attesa";
+            HostCount.text = GuestCount.text = "";
+            HostHint.text = GuestStatus.text = "Collegamento alla stanza…";
+            StartGameButton.interactable = false;
+            foreach (var row in HostRows) row.ShowEmpty("In attesa…", canAddBot: false);
+            foreach (var row in GuestRows) row.ShowEmpty("In attesa…", canAddBot: false);
+        }
+
         public void RefreshPlayers()
         {
-            if (!PhotonNetwork.InRoom) return;
+            if (!PhotonNetwork.InRoom) { ShowLobbyLoading(); return; }
             if (PhotonNetwork.IsMasterClient != LobbyHostPanel.activeSelf) ShowLobby();
 
             var room = PhotonNetwork.CurrentRoom;
@@ -404,7 +417,7 @@ namespace Project51.UIV2.Core
             else
             {
                 var hostPlayer = players.FirstOrDefault(p => p.IsMasterClient);
-                GuestSubtitle.text = hostPlayer != null ? "Stanza di " + hostPlayer.NickName : "Sala d'attesa";
+                GuestSubtitle.text = !string.IsNullOrEmpty(hostPlayer?.NickName) ? "Stanza di " + hostPlayer.NickName : "Sala d'attesa";
                 GuestCells.SetCode(room.Name);
                 GuestCount.text = count;
                 GuestStatus.text = "In attesa che l'host avvii la partita…";

@@ -130,8 +130,8 @@
     <Compile Include="Assets\UIV2\Scripts\Components\ResultRowV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ButtonFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
-    <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AmbientFloat.cs" />
+    <Compile Include="Assets\Scripts\UI\TopBarSafeAreaFitter.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableMultiToggleGroup.cs" />
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Scripts\UI\PanelAmiciController.cs" />
@@ -291,6 +291,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\Shaders\SpritesHoloFoil.shader" />
+    <None Include="Assets\UIV2\Art\Shaders\UIV2FlameWobble.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\Audio\README.txt" />
     <None Include="Assets\GooglePlayGames\com.google.play.games\Proguard\games.txt" />

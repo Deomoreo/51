@@ -167,50 +167,10 @@ namespace Project51.EditorTools
                 EditorUtility.SetDirty(cardsLeftText);
             }
 
-            // Sfondo: sfumatura verticale misurata sul mockup (piu' chiara in alto), cosi' la barra
-            // scura in alto si stacca come nel mockup invece di sparire su un navy piatto.
-            var background = GameObject.Find("GameBackground")?.GetComponent<SpriteRenderer>();
-            if (background != null)
-            {
-                Undo.RecordObject(background, "Apply Table Layout V4");
-                background.sprite = CreateNavyGradientSprite(new Color32(16, 34, 56, 255), new Color32(7, 16, 28, 255));
-                EditorUtility.SetDirty(background);
-            }
-
+            // Sfondo: dalla 2.22 lo imposta Apply Room And Table Kit (stanza), non piu' la sfumatura navy.
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[UIV2FoundationBuilder] Layout tavolo V4 applicato in GameScene.");
-        }
-
-        private const string NavyGradientAssetPath = "Assets/Art/Generated/GameBackground_NavyGradient.png";
-
-        /// <summary>PNG quadrato (GameBackgroundFitter scala in Cover uniforme), rigenerato a ogni lancio.</summary>
-        private static Sprite CreateNavyGradientSprite(Color32 top, Color32 bottom)
-        {
-            const int size = 64;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color32[size * size];
-            for (int y = 0; y < size; y++)
-            {
-                var row = Color32.Lerp(bottom, top, y / (size - 1f)); // riga 0 = basso
-                for (int x = 0; x < size; x++) pixels[y * size + x] = row;
-            }
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(NavyGradientAssetPath));
-            System.IO.File.WriteAllBytes(NavyGradientAssetPath, tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
-
-            AssetDatabase.ImportAsset(NavyGradientAssetPath);
-            var importer = (TextureImporter)AssetImporter.GetAtPath(NavyGradientAssetPath);
-            importer.textureType = TextureImporterType.Sprite;
-            importer.spritePixelsPerUnit = size;
-            importer.filterMode = FilterMode.Bilinear;
-            importer.wrapMode = TextureWrapMode.Clamp;
-            importer.mipmapEnabled = false;
-            importer.textureCompression = TextureImporterCompression.Uncompressed;
-            importer.SaveAndReimport();
-            return AssetDatabase.LoadAssetAtPath<Sprite>(NavyGradientAssetPath);
         }
 
         /// <summary>Sprite del pannello "Scegli la presa" (MoveSelectionUI costruisce la grafica a runtime).</summary>
@@ -247,9 +207,9 @@ namespace Project51.EditorTools
             SetTableSprite(root, "TableTopBar/SettingsButton", "sq_blue", sliced: true);
             SetTableSprite(root, "TableTopBar/SettingsButton/Icon", "ic_option", sliced: false);
             SetTableSprite(root, "TableActionButtons/EmojiButton", "sq_blue", sliced: true);
-            SetTableSprite(root, "TableActionButtons/EmojiButton/Icon", "ic_person", sliced: false);
+            SetTableSprite(root, "TableActionButtons/EmojiButton/Icon", "ic_chat", sliced: false);
             SetTableSprite(root, "TableActionButtons/AccusoButton", "sq_gold", sliced: true);
-            SetTableSprite(root, "TableActionButtons/AccusoButton/Icon", "ic_warn", sliced: false);
+            SetTableSprite(root, "TableActionButtons/AccusoButton/Icon", "ic_accuso", sliced: false);
             // Il bagliore morbido del mockup non esiste nel kit (glow_soft rimosso): niente quadrato giallo.
             var glow = root.Find("TableActionButtons/AccusoButton/Glow");
             if (glow != null) glow.gameObject.SetActive(false);

@@ -8,48 +8,65 @@ using UnityEngine.UI;
 namespace Project51.EditorTools
 {
     /// <summary>
-    /// Sfondo animato della Home: base statica a riempimento (EnvelopeParent) tra safe area e nav,
-    /// bagliore che respira, gemma sull'arco e decorazioni ai bordi con micro-movimenti sfasati
-    /// (UIV2AmbientFloat). Il centro resta libero per la Home. Fermo con Grafica ridotta.
-    /// Rilanciabile: rimuove e ricrea solo "HomeAmbient".
+    /// Sfondo animato della Home: base statica a riempimento (EnvelopeParent) dal bordo alto dello
+    /// schermo alla nav, livelli d'effetto (stelle, luci del castello, stella cadente, bagliore delle
+    /// torce, cespugli) che pulsano (UIV2AmbientFloat) e fiamme che si muovono (shader UIV2/FlameWobble).
+    /// Fermo con Grafica ridotta: resta la posa del mockup. Rilanciabile: rimuove e ricrea solo "HomeAmbient".
     /// Posizioni in pixel dell'artwork base a meta' risoluzione (941x1672; il PNG e' 1882x3344,
-    /// stesse proporzioni), origine in alto a sinistra, centro della
-    /// parte visibile dello sprite; movimenti in unita' canvas (riferimento 1080x1920).
+    /// stesse proporzioni), origine in alto a sinistra; movimenti in unita' canvas (riferimento 1080x1920).
     /// </summary>
     public static partial class UIV2FoundationBuilder
     {
         private const string HomeAmbientFolder = "Assets/UI/Sprites/DragonsHoard/sprites_unity/sprites_unity/BackgroundHome/";
-        private const string TopFadePath = "Assets/Art/Generated/Home_TopFade.png";
+        private const string FlameMaterialPath = "Assets/UIV2/Art/Shaders/UIV2FlameWobble.mat";
         private const float BaseWidth = 941f, BaseHeight = 1672f;
 
-        private struct AmbientLayer
+        // Livelli 941x1672 allineati 1:1 alla base (o in Place, px d'artwork): alpha di riposo (= mockup)
+        // e pulsazione. home_vines escluso: ingombra gli angoli alti sotto l'HUD e ripete l'edera della base.
+        private struct OverlayLayer
         {
             public string Name, Sprite;
-            public float X, Y, Width, Tilt;           // centro e larghezza visibili sull'artwork, inclinazione fissa
-            public Rect Visible;                       // bbox alfa nello sprite (px, origine in alto a sinistra)
-            public float MoveX, MoveY, Rotation, Scale, Duration, Phase;
-            public bool Flip;                          // specchiato attorno al centro visibile
+            public float Alpha, AlphaAmount, MoveX, MoveY, Duration, Phase, Pause;
+            public Rect Place;                         // vuoto = a tutta cornice
         }
 
-        private static AmbientLayer Layer(string name, string sprite, float x, float y, float width, float tilt,
-            Rect visible, float moveX, float moveY, float rotation, float scale, float duration, float phase, bool flip = false)
+        private static readonly OverlayLayer[] HomeOverlayLayers =
         {
-            return new AmbientLayer { Name = name, Sprite = sprite, X = x, Y = y, Width = width, Tilt = tilt, Visible = visible,
-                MoveX = moveX, MoveY = moveY, Rotation = rotation, Scale = scale, Duration = duration, Phase = phase, Flip = flip };
+            new OverlayLayer { Name = "Stars",         Sprite = "home_stars",         Alpha = 0.35f, AlphaAmount = 0.55f, Duration = 1.9f, Phase = 0.4f },
+            // Disegnate su un castello piu' grande: scala 0.875 x 0.925 e spostamento (79, 35) misurati
+            // sulle finestre della base.
+            new OverlayLayer { Name = "CastleLights",  Sprite = "home_castle_lights", Alpha = 0.45f, AlphaAmount = 0.3f,  Duration = 1.3f, Phase = 0.9f,
+                               Place = new Rect(79f, 35f, BaseWidth * 0.875f, BaseHeight * 0.925f) },
+            // Passa verso il basso a sinistra, come la scia disegnata; invisibile a riposo.
+            new OverlayLayer { Name = "ShootingStar",  Sprite = "home_shooting_star", Alpha = 0f,    AlphaAmount = 0.9f,  MoveX = -150f, MoveY = -80f, Duration = 1.2f, Pause = 9f },
+        };
+
+        // Primo piano (sopra fiamme e bagliori): i cespugli sfocati agli angoli bassi del mockup.
+        private static readonly OverlayLayer Bushes =
+            new OverlayLayer { Name = "Bushes", Sprite = "home_bushes", Alpha = 1f, MoveX = 4f, Duration = 3.2f, Phase = 1f };
+
+        // Bagliore delle torce: le due meta' di home_torch_glow, ridotte attorno al centro di ciascuna.
+        private const float TorchGlowScale = 0.75f;
+        private static readonly Vector2[] TorchGlowCentres = { new Vector2(151f, 688f), new Vector2(796f, 688f) };
+
+        // Fiamme sui bracieri: base della fiamma (X, Y) nel braciere del mockup, larghezza visibile.
+        // Una per braciere: il movimento lo fa lo shader, sfasato dalla posizione.
+        private struct FlameLayer
+        {
+            public string Name;
+            public float X, Y;
         }
 
-        // Misurate sul mockup Assets/Mockup (941x1672): nastri avvolti alle colonne, denari e coppa a
-        // sinistra, bastone e spada a destra. Il nastro destro specchiato ricalca il sinistro del mockup
-        // meglio di home_ribbon_left.
-        private static readonly AmbientLayer[] HomeAmbientLayers =
+        private const string FlameSprite = "home_flame_a";
+        private const float FlameWidth = 44f;
+        // 2.20: sfondo, non primo piano: nucleo bianco spento verso l'arancio e un po' di trasparenza.
+        private static readonly Color FlameTint = new Color(0.9f, 0.7f, 0.52f, 0.85f);
+        private static readonly Rect FlameVisible = Rect.MinMaxRect(286, 60, 1002, 1193); // bbox alfa (px, origine in alto a sinistra)
+
+        private static readonly FlameLayer[] HomeFlameLayers =
         {
-            Layer("Ribbon_Left",  "home_ribbon_right",  96f, 465f, 210f,  0f,   Rect.MinMaxRect(480, 12, 890, 1518),  2f,   6f,  0.6f, 0f,     8.5f, 0f, true),
-            Layer("Ribbon_Right", "home_ribbon_right", 826f, 475f, 215f,  0f,   Rect.MinMaxRect(480, 12, 890, 1518), -2f,   7f, -0.6f, 0f,     9.5f, 1.5f),
-            Layer("Denari",       "home_denari",       215f, 245f, 138f,  0f,   Rect.MinMaxRect(54, 57, 1197, 1196),  2f,  10f,  1.2f, 0f,     6.8f, 0.6f),
-            Layer("Coppe",        "home_coppe",        134f, 561f, 122f, -22f,  Rect.MinMaxRect(234, 93, 1019, 1155), -3f,  8f, -1f,   0f,     7.6f, 2.3f),
-            Layer("Bastoni",      "home_bastoni",      775f, 320f, 191f,  51.8f, Rect.MinMaxRect(279, 35, 1068, 1179),  3f, -10f,  1.5f, 0f,     8.4f, 3.1f),
-            Layer("Spade",        "home_spade",        800f, 616f, 165f,  21.5f, Rect.MinMaxRect(266, 58, 1132, 1186),  3f,   9f, -1.2f, 0f,     6.4f, 1.1f),
-            Layer("Gem",          "home_gem",          470f,  45f,  56f,  0f,   Rect.MinMaxRect(208, 146, 1047, 1084), 0f,   0f,  0f,   0.018f, 4f,   0.8f),
+            new FlameLayer { Name = "Flame_Left",  X = 137f, Y = 705f },
+            new FlameLayer { Name = "Flame_Right", X = 798f, Y = 705f },
         };
 
         [MenuItem("Tools/UIV2/Build Home Ambient")]
@@ -57,8 +74,8 @@ namespace Project51.EditorTools
         {
             if (EditorApplication.isPlaying) throw new System.InvalidOperationException("Stop Play Mode first.");
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            // Nastri alti ~1100 px su iPhone: sorgente piena (1536); semi fino a ~460 px.
-            foreach (var layer in HomeAmbientLayers) ShrinkForUi(layer.Sprite, layer.Sprite.Contains("ribbon") ? 2048 : 512, true);
+            // Fiamme alte ~110 px su iPhone da sorgenti 1254: 256 con mipmap; i livelli 941x1672 restano pieni.
+            ShrinkForUi(FlameSprite, 256, true);
             ShrinkForUi("home_bg_base", 4096, false); // 1882x3344: a 2048 tornerebbe sotto la risoluzione degli iPhone
 
             var scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
@@ -72,22 +89,26 @@ namespace Project51.EditorTools
             group.blocksRaycasts = false;
             group.interactable = false;
 
-            // Fuori dall'artwork (barra di stato, sotto la nav) resta il verde dell'arco.
+            // Fuori dall'artwork (barra di stato, sotto la nav) resta il blu del cielo in cima alla base.
             var filler = CreateUIObject("Filler", ambient);
             Stretch(filler);
             var fillerImage = filler.gameObject.AddComponent<Image>();
-            fillerImage.color = new Color32(12, 52, 31, 255);
+            fillerImage.color = new Color32(4, 53, 113, 255);
             fillerImage.raycastTarget = false;
 
-            // Artwork tra il bordo alto della safe area e la nav: sui telefoni alti un riempimento a
-            // tutto schermo tagliava ~84 px per lato e con loro le colonne. 170 = BottomNavHost.
+            // Artwork dal bordo alto dello schermo (come nel mockup, l'HUD ci sta sopra) al filo alto della
+            // nav: fino al fondo dello schermo taglierebbe ~84 px per lato e con loro le colonne.
+            // 96 = BottomNavHost 170 - la nav che ci scende dentro di ~71 (sink 0.75 x inset 94), qualche unita' sotto il suo bordo.
+            // 2.23: con sink 0.5 la nav sta piu' in alto e copre il fondo dell'artwork; 96 resta per non cambiarne la scala.
             var region = CreateUIObject("Region", ambient);
-            region.gameObject.AddComponent<SafeAreaFitter>();
+            var regionFitter = new SerializedObject(region.gameObject.AddComponent<SafeAreaFitter>());
+            regionFitter.FindProperty("ignoreTop").boolValue = true;
+            regionFitter.ApplyModifiedPropertiesWithoutUndo();
             var aboveNav = CreateUIObject("AboveNav", region);
             Stretch(aboveNav);
-            aboveNav.offsetMin = new Vector2(0f, 170f);
+            aboveNav.offsetMin = new Vector2(0f, 96f);
 
-            // Ancorata in alto: sui 9:16 l'eccedenza scende dietro la nav invece di tagliare arco e gemma.
+            // Ancorata in alto: sui 9:16 l'eccedenza scende dietro la nav invece di tagliare il cielo.
             var frame = CreateUIObject("Frame", aboveNav);
             Stretch(frame);
             frame.pivot = new Vector2(0.5f, 1f);
@@ -96,44 +117,43 @@ namespace Project51.EditorTools
             fitter.aspectRatio = BaseWidth / BaseHeight;
 
             Stretch(AmbientImage(frame, "BG_Base", "home_bg_base", 1f));
-            var glow = AmbientImage(frame, "Glow", "home_glow", 0.06f);
-            Stretch(glow);
-            Float(glow, 0f, 0f, 0f, 0.03f, 0.05f, 4.2f, 0f);
 
-            // Bordo alto dell'artwork sfumato nel verde della barra di stato (24 px d'artwork: oltre
-            // spegne la gemma). Dentro Frame, cosi' segue l'arco anche dove la cornice sborda (iPad).
-            var fadeImporter = (TextureImporter)AssetImporter.GetAtPath(TopFadePath);
-            if (fadeImporter.textureType != TextureImporterType.Sprite)
-            {
-                fadeImporter.textureType = TextureImporterType.Sprite;
-                fadeImporter.mipmapEnabled = false;
-                fadeImporter.wrapMode = TextureWrapMode.Clamp;
-                fadeImporter.SaveAndReimport();
-            }
-            var topFade = CreateUIObject("TopFade", frame);
-            topFade.anchorMin = new Vector2(0f, 1f - 24f / BaseHeight);
-            topFade.anchorMax = Vector2.one;
-            topFade.offsetMin = topFade.offsetMax = Vector2.zero;
-            var topFadeImage = topFade.gameObject.AddComponent<Image>();
-            topFadeImage.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(TopFadePath);
-            topFadeImage.color = fillerImage.color;
-            topFadeImage.raycastTarget = false;
+            foreach (var layer in HomeOverlayLayers) OverlayImage(frame, layer);
 
-            foreach (var layer in HomeAmbientLayers)
+            // Meta' texture per torcia (RawImage.uvRect), scalata attorno al centro del suo bagliore.
+            var glowTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(HomeAmbientFolder + "home_torch_glow.png");
+            for (int side = 0; side < 2; side++)
             {
-                var rect = AmbientImage(frame, layer.Name, layer.Sprite, 1f);
-                var size = SourceSize(layer.Sprite);
-                float k = layer.Width / layer.Visible.width;
-                Vector2 visibleCentre = layer.Visible.center;
-                float left = layer.X - visibleCentre.x * k, top = layer.Y - visibleCentre.y * k;
-                rect.anchorMin = new Vector2(left / BaseWidth, 1f - (top + size.y * k) / BaseHeight);
-                rect.anchorMax = new Vector2((left + size.x * k) / BaseWidth, 1f - top / BaseHeight);
-                rect.pivot = new Vector2(visibleCentre.x / size.x, 1f - visibleCentre.y / size.y);
-                rect.offsetMin = rect.offsetMax = Vector2.zero;
-                rect.localEulerAngles = new Vector3(0f, 0f, layer.Tilt);
-                if (layer.Flip) rect.localScale = new Vector3(-1f, 1f, 1f);
-                Float(rect, layer.MoveX, layer.MoveY, layer.Rotation, layer.Scale, 0f, layer.Duration, layer.Phase);
+                var rect = CreateUIObject(side == 0 ? "TorchGlow_Left" : "TorchGlow_Right", frame);
+                var raw = rect.gameObject.AddComponent<RawImage>();
+                raw.texture = glowTexture;
+                raw.uvRect = new Rect(side * 0.5f, 0f, 0.5f, 1f);
+                raw.color = new Color(1f, 1f, 1f, 0.1f);
+                raw.raycastTarget = false;
+                float half = BaseWidth * 0.5f;
+                PlaceInArt(rect, new Rect(side * half, 0f, half, BaseHeight));
+                var centre = TorchGlowCentres[side];
+                SetPivotKeepingPlace(rect, new Vector2((centre.x - side * half) / half, 1f - centre.y / BaseHeight));
+                rect.localScale = new Vector3(TorchGlowScale, TorchGlowScale, 1f);
+                Float(rect, 0f, 0f, 0f, 0f, 0.12f, 0.9f, 0.2f + side * 0.35f);
             }
+
+            // Pivot alla base visibile della fiamma: il tremolio di scala parte dal braciere.
+            var flameMaterial = FlameMaterial();
+            var flameSize = SourceSize(FlameSprite);
+            float k = FlameWidth / FlameVisible.width;
+            foreach (var layer in HomeFlameLayers)
+            {
+                var rect = AmbientImage(frame, layer.Name, FlameSprite, 1f);
+                rect.GetComponent<Image>().material = flameMaterial;
+                rect.GetComponent<Image>().color = FlameTint;
+                float left = layer.X - FlameVisible.center.x * k, top = layer.Y - FlameVisible.yMax * k;
+                PlaceInArt(rect, new Rect(left, top, flameSize.x * k, flameSize.y * k));
+                SetPivotKeepingPlace(rect, new Vector2(FlameVisible.center.x / flameSize.x, 1f - FlameVisible.yMax / flameSize.y));
+                Float(rect, 0f, 0f, 0f, 0.015f, 0f, 0.6f, layer.X * 0.001f);
+            }
+
+            OverlayImage(frame, Bushes);
 
             var home = Object.FindObjectOfType<HomeV2Integration>(true);
             var so = new SerializedObject(home);
@@ -143,6 +163,43 @@ namespace Project51.EditorTools
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[UIV2FoundationBuilder] Sfondo Home animato ricostruito.");
+        }
+
+        private static void OverlayImage(RectTransform frame, OverlayLayer layer)
+        {
+            var rect = AmbientImage(frame, layer.Name, layer.Sprite, layer.Alpha);
+            if (layer.Place.width > 0f) PlaceInArt(rect, layer.Place);
+            else Stretch(rect);
+            Float(rect, layer.MoveX, layer.MoveY, 0f, 0f, layer.AlphaAmount, layer.Duration, layer.Phase, layer.Pause);
+        }
+
+        // Rettangolo in px d'artwork (origine in alto a sinistra) -> ancore nella cornice.
+        private static void PlaceInArt(RectTransform rect, Rect art)
+        {
+            rect.anchorMin = new Vector2(art.xMin / BaseWidth, 1f - art.yMax / BaseHeight);
+            rect.anchorMax = new Vector2(art.xMax / BaseWidth, 1f - art.yMin / BaseHeight);
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+        }
+
+        private static void SetPivotKeepingPlace(RectTransform rect, Vector2 pivot)
+        {
+            rect.pivot = pivot;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+        }
+
+        private static Material FlameMaterial()
+        {
+            var material = AssetDatabase.LoadAssetAtPath<Material>(FlameMaterialPath);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("UIV2/FlameWobble"));
+                AssetDatabase.CreateAsset(material, FlameMaterialPath);
+            }
+            // 2.20: ondeggiamento piu' calmo, da sfondo.
+            material.SetFloat("_Sway", 0.025f);
+            material.SetFloat("_Speed", 0.8f);
+            EditorUtility.SetDirty(material);
+            return material;
         }
 
         private static RectTransform AmbientImage(RectTransform parent, string name, string sprite, float alpha)
@@ -156,7 +213,7 @@ namespace Project51.EditorTools
             return rect;
         }
 
-        private static void Float(RectTransform rect, float moveX, float moveY, float rotation, float scale, float alpha, float duration, float phase)
+        private static void Float(RectTransform rect, float moveX, float moveY, float rotation, float scale, float alpha, float duration, float phase, float pause = 0f)
         {
             var so = new SerializedObject(rect.gameObject.AddComponent<UIV2AmbientFloat>());
             so.FindProperty("moveX").floatValue = moveX;
@@ -166,6 +223,7 @@ namespace Project51.EditorTools
             so.FindProperty("alphaAmount").floatValue = alpha;
             so.FindProperty("duration").floatValue = duration;
             so.FindProperty("phase").floatValue = phase;
+            so.FindProperty("pause").floatValue = pause;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

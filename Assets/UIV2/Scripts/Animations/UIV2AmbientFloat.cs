@@ -21,6 +21,9 @@ namespace Project51.UIV2.Animations
         [SerializeField, Tooltip("Alpha aggiunto alla Graphic (glow)")] private float alphaAmount;
         [SerializeField, Min(0.1f), Tooltip("Secondi per mezzo ciclo")] private float duration = 8f;
         [SerializeField, Min(0f), Tooltip("Secondi di vantaggio: elementi mai sincronizzati")] private float phase;
+        [SerializeField, Min(0f), Tooltip(">0 = solo andata (stella cadente): alpha sale e torna, poi pausa in secondi")] private float pause;
+
+        private static readonly int StillId = Shader.PropertyToID("_UIV2Still");
 
         private Tween motion;
         private Vector2 restPosition;
@@ -43,6 +46,7 @@ namespace Project51.UIV2.Animations
         private void Refresh()
         {
             bool wanted = Application.isPlaying && !GamePreferences.ReducedGraphics;
+            Shader.SetGlobalFloat(StillId, GamePreferences.ReducedGraphics ? 1f : 0f); // shader UIV2/FlameWobble
             if (wanted == (motion != null)) return;
             if (!wanted) { Stop(); return; }
 
@@ -53,16 +57,20 @@ namespace Project51.UIV2.Animations
             graphic = GetComponent<Graphic>();
             if (graphic != null) restAlpha = graphic.color.a;
 
+            bool shot = pause > 0f;
             var sequence = DOTween.Sequence().SetUpdate(true);
             if (moveX != 0f || moveY != 0f)
-                sequence.Join(rect.DOAnchorPos(restPosition + new Vector2(moveX, moveY), duration).SetEase(Ease.InOutSine));
+                sequence.Join(rect.DOAnchorPos(restPosition + new Vector2(moveX, moveY), duration).SetEase(shot ? Ease.OutQuad : Ease.InOutSine));
             if (rotation != 0f)
                 sequence.Join(rect.DOLocalRotate(restEuler + new Vector3(0f, 0f, rotation), duration).SetEase(Ease.InOutSine));
             if (scaleAmount != 0f)
                 sequence.Join(rect.DOScale(restScale * (1f + scaleAmount), duration).SetEase(Ease.InOutSine));
             if (alphaAmount != 0f && graphic != null)
-                sequence.Join(graphic.DOFade(restAlpha + alphaAmount, duration).SetEase(Ease.InOutSine));
-            sequence.SetLoops(-1, LoopType.Yoyo);
+                sequence.Join(shot
+                    ? graphic.DOFade(restAlpha + alphaAmount, duration * 0.5f).SetEase(Ease.InOutSine).SetLoops(2, LoopType.Yoyo)
+                    : graphic.DOFade(restAlpha + alphaAmount, duration).SetEase(Ease.InOutSine));
+            if (shot) sequence.AppendInterval(pause);
+            sequence.SetLoops(-1, shot ? LoopType.Restart : LoopType.Yoyo);
             if (phase > 0f) sequence.Goto(phase, true);
             motion = sequence;
         }

@@ -760,7 +760,7 @@ namespace Project51.Unity
         [SerializeField] private float topHandStep = 65f;
         [SerializeField] private float topHandFanDegrees = 8f;
         [SerializeField] private float sideHandBelowBanner = 182f;
-        [SerializeField] private float sideHandInsetFromBannerEdge = 48f;
+        [SerializeField] private float sideHandInsetFromBannerEdge = 78f; // 2.23: 48 toccava la cornice in legno su iPhone 12
         [SerializeField] private float sideHandStep = 60f;
         [SerializeField] private float opponentCardHeight = 80f;
         [SerializeField] private float tableCardStepX = 136f;

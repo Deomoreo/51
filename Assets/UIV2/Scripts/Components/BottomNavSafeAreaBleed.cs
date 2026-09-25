@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Project51.UIV2.Components
 {
@@ -7,7 +8,9 @@ namespace Project51.UIV2.Components
     /// (iPhone, molti Android a tutto schermo) sotto restava una fascia vuota di ~100 px e la barra
     /// sembrava "sollevata". Qui, dal vero Screen.safeArea:
     /// - lo sfondo (fill) scende fino al bordo dello schermo;
-    /// - il contenuto scende di una parte dell'inset (sink), restando sopra l'indicatore di sistema.
+    /// - il contenuto scende di una parte dell'inset (sink), restando sopra l'indicatore di sistema;
+    /// - l'host (LayoutElement) si accorcia di altrettanto: la pagina sopra arriva al filo della barra
+    ///   (2.23: prima finiva ~70 unita' piu' in alto e le liste venivano tagliate lasciando una striscia).
     /// Senza inset (niente barra di sistema) non cambia nulla.
     /// </summary>
     public sealed class BottomNavSafeAreaBleed : MonoBehaviour
@@ -16,6 +19,8 @@ namespace Project51.UIV2.Components
         [SerializeField] private RectTransform fill;
         [SerializeField, Range(0f, 1f)] private float sink = 0.45f;
 
+        private LayoutElement hostLayout;
+        private float hostHeight;
         private Rect lastSafeArea;
         private Vector2 lastScreen;
         private float lastScale;
@@ -43,8 +48,15 @@ namespace Project51.UIV2.Components
             float inset = scale > 0f ? insetPx / scale : 0f;
 
             float down = inset * sink;
+            if (hostLayout == null)
+            {
+                hostLayout = GetComponent<LayoutElement>();
+                if (hostLayout != null) hostHeight = hostLayout.preferredHeight;
+            }
+            if (hostLayout != null) hostLayout.preferredHeight = hostHeight - down;
+            // Stessa altezza di prima (hostHeight): il bordo alto resta sul filo dell'host, il fondo scende.
             content.offsetMin = new Vector2(content.offsetMin.x, -down);
-            content.offsetMax = new Vector2(content.offsetMax.x, -down);
+            content.offsetMax = new Vector2(content.offsetMax.x, 0f);
             if (fill != null)
             {
                 // Dal fondo del contenuto fino al bordo dello schermo, con un margine.

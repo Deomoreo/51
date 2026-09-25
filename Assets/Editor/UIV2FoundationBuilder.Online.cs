@@ -136,7 +136,7 @@ namespace Project51.EditorTools
             layout.childForceExpandWidth = layout.childForceExpandHeight = false;
             var icon = CreateUIObject("Icon", errorRow);
             var iconImage = icon.gameObject.AddComponent<Image>();
-            iconImage.sprite = LoadSprite(IconsPath, "ic_warn");
+            iconImage.sprite = NewIcon("ic_warn");
             iconImage.preserveAspect = true;
             iconImage.raycastTarget = false;
             var iconLayout = icon.gameObject.AddComponent<LayoutElement>();
@@ -145,7 +145,7 @@ namespace Project51.EditorTools
             flow.JoinErrorRow = errorRow.gameObject;
 
             flow.Paste = MockButton(design, "Paste", "btn_blue_long", 265f, 928f, 548f, 72f, "", 0f, null);
-            ButtonIconLabel(flow.Paste, "ic_cards", 24f, 16f, 40f, "INCOLLA", 78f, 28f);
+            ButtonIconLabel(flow.Paste, "ic_paste", 24f, 16f, 40f, "INCOLLA", 78f, 28f);
             flow.Join = MockButton(design, "Join", "btn_gold_long", 196f, 1198f, 688f, 92f, "ENTRA", 42f, BrownOutlineMaterial());
             closes.Add(MockButton(design, "Cancel", "btn_gray_small", 305f, 1345f, 470f, 50f, "ANNULLA", 24f, NavyOutlineMaterial()));
         }
@@ -194,16 +194,16 @@ namespace Project51.EditorTools
             flow.HostCells = CodeCells(design, "Cells", 232f, 388f, 112f, 136f, 126f, 64f);
 
             flow.HostCopy = MockButton(design, "Copy", "btn_teal", 275f, 564f, 530f, 72f, "", 0f, null);
-            ButtonIconLabel(flow.HostCopy, "ic_cards", 22f, 16f, 40f, "COPIA CODICE", 72f, 28f);
+            ButtonIconLabel(flow.HostCopy, "ic_copy", 22f, 16f, 40f, "COPIA CODICE", 72f, 28f);
             flow.HostFeedback = MockText(design, "Feedback", "", 90f, 640f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
 
             SectionHeader(design, "InviteHeader", "INVITA", 100f, 696f, 880f);
             string[] labels = { "Condividi", "Link", "Amici" };
-            string[] icons = { "ic_mail", "ic_lock", "ic_person" };
+            string[] icons = { "ic_share", "ic_link", "ic_person" };
             for (int i = 0; i < 3; i++)
             {
                 var button = MockButton(design, "Invite" + labels[i], "btn_blue_mid", 90f + i * 306.5f, 755f, 285f, 110f, "", 0f, null);
-                MockSprite(button.transform, "Icon", LoadSprite(IconsPath, icons[i]), 118.5f, 14f, 48f, 48f, false);
+                MockSprite(button.transform, "Icon", NewIcon(icons[i]), 118.5f, 14f, 48f, 48f, false);
                 MockText(button.transform, "Label", labels[i], 0f, 70f, 285f, 32f, 21f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
                 if (i == 0) flow.ShareButton = button;
                 else button.interactable = false; // link di invito e lista amici: nessun servizio dietro
@@ -228,7 +228,7 @@ namespace Project51.EditorTools
             flow.GuestCells = CodeCells(design, "Cells", 287f, 495f, 92f, 110f, 104f, 56f);
 
             flow.GuestCopy = MockButton(design, "Copy", "btn_blue_long", 305f, 643f, 470f, 64f, "", 0f, null);
-            ButtonIconLabel(flow.GuestCopy, "ic_cards", 22f, 12f, 38f, "COPIA CODICE", 70f, 26f);
+            ButtonIconLabel(flow.GuestCopy, "ic_copy", 22f, 12f, 38f, "COPIA CODICE", 70f, 26f);
             flow.GuestFeedback = MockText(design, "Feedback", "", 90f, 710f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
 
             flow.GuestCount = SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 764f, 880f);
@@ -467,7 +467,7 @@ namespace Project51.EditorTools
             row.Avatar = MockSprite(filled, "Avatar", row.PlayerAvatar, 16f, (height - 62f) * 0.5f, 62f, 62f, false);
             row.Name = MockText(filled, "Name", "Giocatore", 94f, height * 0.5f - 36f, width - 300f, 40f, 30f, FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
             row.Role = MockText(filled, "Role", "PRONTO", 94f, height * 0.5f + 4f, width - 300f, 30f, 19f, FontStyles.Bold, LobbySlotRowV2.ReadyColor, TextAlignmentOptions.MidlineLeft);
-            row.Check = MockSprite(filled, "Check", LoadSprite(IconsPath, "ic_check"), width - 50f, height * 0.5f - 16f, 32f, 32f, false).gameObject;
+            row.Check = MockSprite(filled, "Check", NewIcon("ic_check"), width - 50f, height * 0.5f - 16f, 32f, 32f, false).gameObject;
 
             var empty = Stretch(container, "Empty");
             row.Empty = empty.gameObject;
@@ -561,7 +561,7 @@ namespace Project51.EditorTools
         private static void ButtonIconLabel(Button button, string iconName, float iconLeft, float iconTop, float iconSize, string label, float labelLeft, float labelSize)
         {
             var rect = (RectTransform)button.transform;
-            MockSprite(rect, "Icon", LoadSprite(IconsPath, iconName), iconLeft, iconTop, iconSize, iconSize, false);
+            MockSprite(rect, "Icon", System.Array.IndexOf(IconSetV2, iconName) >= 0 ? NewIcon(iconName) : LoadSprite(IconsPath, iconName), iconLeft, iconTop, iconSize, iconSize, false);
             var text = MockText(rect, "Label", label, labelLeft, 0f, rect.sizeDelta.x - labelLeft - 20f, rect.sizeDelta.y, labelSize,
                 FontStyles.Bold, Color.white, TextAlignmentOptions.MidlineLeft);
             text.fontSharedMaterial = NavyOutlineMaterial();

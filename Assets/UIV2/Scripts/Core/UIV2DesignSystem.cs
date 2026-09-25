@@ -72,7 +72,7 @@ namespace Project51.UIV2.Core
                 // Testi della barra del tavolo: font/misure calibrati sul mockup da Apply Table Layout V4.
                 if (text.transform.parent != null && text.transform.parent.name == "TableTopBar") continue;
                 var material = text.fontSharedMaterial;
-                bool calibrated = material != null && (material.name.Contains("Outline Ribbon") || material.name.Contains("Outline Gold Button"));
+                bool calibrated = material != null && (material.name.Contains("Outline Ribbon") || material.name.EndsWith(" Button"));
                 // Numeric HUD, room-code cells and tiny badges have their own geometry.
                 bool special = calibrated || text.name == "Letter" || text.name == "NameLabel" ||
                     text.name == "Count" || text.name == "ValueLabel" || text.fontSize < 20 || text.fontSize > 48;
@@ -132,7 +132,7 @@ namespace Project51.UIV2.Core
                 background.color = Color.clear; // Graphic still receives raycasts.
                 return;
             }
-            if (sprite == "btn_teal" && (button.name == "RegisterButton" || button.name == "RetryButton" || button.name == "Copy"))
+            if (sprite == "btn_teal" && (button.name == "RetryButton" || button.name == "Copy"))
             {
                 background.sprite = theme.ButtonSecondarySprite;
                 background.color = Color.white;

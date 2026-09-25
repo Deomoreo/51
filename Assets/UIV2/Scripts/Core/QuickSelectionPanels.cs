@@ -1,4 +1,5 @@
 using Project51.Core;
+using Project51.UIV2.Data;
 using Project51.Unity;
 using TMPro;
 using UnityEngine;
@@ -62,7 +63,7 @@ namespace Project51.UIV2.Core
             var entries = CardDecks.Catalog.Entries;
             if (index < 0 || index >= entries.Count) return;
             var entry = entries[index]; pendingDeck = entry.Id;
-            Caption.text = entry.DisplayName + " · 40 carte";
+            Caption.text = string.IsNullOrEmpty(entry.Subtitle) ? entry.DisplayName : entry.DisplayName + " · " + entry.Subtitle;
             foreach (var image in Fan) { image.sprite = entry.Artwork; image.preserveAspect = true; }
             for (int i = 0; i < DeckButtons.Length; i++) DeckButtons[i].GetComponent<SelectableToggleItem>().SetSelected(i == index);
         }
@@ -97,12 +98,32 @@ namespace Project51.UIV2.Core
             config.BotDifficulty = new[] { BotDifficulty.Easy, BotDifficulty.Medium, BotDifficulty.Hard }[index];
             Modes.SetSelection(config); RefreshMode();
         }
+        private static int ModeIndex(MatchConfig c)
+        {
+            if (c.Intent == MatchIntent.PrivateRoom) return -1;
+            int index = c.Format == GameFormat.OneVsOne ? 0 : c.Format == GameFormat.TwoVsTwo ? 1 : 2;
+            return c.Intent == MatchIntent.Training ? index + 3 : index;
+        }
+
+        /// <summary>Titolo e icona della riga scelta: il pulsante MODALITA' della Home li ripete uguali.</summary>
+        public SelectorOptionViewData ModeOption(MatchConfig c)
+        {
+            int index = ModeIndex(c);
+            var row = index >= 0 && index < ModeButtons.Length ? ModeButtons[index].transform : CreateRoom.transform;
+            var title = row.Find("TitleText");
+            var icon = row.Find("Icon");
+            return new SelectorOptionViewData
+            {
+                Id = c.Intent.ToString(),
+                DisplayName = index >= 0 && title != null ? title.GetComponent<TMP_Text>().text : "Stanza privata",
+                Icon = icon != null ? icon.GetComponent<Image>().sprite : null,
+            };
+        }
+
         private void RefreshMode()
         {
             var c = Modes.CurrentSelection;
-            int selected = c.Format == GameFormat.OneVsOne ? 0 : c.Format == GameFormat.TwoVsTwo ? 1 : 2;
-            if (c.Intent == MatchIntent.Training) selected += 3;
-            if (c.Intent == MatchIntent.PrivateRoom) selected = -1;
+            int selected = ModeIndex(c);
             for (int i = 0; i < ModeButtons.Length; i++) ModeButtons[i].GetComponent<SelectableToggleItem>().SetSelected(i == selected);
             var levels = new[] { BotDifficulty.Easy, BotDifficulty.Medium, BotDifficulty.Hard };
             for (int i = 0; i < DifficultyButtons.Length; i++) DifficultyButtons[i].GetComponent<SelectableToggleItem>().SetSelected(levels[i] == c.BotDifficulty);
