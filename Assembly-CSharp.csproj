@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\UI\Kit\UICollectionCard.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIHeaderWidget.cs" />
+    <Compile Include="Assets\UI51\Scripts\Data\CosmeticCatalog.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerBannerManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\NamePickNewGui.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\RewardViewData.cs" />
@@ -187,6 +188,7 @@
     <Compile Include="Assets\Scripts\Networking\NetworkTestUI.cs" />
     <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
     <Compile Include="Assets\Scripts\UI\PanelModalitaController.cs" />
+    <Compile Include="Assets\Scripts\Auth\FriendsService.cs" />
     <Compile Include="Assets\Scripts\UI\ModalManager.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2ShaderKit.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2FeedbackParticles.cs" />
@@ -244,6 +246,7 @@
     <Compile Include="Assets\Scripts\UI\HomeNavBarController.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkManager.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\GameResultEntryViewData.cs" />
+    <Compile Include="Assets\Scripts\Auth\WalletService.cs" />
     <Compile Include="Assets\Scripts\UI\TapToEnterUI.cs" />
     <Compile Include="Assets\Scripts\UI\HeaderAlignToScrollView.cs" />
     <Compile Include="Assets\Scripts\UI\ModalWindowBaseUI.cs" />
@@ -288,6 +291,7 @@
     <None Include="Assets\Photon\PhotonUnityNetworking\changelog.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\Art\Decks\51_CORTE_DI_GIADA_PNG_Unity\51_GIADA_LEGGIMI.txt" />
+    <None Include="Assets\UI51\Shaders\UI51Shape.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\Shaders\SpritesHoloFoil.shader" />
@@ -298,6 +302,7 @@
     <None Include="Assets\Legal\PrivacyPolicy.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\TextMesh Pro\Sprites\EmojiOne Attribution.txt" />
+    <None Include="Assets\UI51\Fonts\OFL.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />
     <None Include="Assets\UIV2\Art\FlowBackdrop.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF.shader" />

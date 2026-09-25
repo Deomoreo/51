@@ -48302,7 +48302,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: v2.22
+  m_text: v2.23
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
@@ -85013,7 +85013,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: v2.22
+  m_text: v2.23
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
   m_sharedMaterial: {fileID: 5934167904147652280, guid: 85fa37b91e11e654ea76a176b22f1c3a, type: 2}
@@ -104879,7 +104879,8 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 3070296825971496743, guid: ba6154c055ecf7c40838b07ae44fb1e6, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6522461982081721660, guid: ba6154c055ecf7c40838b07ae44fb1e6, type: 3}
       insertIndex: 0

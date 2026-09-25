@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Caricamento</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  .bg{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .shade{background:linear-gradient(180deg,rgba(4,9,20,0.35) 0%,rgba(4,9,20,0.1) 30%,rgba(4,9,20,0.55) 62%,rgba(3,7,16,0.95) 100%);}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.04)}}
+  .logo{animation:breathe 3s ease-in-out infinite;}
+  @keyframes glow{0%,100%{opacity:0.55}50%{opacity:0.95}}
+  .glow{animation:glow 3s ease-in-out infinite;}
+  @keyframes shimmer{0%{left:-40%}100%{left:120%}}
+  .shine{position:absolute;top:0;width:30%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,0.6),rgba(255,255,255,0));animation:shimmer 1.4s ease-in-out infinite;}
+  @keyframes tip{0%{opacity:0;transform:translateY(6px)}12%,88%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-6px)}}
+  .tip{animation:tip 3.2s ease-in-out both;}
+  @keyframes wave{0%,100%{transform:translateY(8px) rotate(0deg)}25%{transform:translateY(-10px) rotate(-4deg)}50%{transform:translateY(-14px) rotate(0deg)}75%{transform:translateY(-6px) rotate(4deg)}}
+  .wave{animation:wave 1.4s ease-in-out infinite;}
+</style>
+</helmet>
+<div class="bg" style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="shade" style="position:absolute;inset:0;"></div>
+  <div style="position:absolute;left:0;top:260px;width:390px;height:1px;">
+    <img src="../assets/Bagliore_morbido.png" alt="" class="glow" style="position:absolute;left:50%;top:50%;width:360px;height:360px;transform:translate(-50%,-50%);pointer-events:none;">
+    <img src="../assets/logo_51.png" alt="51" class="logo" style="position:absolute;left:50%;top:50%;width:196px;height:auto;">
+  </div>
+
+  <!-- row of card backs moving in a wave while loading -->
+  <div aria-hidden="true" style="position:absolute;left:0;top:530px;width:390px;height:80px;display:flex;justify-content:center;align-items:center;gap:10px;">
+    <img src="../assets/back_giada.png" alt="" class="wave" style="width:40px;height:60px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.00s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:40px;height:60px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.12s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:40px;height:60px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.24s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:40px;height:60px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.36s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:40px;height:60px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.48s;">
+  </div>
+
+  <div style="position:absolute;left:40px;right:40px;top:640px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <div style="display:flex;justify-content:space-between;width:100%;"><span style="font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:2px;color:#F3C969;">{{step}}</span><span style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:#F5E9D0;">{{pct}}%</span></div>
+    <div style="position:relative;width:100%;height:10px;border-radius:5px;background:rgba(255,255,255,0.12);border:1px solid rgba(243,201,105,0.3);overflow:hidden;box-sizing:border-box;">
+      <div style="position:relative;height:100%;width:{{pct}}%;border-radius:5px;background:linear-gradient(90deg,#C4922F,#FCE29A);overflow:hidden;transition:width .25s linear;"><span class="shine"></span></div>
+    </div>
+    <div style="height:40px;display:flex;align-items:center;justify-content:center;text-align:center;"><span class="tip" style="font-size:12px;line-height:1.45;color:rgba(245,233,208,0.7);animation-iteration-count:infinite;"><span style="color:#F3C969;font-weight:800;">Lo sapevi?</span> {{tip}}</span></div>
+  </div>
+  <div style="position:absolute;left:0;width:390px;bottom:22px;text-align:center;font-size:10px;color:rgba(245,233,208,0.35);">Versione 0.1.0</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { pct: 0, tipI: 0 };
+    this._a = setInterval(() => { const p = this.state.pct >= 100 ? 0 : Math.min(100, this.state.pct + 2); this.setState({ pct: p }); }, 90);
+    this._b = setInterval(() => this.setState({ tipI: this.state.tipI + 1 }), 3200);
+  }
+  renderVals() {
+    const tips = [
+      'Il Settebello vale un punto da solo: non lasciarlo sul tavolo!',
+      'Con l’accuso mostri le tue carte, ma guadagni punti subito.',
+      'Tocca le scope dietro un banner per vederle tutte.',
+      'Accedi ogni giorno: al settimo giorno ti aspetta un forziere viola.'
+    ];
+    const p = this.state.pct;
+    return {
+      pct: String(p),
+      step: p < 30 ? 'MESCOLO IL MAZZO' : (p < 65 ? 'PREPARO IL TAVOLO' : (p < 95 ? 'CHIAMO I GIOCATORI' : 'PRONTI!')),
+      tip: tips[this.state.tipI % tips.length]
+    };
+  }
+}
+</script>
+</body>
+</html>

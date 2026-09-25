@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Posta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .msg{width:100%;border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:0 12px;cursor:pointer;text-align:left;}
+  .msg:hover{background:rgba(255,255,255,0.03);}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes up{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .sheet-up{animation:up .28s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes pop{0%{transform:scale(0.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;gap:12px;">
+    <a href="Home.dc.html" class="rb" aria-label="Indietro"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:15px;height:15px;"></a>
+    <div style="flex:1;display:flex;flex-direction:column;gap:2px;"><h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.1;">Posta</h1><span style="font-size:12px;color:rgba(245,233,208,0.55);">{{unreadLabel}}</span></div>
+    <sc-if value="{{canClaimAll}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{claimAll}}" class="gold-btn" style="height:36px;padding:0 14px;border-radius:18px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;">Raccogli tutto</button></sc-if>
+  </div>
+
+  <div class="panel" style="position:absolute;top:88px;left:20px;width:350px;box-sizing:border-box;padding:4px 0;">
+    <sc-for list="{{msgs}}" as="m" hint-placeholder-count="5">
+      <button type="button" class="msg" onClick="{{m.open}}" style="height:76px;border-bottom:1px solid rgba(243,201,105,0.08);">
+        <div style="position:relative;width:46px;height:46px;border-radius:14px;background:{{m.tileBg}};border:1px solid {{m.tileBorder}};display:flex;align-items:center;justify-content:center;flex:none;">
+          <img src="{{m.icon}}" alt="" style="width:{{m.iw}};height:auto;opacity:{{m.iconOp}};">
+          <sc-if value="{{m.unread}}" hint-placeholder-val="{{false}}"><span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:6px;background:#E5484D;border:2px solid #0B1626;"></span></sc-if>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <div style="display:flex;align-items:baseline;gap:6px;"><span style="flex:1;font-size:14px;font-weight:{{m.weight}};color:{{m.titleCol}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{m.title}}</span><span style="font-size:10px;color:rgba(245,233,208,0.45);flex:none;">{{m.time}}</span></div>
+          <span style="font-size:11px;color:rgba(245,233,208,0.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{m.snippet}}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <sc-for list="{{m.chips}}" as="c" hint-placeholder-count="1"><span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px 0 4px;border-radius:10px;background:{{c.bg}};opacity:{{c.op}};"><img src="{{c.icon}}" alt="" style="width:{{c.iw}};height:{{c.ih}};"><span style="font-size:11px;font-weight:800;color:{{c.col}};">{{c.label}}</span></span></sc-for>
+            <sc-if value="{{m.claimed}}" hint-placeholder-val="{{false}}"><span style="font-size:10px;font-weight:800;color:#7FE0B8;">✓ Riscattato</span></sc-if>
+            <sc-if value="{{m.expiring}}" hint-placeholder-val="{{false}}"><span style="font-size:10px;font-weight:700;color:#F08A8D;">{{m.expires}}</span></sc-if>
+          </div>
+        </div>
+      </button>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:0;width:390px;bottom:30px;text-align:center;font-size:11px;color:rgba(245,233,208,0.4);">I messaggi vengono eliminati dopo 30 giorni</div>
+
+  <!-- message detail -->
+  <sc-if value="{{detailOpen}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi messaggio" onClick="{{close}}"></button>
+    <div role="dialog" aria-modal="true" aria-labelledby="msg-title" class="sheet-up" style="position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:12px 20px 24px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border-top:1px solid rgba(243,201,105,0.4);border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,0.5);">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(245,233,208,0.25);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:46px;height:46px;border-radius:14px;background:{{d.tileBg}};border:1px solid {{d.tileBorder}};display:flex;align-items:center;justify-content:center;flex:none;"><img src="{{d.icon}}" alt="" style="width:{{d.iw}};height:auto;"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span id="msg-title" style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#F5E9D0;">{{d.title}}</span><span style="font-size:11px;color:rgba(245,233,208,0.5);">{{d.from}} · {{d.time}}</span></div>
+        <button type="button" onClick="{{close}}" aria-label="Chiudi" style="width:32px;height:32px;border-radius:16px;background:rgba(255,255,255,0.06);border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;"><img src="../assets/ic_close_cream.png" alt="" style="width:12px;height:12px;"></button>
+      </div>
+      <p style="margin:14px 0 0;font-size:13px;line-height:1.55;color:rgba(245,233,208,0.75);">{{d.body}}</p>
+      <sc-if value="{{d.hasGifts}}" hint-placeholder-val="{{true}}">
+        <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin:16px 0 8px;">ALLEGATI</div>
+        <div style="display:flex;gap:10px;">
+          <sc-for list="{{d.gifts}}" as="g" hint-placeholder-count="2">
+            <div style="flex:1;height:88px;border-radius:14px;background:rgba(243,201,105,0.08);border:1px solid rgba(243,201,105,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:{{g.op}};"><img src="{{g.icon}}" alt="" style="width:{{g.big}};height:auto;"><span style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:#F5E9D0;">{{g.label}}</span></div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{d.canClaim}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{d.claim}}" class="gold-btn" style="margin-top:18px;width:100%;height:52px;border-radius:16px;font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;">RISCATTA</button></sc-if>
+      <sc-if value="{{d.claimedNow}}" hint-placeholder-val="{{false}}"><div class="pop" style="margin-top:18px;height:52px;border-radius:16px;border:1px solid rgba(127,224,184,0.5);background:rgba(39,181,133,0.1);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:1px;color:#7FE0B8;">✓ RISCATTATO</div></sc-if>
+      <sc-if value="{{d.noGifts}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{close}}" style="margin-top:18px;width:100%;height:48px;border-radius:14px;border:1px solid rgba(243,201,105,0.5);background:transparent;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#F3C969;cursor:pointer;">Chiudi</button></sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"aperto":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { open: props.aperto === true ? 'benvenuto' : null, claimed: { torneo: true }, read: { manutenzione: true, torneo: true } }; }
+  renderVals() {
+    const set = (o) => this.setState(o);
+    const IC = { coin: '../assets/ic_coin.png', gem: '../assets/ic_gem.png', chest: '../assets/chest_purple.png', mail: '../assets/ic_mail.png', warn: '../assets/ic_warn_cream.png', trophy: '../assets/medal_trophy.png', friend: '../assets/av_2.png' };
+    const G = (icon, label, iw, ih, big) => ({ icon, label, iw, ih, big });
+    const msgs = [
+      { id: 'benvenuto', title: 'Benvenuto a 51!', from: 'Team 51', time: 'oggi', icon: IC.mail, iw: '26px', tile: 'gold', body: 'Grazie per esserti unito al tavolo! Ecco un piccolo regalo per iniziare. Buone scope!', gifts: [G(IC.coin, '200', '14px', '14px', '34px'), G(IC.gem, '10', '10px', '13px', '26px')] },
+      { id: 'stagione', title: 'Ricompensa di stagione', from: 'Team 51', time: 'ieri', icon: IC.chest, iw: '34px', tile: 'purple', body: 'La stagione estiva è finita: hai raggiunto la fascia Esperto. Questo forziere è tuo.', gifts: [G(IC.chest, 'Forziere viola', '18px', '14px', '52px')], expires: 'Scade tra 5 giorni' },
+      { id: 'giulia', title: 'Giulia ti ha mandato un regalo', from: 'Giulia', time: '2 giorni fa', icon: IC.friend, iw: '40px', tile: 'friend', body: 'Grazie per la partita di ieri, alla prossima rivincita!', gifts: [G(IC.coin, '50', '14px', '14px', '34px')] },
+      { id: 'manutenzione', title: 'Manutenzione programmata', from: 'Team 51', time: '3 giorni fa', icon: IC.warn, iw: '24px', tile: 'grey', body: 'Giovedì dalle 3:00 alle 4:00 i server saranno in manutenzione. Le partite in corso verranno salvate.', gifts: [] },
+      { id: 'torneo', title: 'Premio torneo del weekend', from: 'Team 51', time: '6 giorni fa', icon: IC.trophy, iw: '30px', tile: 'gold', body: 'Hai chiuso il torneo al 12° posto. Complimenti!', gifts: [G(IC.coin, '150', '14px', '14px', '34px')] }
+    ];
+    const TILE = { gold: ['rgba(243,201,105,0.12)', 'rgba(243,201,105,0.45)'], purple: ['rgba(124,58,237,0.18)', 'rgba(167,139,250,0.5)'], friend: ['rgba(39,181,133,0.12)', 'rgba(127,224,184,0.45)'], grey: ['rgba(255,255,255,0.05)', 'rgba(245,233,208,0.2)'] };
+    const claimed = this.state.claimed, read = this.state.read;
+    const claimable = msgs.filter((m) => m.gifts.length && !claimed[m.id]);
+    const unread = msgs.filter((m) => !read[m.id]).length;
+    const markClaim = (ids) => { const c = { ...claimed }, r = { ...read }; ids.forEach((i) => { c[i] = true; r[i] = true; }); set({ claimed: c, read: r }); };
+    const d0 = msgs.find((m) => m.id === this.state.open);
+    const decorate = (m) => ({ ...m, tileBg: TILE[m.tile][0], tileBorder: TILE[m.tile][1] });
+    const d = d0 ? decorate(d0) : null;
+    return {
+      unreadLabel: unread ? unread + ' messaggi non letti' : 'Tutto letto',
+      canClaimAll: claimable.length > 1, claimAll: () => markClaim(claimable.map((m) => m.id)),
+      msgs: msgs.map((m) => {
+        const dm = decorate(m), isClaimed = !!claimed[m.id], isRead = !!read[m.id];
+        return { ...dm, unread: !isRead, weight: isRead ? '700' : '800', titleCol: isRead ? 'rgba(245,233,208,0.75)' : '#F5E9D0', iconOp: isRead && !m.gifts.length ? '0.6' : '1',
+          snippet: m.body, claimed: m.gifts.length > 0 && isClaimed, expiring: !!m.expires && !isClaimed, expires: m.expires || '',
+          chips: m.gifts.map((g) => ({ icon: g.icon, label: g.label.length > 6 ? 'Forziere' : '+' + g.label, iw: g.iw, ih: g.ih, bg: 'rgba(243,201,105,0.12)', col: '#F3C969', op: isClaimed ? '0.4' : '1' })),
+          open: () => { const r = { ...read }; r[m.id] = true; set({ open: m.id, read: r }); } };
+      }),
+      detailOpen: !!d, close: () => set({ open: null }),
+      d: d ? { ...d, hasGifts: d.gifts.length > 0, noGifts: d.gifts.length === 0, canClaim: d.gifts.length > 0 && !claimed[d.id], claimedNow: d.gifts.length > 0 && !!claimed[d.id],
+        gifts: d.gifts.map((g) => ({ ...g, label: g.label.length > 6 ? g.label : '+' + g.label, op: claimed[d.id] ? '0.5' : '1' })), claim: () => markClaim([d.id]) } :
+        { title: '', from: '', time: '', body: '', icon: '', iw: '0', tileBg: 'none', tileBorder: 'transparent', hasGifts: false, noGifts: false, canClaim: false, claimedNow: false, gifts: [], claim: () => {} }
+    };
+  }
+}
+</script>
+</body>
+</html>

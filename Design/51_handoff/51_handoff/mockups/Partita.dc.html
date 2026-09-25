@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Partita</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  .ambient{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(14px) brightness(0.38) saturate(1.1);transform:scale(1.15);}
+  .rim{background:linear-gradient(180deg,#7A4B29 0%,#4E2D16 50%,#6B4122 100%);box-shadow:0 20px 50px rgba(0,0,0,0.65),0 0 0 1px rgba(0,0,0,0.5);}
+  .felt{background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.12 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"),radial-gradient(ellipse at 50% 45%,#1F8460 0%,#146346 45%,#0C4532 85%,#093826 100%);box-shadow:inset 0 0 50px rgba(0,0,0,0.5),inset 0 0 0 1.5px rgba(243,201,105,0.55);}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(8,17,34,0.7);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+  .card{border-radius:7px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .back{border-radius:7px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;object-fit:cover;}
+  .pb{display:flex;align-items:center;gap:8px;padding:0 6px 0 6px;box-sizing:border-box;border-radius:25px;background:linear-gradient(180deg,rgba(12,26,50,0.95),rgba(6,13,27,0.97));border:1px solid rgba(243,201,105,0.4);box-shadow:0 6px 14px rgba(0,0,0,0.45);}
+  .more{position:absolute;top:13px;height:22px;min-width:22px;box-sizing:border-box;padding:0 5px;border-radius:11px;background:#F3C969;border:2px solid #0B1626;font-size:10px;font-weight:800;color:#25160A;display:flex;align-items:center;justify-content:center;}
+  .tcard{transition:left .3s ease,top .3s ease,width .3s ease,height .3s ease;}
+  .hand-card{position:absolute;top:0;width:92px;height:143px;border:0;padding:0;background:none;cursor:pointer;transition:transform .18s ease;}
+  /* player banners: static (standard) and animated (shop / battle pass / levels) */
+  .bn-notte{background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99)) !important;}
+  .bn-smeraldo{background:linear-gradient(135deg,#0E4F3A 0%,#0A3A2B 55%,#146A50 100%) !important;}
+  .bn-porpora{background:linear-gradient(135deg,#4A1420 0%,#2E0B14 55%,#5C1A2A 100%) !important;}
+  .bn-aurora{background:linear-gradient(120deg,#0B1D3A,#1B6B8F,#27B585,#6B3FA0,#1B6B8F,#0B1D3A) !important;background-size:320% 320% !important;animation:bnAurora 7s ease infinite;}
+  @keyframes bnAurora{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .bn-stellato{background:radial-gradient(1.2px 1.2px at 12% 30%,#fff 50%,transparent),radial-gradient(1.6px 1.6px at 34% 70%,#FCE29A 50%,transparent),radial-gradient(1px 1px at 58% 25%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 78% 62%,#fff 50%,transparent),radial-gradient(1px 1px at 92% 35%,#FCE29A 50%,transparent),linear-gradient(180deg,#0A0F2A,#1B1440) !important;background-size:120% 120%,130% 130%,110% 110%,125% 125%,115% 115%,100% 100% !important;animation:bnStars 5s ease-in-out infinite alternate;}
+  @keyframes bnStars{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0}to{background-position:6px -3px,-8px 4px,5px 3px,-4px -5px,7px 2px,0 0}}
+  .bn-oro{position:relative;overflow:hidden;background:linear-gradient(135deg,#5A3A10 0%,#8A5A12 45%,#3A2508 100%) !important;border-color:rgba(252,226,154,0.8) !important;}
+  .bn-oro::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(90deg,rgba(255,236,170,0),rgba(255,236,170,0.5),rgba(255,236,170,0));transform:skewX(-20deg);animation:bnSheen 3s ease-in-out infinite;pointer-events:none;}
+  @keyframes bnSheen{0%{left:-70%}60%,100%{left:140%}}
+  @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.55),0 6px 14px rgba(0,0,0,0.45)}50%{box-shadow:0 0 0 7px rgba(243,201,105,0),0 6px 14px rgba(0,0,0,0.45)}}
+  .turn{animation:ring 1.8s ease-in-out infinite;border-color:rgba(243,201,105,0.85);}
+  .spr{background-size:800% 100%;background-repeat:no-repeat;animation:spr .9s steps(7,jump-none) infinite alternate;}
+  @keyframes spr{from{background-position:0% 0}to{background-position:100% 0}}
+  .still{animation:none;background-position:0% 0;}
+  .s-risata{background-image:url('../assets/strip_risata.png');}
+  .s-furbo{background-image:url('../assets/strip_furbo.png');}
+  .s-sorpreso{background-image:url('../assets/strip_sorpreso.png');}
+  .bubble{position:absolute;display:flex;align-items:center;justify-content:center;background:rgba(245,233,208,0.96);box-shadow:0 6px 14px rgba(0,0,0,0.45);}
+  @keyframes pop{0%{transform:scale(0.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+  @keyframes slideIn{0%{transform:translateX(90px) rotate(30deg);opacity:0}60%{transform:translateX(-8px) rotate(-6deg);opacity:1}100%{transform:translateX(0) rotate(0)}}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.6),0 6px 14px rgba(0,0,0,0.5)}50%{box-shadow:0 0 0 10px rgba(243,201,105,0),0 6px 14px rgba(0,0,0,0.5)}}
+  .acc{animation:slideIn .6s cubic-bezier(.2,.8,.3,1.2) both,glow 1.6s .6s ease-in-out infinite;}
+  @keyframes shine{0%{left:-60%}100%{left:130%}}
+  .acc::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,0.7),rgba(255,255,255,0));transform:skewX(-20deg);animation:shine 2.4s 1s ease-in-out infinite;}
+  @keyframes accFist{0%{transform:translateY(-120px) scale(2.2) rotate(-18deg);opacity:0}45%{transform:translateY(6px) scale(0.88) rotate(4deg);opacity:1}60%{transform:translateY(-4px) scale(1.04)}100%{transform:translateY(0) scale(1) rotate(0)}}
+  .acc-fist{animation:accFist .6s cubic-bezier(.3,.7,.3,1) both;}
+  @keyframes accRing{0%{transform:scale(0.3);opacity:0}10%{opacity:1}100%{transform:scale(2.3);opacity:0}}
+  .acc-ring{opacity:0;animation:accRing .9s .28s ease-out both;}
+  @keyframes accGlow{0%{opacity:0;transform:scale(0.4)}40%{opacity:0.95;transform:scale(1.1)}100%{opacity:0.6;transform:scale(1)}}
+  .acc-glow{animation:accGlow .8s .25s ease-out both;}
+  @keyframes accTxt{0%{opacity:0;transform:translateY(12px) scale(0.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .acc-txt{animation:accTxt .35s .45s ease-out both;}
+  @keyframes accDim{0%{opacity:0}100%{opacity:1}}
+  .acc-dim{animation:accDim .3s ease-out both;}
+  @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,-1px)}}
+  .shake{animation:shake .35s .3s ease-in-out;}
+  @keyframes deckLift{0%{transform:rotate(-8deg) translateY(0)}35%{transform:rotate(-2deg) translateY(-8px) scale(1.06)}100%{transform:rotate(-8deg) translateY(0)}}
+  .deck-lift{animation:deckLift .5s ease-out;}
+  @keyframes deckPop{0%{transform:scale(0.3) translateY(10px);opacity:0}60%{transform:scale(1.12) translateY(-2px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+  .deck-pop{animation:deckPop .4s .12s cubic-bezier(.2,.8,.3,1.2) both;}
+  @keyframes emoFly{0%{transform:translateY(130px) scale(0.35);opacity:0}18%{transform:translateY(-6px) scale(1.08);opacity:1}28%{transform:translateY(0) scale(1)}82%{transform:translateY(-10px) scale(1);opacity:1}100%{transform:translateY(-34px) scale(0.9);opacity:0}}
+  .emo-fly{animation:emoFly 2.6s ease-out both;}
+  .cta-btn:hover{filter:brightness(1.05);}
+  @keyframes chUp{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .ch-up{animation:chUp .28s cubic-bezier(.2,.8,.3,1) both;}
+  .ch-opt{transition:transform .15s ease;}
+  .ch-opt:hover{transform:translateY(-3px);}
+  @keyframes slam{0%{transform:translateY(-40px) scale(1.5);opacity:0}55%{transform:translateY(4px) scale(0.9);opacity:1}100%{transform:translateY(0) scale(1)}}
+  .slam{animation:slam .5s ease-out both;}
+  @keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+  .flip{animation:flip .35s .25s ease-out both;}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,8,18,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes fanIn{from{transform:translateY(90px) rotate(0deg) scale(0.45);opacity:0}to{transform:translateY(var(--y)) rotate(var(--r)) scale(1);opacity:1}}
+  .fan{animation:fanIn .45s cubic-bezier(.2,.8,.3,1.1) both;transform-origin:50% 90%;}
+  .chip{height:26px;display:inline-flex;align-items:center;padding:0 12px;border-radius:13px;background:rgba(0,0,0,0.45);border:1px solid rgba(243,201,105,0.35);font-size:12px;font-weight:800;color:#F5E9D0;}
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#07101f;">
+  <div class="ambient" style="position:absolute;inset:-30px;"></div>
+
+  <!-- table: felt with wooden rim, the surrounding stays the night ambience of the app -->
+  <div class="rim {{shakeCls}}" style="position:absolute;left:10px;right:10px;top:124px;height:580px;border-radius:150px/120px;padding:9px;box-sizing:border-box;">
+    <div class="felt" style="width:100%;height:100%;border-radius:141px/111px;position:relative;overflow:hidden;">
+      <img src="../assets/sun_emblem.png" alt="" style="position:absolute;left:50%;top:48%;width:220px;height:220px;transform:translate(-50%,-50%);opacity:0.08;pointer-events:none;">
+    </div>
+  </div>
+
+  <!-- top: exit · score · settings -->
+  <button type="button" class="rb" onClick="{{openLeave}}" aria-label="Abbandona partita" style="position:absolute;top:14px;left:14px;"><img src="../assets/ic_exit_cream.png" alt="" style="width:17px;height:17px;"></button>
+  <button type="button" class="rb" onClick="{{openOpts}}" aria-label="Opzioni" style="position:absolute;top:14px;right:14px;"><img src="../assets/ic_settings_cream.png" alt="" style="width:18px;height:18px;"></button>
+  <div style="position:absolute;top:14px;left:0;width:390px;display:flex;justify-content:center;pointer-events:none;">
+    <div style="height:40px;box-sizing:border-box;display:flex;align-items:center;border-radius:20px;background:rgba(8,17,34,0.75);border:1px solid rgba(243,201,105,0.45);overflow:hidden;">
+      <div style="display:flex;flex-direction:column;align-items:center;padding:0 14px;"><span style="font-size:9px;font-weight:800;letter-spacing:1px;color:rgba(245,233,208,0.6);">TU</span><span style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#F5E9D0;line-height:1;">34</span></div>
+      <div style="height:40px;padding:0 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(243,201,105,0.14);border-left:1px solid rgba(243,201,105,0.35);border-right:1px solid rgba(243,201,105,0.35);"><span style="font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(243,201,105,0.85);">A</span><span style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#F3C969;line-height:1;">51</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;padding:0 14px;"><span style="font-size:9px;font-weight:800;letter-spacing:1px;color:rgba(245,233,208,0.6);">MARCO</span><span style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#F5E9D0;line-height:1;">29</span></div>
+    </div>
+  </div>
+
+  <!-- opponent -->
+  <div aria-label="Marco_93 ha 3 carte" style="display:none;"><img src="../assets/back_giada.png" alt="" class="back" style="position:absolute;left:162px;top:114px;width:20px;height:30px;border-radius:3px;"><img src="../assets/back_giada.png" alt="" class="back" style="position:absolute;left:185px;top:114px;width:20px;height:30px;border-radius:3px;"><img src="../assets/back_giada.png" alt="" class="back" style="position:absolute;left:208px;top:114px;width:20px;height:30px;border-radius:3px;"></div>
+  <div style="position:absolute;left:135px;top:82px;width:120px;height:50px;">
+    <button type="button" onClick="{{openOpp}}" aria-label="Vedi le scope di Marco_93" style="position:absolute;left:0;top:0;width:0;height:0;overflow:visible;border:0;padding:0;background:none;cursor:pointer;"><img src="../assets/c_6s.png" alt="" class="card" style="position:absolute;left:70px;top:-13px;width:24px;height:37px;border-radius:4px;transform:rotate(-4deg);"><img src="../assets/card_3_spade.png" alt="" class="card" style="position:absolute;left:83px;top:-13px;width:24px;height:37px;border-radius:4px;transform:rotate(3deg);"></button>
+    <div class="bn-oro" style="position:absolute;inset:0;box-sizing:border-box;padding:0 6px;border-radius:25px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border:1px solid rgba(243,201,105,0.4);box-shadow:0 6px 14px rgba(0,0,0,0.45);display:flex;align-items:center;gap:7px;pointer-events:none;">
+      <sc-if value="{{oppEmo}}" hint-placeholder-val="{{false}}"><div class="pop" style="width:36px;height:36px;border-radius:50%;background:rgba(245,233,208,0.95);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #F3C969;flex:none;"><div class="spr s-risata" style="width:30px;height:30px;"></div></div></sc-if><sc-if value="{{oppEmoOff}}" hint-placeholder-val="{{true}}"><div style="width:36px;height:36px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="../assets/av_4.png" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div></sc-if>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0;"><span style="font-size:11px;font-weight:800;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Marco_93</span><div style="display:flex;align-items:center;gap:4px;"><span style="font-size:9px;color:rgba(245,233,208,0.55);white-space:nowrap;">Liv. 18</span><span style="display:inline-flex;align-items:center;gap:3px;height:16px;padding:0 5px 0 4px;border-radius:8px;background:rgba(255,255,255,0.06);"><img src="../assets/back_giada.png" alt="" style="width:8px;height:12px;border-radius:2px;"><span style="font-size:10px;font-weight:800;color:rgba(245,233,208,0.8);">14</span></span></div></div>
+    </div>
+    <button type="button" onClick="{{qp_marco}}" aria-label="Profilo di Marco_93" style="position:absolute;inset:0;border:0;padding:0;background:none;cursor:pointer;border-radius:22px;"></button>
+  </div>
+  <sc-if value="{{hidden4peek}}" hint-placeholder-val="{{true}}">
+    <div style="position:absolute;top:146px;left:0;width:390px;display:flex;justify-content:center;gap:8px;" aria-label="Marco ha 3 carte"><img src="../assets/back_giada.png" alt="" class="back" style="width:48px;height:71px;"><img src="../assets/back_giada.png" alt="" class="back" style="width:48px;height:71px;"><img src="../assets/back_giada.png" alt="" class="back" style="width:48px;height:71px;"></div>
+  </sc-if>
+  <sc-if value="{{revealed}}" hint-placeholder-val="{{false}}">
+    <button type="button" onClick="{{openAcc}}" aria-label="Vedi le carte accusate da Marco_93" style="position:absolute;top:142px;left:0;width:390px;display:flex;justify-content:center;gap:8px;border:0;padding:0;background:none;cursor:pointer;">
+      <sc-for list="{{oppHand}}" as="o" hint-placeholder-count="3"><img src="{{o.img}}" alt="{{o.name}}" class="card flip" style="width:52px;height:80px;outline:2px solid #F3C969;outline-offset:1px;box-shadow:0 0 12px rgba(243,201,105,0.45),0 4px 10px rgba(0,0,0,0.5);"></sc-for>
+    </button>
+  </sc-if>
+
+  <!-- deck: fixed on its cushion in the top-left corner -->
+  <div aria-hidden="true" style="position:absolute;left:16px;top:60px;width:72px;height:64px;border-radius:20px;background:radial-gradient(ellipse at 45% 35%,#B32A33 0%,#7A151D 60%,#4E0B11 100%);box-shadow:0 7px 12px rgba(0,0,0,0.55),inset 0 0 0 2px #E0B252,inset 0 3px 8px rgba(255,255,255,0.15);">
+    <div style="position:absolute;inset:6px;border-radius:15px;border:1px dashed rgba(252,226,154,0.6);"></div>
+    <span style="position:absolute;left:-3px;top:-3px;width:9px;height:9px;border-radius:50%;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);"></span><span style="position:absolute;right:-3px;top:-3px;width:9px;height:9px;border-radius:50%;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);"></span><span style="position:absolute;left:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);"></span><span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);"></span>
+  </div>
+  <button type="button" onClick="{{showDeck}}" aria-label="Mazzo: mostra le carte rimaste" class="{{deckCls}}" style="position:absolute;left:35px;top:67px;width:34px;height:50px;border:0;padding:0;background:none;cursor:pointer;border-radius:4px;transform:rotate(-8deg);box-shadow:1px 1px 0 #EFE2C2,2px 2px 0 #0E4F3A,3px 3px 0 #EFE2C2,4px 4px 0 #0E4F3A,4px 6px 8px rgba(0,0,0,0.5);"><img src="../assets/back_giada.png" alt="" style="width:34px;height:50px;border-radius:4px;display:block;object-fit:cover;"></button>
+  <sc-if value="{{deckInfo}}" hint-placeholder-val="{{false}}"><div class="deck-pop" style="position:absolute;left:26px;top:66px;width:52px;height:52px;border-radius:26px;background:linear-gradient(180deg,#FCE29A,#C4922F);border:2px solid #0B1626;box-shadow:0 0 0 4px rgba(243,201,105,0.25),0 8px 16px rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:3;"><span style="font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#25160A;line-height:1;">{{deckCount}}</span><span style="font-size:8px;font-weight:800;letter-spacing:0.5px;color:rgba(37,22,10,0.8);">RIMASTE</span></div></sc-if>
+  <!-- dealer "M": moves from banner to banner -->
+  <sc-if value="{{dealerTop}}" hint-placeholder-val="{{true}}"><div class="pop" title="Mazziere" aria-label="Marco è il mazziere" style="position:absolute;left:106px;top:95px;width:24px;height:24px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);box-shadow:0 3px 6px rgba(0,0,0,0.5);"><div style="width:100%;height:100%;border-radius:50%;background:#F8EBCF;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#6B4418;">M</div></div></sc-if>
+  <sc-if value="{{dealerMe}}" hint-placeholder-val="{{false}}"><div class="pop" title="Mazziere" aria-label="Tu è il mazziere" style="position:absolute;left:64px;top:750px;width:24px;height:24px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);box-shadow:0 3px 6px rgba(0,0,0,0.5);"><div style="width:100%;height:100%;border-radius:50%;background:#F8EBCF;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#6B4418;">M</div></div></sc-if>
+  <!-- table cards -->
+  <div style="position:absolute;top:{{gridTop}};left:{{gridLeft}};width:{{gridWidth}};height:{{gridH}};display:flex;align-items:center;justify-content:center;">
+    <div style="width:{{gridW}};display:flex;flex-wrap:wrap;justify-content:center;gap:{{gap}};">
+      <sc-for list="{{table}}" as="t" hint-placeholder-count="4">
+        <sc-if value="{{t.hit}}" hint-placeholder-val="{{false}}">
+          <button type="button" onClick="{{t.pick}}" aria-label="{{t.name}}" style="position:relative;border:0;padding:0;background:none;cursor:pointer;transform:translateY(-4px);"><img src="{{t.img}}" alt="" class="card" style="width:{{t.w}};height:{{t.h}};outline:2px solid {{t.oc}};outline-offset:2px;box-shadow:0 0 18px {{t.glow}};"><sc-for list="{{t.badges}}" as="b" hint-placeholder-count="0"><span style="position:absolute;top:{{b.top}};right:-9px;width:20px;height:20px;border-radius:10px;background:{{b.bg}};border:2px solid #0B1626;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#0B1626;">{{b.n}}</span></sc-for></button>
+        </sc-if>
+        <sc-if value="{{t.miss}}" hint-placeholder-val="{{true}}">
+          <img src="{{t.img}}" alt="{{t.name}}" class="card" style="width:{{t.w}};height:{{t.h}};">
+        </sc-if>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- accuso: centred animation on the table -->
+  <sc-if value="{{accShow}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;left:0;top:250px;width:390px;height:320px;pointer-events:none;z-index:5;">
+      <div class="acc-dim" style="position:absolute;left:50%;top:50%;width:420px;height:320px;transform:translate(-50%,-50%);background:radial-gradient(ellipse at center,rgba(3,8,18,0.82) 0%,rgba(3,8,18,0.6) 50%,rgba(3,8,18,0) 75%);"></div>
+      <div class="acc-ring" style="position:absolute;left:50%;top:44%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:3px solid rgba(252,226,154,0.9);"></div>
+      <div class="acc-ring" style="position:absolute;left:50%;top:44%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid rgba(252,226,154,0.7);animation-delay:.62s;"></div>
+      <img src="../assets/Bagliore_morbido.png" alt="" class="acc-glow" style="position:absolute;left:50%;top:44%;width:280px;height:280px;margin:-140px 0 0 -140px;">
+      <img src="../assets/pugno.png" alt="" class="acc-fist" style="position:absolute;left:50%;top:44%;width:112px;height:116px;margin:-58px 0 0 -56px;filter:drop-shadow(0 8px 14px rgba(0,0,0,0.55));">
+      <div class="acc-txt" style="position:absolute;left:0;right:0;top:69%;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-family:'Cinzel',serif;font-size:28px;font-weight:700;letter-spacing:4px;color:#FCE29A;text-shadow:0 3px 0 #6B4418,0 6px 14px rgba(0,0,0,0.7);">ACCUSO</span>
+        <span style="font-size:13px;font-weight:800;color:#F5E9D0;text-shadow:0 2px 6px rgba(0,0,0,0.8);">{{accWho}} · <span style="color:#FCE29A;">+3</span></span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- my hand, resting on the table edge -->
+  <div style="position:absolute;top:600px;left:50px;width:290px;height:143px;">
+    <sc-for list="{{hand}}" as="h" hint-placeholder-count="3">
+      <sc-if value="{{h.sel}}" hint-placeholder-val="{{false}}">
+        <button type="button" class="hand-card" onClick="{{h.pick}}" aria-label="{{h.name}} selezionata" style="left:{{h.x}};transform:translateY(-24px) rotate({{h.rot}});">
+          <img src="{{h.img}}" alt="" class="card" style="width:92px;height:143px;outline:2px solid #F3C969;outline-offset:2px;box-shadow:0 0 22px rgba(243,201,105,0.65),0 8px 16px rgba(0,0,0,0.5);">
+        </button>
+      </sc-if>
+      <sc-if value="{{h.unsel}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="hand-card" onClick="{{h.pick}}" aria-label="{{h.name}}" style="left:{{h.x}};transform:rotate({{h.rot}});">
+          <img src="{{h.img}}" alt="" class="card" style="width:92px;height:143px;">
+        </button>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <!-- me -->
+  <div style="position:absolute;left:60px;top:776px;width:186px;height:50px;">
+      <button type="button" onClick="{{openMe}}" aria-label="Vedi le scope" style="position:absolute;left:116px;top:0;width:{{myScopeW}};height:50px;border:0;padding:0;background:none;cursor:pointer;">
+        <sc-for list="{{myScope}}" as="s" hint-placeholder-count="3">
+          <img src="{{s.img}}" alt="" class="card" style="position:absolute;top:5px;right:{{s.right}};width:26px;height:40px;border-radius:4px;transform:rotate({{s.rot}});">
+        </sc-for>
+        <sc-if value="{{myScopeMore}}" hint-placeholder-val="{{false}}"><span class="more" style="right:{{myScopeMoreR}};">{{myScopeMoreTxt}}</span></sc-if>
+      </button>
+      <div class="pb turn bn-{{myBanner}}" style="position:absolute;inset:0;">
+        <sc-if value="{{myEmoInAvatar}}" hint-placeholder-val="{{false}}"><div class="pop" style="width:38px;height:38px;border-radius:50%;background:rgba(245,233,208,0.95);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 2px #F3C969;"><div class="spr {{myEmoCls}}" style="width:34px;height:34px;"></div></div></sc-if><sc-if value="{{myEmoInAvatarOff}}" hint-placeholder-val="{{true}}"><div style="width:38px;height:38px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(#F3C969 0 72%,rgba(245,233,208,0.18) 72% 100%);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="../assets/avatar_1.png" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div></sc-if>
+        <sc-if value="{{pickerOff}}" hint-placeholder-val="{{true}}"><div style="display:flex;flex-direction:column;gap:1px;min-width:0;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">GiocatoreNapo</span><span style="font-size:10px;color:rgba(245,233,208,0.55);">Liv. 12</span></div><span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px 0 5px;border-radius:11px;background:rgba(255,255,255,0.06);flex:none;"><img src="../assets/back_giada.png" alt="" style="width:11px;height:16px;border-radius:2px;"><span style="font-size:11px;font-weight:800;color:rgba(245,233,208,0.8);">12</span></span></sc-if><sc-if value="{{picker}}" hint-placeholder-val="{{false}}"><div class="pop" style="display:flex;gap:4px;margin-left:auto;"><sc-for list="{{emos}}" as="e" hint-placeholder-count="3"><button type="button" onClick="{{e.send}}" aria-label="Invia {{e.name}}" style="width:36px;height:36px;border-radius:18px;border:0;background:rgba(255,255,255,0.08);padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;"><div class="spr still {{e.cls}}" style="width:30px;height:30px;"></div></button></sc-for></div></sc-if>
+      </div>
+      <sc-if value="{{pickerOff}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{qp_me}}" aria-label="Il tuo profilo" style="position:absolute;left:0;top:0;width:130px;height:50px;border:0;padding:0;background:none;cursor:pointer;border-radius:25px;"></button></sc-if>
+    </div>
+
+  <!-- my emoticon: flies up from my banner, plays, then fades (never replaces my avatar) -->
+  <sc-if value="{{myEmoShow}}" hint-placeholder-val="{{false}}">
+    <div class="emo-fly" style="position:absolute;left:24px;top:640px;width:76px;height:76px;border-radius:24px 24px 24px 6px;background:rgba(245,233,208,0.96);box-shadow:0 10px 22px rgba(0,0,0,0.5),0 0 0 2px #F3C969;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;"><div class="spr {{myEmoCls}}" style="width:60px;height:60px;"></div></div>
+  </sc-if>
+
+  <!-- multi-capture choice: tray over my hand; the combinations with game info, coloured like on the table -->
+  <sc-if value="{{chooserOpen}}" hint-placeholder-val="{{false}}">
+    <div role="dialog" aria-labelledby="ch-title" class="ch-up" style="position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:12px 14px 20px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border-top:1px solid rgba(243,201,105,0.5);border-radius:24px 24px 0 0;box-shadow:0 -14px 34px rgba(0,0,0,0.55);z-index:25;">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 4px 10px;">
+        <img src="{{chooserCardImg}}" alt="" class="card" style="width:30px;height:46px;outline:1.5px solid #F3C969;outline-offset:1px;flex:none;">
+        <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" style="flex:none;"><path d="M1 6h14M11 1l5 5-5 5" fill="none" stroke="#F3C969" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <span id="ch-title" style="flex:1;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:2px;color:#F3C969;">SCEGLI LA PRESA</span>
+        <button type="button" onClick="{{cancelChooser}}" aria-label="Annulla" style="width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,0.06);border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;"><img src="../assets/ic_close_cream.png" alt="" style="width:11px;height:11px;"></button>
+      </div>
+      <div style="height:1px;margin:0 4px 16px;background:linear-gradient(90deg,rgba(243,201,105,0),rgba(243,201,105,0.5),rgba(243,201,105,0));"></div>
+      <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+        <sc-for list="{{chooserOpts}}" as="c" hint-placeholder-count="2">
+          <button type="button" onClick="{{c.choose}}" aria-label="Prendi {{c.label}}" class="ch-opt" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;padding:14px 12px 10px;border-radius:18px;background:rgba(255,255,255,0.04);border:2px solid {{c.bg}};box-shadow:0 0 16px {{c.glow}};cursor:pointer;">
+            <span style="position:absolute;top:-11px;left:50%;margin-left:-12px;width:24px;height:24px;border-radius:12px;background:{{c.bg}};border:2px solid #0B1626;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;color:#0B1626;">{{c.n}}</span>
+            <div style="display:flex;gap:6px;"><sc-for list="{{c.cards}}" as="k" hint-placeholder-count="2"><img src="{{k.img}}" alt="" class="card" style="width:50px;height:78px;"></sc-for></div>
+            <div style="display:flex;gap:5px;align-items:center;">
+              <span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px 0 5px;border-radius:10px;background:rgba(255,255,255,0.07);"><img src="../assets/back_giada.png" alt="" style="width:9px;height:13px;border-radius:2px;"><span style="font-size:11px;font-weight:800;color:#F5E9D0;">+{{c.nCards}}</span></span>
+              <sc-if value="{{c.hasDenari}}" hint-placeholder-val="{{false}}"><span style="display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px 0 4px;border-radius:10px;background:rgba(243,201,105,0.12);"><img src="../assets/ic_coin.png" alt="" style="width:12px;height:12px;"><span style="font-size:11px;font-weight:800;color:#F3C969;">{{c.nDenari}}</span></span></sc-if>
+              <sc-if value="{{c.scopa}}" hint-placeholder-val="{{false}}"><span style="height:20px;display:inline-flex;align-items:center;padding:0 8px;border-radius:10px;background:linear-gradient(180deg,#FCE29A,#C4922F);font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#25160A;">SCOPA</span></sc-if>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- accuso: only when available, slides in -->
+  <sc-if value="{{canAccuse}}" hint-placeholder-val="{{true}}">
+    <button type="button" class="acc" onClick="{{doAccuse}}" aria-label="Accusa" style="position:absolute;right:12px;top:777px;width:50px;height:50px;border-radius:25px;border:1px solid rgba(255,255,255,0.55);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;overflow:hidden;"><img src="../assets/pugno.png" alt="" style="width:31px;height:32px;position:relative;z-index:1;"></button>
+  </sc-if>
+
+  <!-- emote -->
+  <button type="button" class="rb" onClick="{{togglePicker}}" aria-label="Emoticon" style="position:absolute;left:14px;top:781px;"><img src="../assets/ic_chat_cream.png" alt="" style="width:20px;height:20px;"></button>
+
+  <!-- scope viewer -->
+  <sc-if value="{{pileOpen}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi" onClick="{{closePile}}"></button>
+    <div style="position:absolute;left:0;top:250px;width:390px;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+      <span style="font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;text-shadow:0 2px 6px rgba(0,0,0,0.7);">{{pileTitle}}</span>
+      <div style="position:relative;width:330px;height:190px;margin-top:18px;">
+        <sc-for list="{{pileCards}}" as="c" hint-placeholder-count="3">
+          <img src="{{c.img}}" alt="" class="card fan" style="position:absolute;left:{{c.x}};top:10px;width:96px;height:149px;--r:{{c.r}};--y:{{c.y}};animation-delay:{{c.d}};">
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;"><span class="chip">{{chipA}}</span><span class="chip" style="color:#F3C969;">{{chipB}}</span></div>
+      <span style="margin-top:14px;font-size:11px;color:rgba(245,233,208,0.55);">Tocca ovunque per chiudere</span>
+    </div>
+  </sc-if>
+
+  <!-- in-game options -->
+  <sc-if value="{{optsOpen}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi opzioni" onClick="{{closeOpts}}" style="z-index:20;"></button>
+    <div role="dialog" aria-modal="true" aria-labelledby="opts-title" style="position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:12px 20px 24px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border-top:1px solid rgba(243,201,105,0.4);border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,0.5);z-index:21;">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(245,233,208,0.25);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;flex-direction:column;gap:3px;"><span id="opts-title" style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Opzioni</span><span style="font-size:12px;color:rgba(245,233,208,0.55);">La partita continua mentre sei qui</span></div>
+        <button type="button" aria-label="Chiudi" onClick="{{closeOpts}}" style="width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_close_cream.png" alt="" style="width:14px;height:14px;"></button>
+      </div>
+      <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin-bottom:8px;">AUDIO</div>
+      <div style="background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;overflow:hidden;"><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;"><div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Musica</span></div><sc-if value="{{o_music}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Musica" onClick="{{t_music}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if><sc-if value="{{f_music}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Musica" onClick="{{t_music}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if></div><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;"><div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Effetti sonori</span></div><sc-if value="{{o_sfx}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Effetti sonori" onClick="{{t_sfx}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if><sc-if value="{{f_sfx}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Effetti sonori" onClick="{{t_sfx}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if></div><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;"><div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Vibrazione</span></div><sc-if value="{{o_vib}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Vibrazione" onClick="{{t_vib}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if><sc-if value="{{f_vib}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Vibrazione" onClick="{{t_vib}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if></div></div>
+      <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin:16px 0 8px;">GRAFICA</div>
+      <div style="background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;overflow:hidden;">
+        <div style="padding:12px 16px 14px;display:flex;flex-direction:column;gap:10px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Qualità grafica</span>
+          <div style="display:flex;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(243,201,105,0.18);">
+            <sc-for list="{{qualities}}" as="q" hint-placeholder-count="3">
+              <sc-if value="{{q.on}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{q.pick}}" style="flex:1;height:34px;border-radius:9px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);color:#F3C969;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;padding:0;">{{q.label}}</button></sc-if>
+              <sc-if value="{{q.off}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{q.pick}}" style="flex:1;height:34px;border-radius:9px;background:transparent;border:1px solid transparent;color:rgba(245,233,208,0.65);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:0;">{{q.label}}</button></sc-if>
+            </sc-for>
+          </div>
+        </div>
+        <div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div>
+        <div style="height:56px;display:flex;align-items:center;padding:0 16px;gap:12px;"><div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Animazioni rapide</span><span style="font-size:11px;color:rgba(245,233,208,0.5);">Carte e prese si muovono più velocemente</span></div><sc-if value="{{o_fast}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="true" aria-label="Animazioni rapide" onClick="{{t_fast}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if><sc-if value="{{f_fast}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="false" aria-label="Animazioni rapide" onClick="{{t_fast}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if></div>
+      </div>
+      <button type="button" class="cta-btn" onClick="{{closeOpts}}" style="margin-top:18px;width:100%;height:52px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;color:#25160A;cursor:pointer;">TORNA AL TAVOLO</button>
+    </div>
+  </sc-if>
+
+
+  <!-- leave game -->
+  <sc-if value="{{leaveOpen}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Resta al tavolo" onClick="{{closeLeave}}" style="z-index:30;"></button>
+    <div role="dialog" aria-modal="true" aria-labelledby="leave-title" class="pop" style="position:absolute;left:24px;right:24px;top:220px;box-sizing:border-box;padding:22px 20px 20px;border-radius:22px;background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(229,72,77,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;text-align:center;z-index:31;">
+      <div style="width:56px;height:56px;border-radius:28px;background:rgba(229,72,77,0.12);border:1px solid rgba(229,72,77,0.5);display:flex;align-items:center;justify-content:center;"><img src="../assets/ic_exit_cream.png" alt="" style="width:26px;height:26px;"></div>
+      <h2 id="leave-title" style="margin:14px 0 0;font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;">Abbandonare la partita?</h2>
+      <p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.65);">La partita verrà contata come persa. La vittoria andrà a Marco_93.</p>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <span style="height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:13px;background:rgba(229,72,77,0.12);border:1px solid rgba(229,72,77,0.4);font-size:11px;font-weight:800;color:#F08A8D;">Sconfitta</span>
+        <span style="height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:13px;background:rgba(229,72,77,0.12);border:1px solid rgba(229,72,77,0.4);font-size:11px;font-weight:800;color:#F08A8D;">Nessuna esperienza</span>
+      </div>
+      <button type="button" class="cta-btn" onClick="{{closeLeave}}" style="margin-top:18px;width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;color:#25160A;cursor:pointer;">RESTA AL TAVOLO</button>
+      <a href="Home.dc.html" style="margin-top:10px;width:100%;height:46px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(229,72,77,0.5);background:rgba(229,72,77,0.08);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#F08A8D;">Abbandona</a>
+    </div>
+  </sc-if>
+
+  <!-- quick profile: small card, tap outside to close -->
+  <sc-if value="{{qpOpen}}" hint-placeholder-val="{{false}}">
+    <button type="button" aria-label="Chiudi profilo" onClick="{{closeQP}}" style="position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,8,18,0.25);cursor:pointer;z-index:26;"></button>
+    <div role="dialog" aria-labelledby="qp-name" class="pop" style="position:absolute;left:45px;top:{{qpTop}};width:300px;box-sizing:border-box;padding:16px;overflow:hidden;isolation:isolate;border-radius:22px;background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.5);box-shadow:0 20px 44px rgba(0,0,0,0.6);z-index:27;">
+      <div class="bn-{{qpBanner}}" aria-hidden="true" style="position:absolute;inset:0;z-index:-1;border-radius:0;border:0;"></div><div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(6,13,27,0.05) 0%,rgba(6,13,27,0.35) 45%,rgba(6,13,27,0.62) 100%);pointer-events:none;"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:12px;height:64px;">
+        <div style="width:62px;height:62px;border-radius:50%;padding:3px;box-sizing:border-box;background:{{qpRing}};flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{qpImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span id="qp-name" style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{qpName}}</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:22px;height:22px;border-radius:11px;background:linear-gradient(180deg,#FCE29A,#C4922F);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#25160A;">{{qpLevel}}</span><span style="font-size:12px;font-weight:700;color:#F3C969;">{{qpTitle}}</span></div>
+          <span style="font-size:11px;color:rgba(245,233,208,0.5);">{{qpTeam}}</span>
+        </div>
+        <button type="button" onClick="{{closeQP}}" aria-label="Chiudi" style="align-self:flex-start;width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,0.06);border:0;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;"><img src="../assets/ic_close_cream.png" alt="" style="width:10px;height:10px;"></button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:14px;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-radius:12px;background:rgba(255,255,255,0.04);"><span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;">{{qpGames}}</span><span style="font-size:9px;font-weight:700;color:rgba(245,233,208,0.55);">Partite</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-radius:12px;background:rgba(255,255,255,0.04);"><span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;">{{qpWin}}</span><span style="font-size:9px;font-weight:700;color:rgba(245,233,208,0.55);">Vittorie</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-radius:12px;background:rgba(255,255,255,0.04);"><span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;">{{qpScope}}</span><span style="font-size:9px;font-weight:700;color:rgba(245,233,208,0.55);">Scope</span></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:12px;">
+        <sc-for list="{{qpMedals}}" as="md" hint-placeholder-count="3"><img src="{{md}}" alt="" style="width:34px;height:34px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></sc-for>
+      </div>
+      <sc-if value="{{qpOther}}" hint-placeholder-val="{{true}}">
+      <div style="display:flex;gap:6px;margin-top:14px;">
+        <sc-if value="{{qpCanAdd}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{qpAdd}}" style="flex:1;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:#25160A;cursor:pointer;">Aggiungi amico</button></sc-if>
+        <sc-if value="{{qpAdded}}" hint-placeholder-val="{{false}}"><span style="flex:1;height:38px;border-radius:12px;border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#F3C969;">Richiesta inviata</span></sc-if>
+        <button type="button" onClick="{{qpMuteToggle}}" style="flex:1;height:38px;border-radius:12px;border:1px solid rgba(245,233,208,0.3);background:rgba(255,255,255,0.04);font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:#F5E9D0;cursor:pointer;">{{qpMuteLabel}}</button>
+      </div>
+      <button type="button" onClick="{{qpReport}}" style="margin-top:8px;width:100%;height:34px;border-radius:12px;border:0;background:transparent;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:#F08A8D;cursor:pointer;">{{qpReportLabel}}</button>
+      </sc-if>
+      <sc-if value="{{qpSelf}}" hint-placeholder-val="{{false}}">
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:11px;font-weight:800;color:#F5E9D0;">Livello 12</span><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.65);">620 / 1000 XP</span></div>
+          <div style="height:7px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:62%;height:100%;border-radius:4px;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+          <span style="margin-top:4px;font-size:11px;color:rgba(245,233,208,0.5);text-align:center;">Banner, avatar e cornice si cambiano dal Profilo</span>
+        </div>
+      </sc-if>
+
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"carte":{"editor":"enum","options":["2","3","4","5","6","7","8","9","10"],"default":"4"},"accuso":{"editor":"boolean","default":false},"scelta":{"editor":"boolean","default":false},"abbandono":{"editor":"boolean","default":false},"banner":{"editor":"enum","options":["notte","smeraldo","porpora","aurora","stellato","oro"],"default":"notte"},"profilo":{"editor":"boolean","default":false},"mioProfilo":{"editor":"boolean","default":false},"opzioni":{"editor":"boolean","default":false},"mazziere":{"editor":"enum","options":["avversario","io"],"default":"avversario"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: props.scelta === true ? 'sette_d' : 'asso_d', picker: false, myEmo: null, pile: null, myAcc: false, oppEmo: true, accDone: false, chooser: props.scelta === true, leave: props.abbandono === true, qp: props.profilo === true ? 'marco' : (props.mioProfilo === true ? 'me' : null), taken: [], played: [], dropped: [], opts: props.opzioni === true, music: true, sfx: true, vib: false, hints: true, fast: false, quality: 'alta', deckInfo: false, deckN: 0 }; setTimeout(() => this.setState({ oppEmo: false }), 3200); if (props.accuso === true) setTimeout(() => this.setState({ accDone: true }), 2800); }
+  renderVals() {
+    const set = (o) => this.setState(o);
+    const all = [
+      { id: 'tre_s', name: '3 di spade', v: 3, img: '../assets/card_3_spade.png' },
+      { id: 'quattro_c', name: '4 di coppe', v: 4, img: '../assets/c_4c.png' },
+      { id: 'asso_b', name: 'Asso di bastoni', v: 1, img: '../assets/card_asso_bastoni.png' },
+      { id: 'sei_d', name: '6 di denari', v: 6, img: '../assets/c_6d.png' },
+      { id: 'cav_s', name: 'Cavallo di spade', v: 9, img: '../assets/c_cav_s.png' },
+      { id: 'due_b', name: '2 di bastoni', v: 2, img: '../assets/card_2_bastoni.png' },
+      { id: 'cinque_c', name: '5 di coppe', v: 5, img: '../assets/card_5_coppe.png' },
+      { id: 'due_d', name: '2 di denari', v: 2, img: '../assets/c_2d.png' },
+      { id: 'tre_s2', name: '3 di spade', v: 3, img: '../assets/card_3_spade.png' },
+      { id: 'quattro_c2', name: '4 di coppe', v: 4, img: '../assets/c_4c.png' }
+    ];
+    const n = Math.max(1, Math.min(all.length, parseInt(this.props.carte ?? '4', 10) || 4));
+    const table = all.slice(0, n);
+    const perRow = n <= 8 ? 4 : 5;
+    const w = n <= 4 ? 70 : (n <= 8 ? 60 : 54);
+    const gap = n <= 8 ? 10 : 8;
+    const cols = Math.min(n, perRow);
+    const hand = [
+      { id: 'asso_d', name: 'Asso di denari', v: 1, img: '../assets/card_asso_denari.png', x: '0px', rot: '0deg' },
+      { id: 'sette_d', name: 'Settebello', v: 7, img: '../assets/card_settebello.png', x: '99px', rot: '0deg' },
+      { id: 're_c', name: 'Re di coppe', v: 10, img: '../assets/card_re_coppe.png', x: '198px', rot: '0deg' }
+    ];
+    const taken = this.state.taken || [], played = this.state.played || [], dropped = this.state.dropped || [];
+    const tableLive = table.filter((t) => !taken.includes(t.id)).concat(dropped);
+    const handLive = hand.filter((h) => !played.includes(h.id));
+    const sel = handLive.find((h) => h.id === this.state.sel);
+    // every legal capture for a card: same value first, otherwise any group of table cards that adds up to it
+    const combosFor = (card) => {
+      if (!card) return [];
+      const eq = tableLive.filter((t) => t.v === card.v);
+      if (eq.length) return eq.map((t) => [t]);
+      const out = [], m = Math.min(tableLive.length, 12);
+      for (let mask = 1; mask < (1 << m); mask++) {
+        let s = 0; const arr = [];
+        for (let i = 0; i < m; i++) if (mask & (1 << i)) { s += tableLive[i].v; arr.push(tableLive[i]); }
+        if (s === card.v && arr.length >= 2) out.push(arr);
+      }
+      return out.slice(0, 4);
+    };
+    const selCombos = combosFor(sel);
+    const COL = ['#F3C969', '#4FD1C5', '#F08A8D', '#A78BFA'];
+    const chooserOn = !!(this.state.chooser && sel && selCombos.length > 1);
+    let hits = [];
+    selCombos.forEach((c) => c.forEach((t) => { if (!hits.includes(t.id)) hits.push(t.id); }));
+    const capture = (card, arr) => set({ taken: taken.concat(arr.map((t) => t.id)), played: played.concat([card.id]), sel: null, chooser: false });
+    const playCard = (card) => {
+      const cs = combosFor(card);
+      if (cs.length > 1) set({ sel: card.id, chooser: true });
+      else if (cs.length === 1) capture(card, cs[0]);
+      else set({ dropped: dropped.concat([{ ...card, id: card.id + '_t' }]), played: played.concat([card.id]), sel: null });
+    };
+    // scope tucked behind each banner: show up to 4, then "+N"
+    const scopeImgs = ['../assets/card_re_coppe.png','../assets/c_5b.png','../assets/c_6s.png','../assets/card_3_spade.png','../assets/card_5_coppe.png','../assets/c_4c.png'];
+    const scopeRow = (count, key) => {
+      const shown = Math.min(count, 4);
+      const list = [];
+      for (let i = 0; i < shown; i++) list.push({ img: scopeImgs[i % scopeImgs.length], right: (-8 - i * 13) + 'px', rot: ((i % 2) ? 4 : -3) + 'deg' });
+      const out = {};
+      out[key] = list.reverse();
+      out[key + 'W'] = '70px';
+      out[key + 'More'] = count > 4;
+      out[key + 'MoreTxt'] = '+' + (count - 4);
+      out[key + 'MoreR'] = (-8 - shown * 13 - 20) + 'px';
+      return out;
+    };
+    const piles = {
+      me: { title: 'Le tue scope', count: 12, scope: 6 },
+      opp: { title: 'Le scope di Marco', count: 14, scope: 2 },
+      acc: { title: 'Carte accusate da Marco', imgs: ["../assets/c_2d.png", "../assets/card_asso_bastoni.png", "../assets/card_5_coppe.png"], chipA: 'Accuso', chipB: '+3 punti' }
+    };
+    const p = this.state.pile ? piles[this.state.pile] : null;
+    const pImgs = p ? (p.imgs || scopeImgs.slice(0, p.scope)) : [];
+    const pileCards = p ? pImgs.map((img, i) => {
+      const off = i - (pImgs.length - 1) / 2;
+      return { img: img, x: (117 + off * 40) + 'px', r: (off * 9) + 'deg', y: (Math.abs(off) * 6) + 'px', d: (i * 0.06) + 's' };
+    }) : [];
+    const emos = [ { id: 'risata', name: 'risata', cls: 's-risata' }, { id: 'furbo', name: 'furbo', cls: 's-furbo' }, { id: 'sorpreso', name: 'sorpreso', cls: 's-sorpreso' } ];
+    const acc = this.props.accuso === true;
+    // ordinary captured cards: thin card edges peeking under the banner, thicker as the pile grows
+    const edgeRow = (count) => {
+      const layers = Math.max(1, Math.min(5, Math.ceil(count / 4)));
+      const out = [];
+      for (let i = layers - 1; i >= 0; i--) out.push({ l: (i * 4) + 'px', t: (14 + i * 4) + 'px' });
+      return out;
+    };
+    const edgeRows = { oppEdges: edgeRow(14), myEdges: edgeRow(12) };
+    const my = emos.find((e) => e.id === this.state.myEmo);
+    return {
+      ...scopeRow(piles.opp.scope, 'oppScope'),
+      ...scopeRow(piles.me.scope, 'myScope'),
+      hidden: !acc, revealed: acc, oppEmo: !acc && this.state.oppEmo, oppEmoOff: !(!acc && this.state.oppEmo),
+      oppHand: [ { name: '2 di denari', img: '../assets/c_2d.png' }, { name: 'Asso di bastoni', img: '../assets/card_asso_bastoni.png' }, { name: '5 di coppe', img: '../assets/card_5_coppe.png' } ],
+      deckInfo: this.state.deckInfo, deckCount: this.state.deckN, deckCls: this.state.deckInfo ? 'deck-lift' : '',
+      showDeck: () => {
+        const total = 26;
+        if (this._deckT) clearInterval(this._deckT);
+        if (this._deckH) clearTimeout(this._deckH);
+        set({ deckInfo: true, deckN: 0 });
+        let k = 0;
+        this._deckT = setInterval(() => { k += 2; if (k >= total) { k = total; clearInterval(this._deckT); } set({ deckN: k }); }, 30);
+        this._deckH = setTimeout(() => set({ deckInfo: false }), 2400);
+      },
+      dealerTop: (this.props.mazziere ?? 'avversario') === 'avversario', dealerMe: (this.props.mazziere ?? 'avversario') === 'io',
+      leaveOpen: this.state.leave, openLeave: () => set({ leave: true }), closeLeave: () => set({ leave: false }),
+      ...(() => {
+        const GOLD = 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', BLUE = 'conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8)';
+        const M = ['../assets/medal_trophy.png', '../assets/medal_sun.png', '../assets/medal_club.png', '../assets/medal_sword.png'];
+        const P = {
+          me: { name: 'GiocatoreNapo', level: 12, title: 'Esperto', team: 'Tu', img: '../assets/avatar_1.png', ring: GOLD, games: 148, win: '58%', scope: 312, medals: [M[0], M[1], M[2], M[3]], banner: this.props.banner ?? 'notte', top: '300px', self: true },
+          marco: { name: 'Marco_93', level: 18, title: 'Maestro', team: 'Avversario', img: '../assets/av_4.png', ring: BLUE, games: 412, win: '61%', scope: 980, medals: [M[0], M[1], M[3]], banner: 'oro', top: '140px' },
+          giulia: { name: 'Giulia', level: 15, title: 'Esperta', team: 'La tua compagna', img: '../assets/av_2.png', ring: GOLD, games: 233, win: '54%', scope: 522, medals: [M[0], M[2]], banner: 'smeraldo', top: '150px' },
+          tore: { name: 'Tore_NA', level: 9, title: 'Apprendista', team: 'Avversario', img: '../assets/av_5.png', ring: BLUE, games: 87, win: '47%', scope: 160, medals: [M[0]], banner: 'stellato', top: '220px' }
+        };
+        const k = this.state.qp, p = k ? P[k] : null;
+        const muted = (this.state.muted || {})[k], added = (this.state.added || {})[k], reported = (this.state.reported || {})[k];
+        const out = { qpOpen: !!p, closeQP: () => set({ qp: null }) };
+        Object.keys(P).forEach((key) => { out['qp_' + key] = () => set({ qp: key }); });
+        if (!p) return out;
+        return { ...out, qpSelf: !!p.self, qpOther: !p.self, qpName: p.name, qpLevel: String(p.level), qpTitle: p.title, qpTeam: p.team, qpImg: p.img, qpRing: p.ring, qpGames: String(p.games), qpWin: p.win, qpScope: String(p.scope), qpMedals: p.medals, qpTop: p.top, qpBanner: p.banner || 'notte',
+          qpCanAdd: !added, qpAdded: !!added, qpAdd: () => { const a = { ...(this.state.added || {}) }; a[k] = true; set({ added: a }); },
+          qpMuteLabel: muted ? 'Riattiva emoticon' : 'Silenzia emoticon', qpMuteToggle: () => { const m = { ...(this.state.muted || {}) }; m[k] = !m[k]; set({ muted: m }); },
+          qpReportLabel: reported ? 'Segnalazione inviata' : 'Segnala giocatore', qpReport: () => { const r = { ...(this.state.reported || {}) }; r[k] = true; set({ reported: r }); } };
+      })(),
+      optsOpen: this.state.opts,
+      openOpts: () => set({ opts: true }), closeOpts: () => set({ opts: false }),
+      qualities: [ { id: 'bassa', label: 'Bassa' }, { id: 'media', label: 'Media' }, { id: 'alta', label: 'Alta' } ].map((q) => ({ ...q, on: q.id === this.state.quality, off: q.id !== this.state.quality, pick: () => set({ quality: q.id }) })),
+      ...['music', 'sfx', 'vib', 'fast'].reduce((o, k) => { o['o_' + k] = this.state[k]; o['f_' + k] = !this.state[k]; o['t_' + k] = () => { const s = {}; s[k] = !this.state[k]; set(s); }; return o; }, {}),
+      myBanner: this.props.banner ?? 'notte',
+      canAccuse: !acc && !this.state.myAcc,
+      hidden4peek: !acc,
+      gridTop: '236px', gridH: '320px', gridLeft: '0px', gridWidth: '390px',
+      accShow: (acc && !this.state.accDone) || this.state.myAcc,
+      accWho: acc ? 'Marco' : 'Tu',
+      shakeCls: ((acc && !this.state.accDone) || this.state.myAcc) ? 'shake' : '',
+      doAccuse: () => { set({ myAcc: true }); setTimeout(() => set({ myAcc: false }), 2600); },
+      gridW: (cols * w + (cols - 1) * gap) + 'px', gap: gap + 'px',
+      table: tableLive.map((t) => { const inC = selCombos.map((c, i) => c.some((k) => k.id === t.id) ? i : -1).filter((i) => i >= 0); const first = inC.length ? inC[0] : 0; return { ...t, w: w + 'px', h: Math.round(w * 1.55) + 'px', hit: hits.includes(t.id), miss: !hits.includes(t.id), oc: chooserOn ? COL[first] : '#F3C969', glow: chooserOn ? COL[first] + '99' : 'rgba(243,201,105,0.7)', badges: chooserOn ? inC.map((i, j) => ({ n: String(i + 1), bg: COL[i], top: (-8 + j * 22) + 'px' })) : [], pick: () => { if (chooserOn && inC.length) capture(sel, selCombos[first]); } }; }),
+      hand: handLive.map((h) => ({ ...h, sel: h.id === this.state.sel, unsel: h.id !== this.state.sel, pick: () => { if (h.id === this.state.sel) playCard(h); else set({ sel: h.id }); } })),
+      chooserOpen: chooserOn, stripTop: '530px', cancelChooser: () => set({ chooser: false }),
+      chooserCardImg: sel ? sel.img : '', chooserCardName: sel ? (sel.name === 'Settebello' ? 'il Settebello' : sel.name) : '',
+      chooserOpts: sel ? selCombos.map((c, i) => ({ n: String(i + 1), bg: COL[i], glow: COL[i] + '55', cards: c, nCards: c.length, nDenari: c.filter((k) => k.name.indexOf('denari') >= 0).length, hasDenari: c.some((k) => k.name.indexOf('denari') >= 0), scopa: c.length === tableLive.length, label: c.map((k) => k.name).join(' + '), count: c.length + ' carte' + (c.some((k) => k.name.indexOf('denari') >= 0) ? ' · con denari' : ''), choose: () => capture(sel, c) })) : [],
+      picker: this.state.picker,
+      togglePicker: () => set({ picker: !this.state.picker }),
+      emos: emos.map((e) => ({ ...e, send: () => { set({ myEmo: e.id, picker: false }); setTimeout(() => { if (this.state.myEmo === e.id) set({ myEmo: null }); }, 2600); } })),
+      myEmoShow: !!my, myEmoInAvatar: false, myEmoInAvatarOff: true, myEmoCls: my ? my.cls : '', pickerOff: !this.state.picker,
+      pileOpen: !!p, pileTitle: p ? p.title : '', pileCards: pileCards, pileCount: p ? p.count : 0,
+      pileScope: p ? (p.scope === 1 ? '1 scopa' : p.scope + ' scope') : '',
+      openMe: () => set({ pile: 'me' }), openOpp: () => set({ pile: 'opp' }), openAcc: () => set({ pile: 'acc' }),
+      chipA: p ? (p.chipA || (p.count + ' carte prese')) : '', chipB: p ? (p.chipB || (p.scope === 1 ? '1 scopa' : p.scope + ' scope')) : '', closePile: () => set({ pile: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

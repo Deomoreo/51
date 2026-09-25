@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Negozio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .row-btn{width:100%;height:56px;border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;text-align:left;border-radius:14px;}
+  .row-btn:hover{background:rgba(255,255,255,0.04);}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .floaty{animation:floaty 3.2s ease-in-out infinite;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.1;">Negozio</h1>
+      <span style="font-size:12px;color:rgba(245,233,208,0.6);">Forzieri, dorsi e offerte speciali</span>
+    </div>
+    <div style="height:34px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:17px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.35);">
+      <div style="display:flex;align-items:center;gap:5px;"><img src="../assets/ic_coin.png" alt="Monete" style="width:15px;height:15px;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;">2.480</span></div>
+      <div style="width:1px;height:14px;background:rgba(243,201,105,0.3);"></div>
+      <div style="display:flex;align-items:center;gap:5px;"><img src="../assets/ic_gem.png" alt="Gemme" style="width:11px;height:14px;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;">86</span></div>
+    </div>
+  </div>
+
+  <div class="panel" style="position:absolute;top:104px;left:20px;width:350px;box-sizing:border-box;padding:26px 22px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+    <div style="position:relative;width:220px;height:180px;">
+      <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:250px;height:250px;transform:translate(-50%,-50%);opacity:0.7;pointer-events:none;">
+      <img class="floaty" src="../assets/chest_purple.png" alt="" style="position:absolute;left:50%;top:50%;width:150px;height:auto;margin-left:-75px;margin-top:-68px;">
+    </div>
+    <span class="cap" style="margin-top:6px;">PRESTO IN ARRIVO</span>
+    <span style="margin-top:8px;font-family:'Cinzel',serif;font-size:21px;font-weight:700;color:#F5E9D0;line-height:1.25;">Il negozio sta per aprire</span>
+    <span style="margin-top:10px;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.62);max-width:280px;">Stiamo preparando forzieri, dorsi esclusivi e offerte a tempo. Continua a giocare: le monete che guadagni ti aspettano.</span>
+  </div>
+
+  <div class="cap" style="position:absolute;top:500px;left:20px;">COSA TROVERAI</div>
+  <div style="position:absolute;top:522px;left:20px;width:350px;display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:10px;">
+    <div class="panel" style="height:86px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><img src="../assets/ic_chest_cream.png" alt="" style="width:26px;height:26px;"><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.8);">Forzieri</span></div>
+    <div class="panel" style="height:86px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><img src="../assets/ic_cards_cream.png" alt="" style="width:26px;height:26px;"><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.8);">Dorsi</span></div>
+    <div class="panel" style="height:86px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><img src="../assets/ic_check_cream.png" alt="" style="width:26px;height:26px;"><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.8);">Pass</span></div>
+    <div class="panel" style="height:86px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><img src="../assets/ic_gem.png" alt="" style="width:19px;height:26px;"><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.8);">Gemme</span></div>
+  </div>
+
+  <div class="panel" style="position:absolute;top:630px;left:20px;width:350px;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 16px;border-radius:14px;">
+    <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Avvisami all'apertura</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Riceverai una notifica</span></div>
+    <sc-if value="{notify}" hint-placeholder-val="{true}">
+      <button type="button" role="switch" aria-checked="true" aria-label="Avvisami all'apertura" onClick="{toggle}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button>
+    </sc-if>
+    <sc-if value="{noNotify}" hint-placeholder-val="{false}">
+      <button type="button" role="switch" aria-checked="false" aria-label="Avvisami all'apertura" onClick="{toggle}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);padding:0;background:rgba(255,255,255,0.08);cursor:pointer;box-sizing:border-box;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button>
+    </sc-if>
+  </div>
+
+  <!-- bottom nav -->
+  <nav aria-label="Navigazione principale" style="position:absolute;left:0;bottom:0;width:390px;height:72px;box-sizing:border-box;padding:0 12px;display:flex;background:rgba(5,11,23,0.96);border-top:1px solid rgba(243,201,105,0.3);z-index:2;">
+    <a href="Home.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_home_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Gioca</span>
+    </a>
+    <a href="Collezione.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_cards_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Collezione</span>
+    </a>
+    <a href="Negozio.dc.html" aria-current="page" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <div style="position:absolute;top:0;width:24px;height:2px;border-radius:0 0 2px 2px;background:#F3C969;"></div>
+      <img src="../assets/ic_chest_cream.png" alt="" style="width:22px;height:22px;">
+      <span style="font-size:11px;font-weight:700;color:#F3C969;">Negozio</span>
+    </a>
+    <a href="Profilo.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_person_cream.png" alt="" style="width:19px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Profilo</span>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { notify: true }; }
+  renderVals() {
+    return { notify: this.state.notify, noNotify: !this.state.notify, toggle: () => this.setState({ notify: !this.state.notify }) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Fine smazzata</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  .ambient{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(14px) brightness(0.32) saturate(1.1);transform:scale(1.15);}
+  .panel{background:linear-gradient(180deg,rgba(12,26,50,0.92),rgba(6,13,27,0.96));border:1px solid rgba(243,201,105,0.35);border-radius:18px;}
+  @keyframes rowIn{0%{opacity:0;transform:translateX(-14px)}100%{opacity:1;transform:translateX(0)}}
+  .row{animation:rowIn .35s ease-out both;}
+  @keyframes pop{0%{transform:scale(0.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  .pts{animation:pop .3s ease-out both;}
+  @keyframes fill{from{width:var(--from)}to{width:var(--to)}}
+  .bar{animation:fill 1s 1.9s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  .late{animation:fadeUp .4s 1.8s ease-out both;}
+  .cta-btn:hover{filter:brightness(1.05);}
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#07101f;">
+  <div class="ambient" style="position:absolute;inset:-30px;"></div>
+
+  <div style="position:absolute;top:34px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+    <span style="font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:3px;color:rgba(243,201,105,0.8);">{{handLabel}}</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#F5E9D0;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Fine smazzata</h1>
+  </div>
+
+  <!-- column heads -->
+  <div style="position:absolute;top:104px;left:16px;right:16px;display:grid;grid-template-columns:{{cols}};align-items:end;gap:6px;">
+    <span></span>
+    <sc-for list="{{heads}}" as="h" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <div style="display:flex;">
+          <sc-for list="{{h.avs}}" as="a" hint-placeholder-count="1"><div style="width:{{avSize}};height:{{avSize}};border-radius:50%;padding:2px;box-sizing:border-box;background:{{h.ring}};margin:0 -5px;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;border:2px solid #0B1626;box-sizing:border-box;"><img src="{{a}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div></sc-for>
+        </div>
+        <span style="font-size:{{headFont}};font-weight:800;color:#F5E9D0;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;">{{h.name}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- scoring rows -->
+  <div class="panel" style="position:absolute;top:172px;left:16px;right:16px;padding:4px 10px;">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+      <div class="row" style="display:grid;grid-template-columns:{{cols}};align-items:center;gap:6px;height:44px;border-bottom:1px solid rgba(243,201,105,0.1);animation-delay:{{r.delay}};">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <img src="{{r.icon}}" alt="" style="width:{{r.iw}};height:{{r.ih}};border-radius:3px;flex:none;">
+          <div style="display:flex;flex-direction:column;gap:1px;min-width:0;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">{{r.label}}</span><span style="font-size:10px;color:rgba(245,233,208,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{r.detail}}</span></div>
+        </div>
+        <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="2">
+          <div style="display:flex;justify-content:center;">
+            <sc-if value="{{c.win}}" hint-placeholder-val="{{false}}"><span class="pts" style="min-width:{{pillW}};height:26px;box-sizing:border-box;padding:0 6px;border-radius:13px;background:linear-gradient(180deg,#FCE29A,#C4922F);display:inline-flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:#25160A;animation-delay:{{r.pdelay}};">+{{c.pts}}</span></sc-if>
+            <sc-if value="{{c.none}}" hint-placeholder-val="{{true}}"><span style="font-size:13px;color:rgba(245,233,208,0.25);">—</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div style="display:grid;grid-template-columns:{{cols}};align-items:center;gap:6px;height:50px;">
+      <span style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#F3C969;">IN QUESTA MANO</span>
+      <sc-for list="{{handTotals}}" as="h" hint-placeholder-count="2"><div class="late" style="display:flex;justify-content:center;font-family:'Cinzel',serif;font-size:{{totFont}};font-weight:700;color:#F5E9D0;">+{{h}}</div></sc-for>
+    </div>
+  </div>
+
+  <!-- race to 51 -->
+  <div class="panel late" style="position:absolute;left:16px;right:16px;top:{{raceTop}};padding:12px 16px;display:flex;flex-direction:column;gap:{{raceGap}};">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:2px;color:#F3C969;">CORSA AL 51</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">{{raceNote}}</span></div>
+    <sc-for list="{{race}}" as="p" hint-placeholder-count="2">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="width:44px;font-size:12px;font-weight:800;color:#F5E9D0;">{{p.name}}</span>
+        <div style="flex:1;height:10px;border-radius:5px;background:rgba(255,255,255,0.1);overflow:hidden;"><div class="bar" style="height:100%;border-radius:5px;background:{{p.col}};--from:{{p.from}};--to:{{p.to}};"></div></div>
+        <span style="width:62px;text-align:right;font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#F5E9D0;">{{p.total}}<span style="font-size:10px;color:rgba(245,233,208,0.45);"> /51</span></span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="late" style="position:absolute;left:16px;right:16px;bottom:26px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+    <a href="{{nextHref}}" class="cta-btn" style="width:100%;height:54px;box-sizing:border-box;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#25160A;box-shadow:0 10px 24px rgba(0,0,0,0.45);">PROSSIMA SMAZZATA</a>
+    <span style="font-size:11px;color:rgba(245,233,208,0.5);">Si riparte da sola tra {{countdown}} secondi</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modalita":{"editor":"enum","options":["1v1","2v2","1v3"],"default":"1v1"},"squadre":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { count: 10 }; this._t = setInterval(() => { if (this.state.count > 0) this.setState({ count: this.state.count - 1 }); }, 1000); }
+  renderVals() {
+    const mode = this.props.squadre === true ? '2v2' : (this.props.modalita ?? '1v1');
+    const four = mode === '1v3';
+    const GOLD = 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', BLUE = 'conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8)';
+    const AV = { me: '../assets/avatar_1.png', marco: '../assets/av_4.png', giulia: '../assets/av_2.png', tore: '../assets/av_5.png' };
+    const I = { back: '../assets/back_giada.png', coin: '../assets/ic_coin.png', sette: '../assets/card_settebello.png', sun: '../assets/medal_sun.png', trophy: '../assets/medal_trophy.png', club: '../assets/medal_club.png', scopa: '../assets/card_3_spade.png', fist: '../assets/pugno.png' };
+    const card = ['17px', '26px'], round = ['24px', '24px'];
+    let heads, data, before, names, cols;
+    if (four) {
+      heads = [ { name: 'Tu', ring: GOLD, avs: [AV.me] }, { name: 'Marco', ring: BLUE, avs: [AV.marco] }, { name: 'Giulia', ring: BLUE, avs: [AV.giulia] }, { name: 'Tore', ring: BLUE, avs: [AV.tore] } ];
+      data = [
+        ['Carte', '14 · 9 · 10 · 7', I.back, card, [1, 0, 0, 0]],
+        ['Denari', '3 · 2 · 4 · 1', I.coin, round, [0, 0, 1, 0]],
+        ['Settebello', 'preso da te', I.sette, card, [1, 0, 0, 0]],
+        ['Primiera', 'Marco 79', I.sun, round, [0, 1, 0, 0]],
+        ['Grande', 'nessuno', I.trophy, round, [0, 0, 0, 0]],
+        ['Piccola', 'Asso, 2 e 3 di denari', I.club, round, [0, 0, 0, 3]],
+        ['Scope', '1 · 1 · 0 · 1', I.scopa, card, [1, 1, 0, 1]],
+        ['Accusi', 'Marco · somma 8', I.fist, round, [0, 3, 0, 0]]
+      ];
+      before = [34, 29, 31, 22]; names = ['Tu', 'Marco', 'Giulia', 'Tore']; cols = '1fr 50px 50px 50px 50px';
+    } else {
+      const team = mode === '2v2';
+      heads = team
+        ? [ { name: 'Noi', ring: GOLD, avs: [AV.me, AV.giulia] }, { name: 'Loro', ring: BLUE, avs: [AV.marco, AV.tore] } ]
+        : [ { name: 'Tu', ring: GOLD, avs: [AV.me] }, { name: 'Marco_93', ring: BLUE, avs: [AV.marco] } ];
+      data = [
+        ['Carte', '22 – 18', I.back, card, [1, 0]],
+        ['Denari', '6 – 4', I.coin, round, [1, 0]],
+        ['Settebello', team ? 'preso da Giulia' : 'preso da te', I.sette, card, [1, 0]],
+        ['Primiera', '78 – 81', I.sun, round, [0, 1]],
+        ['Grande', 'Re, Cavallo e Fante di denari', I.trophy, round, [0, 0]],
+        ['Piccola', 'Asso, 2 e 3 di denari', I.club, round, [0, 3]],
+        ['Scope', '2 – 1', I.scopa, card, [2, 1]],
+        ['Accusi', 'Marco_93 · somma 8', I.fist, round, [0, 3]]
+      ];
+      before = [34, 29]; names = team ? ['Noi', 'Loro'] : ['Tu', 'Marco']; cols = '1fr 92px 92px';
+    }
+    const k = heads.length;
+    const rows = data.map((d, i) => ({
+      label: d[0], detail: d[1], icon: d[2], iw: d[3][0], ih: d[3][1], delay: (0.15 + i * 0.18) + 's', pdelay: (0.35 + i * 0.18) + 's',
+      cells: d[4].map((p) => ({ pts: p, win: p > 0, none: p === 0 }))
+    }));
+    const totals = heads.map((h, j) => data.reduce((s, d) => s + d[4][j], 0));
+    const pct = (v) => Math.min(100, Math.round(v / 51 * 100)) + '%';
+    const colsBar = ['linear-gradient(90deg,#C4922F,#FCE29A)', 'linear-gradient(90deg,#1B3A7A,#4F80E8)', 'linear-gradient(90deg,#0E6B4F,#27B585)', 'linear-gradient(90deg,#7A151D,#E5484D)'];
+    const best = Math.max(...before.map((b, j) => b + totals[j]));
+    return {
+      handLabel: (mode === '1v3' ? 'TUTTI CONTRO TUTTI' : (mode === '2v2' ? 'PARTITA 2 VS 2' : 'PARTITA 1 VS 1')) + ' · MANO 6',
+      cols: cols, avSize: four ? '34px' : '40px', headFont: four ? '10px' : '11px', pillW: four ? '30px' : '38px', totFont: four ? '16px' : '20px',
+      heads: heads, rows: rows,
+      handTotals: totals.map(String),
+      raceTop: four ? '588px' : '600px', raceGap: four ? '7px' : '12px',
+      race: names.map((n, j) => ({ name: n, from: pct(before[j]), to: pct(before[j] + totals[j]), total: String(before[j] + totals[j]), col: colsBar[j] })),
+      raceNote: four ? ('in testa: ' + (51 - best) + ' punti alla vittoria') : ((51 - (before[0] + totals[0])) + ' punti alla vittoria'),
+      nextHref: mode === '1v1' ? 'Partita.dc.html' : 'Partita4.dc.html',
+      countdown: String(this.state.count)
+    };
+  }
+}
+</script>
+</body>
+</html>
