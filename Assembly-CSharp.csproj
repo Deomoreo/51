@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2Button.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51Toggle.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\FriendViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\DeckCardView.cs" />
     <Compile Include="Assets\Photon\PhotonRealtime\Demos\DemoLoadBalancing\ConnectAndJoinRandomLb.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatNewGui.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkGameController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\FriendsScreenController.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\PlayerBanner.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2CollectionCard.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\CollectionCosmeticsV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\StartScreenV2.cs" />
@@ -115,6 +117,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\HomeV2Integration.cs" />
     <Compile Include="Assets\Scripts\UI\PanelSwipeController.cs" />
     <Compile Include="Assets\Scripts\UI\PrimaryButtonUI.cs" />
+    <Compile Include="Assets\UI51\Scripts\Debug\UI51GalleryDemo.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\EmoticonSlotView.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatSettings.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Pager.cs" />
@@ -129,6 +132,7 @@
     <Compile Include="Assets\UIV2\Scripts\Screens\ShopScreenV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2HapticButton.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\ResultRowV2.cs" />
+    <Compile Include="Assets\UI51\Scripts\Core\UI51Shape.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ButtonFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\DebugUIRaycastLogger.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AmbientFloat.cs" />
@@ -144,6 +148,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\LegalModalV2.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthBootstrapper.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\DeckViewData.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51Dialog.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2StatTile.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2QuickActionButton.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextToggleIsOnTransition.cs" />
@@ -154,6 +159,7 @@
     <Compile Include="Assets\Scripts\DEBUG\HierarchyDumper.cs" />
     <Compile Include="Assets\Scripts\UI\FollowBottomLine.cs" />
     <Compile Include="Assets\Scripts\Auth\ProfileService.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\BottomSheet.cs" />
     <Compile Include="Assets\Scripts\UI\StubActionButton.cs" />
     <Compile Include="Assets\Scripts\Networking\RoomManager.cs" />
     <Compile Include="Assets\UIV2\Tests\UIV2SandboxBootstrap.cs" />
@@ -180,9 +186,12 @@
     <Compile Include="Assets\Scripts\UI\SlideUpPanelUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2Motion.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOnly.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51EmoticonSet.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2DesignCatalog.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\BottomNav.cs" />
     <Compile Include="Assets\Scripts\UI\DeckSelectorPanelUI.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51Press.cs" />
     <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\LobbyPlayerViewData.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkTestUI.cs" />
@@ -193,7 +202,10 @@
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2ShaderKit.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2FeedbackParticles.cs" />
     <Compile Include="Assets\UIV2\Tests\CollectionV2PreviewBootstrap.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51VersionLabel.cs" />
+    <Compile Include="Assets\UI51\Scripts\Core\UI51Banners.cs" />
     <Compile Include="Assets\Scripts\UI\DeckPageController.cs" />
+    <Compile Include="Assets\UI51\Scripts\Anim\UIAnim.cs" />
     <Compile Include="Assets\Scripts\UI\ScrollFadeIndicator.cs" />
     <Compile Include="Assets\Scripts\UI\GameLaunchController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2BottomNav.cs" />
@@ -220,10 +232,12 @@
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ModalFrame.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2DesignSystem.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Theme.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\EmoticonPlayer.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UITabsRow.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2SelectorChip.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOffset.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2MotionInstaller.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\SegmentedTabs.cs" />
     <Compile Include="Assets\Scripts\UI\UITheme.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2AvatarBadge.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ProgressBar.cs" />
@@ -232,14 +246,17 @@
     <Compile Include="Assets\UIV2\Scripts\Screens\AccusoRowView.cs" />
     <Compile Include="Assets\Scripts\UI\LocalSeatBottomShift.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIBottomNavBar.cs" />
+    <Compile Include="Assets\UI51\Scripts\Core\UI51Tokens.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AnimatedModalV2.cs" />
     <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\IUIV2Modal.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\PageSwipeSurface.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51Input.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\RingArcGraphic.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayerProgressLocal.cs" />
     <Compile Include="Assets\JsonDotNetWrapper\JsonDotNetWrapper.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\UI51Badge.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\ChatIdCheckerUI.cs" />
     <Compile Include="Assets\Scripts\UI\PrivateRoomOptionsUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\DeleteAccountModalV2.cs" />
@@ -263,6 +280,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\NativeShare.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\MatchmakingPlayerViewData.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthUIController.cs" />
+    <Compile Include="Assets\UI51\Scripts\Components\AvatarFrame.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\LoadingProgressBar.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimatedComponent.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionDecksPanel.cs" />
@@ -282,6 +300,7 @@
     <Compile Include="Assets\Scripts\UI\BottomNavController.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\UI51\Resources\UI51\Shape.shader" />
     <None Include="Assets\Resources\K4\BackdropBlur.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />
@@ -312,6 +331,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
     <None Include="Assets\Photon\PhotonUnityNetworking\readme.txt" />
+    <None Include="Assets\UI51\Resources\UI51\Banner.shader" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll" />
     <None Include="Assets\Photon\PhotonLibs\Photon3Unity3D.dll" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />

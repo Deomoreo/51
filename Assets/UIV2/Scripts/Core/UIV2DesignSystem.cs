@@ -105,7 +105,8 @@ namespace Project51.UIV2.Core
         private static bool Excluded(Transform transform)
         {
             for (var t = transform; t != null; t = t.parent)
-                if (t.name == "LegacyOnlineViews") return true;
+                // "UI51": schermate ricostruite col design UI51, hanno font e colori propri.
+                if (t.name == "LegacyOnlineViews" || t.name == "UI51") return true;
             return false;
         }
 

@@ -9,7 +9,15 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 27/09, versione 2.24
+## ▶ PUNTO DI RIPRESA — 27/09, versione 2.25
+
+**2.25:** Fase 1 UI51 provata in Unity. Build All pulito (0 errori, 0 warning); test EditMode 288 ok, 0 falliti, 7 saltati (Explicit). Gallery verificata nel Simulator su iPhone 12 e SE.
+- Correzioni: i fogli emoticon ora hanno 8 fotogrammi (serviva SetDirty sull'importer); `PlayerBanner.m_Name` rinominato `nameText` (era duplicato).
+- Sorgenti degli atlas non compresse, quindi niente più warning di compressione. Il font non segnala più finti "caratteri mancanti".
+- Aggiunto il riempimento sotto la BottomNav.
+- Scrim di sheet e dialog estesi oltre la safe area (coprono notch e home indicator); lo sheet arriva al bordo inferiore.
+- Il Dialog senza icona non lascia più lo spazio vuoto in alto: `m_IconRow` viene nascosto.
+- Da rifinire: le etichette di sezione della gallery (oro 12 px) si leggono male sul pavimento chiaro dello sfondo. È solo la scena di prova.
 
 **2.24:** UI51 Fase 1, Fondamenta del nuovo design (`Design/51_handoff`, SPEC autorevole). Solo file nuovi sotto `Assets/UI51/`: nessuna scena o asset esistente toccato.
 - Arte importata per area in `Assets/UI51/Art/<Area>/` con un Sprite Atlas per area (sfondi esclusi). Font Cinzel/Nunito come TMP dinamici con accentate italiane.

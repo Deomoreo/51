@@ -2,6 +2,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using Project51.Auth;
 using Project51.Core;
+using Project51.UI51;
 using Project51.Unity;
 using UnityEngine.SceneManagement;
 using TMPro;
@@ -74,7 +75,7 @@ namespace Project51.UIV2.Core
         /// <summary>Lunghezza minima accettata da PlayFab.</summary>
         public const int MinimumPasswordLength = 6;
 
-        private static readonly Color StatusError = new Color32(240, 120, 138, 255);
+        private static readonly Color StatusError = UI51Tokens.DangerText;
         private static readonly Color StatusInfo = new Color32(150, 200, 170, 255);
         private static readonly Color StrengthOn = new Color32(74, 222, 128, 255);
         private static readonly Color StrengthOff = new Color32(30, 42, 68, 255);
@@ -98,7 +99,10 @@ namespace Project51.UIV2.Core
 
             if (AccountLogout != null) AccountLogout.onClick.AddListener(Logout);
 
-            if (RegisterBack != null) RegisterBack.onClick.AddListener(Back);
+            // Prima dell'ingresso il Login e' la schermata di partenza: indietro dalla Registrazione torna li'.
+            if (RegisterBack != null) RegisterBack.onClick.AddListener(() => { if (StartScreen != null && !StartScreen.HasEntered) GoToLogin(); else Back(); });
+            // Il Login e' la prima schermata: l'indietro serve solo quando lo si apre dopo l'ingresso.
+            if (LoginBack != null) LoginBack.gameObject.SetActive(false);
             if (RegisterToLogin != null) RegisterToLogin.onClick.AddListener(GoToLogin);
             if (TermsToggle != null) TermsToggle.onClick.AddListener(ToggleTerms);
             // I due link stanno sopra alla riga che accetta i Termini: toccarli apre il documento,
@@ -144,6 +148,7 @@ namespace Project51.UIV2.Core
             bool hide = StartScreen != null && StartScreen.HasEntered;
             if (hide == guestRowsHidden) return;
             guestRowsHidden = hide;
+            if (LoginBack != null) LoginBack.gameObject.SetActive(hide);
             if (LoginGuestOnly != null)
                 foreach (var go in LoginGuestOnly) if (go != null) go.SetActive(!hide);
             if (LoginBelowGuest != null)

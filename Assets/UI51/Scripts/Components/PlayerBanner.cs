@@ -22,7 +22,7 @@ namespace Project51.UI51
         [SerializeField] UI51Shape m_PulseRing;
         [SerializeField] UI51Shape m_Background;
         [SerializeField] AvatarFrame m_Avatar;
-        [SerializeField] TMP_Text m_Name;
+        [SerializeField] TMP_Text nameText;
         [SerializeField] TMP_Text m_Level;
         [SerializeField] GameObject m_Chip;
         [SerializeField] Image m_CardBack;
@@ -58,7 +58,7 @@ namespace Project51.UI51
 
         public void SetName(string playerName)
         {
-            if (m_Name != null) m_Name.text = playerName ?? string.Empty;
+            if (nameText != null) nameText.text = playerName ?? string.Empty;
         }
 
         public void SetLevel(int level)

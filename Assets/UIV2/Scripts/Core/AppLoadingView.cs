@@ -4,6 +4,7 @@ using DG.Tweening;
 using Project51.UIV2.Animations;
 using Project51.Auth;
 using Project51.Core;
+using Project51.UI51;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,6 +21,12 @@ namespace Project51.UIV2.Core
         public RectTransform[] Cards;
         public Button RetryButton;
         public Button CancelButton;
+        [Header("UI51 (opzionali)")]
+        public RectTransform ProgressFill;  // riempimento arrotondato, segue Progress.fillAmount
+        public RectTransform ProgressShine; // riflesso dentro ProgressFill
+        public RectTransform Glow;
+        public RectTransform Logo;
+        public TMP_Text Tip;
         [Min(0)] public float MinimumDuration = 3f;
         public bool IsVisible => View != null && View.gameObject.activeSelf;
         private Coroutine operation;
@@ -28,7 +35,14 @@ namespace Project51.UIV2.Core
         private bool indeterminate;
         private Action entranceReady;
         private string failedScene;
-        private Vector2[] cardPositions;
+        private int tipIndex = -1;
+        private static readonly string[] Tips =
+        {
+            "Il Settebello vale un punto da solo: non lasciarlo sul tavolo!",
+            "Con l’accuso mostri le tue carte, ma guadagni punti subito.",
+            "Tocca le scope dietro un banner per vederle tutte.",
+            "Accedi ogni giorno: al settimo giorno ti aspetta un forziere viola.",
+        };
 
         private void Awake()
         {
@@ -38,15 +52,18 @@ namespace Project51.UIV2.Core
             AppLoading.AuthenticationBusy += AuthenticationBusy;
             RetryButton.onClick.AddListener(Retry);
             CancelButton.onClick.AddListener(Cancel);
-            cardPositions = new Vector2[Cards.Length];
-            for (int i = 0; i < Cards.Length; i++) cardPositions[i] = Cards[i].anchoredPosition;
             View.gameObject.SetActive(false);
         }
         private void Show(string text)
         {
             bool wasVisible = IsVisible;
             fade?.Kill(); View.gameObject.SetActive(true);
-            if (!wasVisible) View.alpha = 0;
+            if (!wasVisible)
+            {
+                View.alpha = 0; tipIndex = -1;
+                if (UIAnim.DecorativeLoops) { UIAnim.LoadingWave(Cards); UIAnim.Blink(Glow, .55f, .95f, 3f); }
+                UIAnim.Breathe(Logo);
+            }
             fade = View.DOFade(1, UIV2Motion.Fade).SetUpdate(true);
             View.blocksRaycasts = true; View.interactable = true; Status.text = text;
             RetryButton.gameObject.SetActive(false); CancelButton.gameObject.SetActive(false);
@@ -156,8 +173,21 @@ namespace Project51.UIV2.Core
         {
             if (!IsVisible) return;
             if (indeterminate) Progress.fillAmount = .25f + .35f * Mathf.PingPong(Time.unscaledTime * .45f, 1);
-            for (int i = 0; i < Cards.Length; i++) Cards[i].anchoredPosition = cardPositions[i] + Vector2.up *
-                (Project51.Core.GamePreferences.ReducedGraphics ? 0f : Mathf.Sin(Time.unscaledTime * 3 + i * .7f) * 9);
+            if (ProgressFill != null) ProgressFill.anchorMax = new Vector2(Progress.fillAmount, 1);
+            if (ProgressShine != null)
+            {
+                // shimmer del mockup: striscia larga 30% da -40% a 120% del riempimento, 1.4 s ease-in-out.
+                ProgressShine.gameObject.SetActive(UIAnim.DecorativeLoops);
+                float x = Mathf.SmoothStep(-.4f, 1.2f, Time.unscaledTime / 1.4f % 1f);
+                ProgressShine.anchorMin = new Vector2(x, 0); ProgressShine.anchorMax = new Vector2(x + .3f, 1);
+            }
+            int tip = (int)(Time.unscaledTime / 3.2f) % Tips.Length;
+            if (Tip != null && tip != tipIndex)
+            {
+                tipIndex = tip;
+                Tip.text = "<color=#F3C969><b>Lo sapevi?</b></color> " + Tips[tip];
+                UIAnim.Tip(Tip.rectTransform);
+            }
         }
         private void OnDestroy()
         {

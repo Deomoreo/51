@@ -36,9 +36,9 @@ namespace Project51.UIV2.Core
             AuthUI.OnLoginSuccess += Enter;
             AuthUI.OnRegistrationSuccess += Enter;
             AuthUI.OnClosed += AuthClosed;
-            // Guests always see this screen; only a real login keeps its account across launches.
+            // UI51 Fase 2: la prima schermata e' il Login (mockup Main); la vecchia vista resta spenta.
             if (AppFlowManager.ConsumeReturnToHome()) CompleteEntrance();
-            else { View.alpha = 1; View.blocksRaycasts = true; View.interactable = true; }
+            else { View.alpha = 0; View.blocksRaycasts = false; View.interactable = false; Login(); }
         }
         private void Guest() => PlayAsGuest();
 
@@ -51,7 +51,7 @@ namespace Project51.UIV2.Core
         private void Login() { AuthUI.ShowAuthUI(); AuthUI.ShowLoginPanel(); }
         private void Register() { AuthUI.ShowAuthUI(); AuthUI.ShowRegisterPanel(); }
         private void Options() { Settings.Open(); SettingsCanvas.overrideSorting = true; SettingsCanvas.sortingOrder = 1500; }
-        private void AuthClosed() { if (!entered) View.alpha = 1; }
+        private void AuthClosed() { if (!entered) Login(); }
         private void Enter()
         {
             if (AppLoadingView.Instance != null) AppLoadingView.Instance.EnterHome(CompleteEntrance);

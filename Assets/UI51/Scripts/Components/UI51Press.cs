@@ -14,6 +14,8 @@ namespace Project51.UI51
         [SerializeField] float m_Scale = 0.97f;
         [SerializeField] float m_Brightness = 1.08f;
         [SerializeField] float m_Duration = 0.08f;
+        [Tooltip("Opzionale: CanvasGroup portato a 0.5 quando il pulsante non e' interattivo (mockup: disabilitato = opacita' .5).")]
+        [SerializeField] CanvasGroup m_DisabledGroup;
 
         Selectable m_Selectable;
         UI51Shape m_Shape;
@@ -49,6 +51,11 @@ namespace Project51.UI51
             transform.DOScale(m_BaseScale * scale, t).SetUpdate(true).SetId(this);
             if (m_Shape != null)
                 DOTween.To(() => m_Shape.brightness, v => m_Shape.brightness = v, brightness, t).SetUpdate(true).SetId(this);
+        }
+
+        void LateUpdate()
+        {
+            if (m_DisabledGroup != null) m_DisabledGroup.alpha = m_Selectable == null || m_Selectable.IsInteractable() ? 1f : 0.5f;
         }
 
         void OnDisable()
