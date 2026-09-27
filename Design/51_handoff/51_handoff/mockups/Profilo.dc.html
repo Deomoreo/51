@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Profilo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .row-btn{width:100%;height:56px;border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;text-align:left;border-radius:14px;}
+  .row-btn:hover{background:rgba(255,255,255,0.04);}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;z-index:5;}
+  .sheet{position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:12px 20px 24px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border-top:1px solid rgba(243,201,105,0.4);border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,0.5);z-index:6;}
+  .cta-btn:hover{filter:brightness(1.05);}
+  /* player banners: static (standard) and animated (shop / battle pass / levels) */
+  .bn-notte{background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99)) !important;}
+  .bn-smeraldo{background:linear-gradient(135deg,#0E4F3A 0%,#0A3A2B 55%,#146A50 100%) !important;}
+  .bn-porpora{background:linear-gradient(135deg,#4A1420 0%,#2E0B14 55%,#5C1A2A 100%) !important;}
+  .bn-aurora{background:linear-gradient(120deg,#0B1D3A,#1B6B8F,#27B585,#6B3FA0,#1B6B8F,#0B1D3A) !important;background-size:320% 320% !important;animation:bnAurora 7s ease infinite;}
+  @keyframes bnAurora{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .bn-stellato{background:radial-gradient(1.2px 1.2px at 12% 30%,#fff 50%,transparent),radial-gradient(1.6px 1.6px at 34% 70%,#FCE29A 50%,transparent),radial-gradient(1px 1px at 58% 25%,#fff 50%,transparent),radial-gradient(1.4px 1.4px at 78% 62%,#fff 50%,transparent),radial-gradient(1px 1px at 92% 35%,#FCE29A 50%,transparent),linear-gradient(180deg,#0A0F2A,#1B1440) !important;background-size:120% 120%,130% 130%,110% 110%,125% 125%,115% 115%,100% 100% !important;animation:bnStars 5s ease-in-out infinite alternate;}
+  @keyframes bnStars{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0}to{background-position:6px -3px,-8px 4px,5px 3px,-4px -5px,7px 2px,0 0}}
+  .bn-oro{position:relative;overflow:hidden;background:linear-gradient(135deg,#5A3A10 0%,#8A5A12 45%,#3A2508 100%) !important;border-color:rgba(252,226,154,0.8) !important;}
+  .bn-oro::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(90deg,rgba(255,236,170,0),rgba(255,236,170,0.5),rgba(255,236,170,0));transform:skewX(-20deg);animation:bnSheen 3s ease-in-out infinite;pointer-events:none;}
+  @keyframes bnSheen{0%{left:-70%}60%,100%{left:140%}}
+
+
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+
+  <sc-if value="{{registered}}" hint-placeholder-val="{{true}}">
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;">
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.1;">Profilo</h1>
+    <div style="display:flex;gap:8px;">
+      <button type="button" aria-label="Condividi profilo" style="width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_share_cream.png" alt="" style="width:18px;height:18px;"></button>
+      <a href="Impostazioni.dc.html" aria-label="Impostazioni" style="width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_settings_cream.png" alt="" style="width:20px;height:20px;"></a>
+    </div>
+  </div>
+
+  <div class="panel" style="position:absolute;top:78px;left:20px;width:350px;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;gap:14px;overflow:hidden;isolation:isolate;">
+    <div class="bn-{{bannerId}}" aria-hidden="true" style="position:absolute;inset:0;z-index:-1;border:0;border-radius:0;pointer-events:none;"></div><div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(6,13,27,0.05) 0%,rgba(6,13,27,0.35) 45%,rgba(6,13,27,0.62) 100%);pointer-events:none;"></div>
+    <div style="position:relative;display:flex;align-items:center;gap:14px;">
+      <button type="button" onClick="{{openEditor}}" aria-label="Cambia avatar e cornice" style="position:relative;width:80px;height:80px;flex:none;border:0;padding:0;background:none;cursor:pointer;">
+        <div style="width:80px;height:80px;border-radius:40px;box-sizing:border-box;padding:{{framePad}};background:{{frameBg}};box-shadow:0 4px 12px rgba(0,0,0,0.45);">
+          <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{avatarImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div>
+        </div>
+        <span style="position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;box-sizing:border-box;border-radius:13px;background:#0B1626;border:1px solid #F3C969;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" fill="none" stroke="#F3C969" stroke-width="2.2" stroke-linejoin="round"></path></svg></span>
+      </button>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px;min-width:0;">
+        <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">GiocatoreNapo</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:12px;color:rgba(245,233,208,0.55);">ID #51-48213</span>
+          <button type="button" aria-label="Copia ID" style="width:24px;height:24px;border-radius:7px;border:0;background:rgba(243,201,105,0.1);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_copy_cream.png" alt="" style="width:13px;height:13px;"></button>
+        </div>
+        <span style="font-size:11px;color:rgba(245,233,208,0.45);">Giocatore dal marzo 2026</span>
+      </div>
+    </div>
+    <div style="height:1px;background:rgba(243,201,105,0.14);"></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:44px;height:44px;border-radius:22px;background:linear-gradient(180deg,#FCE29A,#C4922F);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#25160A;flex:none;">12</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Esperto</span><span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.7);">620 / 1000 XP</span></div>
+        <div style="height:7px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:62%;height:100%;border-radius:4px;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+        <span style="font-size:11px;color:rgba(245,233,208,0.5);">Ancora 380 XP per il livello 13</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="position:absolute;top:284px;left:20px;">STATISTICHE</div>
+  <div style="position:absolute;top:304px;left:20px;width:350px;display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px;">
+    <div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">148</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">Partite</span></div><div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">86</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">Vittorie</span></div><div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">58%</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">% vittorie</span></div><div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">7</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">Serie migliore</span></div><div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">312</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">Scope</span></div><div class="panel" style="height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">23</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">Accusi</span></div>
+  </div>
+
+  <div style="position:absolute;top:456px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:baseline;">
+    <span class="cap">TROFEI</span>
+    <a href="#" style="font-size:12px;font-weight:700;">4 / 24 · Vedi tutti</a>
+  </div>
+  <div class="panel" style="position:absolute;top:478px;left:20px;width:350px;box-sizing:border-box;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:8px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><img src="../assets/medal_trophy.png" alt="" style="width:50px;height:50px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.5));"><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.8);text-align:center;line-height:1.2;">Prima vittoria</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><img src="../assets/medal_sun.png" alt="" style="width:50px;height:50px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.5));"><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.8);text-align:center;line-height:1.2;">Settebello</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><img src="../assets/medal_club.png" alt="" style="width:50px;height:50px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.5));"><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.8);text-align:center;line-height:1.2;">Cento scope</span></div><div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><img src="../assets/medal_sword.png" alt="" style="width:50px;height:50px;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.5));"><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.8);text-align:center;line-height:1.2;">Accusatore</span></div>
+    </div>
+    <div style="height:1px;background:rgba(243,201,105,0.14);"></div>
+    <span class="cap" style="font-size:9px;color:rgba(243,201,105,0.8);">IN CORSO</span>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Re della scopa <span style="font-weight:600;font-size:11px;color:rgba(245,233,208,0.5);">· fai 500 scope</span></span><span style="font-size:11px;font-weight:800;color:#F3C969;">312/500</span></div>
+          <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:62%;height:100%;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+        </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Imbattibile <span style="font-weight:600;font-size:11px;color:rgba(245,233,208,0.5);">· vinci 10 di fila</span></span><span style="font-size:11px;font-weight:800;color:#F3C969;">7/10</span></div>
+          <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:70%;height:100%;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+        </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{guest}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;">
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.1;">Profilo</h1>
+    <a href="ImpostazioniOspite.dc.html" aria-label="Impostazioni" style="width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_settings_cream.png" alt="" style="width:20px;height:20px;"></a>
+  </div>
+
+  <div class="panel" style="position:absolute;top:78px;left:20px;width:350px;box-sizing:border-box;padding:16px;display:flex;align-items:center;gap:14px;">
+    <div style="width:72px;height:72px;border-radius:36px;box-sizing:border-box;border:1.5px dashed rgba(243,201,105,0.5);background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;flex:none;"><img src="../assets/ic_person_cream.png" alt="" style="width:30px;height:35px;opacity:0.7;"></div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Ospite_4821</span>
+      <span style="align-self:flex-start;height:22px;display:inline-flex;align-items:center;padding:0 10px;border-radius:11px;background:rgba(255,255,255,0.06);border:1px solid rgba(245,233,208,0.3);font-size:10px;font-weight:800;letter-spacing:1px;color:rgba(245,233,208,0.8);">OSPITE</span>
+      <span style="font-size:11px;color:rgba(245,233,208,0.45);">Sessione temporanea su questo dispositivo</span>
+    </div>
+  </div>
+
+  <div style="position:absolute;top:202px;left:20px;width:350px;box-sizing:border-box;padding:14px 16px;border-radius:16px;background:rgba(243,201,105,0.08);border:1px solid rgba(243,201,105,0.4);display:flex;gap:12px;">
+    <img src="../assets/ic_warn_cream.png" alt="" style="width:24px;height:22px;flex:none;margin-top:1px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <span style="font-size:14px;font-weight:800;color:#F5E9D0;">I tuoi progressi non vengono salvati</span>
+      <span style="font-size:12px;line-height:1.45;color:rgba(245,233,208,0.65);">Come ospite puoi giocare online, in allenamento e nelle stanze private, ma non ricevi esperienza, ricompense, statistiche o trofei.</span>
+    </div>
+  </div>
+
+  <div class="cap" style="position:absolute;top:330px;left:20px;">CON UN ACCOUNT OTTIENI</div>
+  <div class="panel" style="position:absolute;top:350px;left:20px;width:350px;box-sizing:border-box;padding:4px 0;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+        <div style="width:24px;height:24px;border-radius:12px;background:rgba(243,201,105,0.15);border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#F3C969" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+        <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Livelli ed esperienza</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Sali di livello a ogni partita</span></div>
+      </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+        <div style="width:24px;height:24px;border-radius:12px;background:rgba(243,201,105,0.15);border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#F3C969" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+        <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Ricompense</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Forzieri, missioni ed eventi</span></div>
+      </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+        <div style="width:24px;height:24px;border-radius:12px;background:rgba(243,201,105,0.15);border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#F3C969" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+        <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Statistiche e trofei</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Tieni traccia dei tuoi successi</span></div>
+      </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+        <div style="width:24px;height:24px;border-radius:12px;background:rgba(243,201,105,0.15);border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#F3C969" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+        <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;">Collezione personale</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Dorsi, emoticon e accusi da sbloccare</span></div>
+      </div>
+  </div>
+
+  <a href="Registrazione.dc.html" style="position:absolute;top:618px;left:20px;width:350px;height:54px;box-sizing:border-box;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#25160A;box-shadow:0 8px 18px rgba(0,0,0,0.35);">CREA UN ACCOUNT</a>
+  <div style="position:absolute;top:690px;left:0;width:390px;text-align:center;font-size:13px;color:rgba(245,233,208,0.75);">Hai già un account? <a href="Main.dc.html" style="font-weight:700;">Accedi</a></div>
+  </sc-if>
+
+  <!-- bottom nav -->
+  <nav aria-label="Navigazione principale" style="position:absolute;left:0;bottom:0;width:390px;height:72px;box-sizing:border-box;padding:0 12px;display:flex;background:rgba(5,11,23,0.96);border-top:1px solid rgba(243,201,105,0.3);z-index:2;">
+    <a href="Home.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_home_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Gioca</span>
+    </a>
+    <a href="Collezione.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_cards_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Collezione</span>
+    </a>
+    <a href="Negozio.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_chest_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Negozio</span>
+    </a>
+    <a href="Profilo.dc.html" aria-current="page" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <div style="position:absolute;top:0;width:24px;height:2px;border-radius:0 0 2px 2px;background:#F3C969;"></div>
+      <img src="../assets/ic_person_cream.png" alt="" style="width:19px;height:22px;">
+      <span style="font-size:11px;font-weight:700;color:#F3C969;">Profilo</span>
+    </a>
+  </nav>
+
+  <!-- editor avatar / cornice -->
+  <sc-if value="{{showEditor}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi" onClick="{{closeEditor}}"></button>
+    <div class="sheet">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(245,233,208,0.25);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Personalizza profilo</span>
+        <button type="button" aria-label="Chiudi" onClick="{{closeEditor}}" style="width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_close_cream.png" alt="" style="width:14px;height:14px;"></button>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0 16px;">
+        <div style="position:relative;width:112px;height:112px;">
+          <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:190px;height:190px;transform:translate(-50%,-50%);opacity:0.55;pointer-events:none;">
+          <div style="position:relative;width:112px;height:112px;border-radius:56px;box-sizing:border-box;padding:{{framePadBig}};background:{{frameBg}};box-shadow:0 6px 16px rgba(0,0,0,0.5);">
+            <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{avatarImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div>
+          </div>
+        </div>
+        <span style="font-size:12px;color:rgba(245,233,208,0.6);">{{previewLabel}} <span style="color:#F3C969;font-weight:800;">{{previewName}}</span></span>
+      </div>
+      <div style="display:flex;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(243,201,105,0.18);margin-bottom:16px;">
+        <sc-for list="{{edTabs}}" as="t" hint-placeholder-count="2">
+          <sc-if value="{{t.on}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{t.pick}}" style="flex:1;height:36px;border-radius:9px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);color:#F3C969;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;padding:0;">{{t.label}}</button></sc-if>
+          <sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{t.pick}}" style="flex:1;height:36px;border-radius:9px;background:transparent;border:1px solid transparent;color:rgba(245,233,208,0.65);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;padding:0;">{{t.label}}</button></sc-if>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{edAvatar}}" hint-placeholder-val="{{true}}">
+        <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px 10px;justify-items:center;">
+          <sc-for list="{{avatars}}" as="a" hint-placeholder-count="5">
+            <sc-if value="{{a.on}}" hint-placeholder-val="{{false}}">
+              <button type="button" onClick="{{a.pick}}" aria-label="Avatar selezionato" style="position:relative;width:66px;height:66px;border-radius:33px;border:0;padding:3px;background:#F3C969;cursor:pointer;box-shadow:0 0 14px rgba(243,201,105,0.45);">
+                <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{a.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div>
+                <span style="position:absolute;top:-3px;right:-3px;width:20px;height:20px;border-radius:10px;background:#F3C969;border:2px solid #0B1626;box-sizing:border-box;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#25160A" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+              </button>
+            </sc-if>
+            <sc-if value="{{a.off}}" hint-placeholder-val="{{true}}">
+              <button type="button" onClick="{{a.pick}}" aria-label="Scegli avatar" style="width:66px;height:66px;border-radius:33px;border:0;padding:2px;background:rgba(243,201,105,0.3);cursor:pointer;">
+                <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{a.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{edFrame}}" hint-placeholder-val="{{false}}">
+        <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px 10px;">
+          <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+            <button type="button" onClick="{{f.pick}}" aria-label="Cornice {{f.name}}" style="display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;cursor:pointer;">
+              <div style="width:66px;height:66px;border-radius:33px;box-sizing:border-box;padding:{{f.pad}};background:{{f.bg}};outline:{{f.outline}};outline-offset:3px;">
+                <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{avatarImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:800;color:{{f.color}};">{{f.name}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{edBanner}}" hint-placeholder-val="{{false}}">
+        <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;">
+          <sc-for list="{{banners}}" as="b" hint-placeholder-count="4">
+            <button type="button" onClick="{{b.pick}}" aria-label="Banner {{b.name}}" style="display:flex;flex-direction:column;gap:6px;border:0;background:none;padding:0;cursor:pointer;text-align:left;">
+              <div class="bn-{{b.id}}" style="position:relative;height:48px;border-radius:24px;border:1px solid rgba(243,201,105,0.4);display:flex;align-items:center;gap:8px;padding:0 10px 0 5px;box-sizing:border-box;outline:{{b.outline}};outline-offset:3px;">
+                <div style="width:36px;height:36px;border-radius:50%;padding:2px;box-sizing:border-box;background:{{frameBg}};position:relative;z-index:1;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{avatarImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+                <span style="font-size:11px;font-weight:800;color:#F5E9D0;position:relative;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">GiocatoreNapo</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;"><span style="font-size:11px;font-weight:800;color:{{b.color}};">{{b.name}}</span><span style="font-size:9px;font-weight:800;letter-spacing:0.5px;color:{{b.tagCol}};">{{b.tag}}</span></div>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;border:1px dashed rgba(243,201,105,0.3);background:rgba(255,255,255,0.02);">
+        <div style="width:30px;height:30px;border-radius:15px;box-sizing:border-box;border:1px dashed rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:13px;color:#F3C969;flex:none;">?</div>
+        <span style="flex:1;font-size:12px;color:rgba(245,233,208,0.65);">{{nextUnlock}}</span>
+      </div>
+      <button type="button" class="cta-btn" onClick="{{closeEditor}}" style="margin-top:16px;width:100%;height:52px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;color:#25160A;cursor:pointer;">SALVA</button>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ospite":{"editor":"boolean","default":false},"editor":{"editor":"enum","options":["nessuno","avatar","cornice","banner"],"default":"nessuno"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { ed: null, avatar: 'a1', frame: 'oro', banner: 'aurora' }; }
+  renderVals() {
+    const g = this.props.ospite === true;
+    const ed = this.state.ed !== null ? this.state.ed : (this.props.editor ?? 'nessuno');
+    const set = (o) => this.setState(o);
+    const avatars = [
+      { id: 'a1', img: '../assets/avatar_1.png' },
+      { id: 'a2', img: '../assets/av_2.png' },
+      { id: 'a3', img: '../assets/av_3.png' },
+      { id: 'a4', img: '../assets/av_4.png' },
+      { id: 'a5', img: '../assets/av_5.png' }
+    ];
+    const frames = [
+      { id: 'classica', name: 'Classica', bg: '#F3C969', pad: '2px', padBig: '3px' },
+      { id: 'oro', name: 'Oro', bg: 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', pad: '4px', padBig: '6px' },
+      { id: 'smeraldo', name: 'Smeraldo', bg: 'conic-gradient(from 20deg,#27B585,#F3C969,#0E6B4F,#FCE29A,#27B585)', pad: '4px', padBig: '6px' },
+      { id: 'notte', name: 'Notte', bg: 'conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8)', pad: '4px', padBig: '6px' }
+    ];
+    const av = avatars.find((x) => x.id === this.state.avatar) || avatars[0];
+    const fr = frames.find((x) => x.id === this.state.frame) || frames[1];
+    const tab = ed === 'cornice' ? 'cornice' : (ed === 'banner' ? 'banner' : 'avatar');
+    const bannerList = [
+      { id: 'notte', name: 'Notte', tag: 'STANDARD' },
+      { id: 'smeraldo', name: 'Smeraldo', tag: 'STANDARD' },
+      { id: 'porpora', name: 'Porpora', tag: 'LIVELLO 10' },
+      { id: 'aurora', name: 'Aurora', tag: 'ANIMATO · PASS' },
+      { id: 'stellato', name: 'Notte stellata', tag: 'ANIMATO · NEGOZIO' }
+    ];
+    const bn = bannerList.find((b) => b.id === this.state.banner) || bannerList[0];
+    return {
+      registered: !g, guest: g,
+      avatarImg: av.img, frameBg: fr.bg, framePad: fr.pad, framePadBig: fr.padBig, frameName: fr.name,
+      showEditor: !g && ed !== 'nessuno',
+      openEditor: () => set({ ed: 'avatar' }),
+      closeEditor: () => set({ ed: 'nessuno' }),
+      edTabs: [ { id: 'avatar', label: 'Avatar' }, { id: 'cornice', label: 'Cornice' }, { id: 'banner', label: 'Banner' } ].map((t) => ({ ...t, on: t.id === tab, off: t.id !== tab, pick: () => set({ ed: t.id }) })),
+      edAvatar: tab === 'avatar', edFrame: tab === 'cornice', edBanner: tab === 'banner',
+      bannerId: bn.id, previewLabel: tab === 'banner' ? 'Banner' : 'Cornice', previewName: tab === 'banner' ? bn.name : fr.name,
+      banners: bannerList.map((b) => ({ ...b, outline: b.id === bn.id ? '2px solid #F3C969' : '0 solid transparent', color: b.id === bn.id ? '#F3C969' : '#F5E9D0', tagCol: b.tag.indexOf('ANIMATO') >= 0 ? '#FCE29A' : 'rgba(245,233,208,0.45)', pick: () => set({ banner: b.id }) })),
+      avatars: avatars.map((x) => ({ ...x, on: x.id === av.id, off: x.id !== av.id, pick: () => set({ avatar: x.id }) })),
+      frames: frames.map((x) => ({ ...x, outline: x.id === fr.id ? '2px solid #F3C969' : '0 solid transparent', color: x.id === fr.id ? '#F3C969' : 'rgba(245,233,208,0.75)', pick: () => set({ frame: x.id }) })),
+      nextUnlock: tab === 'avatar' ? 'Nuovo avatar al livello 18 · ancora 6 livelli' : (tab === 'banner' ? 'Banner animato Oro fuso nel negozio · presto disponibile' : 'Cornice Rubino al livello 15 · ancora 3 livelli')
+    };
+  }
+}
+</script>
+</body>
+</html>

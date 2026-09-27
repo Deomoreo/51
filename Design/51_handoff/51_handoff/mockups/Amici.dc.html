@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Amici</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+  .id-input::placeholder{color:rgba(245,233,208,0.4);letter-spacing:1px;}
+  .id-input:focus{outline:none;border-color:#F3C969;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .row:hover{background:rgba(255,255,255,0.03);}
+  @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .2s ease-out both;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;gap:12px;">
+    <a href="Home.dc.html" class="rb" aria-label="Indietro"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:15px;height:15px;"></a>
+    <h1 style="flex:1;margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;">Amici</h1>
+    <span style="font-size:12px;font-weight:700;color:rgba(245,233,208,0.6);"><span style="color:#27B585;">●</span> {{onlineCount}} online</span>
+  </div>
+
+  <!-- add by ID -->
+  <div class="panel" style="position:absolute;top:80px;left:20px;width:350px;box-sizing:border-box;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <label for="friend-id" class="cap">AGGIUNGI CON ID</label>
+      <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(245,233,208,0.55);">Il tuo: <span style="font-weight:800;color:#F5E9D0;">#51-48213</span><button type="button" aria-label="Copia il tuo ID" style="width:24px;height:24px;border-radius:7px;border:0;background:rgba(243,201,105,0.1);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_copy_cream.png" alt="" style="width:12px;height:12px;"></button></span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input id="friend-id" class="id-input" type="text" placeholder="#51-00000" style="flex:1;min-width:0;height:42px;box-sizing:border-box;padding:0 12px;border-radius:12px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;">
+      <button type="button" class="gold-btn" style="height:42px;padding:0 16px;border-radius:12px;font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:1px;">AGGIUNGI</button>
+    </div>
+  </div>
+
+  <!-- tabs -->
+  <div style="position:absolute;top:194px;left:20px;width:350px;box-sizing:border-box;display:flex;gap:4px;padding:4px;border-radius:12px;background:rgba(6,13,27,0.7);border:1px solid rgba(243,201,105,0.18);">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+      <sc-if value="{{t.on}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{t.pick}}" style="flex:1;height:38px;border-radius:9px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;gap:6px;"><span style="font-size:13px;font-weight:800;color:#F3C969;">{{t.label}}</span><span style="min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:9px;background:{{t.badgeBg}};font-size:10px;font-weight:800;color:{{t.badgeCol}};display:flex;align-items:center;justify-content:center;">{{t.count}}</span></button></sc-if>
+      <sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{t.pick}}" style="flex:1;height:38px;border-radius:9px;background:transparent;border:1px solid transparent;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;gap:6px;"><span style="font-size:13px;font-weight:700;color:rgba(245,233,208,0.7);">{{t.label}}</span><span style="min-width:18px;height:18px;box-sizing:border-box;padding:0 5px;border-radius:9px;background:{{t.badgeBg}};font-size:10px;font-weight:800;color:{{t.badgeCol}};display:flex;align-items:center;justify-content:center;">{{t.count}}</span></button></sc-if>
+    </sc-for>
+  </div>
+
+  <!-- friends -->
+  <sc-if value="{{tabFriends}}" hint-placeholder-val="{{true}}">
+    <div class="panel" style="position:absolute;top:250px;left:20px;width:350px;box-sizing:border-box;padding:4px 0;max-height:520px;overflow:hidden;">
+      <sc-for list="{{friends}}" as="f" hint-placeholder-count="6">
+        <div class="row" style="height:64px;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid rgba(243,201,105,0.08);">
+          <div style="position:relative;flex:none;">
+            <div style="width:44px;height:44px;border-radius:50%;padding:2px;box-sizing:border-box;background:{{f.ring}};"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;filter:{{f.dim}};"><img src="{{f.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+            <span style="position:absolute;right:-1px;bottom:0;width:12px;height:12px;border-radius:6px;background:{{f.dot}};border:2px solid #0B1626;"></span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:14px;font-weight:800;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{f.name}}</span><span style="height:16px;padding:0 5px;border-radius:8px;background:rgba(243,201,105,0.15);font-size:9px;font-weight:800;color:#F3C969;display:inline-flex;align-items:center;">Liv. {{f.level}}</span></div>
+            <span style="font-size:11px;color:{{f.statusCol}};">{{f.status}}</span>
+          </div>
+          <sc-if value="{{f.canInvite}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{f.invite}}" class="gold-btn" style="height:32px;padding:0 14px;border-radius:16px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;flex:none;">Invita</button></sc-if>
+          <sc-if value="{{f.invited}}" hint-placeholder-val="{{false}}"><span class="pop" style="height:32px;padding:0 12px;border-radius:16px;border:1px solid rgba(243,201,105,0.5);display:inline-flex;align-items:center;font-size:12px;font-weight:800;color:#F3C969;flex:none;">Invitato</span></sc-if>
+          <sc-if value="{{f.busy}}" hint-placeholder-val="{{false}}"><span style="height:32px;padding:0 10px;border-radius:16px;background:rgba(255,255,255,0.05);display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:rgba(245,233,208,0.5);flex:none;">{{f.busyLabel}}</span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- requests -->
+  <sc-if value="{{tabRequests}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;top:250px;left:20px;width:350px;display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{requests}}" as="r" hint-placeholder-count="2">
+        <div class="panel" style="padding:12px;display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{r.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;"><span style="font-size:14px;font-weight:800;color:#F5E9D0;">{{r.name}}</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Liv. {{r.level}} · {{r.note}}</span></div>
+          <sc-if value="{{r.pending}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex;gap:6px;flex:none;">
+              <button type="button" onClick="{{r.decline}}" aria-label="Rifiuta {{r.name}}" style="width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(245,233,208,0.25);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_close_cream.png" alt="" style="width:12px;height:12px;"></button>
+              <button type="button" onClick="{{r.accept}}" class="gold-btn" style="height:36px;padding:0 14px;border-radius:18px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;">Accetta</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{r.done}}" hint-placeholder-val="{{false}}"><span class="pop" style="font-size:12px;font-weight:800;color:{{r.doneCol}};flex:none;">{{r.doneLabel}}</span></sc-if>
+        </div>
+      </sc-for>
+      <span style="text-align:center;font-size:11px;color:rgba(245,233,208,0.45);margin-top:4px;">Le richieste scadono dopo 30 giorni</span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":["amici","richieste"],"default":"amici"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: null, invited: {}, answered: {} }; }
+  renderVals() {
+    const tab = this.state.tab || (this.props.tab ?? 'amici');
+    const set = (o) => this.setState(o);
+    const GOLD = 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', GREY = 'rgba(245,233,208,0.25)';
+    const S = { online: ['#27B585', 'Online', '#7FE0B8'], game: ['#F3C969', 'In partita', '#F3C969'], off: ['#6B7280', 'Offline', 'rgba(245,233,208,0.45)'] };
+    const list = [
+      { id: 'giulia', name: 'Giulia', level: 15, img: '../assets/av_2.png', st: 'online', note: 'Online' },
+      { id: 'tore', name: 'Tore_NA', level: 9, img: '../assets/av_5.png', st: 'online', note: 'Online' },
+      { id: 'marco', name: 'Marco_93', level: 18, img: '../assets/av_4.png', st: 'game', note: 'In partita · 2 vs 2' },
+      { id: 'capitano', name: 'Capitano_Nemo', level: 22, img: '../assets/av_3.png', st: 'off', note: 'Visto 2 ore fa' },
+      { id: 'arlecchino', name: 'Arlecchino', level: 7, img: '../assets/av_6.png', st: 'off', note: 'Visto ieri' },
+      { id: 'nonna', name: 'Nonna_Rosa', level: 31, img: '../assets/av_8.png', st: 'off', note: 'Visto 3 giorni fa' }
+    ];
+    const reqs = [
+      { id: 'z', name: 'Zingara_77', level: 11, img: '../assets/av_5.png', note: 'avete giocato insieme ieri' },
+      { id: 'r', name: 'Ramina', level: 6, img: '../assets/av_7.png', note: '3 amici in comune' }
+    ];
+    const pending = reqs.filter((r) => !this.state.answered[r.id]).length;
+    return {
+      onlineCount: String(list.filter((f) => f.st !== 'off').length),
+      tabs: [ { id: 'amici', label: 'Amici', count: String(list.length), badgeBg: 'rgba(255,255,255,0.1)', badgeCol: '#F5E9D0' }, { id: 'richieste', label: 'Richieste', count: String(pending), badgeBg: pending ? '#E5484D' : 'rgba(255,255,255,0.1)', badgeCol: '#fff' } ]
+        .map((t) => ({ ...t, on: t.id === tab, off: t.id !== tab, pick: () => set({ tab: t.id }) })),
+      tabFriends: tab === 'amici', tabRequests: tab === 'richieste',
+      friends: list.map((f) => {
+        const inv = !!this.state.invited[f.id];
+        return { ...f, level: String(f.level), ring: f.st === 'off' ? GREY : GOLD, dim: f.st === 'off' ? 'grayscale(0.6) brightness(0.8)' : 'none', dot: S[f.st][0], status: f.note, statusCol: S[f.st][2],
+          canInvite: f.st === 'online' && !inv, invited: f.st === 'online' && inv, busy: f.st !== 'online', busyLabel: f.st === 'game' ? 'Occupato' : 'Offline',
+          invite: () => { const o = { ...this.state.invited }; o[f.id] = true; set({ invited: o }); } };
+      }),
+      requests: reqs.map((r) => {
+        const a = this.state.answered[r.id];
+        const ans = (v) => () => { const o = { ...this.state.answered }; o[r.id] = v; set({ answered: o }); };
+        return { ...r, level: String(r.level), pending: !a, done: !!a, doneLabel: a === 'ok' ? 'Ora siete amici' : 'Rifiutata', doneCol: a === 'ok' ? '#7FE0B8' : 'rgba(245,233,208,0.5)', accept: ans('ok'), decline: ans('no') };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

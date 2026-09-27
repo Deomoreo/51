@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Registrazione</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  a:hover{color:#FFE3A3;text-decoration:underline;}
+  .bg-photo{
+    background-image:url('../assets/home_bg_base.png');
+    background-size:cover;
+    background-position:center 30%;
+  }
+  .overlay-gradient{
+    background:linear-gradient(180deg, rgba(6,14,28,0.35) 0%, rgba(5,11,24,0.62) 30%, rgba(4,9,20,0.88) 62%, rgba(3,7,16,0.97) 100%);
+  }
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+  .reg-input::placeholder{color:rgba(245,233,208,0.45);}
+  .reg-input:focus{outline:none;border-color:{{accent}};background:rgba(255,255,255,0.1);}
+  .cta-btn:hover{filter:brightness(1.05);}
+  .check-label input{
+    appearance:none;-webkit-appearance:none;width:18px;height:18px;min-width:18px;
+    border-radius:5px;border:1px solid rgba(243,201,105,0.5);background:rgba(255,255,255,0.06);
+    cursor:pointer;position:relative;
+  }
+  .check-label input:checked{background:{{accent}};border-color:{{accent}};}
+  .check-label input:checked::after{
+    content:"";position:absolute;left:5px;top:1px;width:5px;height:9px;
+    border:solid #25160A;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+</style>
+</helmet>
+
+<div class="bg-photo" style="width:390px;height:844px;position:relative;overflow:hidden;box-sizing:border-box;">
+
+  <div class="overlay-gradient" style="position:absolute;inset:0;z-index:1;"></div>
+
+  <a href="Main.dc.html" aria-label="Torna al login" style="position:absolute;top:20px;left:20px;width:44px;height:44px;border-radius:22px;background:rgba(11,29,58,0.55);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;z-index:5;">
+    <img src="../assets/ic_nav_back_cream.png" alt="" style="width:16px;height:16px;">
+  </a>
+
+  <button type="button" aria-label="Cambia lingua" style="position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:22px;background:rgba(11,29,58,0.55);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;z-index:5;">
+    <img src="../assets/ic_globe_cream.png" alt="" style="width:22px;height:22px;">
+  </button>
+
+  <div style="position:absolute;top:78px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;z-index:2;">
+    <div style="position:relative;width:210px;height:135px;">
+      <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;top:50%;left:50%;width:210px;height:210px;transform:translate(-50%,-50%);opacity:0.8;pointer-events:none;">
+      <img src="../assets/logo_51.png" alt="51" style="position:absolute;top:50%;left:50%;width:100px;height:auto;transform:translate(-50%,-50%);">
+    </div>
+    <div style="margin-top:14px;font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:#F5E9D0;text-shadow:0 2px 6px rgba(0,0,0,0.6);">Crea il tuo account</div>
+    <div style="margin-top:4px;font-family:'Nunito',sans-serif;font-size:12px;color:rgba(245,233,208,0.7);">Unisciti alla sfida di Cirulla-51</div>
+  </div>
+
+  <div style="position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:24px 22px 22px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg, rgba(8,17,34,0.35) 0%, rgba(7,15,30,0.88) 20%, rgba(5,11,23,0.97) 100%);border-top:1px solid rgba(243,201,105,0.3);border-radius:26px 26px 0 0;z-index:3;">
+
+    <div style="position:relative;">
+      <label for="reg-user" class="sr-only">Nome utente</label>
+      <img src="../assets/ic_person_cream.png" alt="" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.9;">
+      <input id="reg-user" type="text" placeholder="Nome utente" class="reg-input" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;">
+    </div>
+
+    <div style="position:relative;">
+      <label for="reg-email" class="sr-only">Email</label>
+      <img src="../assets/ic_mail.png" alt="" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.9;">
+      <input id="reg-email" type="email" placeholder="Email" class="reg-input" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;">
+    </div>
+
+    <div style="position:relative;">
+      <label for="reg-pw" class="sr-only">Password</label>
+      <img src="../assets/ic_lock_cream.png" alt="" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.9;">
+      <input id="reg-pw" type="password" placeholder="Password" class="reg-input" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;">
+    </div>
+
+    <div style="position:relative;">
+      <label for="reg-pw2" class="sr-only">Conferma password</label>
+      <img src="../assets/ic_lock_cream.png" alt="" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.9;">
+      <input id="reg-pw2" type="password" placeholder="Conferma password" class="reg-input" style="width:100%;height:48px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;">
+    </div>
+
+    <label class="check-label" style="display:flex;align-items:flex-start;gap:9px;margin-top:2px;cursor:pointer;">
+      <input type="checkbox">
+      <span style="font-family:'Nunito',sans-serif;font-size:11.5px;line-height:1.4;color:rgba(245,233,208,0.75);">Accetto i <a href="Termini.dc.html" style="font-size:11.5px;">Termini di Servizio</a> e la <a href="Privacy.dc.html" style="font-size:11.5px;">Privacy Policy</a></span>
+    </label>
+
+    <button type="button" class="cta-btn" style="width:100%;height:54px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,{{accent}} 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#25160A;box-shadow:0 8px 18px rgba(0,0,0,0.35);cursor:pointer;margin-top:2px;">REGISTRATI</button>
+
+    <div style="text-align:center;font-family:'Nunito',sans-serif;font-size:13px;color:rgba(245,233,208,0.8);margin-top:2px;">Hai già un account? <a href="Main.dc.html" style="font-weight:700;">Accedi</a></div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#F3C969"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#F3C969'
+    };
+  }
+}
+</script>
+</body>
+</html>

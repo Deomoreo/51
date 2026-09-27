@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;}
+  .overlay-gradient{background:linear-gradient(180deg,rgba(4,9,20,0.78) 0%,rgba(5,11,24,0.25) 16%,rgba(5,11,24,0.05) 34%,rgba(5,11,24,0.1) 55%,rgba(4,9,20,0.7) 72%,rgba(3,7,16,0.95) 100%);}
+  .side-btn{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;padding:0;cursor:pointer;width:56px;}
+  .side-ic{width:44px;height:44px;border-radius:22px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;position:relative;box-sizing:border-box;}
+  .side-lbl{font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;color:#F5E9D0;text-shadow:0 1px 3px rgba(0,0,0,0.9);}
+  .dot{position:absolute;top:1px;right:1px;width:9px;height:9px;border-radius:5px;background:#E5484D;border:1.5px solid #0B1626;}
+  .pick-tile{height:64px;box-sizing:border-box;border-radius:16px;background:linear-gradient(180deg,rgba(10,22,44,0.85),rgba(6,13,27,0.92));border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;gap:10px;padding:0 12px;cursor:pointer;text-align:left;}
+  .pick-tile:hover{border-color:rgba(243,201,105,0.7);}
+  .cta-btn:hover{filter:brightness(1.05);}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;}
+  .sheet{position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:12px 20px 24px;background:linear-gradient(180deg,rgba(12,26,50,0.97),rgba(6,13,27,0.99));border-top:1px solid rgba(243,201,105,0.4);border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,0.5);}
+  .opt{width:100%;height:64px;box-sizing:border-box;border-radius:14px;display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;text-align:left;}
+</style>
+</helmet>
+
+<div class="bg-photo" style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="overlay-gradient" style="position:absolute;inset:0;"></div>
+
+  <sc-if value="{{registered}}" hint-placeholder-val="{{true}}">
+  <!-- player header -->
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-start;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="position:relative;width:58px;height:58px;flex:none;">
+        <img src="../assets/avatar_1.png" alt="Avatar" style="width:58px;height:58px;border-radius:29px;object-fit:cover;object-position:center 28%;border:2px solid #F3C969;box-sizing:border-box;background:#0B1D3A;display:block;">
+        <div style="position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:12px;background:linear-gradient(180deg,#FCE29A,#C4922F);border:2px solid #0B1626;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:11px;color:#25160A;box-sizing:border-box;">12</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#F5E9D0;line-height:1.1;text-shadow:0 2px 4px rgba(0,0,0,0.6);">GiocatoreNapo</div>
+        <div style="font-size:11px;font-weight:700;color:#F3C969;line-height:1;">Livello 12 · Esperto</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:2px;">
+          <div style="width:112px;height:6px;border-radius:3px;background:rgba(255,255,255,0.15);overflow:hidden;"><div style="width:62%;height:100%;border-radius:3px;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+          <span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.75);">620/1000 XP</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <div style="height:26px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 10px 0 7px;border-radius:13px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.35);">
+        <img src="../assets/ic_coin.png" alt="Monete" style="width:15px;height:15px;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;">2.480</span>
+      </div>
+      <div style="height:26px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 10px 0 8px;border-radius:13px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.35);">
+        <img src="../assets/ic_gem.png" alt="Gemme" style="width:11px;height:14px;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;">86</span>
+      </div>
+    </div>
+  </div>
+
+  </sc-if>
+  <sc-if value="{{guest}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:58px;height:58px;border-radius:29px;box-sizing:border-box;border:1.5px dashed rgba(243,201,105,0.55);background:rgba(11,29,58,0.6);display:flex;align-items:center;justify-content:center;flex:none;"><img src="../assets/ic_person_cream.png" alt="" style="width:24px;height:28px;opacity:0.75;"></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#F5E9D0;line-height:1.1;text-shadow:0 2px 4px rgba(0,0,0,0.6);">Ospite_4821</div>
+        <span style="align-self:flex-start;height:20px;display:inline-flex;align-items:center;padding:0 9px;border-radius:10px;background:rgba(11,29,58,0.6);border:1px solid rgba(245,233,208,0.35);font-size:9px;font-weight:800;letter-spacing:1px;color:rgba(245,233,208,0.85);">OSPITE · PROGRESSI NON SALVATI</span>
+      </div>
+    </div>
+    <a href="Registrazione.dc.html" style="height:34px;box-sizing:border-box;display:flex;align-items:center;padding:0 14px;border-radius:17px;border:1px solid #F3C969;background:rgba(11,29,58,0.6);font-size:12px;font-weight:800;color:#F3C969;">Registrati</a>
+  </div>
+  </sc-if>
+  <sc-if value="{{registered}}" hint-placeholder-val="{{true}}">
+  <!-- side icons -->
+  <div style="position:absolute;top:118px;left:14px;display:flex;flex-direction:column;gap:14px;">
+    <a href="Amici.dc.html" class="side-btn" aria-label="Amici"><div class="side-ic"><img src="../assets/ic_person_cream.png" alt="" style="width:18px;height:21px;"><span class="dot"></span></div><span class="side-lbl">Amici</span></a>
+    <a href="Posta.dc.html" class="side-btn" aria-label="Posta"><div class="side-ic"><img src="../assets/ic_mail.png" alt="" style="width:22px;height:22px;"><span class="dot"></span></div><span class="side-lbl">Posta</span></a>
+    <button type="button" class="side-btn" aria-label="Missioni"><div class="side-ic"><img src="../assets/ic_check_cream.png" alt="" style="width:22px;height:22px;"></div><span class="side-lbl">Missioni</span></button>
+    <a href="Notizie.dc.html" class="side-btn" aria-label="Notizie"><div class="side-ic"><img src="../assets/ic_globe_cream.png" alt="" style="width:22px;height:22px;"><span class="dot"></span></div><span class="side-lbl">Notizie</span></a>
+  </div>
+  <div style="position:absolute;top:118px;right:14px;display:flex;flex-direction:column;gap:14px;">
+    <a href="Premi.dc.html" class="side-btn" aria-label="Premi"><div class="side-ic"><img src="../assets/ic_chest_cream.png" alt="" style="width:24px;height:24px;"><span class="dot"></span></div><span class="side-lbl">Premi</span></a>
+    <button type="button" class="side-btn" aria-label="Classifica"><div class="side-ic"><img src="../assets/ic_trophy_cream.png" alt="" style="width:22px;height:22px;"></div><span class="side-lbl">Classifica</span></button>
+    <button type="button" class="side-btn" aria-label="Impostazioni"><div class="side-ic"><img src="../assets/ic_settings_cream.png" alt="" style="width:21px;height:21px;"></div><span class="side-lbl">Opzioni</span></button>
+  </div>
+
+  </sc-if>
+  <sc-if value="{{guest}}" hint-placeholder-val="{{false}}">
+  <div style="position:absolute;top:118px;right:14px;display:flex;flex-direction:column;gap:14px;">
+    <button type="button" class="side-btn" aria-label="Impostazioni"><div class="side-ic"><img src="../assets/ic_settings_cream.png" alt="" style="width:21px;height:21px;"></div><span class="side-lbl">Opzioni</span></button>
+  </div>
+  </sc-if>
+  <!-- selection + play -->
+  <div style="position:absolute;left:20px;right:20px;bottom:96px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;gap:12px;">
+      <button type="button" class="pick-tile" onClick="{{openMode}}" style="flex:1;">
+        <div style="width:38px;height:38px;border-radius:19px;background:rgba(243,201,105,0.12);border:1px solid rgba(243,201,105,0.4);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;font-weight:700;color:#F3C969;flex:none;">{{modeShort}}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span style="font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:1.5px;color:rgba(243,201,105,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{modeCaption}}</span>
+          <span style="font-size:14px;font-weight:700;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{modeLabel}}</span>
+        </div>
+        <img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:rotate(90deg);opacity:0.6;">
+      </button>
+      <button type="button" class="pick-tile" onClick="{{openDeck}}" style="flex:1;">
+        <img src="{{deckImg}}" alt="" style="width:30px;height:44px;border-radius:4px;object-fit:cover;flex:none;box-shadow:0 2px 6px rgba(0,0,0,0.5);">
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span style="font-family:'Cinzel',serif;font-size:9px;font-weight:600;letter-spacing:1.5px;color:rgba(243,201,105,0.85);">MAZZO</span>
+          <span style="font-size:14px;font-weight:700;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{deckName}}</span>
+        </div>
+        <img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:rotate(90deg);opacity:0.6;">
+      </button>
+    </div>
+    <button type="button" class="cta-btn" style="width:100%;height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:18px;letter-spacing:4px;color:#25160A;box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 24px rgba(243,201,105,0.25);cursor:pointer;">GIOCA</button>
+  </div>
+
+  <!-- bottom nav -->
+  <nav aria-label="Navigazione principale" style="position:absolute;left:0;bottom:0;width:390px;height:72px;box-sizing:border-box;padding:0 12px;display:flex;background:rgba(5,11,23,0.96);border-top:1px solid rgba(243,201,105,0.3);">
+    <a href="Home.dc.html" aria-current="page" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <div style="position:absolute;top:0;width:24px;height:2px;border-radius:0 0 2px 2px;background:#F3C969;"></div>
+      <img src="../assets/ic_home_cream.png" alt="" style="width:22px;height:22px;">
+      <span style="font-size:11px;font-weight:700;color:#F3C969;">Gioca</span>
+    </a>
+    <a href="Collezione.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_cards_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Collezione</span>
+    </a>
+    <a href="Negozio.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_chest_cream.png" alt="" style="width:22px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Negozio</span>
+    </a>
+    <a href="{{profiloHref}}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">
+      <img src="../assets/ic_person_cream.png" alt="" style="width:19px;height:22px;opacity:0.55;">
+      <span style="font-size:11px;font-weight:600;color:rgba(245,233,208,0.55);">Profilo</span>
+    </a>
+  </nav>
+
+  <!-- quick panel: modalità -->
+  <sc-if value="{{showMode}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi pannello" onClick="{{close}}"></button>
+    <div class="sheet">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(245,233,208,0.25);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Modalità di gioco</span>
+          <span style="font-size:12px;color:rgba(245,233,208,0.55);">Scegli come e contro chi giocare</span>
+        </div>
+        <button type="button" aria-label="Chiudi" onClick="{{close}}" style="width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_close_cream.png" alt="" style="width:14px;height:14px;"></button>
+      </div>
+
+      <!-- tabs -->
+      <div style="display:flex;gap:4px;padding:4px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(243,201,105,0.18);margin-bottom:18px;">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+          <sc-if value="{{t.on}}" hint-placeholder-val="{{false}}">
+            <button type="button" onClick="{{t.pick}}" style="flex:1;height:36px;border-radius:9px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);color:#F3C969;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;padding:0;">{{t.label}}</button>
+          </sc-if>
+          <sc-if value="{{t.off}}" hint-placeholder-val="{{true}}">
+            <button type="button" onClick="{{t.pick}}" style="flex:1;height:36px;border-radius:9px;background:transparent;border:1px solid transparent;color:rgba(245,233,208,0.65);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;padding:0;">{{t.label}}</button>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <!-- ONLINE -->
+      <sc-if value="{{tabOnline}}" hint-placeholder-val="{{true}}">
+        <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin-bottom:10px;">FORMATO</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{onlineFormats}}" as="m" hint-placeholder-count="3">
+            <sc-if value="{{m.on}}" hint-placeholder-val="{{false}}">
+              <button type="button" class="opt" onClick="{{m.pick}}" style="background:rgba(243,201,105,0.1);border:1px solid rgba(243,201,105,0.75);">
+                <div style="width:40px;height:40px;border-radius:20px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;color:#F3C969;flex:none;">{{m.short}}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">{{m.label}}</span><span style="font-size:12px;color:rgba(245,233,208,0.6);">{{m.desc}}</span></div>
+                <div style="width:22px;height:22px;border-radius:11px;background:#F3C969;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#25160A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+              </button>
+            </sc-if>
+            <sc-if value="{{m.off}}" hint-placeholder-val="{{true}}">
+              <button type="button" class="opt" onClick="{{m.pick}}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.15);">
+                <div style="width:40px;height:40px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(243,201,105,0.25);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:11px;font-weight:700;color:rgba(245,233,208,0.8);flex:none;">{{m.short}}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">{{m.label}}</span><span style="font-size:12px;color:rgba(245,233,208,0.55);">{{m.desc}}</span></div>
+                <div style="width:22px;height:22px;border-radius:11px;border:1.5px solid rgba(243,201,105,0.35);box-sizing:border-box;flex:none;"></div>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ALLENAMENTO -->
+      <sc-if value="{{tabBot}}" hint-placeholder-val="{{false}}">
+        <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin-bottom:10px;">FORMATO</div>
+        <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px;margin-bottom:18px;">
+          <sc-for list="{{botFormats}}" as="f" hint-placeholder-count="3">
+            <sc-if value="{{f.on}}" hint-placeholder-val="{{false}}">
+              <button type="button" onClick="{{f.pick}}" style="height:56px;border-radius:12px;background:rgba(243,201,105,0.12);border:1px solid rgba(243,201,105,0.75);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;"><span style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#F3C969;">{{f.label}}</span><span style="font-size:10px;color:rgba(245,233,208,0.6);">{{f.desc}}</span></button>
+            </sc-if>
+            <sc-if value="{{f.off}}" hint-placeholder-val="{{true}}">
+              <button type="button" onClick="{{f.pick}}" style="height:56px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.18);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;"><span style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#F5E9D0;">{{f.label}}</span><span style="font-size:10px;color:rgba(245,233,208,0.5);">{{f.desc}}</span></button>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div style="font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;margin-bottom:10px;">DIFFICOLTÀ DEL BOT</div>
+        <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:8px;">
+          <sc-for list="{{levels}}" as="l" hint-placeholder-count="4">
+            <sc-if value="{{l.on}}" hint-placeholder-val="{{false}}">
+              <button type="button" onClick="{{l.pick}}" style="height:60px;border-radius:12px;background:rgba(243,201,105,0.12);border:1px solid rgba(243,201,105,0.75);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0;">
+                <div style="display:flex;gap:3px;"><sc-for list="{{l.pips}}" as="p" hint-placeholder-count="4"><div style="width:6px;height:6px;border-radius:3px;background:{{p.color}};"></div></sc-for></div>
+                <span style="font-size:11px;font-weight:800;color:#F3C969;">{{l.label}}</span>
+              </button>
+            </sc-if>
+            <sc-if value="{{l.off}}" hint-placeholder-val="{{true}}">
+              <button type="button" onClick="{{l.pick}}" style="height:60px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.18);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:0;">
+                <div style="display:flex;gap:3px;"><sc-for list="{{l.pips}}" as="p" hint-placeholder-count="4"><div style="width:6px;height:6px;border-radius:3px;background:{{p.color}};"></div></sc-for></div>
+                <span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.75);">{{l.label}}</span>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.12);">
+          <img src="../assets/ic_bot_cream.png" alt="" style="width:22px;height:22px;flex:none;opacity:0.85;">
+          <span style="font-size:12px;line-height:1.35;color:rgba(245,233,208,0.7);">{{levelDesc}}</span>
+        </div>
+      </sc-if>
+
+      <!-- STANZA PRIVATA -->
+      <sc-if value="{{tabPrivate}}" hint-placeholder-val="{{false}}">
+        <div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.18);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:34px;height:34px;border-radius:17px;background:rgba(243,201,105,0.12);border:1px solid rgba(243,201,105,0.4);display:flex;align-items:center;justify-content:center;flex:none;"><img src="../assets/ic_link_cream.png" alt="" style="width:17px;height:17px;"></div>
+            <div style="display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Crea una stanza</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Ricevi un codice da condividere con gli amici</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:6px;">
+            <sc-for list="{{privFormats}}" as="f" hint-placeholder-count="3">
+              <sc-if value="{{f.on}}" hint-placeholder-val="{{false}}">
+                <button type="button" onClick="{{f.pick}}" style="height:34px;border-radius:9px;background:rgba(243,201,105,0.14);border:1px solid rgba(243,201,105,0.75);color:#F3C969;font-family:'Cinzel',serif;font-size:12px;font-weight:700;cursor:pointer;padding:0;">{{f.label}}</button>
+              </sc-if>
+              <sc-if value="{{f.off}}" hint-placeholder-val="{{true}}">
+                <button type="button" onClick="{{f.pick}}" style="height:34px;border-radius:9px;background:transparent;border:1px solid rgba(243,201,105,0.2);color:rgba(245,233,208,0.75);font-family:'Cinzel',serif;font-size:12px;font-weight:700;cursor:pointer;padding:0;">{{f.label}}</button>
+              </sc-if>
+            </sc-for>
+          </div>
+          <button type="button" class="cta-btn" onClick="{{close}}" style="width:100%;height:46px;border-radius:13px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:2px;color:#25160A;cursor:pointer;">CREA STANZA</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.15);"></div>
+          <span style="font-size:11px;letter-spacing:1px;color:rgba(245,233,208,0.5);text-transform:uppercase;">oppure</span>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,0.15);"></div>
+        </div>
+
+        <div style="padding:14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(243,201,105,0.18);display:flex;flex-direction:column;gap:10px;">
+          <label for="room-code" style="font-size:14px;font-weight:700;color:#F5E9D0;">Entra con un codice</label>
+          <div style="display:flex;gap:8px;">
+            <div style="position:relative;flex:1;">
+              <input id="room-code" type="text" maxlength="6" placeholder="ES. A7K2QX" style="width:100%;height:46px;box-sizing:border-box;padding:0 44px 0 14px;border-radius:13px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:4px;text-transform:uppercase;">
+              <button type="button" aria-label="Incolla codice" style="position:absolute;right:6px;top:6px;width:34px;height:34px;border-radius:10px;border:0;background:rgba(243,201,105,0.1);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_paste_cream.png" alt="" style="width:15px;height:18px;"></button>
+            </div>
+            <button type="button" onClick="{{close}}" style="width:84px;height:46px;border-radius:13px;background:transparent;border:1px solid #F3C969;color:#F3C969;font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:1.5px;cursor:pointer;">ENTRA</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showConfirm}}" hint-placeholder-val="{{true}}">
+        <button type="button" class="cta-btn" onClick="{{close}}" style="margin-top:18px;width:100%;height:52px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;color:#25160A;cursor:pointer;">CONFERMA</button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- quick panel: mazzo -->
+  <sc-if value="{{showDeck}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi pannello" onClick="{{close}}"></button>
+    <div class="sheet">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(245,233,208,0.25);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Scegli il mazzo</span>
+          <span style="font-size:12px;color:rgba(245,233,208,0.55);">{{ownedCount}} sbloccati · sali di livello per ottenerne altri</span>
+        </div>
+        <button type="button" aria-label="Chiudi" onClick="{{close}}" style="width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;"><img src="../assets/ic_close_cream.png" alt="" style="width:14px;height:14px;"></button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:14px 10px;">
+        <sc-for list="{{decks}}" as="d" hint-placeholder-count="8">
+          <sc-if value="{{d.selected}}" hint-placeholder-val="{{false}}">
+            <button type="button" onClick="{{d.pick}}" style="background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div style="position:relative;width:100%;aspect-ratio:353/520;border-radius:8px;outline:2px solid #F3C969;outline-offset:2px;box-shadow:0 0 14px rgba(243,201,105,0.35);">
+                <img src="{{d.img}}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;">
+                <div style="position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:10px;background:#F3C969;border:2px solid #0B1626;box-sizing:border-box;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#25160A" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
+              </div>
+              <span style="font-size:11px;font-weight:800;color:#F3C969;">{{d.name}}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{d.available}}" hint-placeholder-val="{{true}}">
+            <button type="button" onClick="{{d.pick}}" style="background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div style="width:100%;aspect-ratio:353/520;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.45);"><img src="{{d.img}}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;"></div>
+              <span style="font-size:11px;font-weight:700;color:#F5E9D0;">{{d.name}}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{d.locked}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+              <div style="width:100%;aspect-ratio:353/520;border-radius:8px;box-sizing:border-box;border:1px dashed rgba(243,201,105,0.35);background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+                <img src="../assets/ic_lock_cream.png" alt="" style="width:16px;height:20px;opacity:0.55;">
+                <span style="font-size:10px;font-weight:800;color:rgba(243,201,105,0.8);">Liv. {{d.level}}</span>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.4);">{{d.name}}</span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <button type="button" class="cta-btn" onClick="{{close}}" style="margin-top:20px;width:100%;height:52px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;color:#25160A;cursor:pointer;">USA {{deckNameUpper}}</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"panel":{"editor":"enum","options":["nessuno","modalita","mazzo"],"default":"nessuno"},"tab":{"editor":"enum","options":["online","bot","privata"],"default":"online"},"ospite":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { panel: null, tab: null, fmt: '1v1', botFmt: '1v1', lvl: 'medio', privFmt: '1v1', deck: 'giada' };
+  }
+  renderVals() {
+    const panel = this.state.panel !== null ? this.state.panel : (this.props.panel ?? 'nessuno');
+    const tab = this.state.tab !== null ? this.state.tab : (this.props.tab ?? 'online');
+    const set = (o) => this.setState(o);
+    const fmts = [
+      { id: '1v1', short: '1v1', label: '1 vs 1', desc: 'Testa a testa, 2 giocatori', mini: '2 giocatori' },
+      { id: '2v2', short: '2v2', label: '2 vs 2', desc: 'In coppia con un compagno', mini: 'a coppie' },
+      { id: '1v3', short: '1v3', label: '1 vs 3', desc: 'Tutti contro tutti, 4 giocatori', mini: '4 giocatori' }
+    ];
+    const lvls = [
+      { id: 'facile', label: 'Facile', n: 1, desc: 'Il bot commette errori: ideale per imparare le regole.' },
+      { id: 'medio', label: 'Medio', n: 2, desc: 'Il bot gioca in modo equilibrato, senza strategie avanzate.' },
+      { id: 'difficile', label: 'Difficile', n: 3, desc: 'Il bot conta le carte e punta alle combinazioni migliori.' },
+      { id: 'esperto', label: 'Esperto', n: 4, desc: 'Il bot gioca al massimo: preparati a sudare ogni punto.' }
+    ];
+    const tabList = [ { id: 'online', label: 'Online' }, { id: 'bot', label: 'Allenamento' }, { id: 'privata', label: 'Stanza privata' } ];
+    const deckList = [
+      { id: 'giada', name: 'Giada', img: '../assets/back_giada.png', level: 0 },
+      { id: 'smeraldo', name: 'Smeraldo', img: '../assets/back_smeraldo.png', level: 0 },
+      { id: 'trad', name: 'Tradizionale', img: '../assets/back_tradizionale.png', level: 0 },
+      { id: 'drago', name: 'Drago', img: '', level: 20 },
+      { id: 'aurora', name: 'Aurora', img: '', level: 30 },
+      { id: 'imperiale', name: 'Imperiale', img: '', level: 40 },
+      { id: 'vulcano', name: 'Vulcano', img: '', level: 50 },
+      { id: 'leggenda', name: 'Leggenda', img: '', level: 60 }
+    ];
+    const fmt = fmts.find((f) => f.id === this.state.fmt) || fmts[0];
+    const botFmt = fmts.find((f) => f.id === this.state.botFmt) || fmts[0];
+    const privFmt = fmts.find((f) => f.id === this.state.privFmt) || fmts[0];
+    const lvl = lvls.find((l) => l.id === this.state.lvl) || lvls[1];
+    const deck = deckList.find((d) => d.id === this.state.deck) || deckList[0];
+
+    let tileCaption = 'ONLINE', tileValue = fmt.label, tileShort = fmt.short;
+    if (tab === 'bot') { tileCaption = 'ALLENAMENTO'; tileValue = botFmt.short + ' · ' + lvl.label; tileShort = 'BOT'; }
+    if (tab === 'privata') { tileCaption = 'STANZA PRIVATA'; tileValue = privFmt.label; tileShort = 'PRIV'; }
+
+    const g = this.props.ospite === true;
+    return {
+      registered: !g, guest: g, profiloHref: g ? 'ProfiloOspite.dc.html' : 'Profilo.dc.html',
+      showMode: panel === 'modalita',
+      showDeck: panel === 'mazzo',
+      openMode: () => set({ panel: 'modalita' }),
+      openDeck: () => set({ panel: 'mazzo' }),
+      close: () => set({ panel: 'nessuno' }),
+      tabs: tabList.map((t) => ({ label: t.label, on: t.id === tab, off: t.id !== tab, pick: () => set({ tab: t.id }) })),
+      tabOnline: tab === 'online', tabBot: tab === 'bot', tabPrivate: tab === 'privata',
+      showConfirm: tab !== 'privata',
+      onlineFormats: fmts.map((f) => ({ ...f, on: f.id === fmt.id, off: f.id !== fmt.id, pick: () => set({ fmt: f.id }) })),
+      botFormats: fmts.map((f) => ({ label: f.short, desc: f.mini, on: f.id === botFmt.id, off: f.id !== botFmt.id, pick: () => set({ botFmt: f.id }) })),
+      privFormats: fmts.map((f) => ({ label: f.label, on: f.id === privFmt.id, off: f.id !== privFmt.id, pick: () => set({ privFmt: f.id }) })),
+      levels: lvls.map((l) => ({
+        label: l.label, on: l.id === lvl.id, off: l.id !== lvl.id, pick: () => set({ lvl: l.id }),
+        pips: [1, 2, 3, 4].map((i) => ({ color: i <= l.n ? '#F3C969' : 'rgba(245,233,208,0.2)' }))
+      })),
+      levelDesc: lvl.desc,
+      modeShort: tileShort, modeCaption: tileCaption, modeLabel: tileValue,
+      deckName: deck.name, deckNameUpper: deck.name.toUpperCase(), deckImg: deck.img,
+      ownedCount: deckList.filter((d) => d.level === 0).length,
+      decks: deckList.map((d) => ({ ...d, selected: d.level === 0 && d.id === deck.id, available: d.level === 0 && d.id !== deck.id, locked: d.level > 0, pick: () => set({ deck: d.id }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

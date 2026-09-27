@@ -27,10 +27,15 @@ namespace Project51.Auth
         private const string STAT_WINS = "Wins";
         private const string STAT_TOTAL_GAMES = "TotalGames";
         private const string STAT_XP = "XP";
+        public const string STAT_TOTAL_SCOPE = "TotalScope";
+        public const string STAT_TROPHIES = "Trophies";
         
         // Player Data keys
         private const string DATA_AVATAR_ID = "AvatarId";
         private const string DATA_SELECTED_DECK = "SelectedDeck";
+        public const string DATA_BANNER_ID = "BannerId";
+        public const string DATA_FRAME_ID = "FrameId";
+        public const string DATA_TITLE_ID = "TitleId";
         
         // Cache locale
         private Dictionary<string, string> _playerDataCache = new Dictionary<string, string>();
@@ -46,6 +51,14 @@ namespace Project51.Auth
         public int XP => GetStatistic(STAT_XP, 0);
         public string AvatarId => GetPlayerData(DATA_AVATAR_ID, "default");
         public string SelectedDeck => GetPlayerData(DATA_SELECTED_DECK, "default");
+        public int TotalScope => GetStatistic(STAT_TOTAL_SCOPE, 0);
+        public int Trophies => GetStatistic(STAT_TROPHIES, 0);
+        public string BannerId => GetPlayerData(DATA_BANNER_ID, "notte");
+        public string FrameId => GetPlayerData(DATA_FRAME_ID, "oro");
+        public string TitleId => GetPlayerData(DATA_TITLE_ID, "");
+        public void SetBanner(string id) => SetPlayerData(DATA_BANNER_ID, id);
+        public void SetFrame(string id) => SetPlayerData(DATA_FRAME_ID, id);
+        public void SetTitle(string id) => SetPlayerData(DATA_TITLE_ID, id);
         
         // Eventi
         public event Action OnProfileLoaded;
@@ -377,7 +390,7 @@ namespace Project51.Auth
         {
             var request = new GetPlayerStatisticsRequest
             {
-                StatisticNames = new List<string> { STAT_LEVEL, STAT_WINS, STAT_TOTAL_GAMES, STAT_XP }
+                StatisticNames = new List<string> { STAT_LEVEL, STAT_WINS, STAT_TOTAL_GAMES, STAT_XP, STAT_TOTAL_SCOPE, STAT_TROPHIES }
             };
             
             PlayFabClientAPI.GetPlayerStatistics(request,
@@ -412,7 +425,7 @@ namespace Project51.Auth
         {
             var request = new GetUserDataRequest
             {
-                Keys = new List<string> { DATA_AVATAR_ID, DATA_SELECTED_DECK }
+                Keys = new List<string> { DATA_AVATAR_ID, DATA_SELECTED_DECK, DATA_BANNER_ID, DATA_FRAME_ID, DATA_TITLE_ID }
             };
             
             PlayFabClientAPI.GetUserData(request,

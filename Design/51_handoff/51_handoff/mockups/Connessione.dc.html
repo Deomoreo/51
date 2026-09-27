@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Connessione</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;font-family:'Nunito',sans-serif;}
+  a{text-decoration:none;}
+  .veil{backdrop-filter:blur(10px) saturate(0.8);-webkit-backdrop-filter:blur(10px) saturate(0.8);background:rgba(3,7,16,0.55);}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  @keyframes pop{0%{transform:scale(0.85);opacity:0}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .28s ease-out both;}
+  @keyframes wave{0%,100%{opacity:0.25}50%{opacity:1}}
+  .w1{animation:wave 1.2s ease-in-out infinite;} .w2{animation:wave 1.2s .2s ease-in-out infinite;} .w3{animation:wave 1.2s .4s ease-in-out infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .ring{animation:spin 1.1s linear infinite;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+  .shake{animation:shake .45s .15s ease-in-out both;}
+</style>
+</helmet>
+<div class="veil" style="width:390px;height:844px;position:relative;overflow:hidden;">
+
+  <!-- reconnecting -->
+  <sc-if value="{{reconnecting}}" hint-placeholder-val="{{true}}">
+    <div role="alertdialog" aria-live="polite" aria-labelledby="rc-title" class="pop" style="position:absolute;left:28px;right:28px;top:240px;box-sizing:border-box;padding:24px 20px 20px;border-radius:22px;background:linear-gradient(180deg,rgba(14,28,52,0.97),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.45);box-shadow:0 20px 50px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <div style="position:relative;width:84px;height:84px;">
+        <svg class="ring" width="84" height="84" viewBox="0 0 84 84" aria-hidden="true" style="position:absolute;inset:0;"><circle cx="42" cy="42" r="38" fill="none" stroke="rgba(243,201,105,0.15)" stroke-width="4"></circle><path d="M42 4 A38 38 0 0 1 80 42" fill="none" stroke="#F3C969" stroke-width="4" stroke-linecap="round"></path></svg>
+        <svg width="44" height="36" viewBox="0 0 44 36" aria-hidden="true" style="position:absolute;left:20px;top:26px;"><path class="w3" d="M3 12 Q22 -4 41 12" fill="none" stroke="#F3C969" stroke-width="3.5" stroke-linecap="round"></path><path class="w2" d="M10 20 Q22 9 34 20" fill="none" stroke="#F3C969" stroke-width="3.5" stroke-linecap="round"></path><path class="w1" d="M17 27 Q22 23 27 27" fill="none" stroke="#F3C969" stroke-width="3.5" stroke-linecap="round"></path><circle cx="22" cy="32" r="2.8" fill="#F3C969"></circle></svg>
+      </div>
+      <h2 id="rc-title" style="margin:16px 0 0;font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;">Riconnessione…</h2>
+      <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.65);">La connessione è instabile, stiamo provando a ricollegarti.</p>
+      <div style="display:flex;gap:6px;margin-top:14px;"><sc-for list="{{attempts}}" as="a" hint-placeholder-count="5"><span style="width:26px;height:6px;border-radius:3px;background:{{a}};"></span></sc-for></div>
+      <span style="margin-top:8px;font-size:11px;font-weight:700;color:rgba(245,233,208,0.5);">Tentativo {{attempt}} di {{maxAttempts}}</span>
+      <sc-if value="{{inGame}}" hint-placeholder-val="{{false}}"><div style="margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(243,201,105,0.08);border:1px solid rgba(243,201,105,0.3);font-size:12px;line-height:1.45;color:#F5E9D0;">Il tuo posto al tavolo resta tuo per <span style="font-family:'Cinzel',serif;font-weight:700;color:#F3C969;">{{seat}}s</span>. Gli altri giocatori ti aspettano.</div></sc-if>
+    </div>
+  </sc-if>
+
+  <!-- connection error -->
+  <sc-if value="{{failed}}" hint-placeholder-val="{{false}}">
+    <div role="alertdialog" aria-labelledby="err-title" class="pop" style="position:absolute;left:28px;right:28px;top:220px;box-sizing:border-box;padding:24px 20px 20px;border-radius:22px;background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(229,72,77,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <div class="shake" style="width:76px;height:76px;border-radius:38px;background:rgba(229,72,77,0.12);border:1px solid rgba(229,72,77,0.5);display:flex;align-items:center;justify-content:center;">
+        <svg width="46" height="38" viewBox="0 0 46 38" aria-hidden="true"><path d="M4 13 Q23 -3 42 13" fill="none" stroke="rgba(240,138,141,0.45)" stroke-width="3.5" stroke-linecap="round"></path><path d="M11 21 Q23 10 35 21" fill="none" stroke="rgba(240,138,141,0.45)" stroke-width="3.5" stroke-linecap="round"></path><circle cx="23" cy="32" r="3" fill="rgba(240,138,141,0.45)"></circle><path d="M8 4 L38 34" stroke="#F08A8D" stroke-width="4" stroke-linecap="round"></path></svg>
+      </div>
+      <h2 id="err-title" style="margin:16px 0 0;font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;">Nessuna connessione</h2>
+      <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.65);">{{errText}}</p>
+      <button type="button" onClick="{{retry}}" class="gold-btn" style="margin-top:18px;width:100%;height:50px;border-radius:14px;font-family:'Cinzel',serif;font-weight:700;font-size:14px;letter-spacing:2px;">RIPROVA</button>
+      <a href="{{exitHref}}" style="margin-top:10px;width:100%;height:44px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:#F3C969;">{{exitLabel}}</a>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stato":{"editor":"enum","options":["riconnessione","errore"],"default":"riconnessione"},"contesto":{"editor":"enum","options":["app","partita"],"default":"app"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    // reconnection runs first; after the last failed attempt the error appears. A hard drop can open straight on the error.
+    this.state = { phase: props.stato === 'errore' ? 'failed' : 'reconnecting', attempt: 1, seat: 60 };
+    this._t = setInterval(() => {
+      if (this.state.phase !== 'reconnecting') return;
+      const s = Math.max(0, this.state.seat - 1);
+      const a = this.state.attempt + (s % 4 === 0 ? 1 : 0);
+      if (a > 5) this.setState({ phase: 'failed', seat: s }); else this.setState({ attempt: a, seat: s });
+    }, 1000);
+  }
+  renderVals() {
+    const inGame = this.props.contesto === 'partita';
+    const max = 5, at = Math.min(this.state.attempt, max);
+    return {
+      reconnecting: this.state.phase === 'reconnecting', failed: this.state.phase === 'failed',
+      attempt: String(at), maxAttempts: String(max), inGame: inGame, seat: String(this.state.seat),
+      attempts: Array.from({ length: max }, (_, i) => i < at - 1 ? 'rgba(229,72,77,0.6)' : (i === at - 1 ? '#F3C969' : 'rgba(245,233,208,0.2)')),
+      errText: inGame ? 'Non riusciamo a ricollegarti alla partita. Controlla il Wi-Fi o i dati mobili: se torni in tempo puoi ancora rientrare al tavolo.' : 'Controlla il Wi-Fi o i dati mobili e riprova. I tuoi progressi sono al sicuro.',
+      exitHref: 'Main.dc.html', exitLabel: inGame ? 'Esci dalla partita' : 'Torna alla schermata iniziale',
+      retry: () => this.setState({ phase: 'reconnecting', attempt: 1, seat: 60 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -11,9 +11,9 @@ using DG.Tweening;
 
 public class I5ReducedGraphicsTests
 {
-    private readonly string[] keys = { "Settings_ReducedGraphics", "Settings_FastAnimations", "Settings_AnimazioniVeloci" };
-    private readonly bool[] existed = new bool[3];
-    private readonly int[] values = new int[3];
+    private readonly string[] keys = { "Settings_ReducedGraphics", "Settings_FastAnimations", "Settings_AnimazioniVeloci", "Settings_GraphicsQuality" };
+    private readonly bool[] existed = new bool[4];
+    private readonly int[] values = new int[4];
 
     [SetUp]
     public void SavePreferences()
@@ -43,7 +43,7 @@ public class I5ReducedGraphicsTests
 
     private static void ClearCache()
     {
-        foreach (string field in new[] { "fastAnimations", "reducedGraphics" })
+        foreach (string field in new[] { "fastAnimations", "graphicsQuality" })
             typeof(GamePreferences).GetField(field, BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, -1);
     }
 
@@ -67,13 +67,28 @@ public class I5ReducedGraphicsTests
     {
         PlayerPrefs.SetInt(legacy, 1);
         Assert.IsTrue(Reduced());
-        Assert.AreEqual(1, PlayerPrefs.GetInt(keys[0], -1));
+        Assert.AreEqual(GamePreferences.QualityLow, PlayerPrefs.GetInt(GamePreferences.GraphicsQualityKey, -1));
         Assert.Less(GamePreferences.Scaled(1f), 1f);
         SetReduced(false);
         PlayerPrefs.SetInt(legacy, 1);
         ClearCache();
         Assert.IsFalse(Reduced(), "An explicit new choice must win over old settings on restart.");
+    }
+
+    [Test]
+    public void GraphicsQualityAndFastAnimationsAreIndependent()
+    {
+        GamePreferences.SetGraphicsQuality(GamePreferences.QualityLow);
+        GamePreferences.SetFastAnimations(false);
+        Assert.IsTrue(GamePreferences.ReducedGraphics);
         Assert.AreEqual(1f, GamePreferences.Scaled(1f));
+
+        GamePreferences.SetGraphicsQuality(GamePreferences.QualityMedium);
+        GamePreferences.SetFastAnimations(true);
+        ClearCache();
+        Assert.AreEqual(GamePreferences.QualityMedium, GamePreferences.GraphicsQuality);
+        Assert.IsFalse(GamePreferences.ReducedGraphics);
+        Assert.Less(GamePreferences.Scaled(1f), 1f);
     }
 
     [Test]
@@ -354,9 +369,9 @@ public class I5ReducedGraphicsTests
 [SetUpFixture]
 public class GraphicsPreferencesTestScope
 {
-    private readonly string[] keys = { "Settings_ReducedGraphics", "Settings_FastAnimations", "Settings_AnimazioniVeloci" };
-    private readonly bool[] existed = new bool[3];
-    private readonly int[] values = new int[3];
+    private readonly string[] keys = { "Settings_ReducedGraphics", "Settings_FastAnimations", "Settings_AnimazioniVeloci", "Settings_GraphicsQuality" };
+    private readonly bool[] existed = new bool[4];
+    private readonly int[] values = new int[4];
 
     [OneTimeSetUp]
     public void EnterFullGraphics()
@@ -374,7 +389,8 @@ public class GraphicsPreferencesTestScope
             if (existed[i]) PlayerPrefs.SetInt(keys[i], values[i]);
             else PlayerPrefs.DeleteKey(keys[i]);
         }
-        typeof(GamePreferences).GetField("reducedGraphics", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, -1);
+        typeof(GamePreferences).GetField("graphicsQuality", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, -1);
+        typeof(GamePreferences).GetField("fastAnimations", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, -1);
         PlayerPrefs.Save();
     }
 }

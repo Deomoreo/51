@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Fine partita</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  .ambient{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(14px) brightness(0.32) saturate(1.1);transform:scale(1.15);}
+  .panel{background:linear-gradient(180deg,rgba(12,26,50,0.92),rgba(6,13,27,0.96));border:1px solid rgba(243,201,105,0.35);border-radius:18px;}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  @keyframes pop{0%{transform:scale(0.3);opacity:0}65%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .5s cubic-bezier(.2,.8,.3,1.2) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}
+  .up1{animation:fadeUp .45s .35s ease-out both;} .up2{animation:fadeUp .45s .6s ease-out both;} .up3{animation:fadeUp .45s .85s ease-out both;} .up4{animation:fadeUp .45s 1.1s ease-out both;}
+  @keyframes xp{from{width:var(--from)}to{width:var(--to)}}
+  .xpbar{animation:xp 1.3s 1.2s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .rays{animation:spin 18s linear infinite;}
+  @keyframes fall{0%{transform:translateY(-40px) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(880px) rotate(540deg);opacity:0.9}}
+  .conf{position:absolute;top:0;width:8px;height:12px;border-radius:2px;animation:fall 3.6s linear infinite;}
+  .cta-btn:hover{filter:brightness(1.05);}
+  .ribbon{background:url('../assets/ribbon.png') center/100% 100% no-repeat;}
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#07101f;">
+  <div class="ambient" style="position:absolute;inset:-30px;"></div>
+  <div style="position:absolute;left:50%;top:170px;width:560px;height:560px;border-radius:50%;background:repeating-conic-gradient({{rayCol}} 0 10deg,transparent 10deg 20deg);opacity:0.5;-webkit-mask:radial-gradient(circle,#000 0,transparent 65%);mask:radial-gradient(circle,#000 0,transparent 65%);pointer-events:none;" class="rays"></div>
+
+  <sc-if value="{{won}}" hint-placeholder-val="{{true}}">
+    <sc-for list="{{confetti}}" as="c" hint-placeholder-count="14"><span class="conf" style="left:{{c.x}};background:{{c.col}};animation-delay:{{c.d}};animation-duration:{{c.dur}};"></span></sc-for>
+  </sc-if>
+
+  <!-- title -->
+  <div class="pop" style="position:absolute;top:44px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:2px;">
+    <span class="cap" style="letter-spacing:3px;color:rgba(243,201,105,0.8);">{{modeLabel}}</span>
+    <div class="ribbon" style="position:relative;width:260px;height:84px;filter:{{ribbonFilter}} drop-shadow(0 8px 14px rgba(0,0,0,0.5));">
+      <div style="position:absolute;left:0;right:0;top:19px;height:36px;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:24px;font-weight:700;letter-spacing:3px;color:#FFF6DC;text-shadow:0 2px 0 rgba(0,0,0,0.45);">{{title}}</div>
+    </div>
+  </div>
+
+  <!-- 1v1 / 2v2: face-off with final score -->
+  <sc-if value="{{duel}}" hint-placeholder-val="{{true}}">
+    <div class="up1" style="position:absolute;top:150px;left:0;width:390px;display:flex;align-items:center;justify-content:center;gap:18px;">
+      <sc-for list="{{sides}}" as="s" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:130px;">
+          <div style="position:relative;display:flex;">
+            <sc-for list="{{s.avs}}" as="a" hint-placeholder-count="1"><div style="width:{{s.size}};height:{{s.size}};border-radius:50%;padding:3px;box-sizing:border-box;background:{{s.ring}};margin:0 -8px;box-shadow:{{s.glow}};"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;border:2px solid #0B1626;box-sizing:border-box;filter:{{s.dim}};"><img src="{{a}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div></sc-for>
+            <sc-if value="{{s.crown}}" hint-placeholder-val="{{false}}"><svg width="34" height="24" viewBox="0 0 34 24" aria-hidden="true" style="position:absolute;left:50%;top:-20px;margin-left:-17px;"><path d="M3 21 L1 5 L10 12 L17 2 L24 12 L33 5 L31 21 Z" fill="#F3C969" stroke="#6B4418" stroke-width="1.5" stroke-linejoin="round"></path><circle cx="17" cy="14" r="2.5" fill="#E5484D"></circle></svg></sc-if>
+          </div>
+          <span style="font-size:13px;font-weight:800;color:#F5E9D0;">{{s.name}}</span>
+          <span style="font-family:'Cinzel',serif;font-size:32px;font-weight:700;color:{{s.scoreCol}};line-height:1;">{{s.score}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- all against all: final ranking -->
+  <sc-if value="{{rank}}" hint-placeholder-val="{{false}}">
+    <div class="panel up1" style="position:absolute;top:150px;left:20px;right:20px;padding:6px 10px;">
+      <sc-for list="{{ranking}}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:10px;height:52px;border-bottom:1px solid rgba(243,201,105,0.1);">
+          <span style="width:26px;height:26px;border-radius:13px;background:{{p.medal}};display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:#0B1626;flex:none;">{{p.pos}}</span>
+          <div style="width:38px;height:38px;border-radius:50%;padding:2px;box-sizing:border-box;background:{{p.ring}};flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{p.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+          <span style="flex:1;font-size:14px;font-weight:{{p.weight}};color:{{p.nameCol}};">{{p.name}}</span>
+          <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">{{p.score}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- rewards -->
+  <div class="panel up2" style="position:absolute;left:20px;right:20px;top:{{rewTop}};padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;"><span class="cap">RICOMPENSE</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Livello 12</span></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:#FCE29A;width:64px;">+{{xp}} XP</span>
+      <div style="flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden;"><div class="xpbar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#C4922F,#FCE29A);--from:62%;--to:{{xpTo}};"></div></div>
+      <span style="font-size:11px;font-weight:700;color:rgba(245,233,208,0.7);">{{xpText}}</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.04);"><img src="../assets/ic_coin.png" alt="" style="width:22px;height:22px;"><span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#F5E9D0;">+{{coins}}</span></div>
+      <sc-if value="{{chest}}" hint-placeholder-val="{{true}}"><div style="flex:1.3;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:rgba(243,201,105,0.1);border:1px solid rgba(243,201,105,0.4);"><img src="../assets/chest_purple.png" alt="" style="width:34px;height:auto;"><span style="font-size:12px;font-weight:800;color:#F3C969;line-height:1.2;">Forziere<br>viola</span></div></sc-if>
+    </div>
+  </div>
+
+  <!-- match stats -->
+  <div class="up3" style="position:absolute;left:20px;right:20px;top:{{statTop}};display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px;">
+    <sc-for list="{{stats}}" as="s" hint-placeholder-count="3"><div class="panel" style="padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;"><span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">{{s.v}}</span><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.55);">{{s.l}}</span></div></sc-for>
+  </div>
+
+  <div class="up4" style="position:absolute;left:20px;right:20px;bottom:26px;display:flex;flex-direction:column;gap:10px;">
+    <a href="{{againHref}}" class="cta-btn" style="height:54px;border-radius:16px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:2px;color:#25160A;box-shadow:0 10px 24px rgba(0,0,0,0.45);">{{againLabel}}</a>
+    <a href="Home.dc.html" style="height:46px;border-radius:14px;border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#F3C969;">Torna alla Home</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modalita":{"editor":"enum","options":["1v1","2v2","1v3"],"default":"1v1"},"esito":{"editor":"enum","options":["vittoria","sconfitta"],"default":"vittoria"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = this.props.modalita ?? '1v1';
+    const win = (this.props.esito ?? 'vittoria') === 'vittoria';
+    const GOLD = 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', BLUE = 'conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8)';
+    const AV = { me: '../assets/avatar_1.png', marco: '../assets/av_4.png', giulia: '../assets/av_2.png', tore: '../assets/av_5.png' };
+    const confCols = ['#F3C969', '#FCE29A', '#27B585', '#4F80E8', '#E5484D', '#FFF6DC'];
+    const confetti = Array.from({ length: 18 }, (_, i) => ({ x: ((i * 53) % 380) + 'px', col: confCols[i % confCols.length], d: ((i * 0.37) % 3.2).toFixed(2) + 's', dur: (3 + (i % 5) * 0.4).toFixed(1) + 's' }));
+    const side = (name, avs, score, ring, winner) => ({ name, avs, score: String(score), ring, crown: winner, size: avs.length > 1 ? '68px' : '84px', glow: winner ? '0 0 26px rgba(243,201,105,0.6)' : 'none', dim: winner ? 'none' : 'grayscale(0.5) brightness(0.8)', scoreCol: winner ? '#FCE29A' : 'rgba(245,233,208,0.6)' });
+    let sides = [], ranking = [], title, label, rank = false;
+    if (mode === '1v3') {
+      rank = true;
+      const order = win
+        ? [ ['Tu', AV.me, 52, true], ['Giulia', AV.giulia, 44, false], ['Marco_93', AV.marco, 41, false], ['Tore_NA', AV.tore, 30, false] ]
+        : [ ['Giulia', AV.giulia, 53, false], ['Tu', AV.me, 47, true], ['Marco_93', AV.marco, 41, false], ['Tore_NA', AV.tore, 30, false] ];
+      const med = ['linear-gradient(180deg,#FCE29A,#C4922F)', 'linear-gradient(180deg,#F2F2F2,#9AA3AF)', 'linear-gradient(180deg,#E8B07A,#9A5B2A)', 'rgba(245,233,208,0.25)'];
+      ranking = order.map((o, i) => ({ pos: String(i + 1), name: o[0], img: o[1], score: String(o[2]), medal: med[i], ring: i === 0 ? GOLD : BLUE, weight: o[3] ? '800' : '700', nameCol: o[3] ? '#FCE29A' : '#F5E9D0' }));
+      title = win ? 'VITTORIA' : (order.findIndex((o) => o[3]) + 1) + '° POSTO';
+      label = 'TUTTI CONTRO TUTTI';
+    } else if (mode === '2v2') {
+      sides = [ side('Tu e Giulia', [AV.me, AV.giulia], win ? 53 : 44, GOLD, win), side('Marco e Tore', [AV.marco, AV.tore], win ? 41 : 52, BLUE, !win) ];
+      title = win ? 'VITTORIA' : 'SCONFITTA'; label = 'PARTITA 2 VS 2';
+    } else {
+      sides = [ side('Tu', [AV.me], win ? 53 : 44, GOLD, win), side('Marco_93', [AV.marco], win ? 41 : 52, BLUE, !win) ];
+      title = win ? 'VITTORIA' : 'SCONFITTA'; label = 'PARTITA 1 VS 1';
+    }
+    const xp = win ? 160 : 60;
+    const xpTo = Math.min(100, 62 + xp / 10) + '%';
+    return {
+      won: win, duel: !rank, rank: rank, sides, ranking, title, modeLabel: label,
+      ribbon: '../assets/ribbon.png',
+      ribbonFilter: win ? 'none' : 'grayscale(0.85) brightness(0.8)',
+      rayCol: win ? 'rgba(243,201,105,0.18)' : 'rgba(120,140,170,0.08)',
+      confetti,
+      rewTop: rank ? '392px' : '372px', statTop: rank ? '548px' : '528px',
+      xp: String(xp), xpTo, xpText: (620 + xp) + '/1000',
+      coins: String(win ? 120 : 40), chest: win,
+      stats: [ { v: win ? '5' : '3', l: 'Scope' }, { v: '1', l: 'Accusi' }, { v: win ? '3' : '2', l: 'Settebelli' } ],
+      againHref: 'Sorteggio.dc.html', againLabel: rank ? 'NUOVA PARTITA' : 'RIVINCITA'
+    };
+  }
+}
+</script>
+</body>
+</html>

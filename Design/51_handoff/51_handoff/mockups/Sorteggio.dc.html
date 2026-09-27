@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Sorteggio mazziere</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  .ambient{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(12px) brightness(0.4) saturate(1.1);transform:scale(1.15);}
+  .wheel{transition:transform 3.4s cubic-bezier(.12,.75,.18,1);}
+  .cta-btn:hover{filter:brightness(1.05);}
+  @keyframes pop{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .4s ease-out both;}
+  @keyframes rise{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+  .rise{animation:rise .4s .15s ease-out both;}
+  @keyframes tick{0%,100%{transform:translateX(-50%) rotate(0)}50%{transform:translateX(-50%) rotate(-14deg)}}
+  .ticking{animation:tick .12s linear infinite;}
+  @keyframes glowP{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.7)}50%{box-shadow:0 0 0 12px rgba(243,201,105,0)}}
+  .winner-glow{animation:glowP 1.4s ease-in-out infinite;}
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#07101f;">
+  <div class="ambient" style="position:absolute;inset:-30px;"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(243,201,105,0.12),rgba(0,0,0,0) 60%);"></div>
+
+  <div style="position:absolute;top:60px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <span style="font-family:'Cinzel',serif;font-size:11px;font-weight:600;letter-spacing:3px;color:#F3C969;">{{modeLabel}}</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#F5E9D0;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Chi fa il mazziere?</h1>
+    <span style="font-size:13px;color:rgba(245,233,208,0.6);">{{subtitle}}</span>
+  </div>
+
+  <!-- wheel -->
+  <div style="position:absolute;top:196px;left:45px;width:300px;height:300px;">
+    <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:440px;height:440px;transform:translate(-50%,-50%);opacity:0.35;pointer-events:none;">
+    <div style="position:absolute;inset:0;border-radius:50%;padding:8px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+      <div class="wheel" style="position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:{{wheelBg}};transform:rotate({{rot}});box-shadow:inset 0 0 30px rgba(0,0,0,0.45);">
+        <sc-for list="{{seats}}" as="p" hint-placeholder-count="2">
+          <div style="position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate({{p.a}});">
+            <div style="position:absolute;left:-30px;top:-118px;width:60px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="width:56px;height:56px;border-radius:50%;padding:2px;box-sizing:border-box;background:#F3C969;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{p.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+              <span style="font-size:10px;font-weight:800;color:#F5E9D0;text-shadow:0 1px 3px rgba(0,0,0,0.9);white-space:nowrap;">{{p.name}}</span>
+            </div>
+          </div>
+        </sc-for>
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+          <div style="position:absolute;left:50%;top:0;width:2px;height:50%;margin-left:-1px;background:rgba(243,201,105,0.75);transform-origin:50% 100%;transform:rotate({{l.a}});"></div>
+        </sc-for>
+      </div>
+    </div>
+    <!-- hub -->
+    <div style="position:absolute;left:50%;top:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;padding:4px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);box-shadow:0 6px 14px rgba(0,0,0,0.5);">
+      <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B3F2E;"><img src="../assets/sun_emblem.png" alt="" style="width:100%;height:100%;display:block;"></div>
+    </div>
+    <!-- pointer -->
+    <div class="{{pointerCls}}" style="position:absolute;left:50%;top:-18px;width:34px;height:40px;transform:translateX(-50%);transform-origin:50% 20%;">
+      <svg width="34" height="40" viewBox="0 0 34 40" aria-hidden="true"><path d="M17 38 L3 8 Q17 -2 31 8 Z" fill="#F3C969" stroke="#6B4418" stroke-width="2" stroke-linejoin="round"></path><circle cx="17" cy="11" r="4" fill="#6B4418"></circle></svg>
+    </div>
+  </div>
+
+  <!-- action / result -->
+  <sc-if value="{{idle}}" hint-placeholder-val="{{true}}">
+    <div style="position:absolute;left:0;width:390px;top:584px;text-align:center;font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:3px;color:rgba(245,233,208,0.75);">LA RUOTA STA PER GIRARE…</div>
+  </sc-if>
+  <sc-if value="{{spinning}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;left:0;width:390px;top:584px;text-align:center;font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:3px;color:rgba(245,233,208,0.75);">SORTEGGIO IN CORSO…</div>
+  </sc-if>
+  <sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+    <div class="pop" style="position:absolute;left:20px;right:20px;top:540px;box-sizing:border-box;padding:16px 18px;border-radius:18px;background:linear-gradient(180deg,rgba(12,26,50,0.95),rgba(6,13,27,0.97));border:1px solid rgba(243,201,105,0.5);display:flex;align-items:center;gap:14px;">
+      <div class="winner-glow" style="width:60px;height:60px;border-radius:50%;padding:3px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{winImg}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <span style="align-self:flex-start;height:20px;display:inline-flex;align-items:center;gap:5px;padding:0 8px;border-radius:10px;background:#F3C969;font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:1px;color:#25160A;">MAZZIERE</span>
+        <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">{{winName}}</span>
+        <span style="font-size:12px;color:rgba(245,233,208,0.6);">{{winNote}}</span>
+      </div>
+    </div>
+    <div class="rise" style="position:absolute;left:0;width:390px;top:672px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <span style="font-size:13px;color:rgba(245,233,208,0.7);">La partita inizia tra <span style="font-family:'Cinzel',serif;font-weight:700;color:#F3C969;">{{countdown}}</span></span>
+      <a href="Partita.dc.html" style="height:46px;padding:0 30px;display:inline-flex;align-items:center;border-radius:14px;border:1px solid #F3C969;color:#F3C969;font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:2px;">AL TAVOLO</a>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"giocatori":{"editor":"enum","options":["2","4"],"default":"2"},"fase":{"editor":"enum","options":["attesa","risultato"],"default":"attesa"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { phase: null, rot: 0, win: 1, count: 3 }; if (props.fase !== 'risultato') setTimeout(() => { if (this._spin) this._spin(); }, 1200); }
+  renderVals() {
+    const four = String(this.props.giocatori ?? '2') === '4';
+    const players = four
+      ? [ { name: 'Tu', img: '../assets/avatar_1.png' }, { name: 'Marco_93', img: '../assets/av_4.png' }, { name: 'Giulia', img: '../assets/av_2.png' }, { name: 'Tore_NA', img: '../assets/av_5.png' } ]
+      : [ { name: 'Tu', img: '../assets/avatar_1.png' }, { name: 'Marco_93', img: '../assets/av_4.png' } ];
+    const n = players.length, seg = 360 / n;
+    const cols = ['#123B6B', '#0F5A42', '#1B2F57', '#0C4A36'];
+    const stops = players.map((p, i) => cols[i % cols.length] + ' ' + (i * seg) + 'deg ' + ((i + 1) * seg) + 'deg').join(',');
+    const propPhase = this.props.fase === 'risultato' ? 'done' : 'idle';
+    const phase = this.state.phase || propPhase;
+    const win = this.state.phase ? this.state.win : 1;
+    const rot = this.state.phase ? this.state.rot : (propPhase === 'done' ? -(win * seg + seg / 2) : 0);
+    const spin = () => {
+      if (this.state.phase === 'spinning') return;
+      const w = Math.floor(Math.random() * n);
+      const target = 360 * 6 - (w * seg + seg / 2) + (Math.random() * seg * 0.5 - seg * 0.25);
+      const base = this.state.rot - (this.state.rot % 360);
+      this.setState({ phase: 'spinning', win: w, rot: base + target, count: 3 });
+      setTimeout(() => {
+        this.setState({ phase: 'done' });
+        const t = setInterval(() => { const c = this.state.count - 1; this.setState({ count: Math.max(c, 0) }); if (c <= 0) clearInterval(t); }, 1000);
+      }, 3500);
+    };
+    this._spin = spin;
+    const winner = players[win];
+    return {
+      modeLabel: four ? 'PARTITA 2 VS 2' : 'PARTITA 1 VS 1',
+      subtitle: 'Il mazziere distribuisce le carte',
+      wheelBg: 'conic-gradient(' + stops + ')',
+      rot: rot + 'deg',
+      seats: players.map((p, i) => ({ ...p, a: (i * seg + seg / 2) + 'deg' })),
+      lines: players.map((p, i) => ({ a: (i * seg) + 'deg' })),
+      pointerCls: phase === 'spinning' ? 'ticking' : '',
+      idle: phase === 'idle', spinning: phase === 'spinning', done: phase === 'done',
+      spin: spin,
+      winImg: winner.img,
+      winName: winner.name === 'Tu' ? 'Sei tu!' : winner.name,
+      winNote: winner.name === 'Tu' ? 'Distribuisci tu: gli altri giocano prima di te' : 'Distribuisce ' + winner.name + ': giochi tu per primo',
+      countdown: String(this.state.phase ? this.state.count : 3)
+    };
+  }
+}
+</script>
+</body>
+</html>

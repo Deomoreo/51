@@ -9,8 +9,8 @@ namespace Project51.Tests
     public class InGameSettingsTests
     {
         private int savedFast, savedHints, savedMusic, savedEffects;
-        private int savedReduced;
-        private bool hadFast, hadReduced;
+        private int savedReduced, savedQuality;
+        private bool hadFast, hadReduced, hadQuality;
 
         [SetUp]
         public void SaveUserPreferences()
@@ -19,6 +19,8 @@ namespace Project51.Tests
             hadFast = PlayerPrefs.HasKey(GamePreferences.FastAnimationsKey);
             hadReduced = PlayerPrefs.HasKey(GamePreferences.ReducedGraphicsKey);
             savedReduced = PlayerPrefs.GetInt(GamePreferences.ReducedGraphicsKey);
+            hadQuality = PlayerPrefs.HasKey(GamePreferences.GraphicsQualityKey);
+            savedQuality = PlayerPrefs.GetInt(GamePreferences.GraphicsQualityKey);
             savedHints = PlayerPrefs.GetInt(GamePreferences.MoveHintsKey, 1);
             savedMusic = PlayerPrefs.GetInt(GameAudioPreferences.MusicKey, 1);
             savedEffects = PlayerPrefs.GetInt(GameAudioPreferences.EffectsKey, 1);
@@ -27,14 +29,20 @@ namespace Project51.Tests
         [TearDown]
         public void RestoreUserPreferences()
         {
-            GamePreferences.SetReducedGraphics((hadReduced ? savedReduced : savedFast) != 0);
-            if (hadFast) PlayerPrefs.SetInt(GamePreferences.FastAnimationsKey, savedFast);
-            else PlayerPrefs.DeleteKey(GamePreferences.FastAnimationsKey);
-            if (!hadReduced) PlayerPrefs.DeleteKey(GamePreferences.ReducedGraphicsKey);
-            typeof(GamePreferences).GetField("reducedGraphics", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).SetValue(null, -1);
+            Restore(GamePreferences.FastAnimationsKey, hadFast, savedFast);
+            Restore(GamePreferences.ReducedGraphicsKey, hadReduced, savedReduced);
+            Restore(GamePreferences.GraphicsQualityKey, hadQuality, savedQuality);
+            foreach (var field in new[] { "graphicsQuality", "fastAnimations" })
+                typeof(GamePreferences).GetField(field, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).SetValue(null, -1);
             GamePreferences.SetMoveHints(savedHints != 0);
             GameAudioPreferences.SetMusicEnabled(savedMusic != 0);
             GameAudioPreferences.SetEffectsEnabled(savedEffects != 0);
+        }
+
+        private static void Restore(string key, bool had, int value)
+        {
+            if (had) PlayerPrefs.SetInt(key, value);
+            else PlayerPrefs.DeleteKey(key);
         }
 
         [Test]

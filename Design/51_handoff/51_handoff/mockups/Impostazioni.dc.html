@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Impostazioni</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .row-btn{width:100%;height:56px;border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;text-align:left;border-radius:14px;}
+  .row-btn:hover{background:rgba(255,255,255,0.04);}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;}
+  .del-input::placeholder{color:rgba(245,233,208,0.35);letter-spacing:1px;}
+  .del-input:focus{outline:none;border-color:#E5484D;}
+
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+
+
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;gap:12px;">
+    <a href="{{backHref}}" aria-label="Indietro" style="width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:15px;height:15px;"></a>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;">Impostazioni</h1>
+  </div>
+
+  <div class="cap" style="position:absolute;top:84px;left:20px;">AUDIO</div>
+  <div class="panel" style="position:absolute;top:104px;left:20px;width:350px;">
+    <div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Musica</span></div>
+        <sc-if value="{{musicOn}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Musica" onClick="{{musicToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if>
+        <sc-if value="{{musicOff}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Musica" onClick="{{musicToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if>
+      </div><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Effetti sonori</span></div>
+        <sc-if value="{{sfxOn}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Effetti sonori" onClick="{{sfxToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if>
+        <sc-if value="{{sfxOff}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Effetti sonori" onClick="{{sfxToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if>
+      </div><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Vibrazione</span></div>
+        <sc-if value="{{vibOn}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Vibrazione" onClick="{{vibToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if>
+        <sc-if value="{{vibOff}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Vibrazione" onClick="{{vibToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if>
+      </div>
+  </div>
+
+  <div class="cap" style="position:absolute;top:282px;left:20px;">GENERALE</div>
+  <div class="panel" style="position:absolute;top:302px;left:20px;width:350px;overflow:hidden;">
+    <a href="#" class="row-btn" style="height:52px;padding:0 16px;border-radius:0;box-sizing:border-box;"><span style="flex:1;font-size:14px;font-weight:700;color:#F5E9D0;">Lingua</span><span style="font-size:12px;color:rgba(245,233,208,0.5);">Italiano</span><img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:scaleX(-1);opacity:0.55;"></a><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;"><span style="font-size:14px;font-weight:700;color:#F5E9D0;">Notifiche</span><span style="font-size:11px;color:rgba(245,233,208,0.5);">Inviti, forzieri pronti ed eventi</span></div>
+        <sc-if value="{{notifOn}}" hint-placeholder-val="{{true}}"><button type="button" role="switch" aria-checked="true" aria-label="Notifiche" onClick="{{notifToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:0;padding:0;background:#F3C969;cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:23px;width:20px;height:20px;border-radius:10px;background:#25160A;"></span></button></sc-if>
+        <sc-if value="{{notifOff}}" hint-placeholder-val="{{false}}"><button type="button" role="switch" aria-checked="false" aria-label="Notifiche" onClick="{{notifToggle}}" style="position:relative;width:46px;height:26px;border-radius:13px;border:1px solid rgba(243,201,105,0.4);box-sizing:border-box;padding:0;background:rgba(255,255,255,0.08);cursor:pointer;flex:none;"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:9px;background:rgba(245,233,208,0.6);"></span></button></sc-if>
+      </div>
+  </div>
+
+  <div class="cap" style="position:absolute;top:428px;left:20px;">ACCOUNT</div>
+  <sc-if value="{{registered}}" hint-placeholder-val="{{true}}">
+    <div class="panel" style="position:absolute;top:448px;left:20px;width:350px;overflow:hidden;">
+      <div style="height:52px;display:flex;align-items:center;padding:0 16px;"><span style="flex:1;font-size:14px;font-weight:700;color:#F5E9D0;">Email</span><span style="font-size:12px;color:rgba(245,233,208,0.5);">g•••••@mail.com</span></div>
+      <div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><a href="#" class="row-btn" style="height:52px;padding:0 16px;border-radius:0;box-sizing:border-box;"><span style="flex:1;font-size:14px;font-weight:700;color:#F5E9D0;">Cambia password</span><img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:scaleX(-1);opacity:0.55;"></a><div style="height:1px;background:rgba(243,201,105,0.12);margin:0 16px;"></div><a href="Main.dc.html" class="row-btn" style="height:52px;padding:0 16px;border-radius:0;box-sizing:border-box;"><span style="flex:1;font-size:14px;font-weight:700;color:#F5E9D0;">Esci</span><img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:scaleX(-1);opacity:0.55;"></a>
+    </div>
+    <button type="button" onClick="{{openDelete}}" style="position:absolute;top:622px;left:20px;width:350px;height:50px;border-radius:14px;background:rgba(229,72,77,0.08);border:1px solid rgba(229,72,77,0.45);color:#F08A8D;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">Elimina account</button>
+  </sc-if>
+  <sc-if value="{{guest}}" hint-placeholder-val="{{false}}">
+    <div class="panel" style="position:absolute;top:448px;left:20px;width:350px;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;flex-direction:column;gap:4px;"><span style="font-size:14px;font-weight:800;color:#F5E9D0;">Stai giocando come ospite</span><span style="font-size:12px;line-height:1.45;color:rgba(245,233,208,0.6);">Crea un account per salvare progressi, ricompense e statistiche. Non c'è nessun account da eliminare.</span></div>
+      <a href="Registrazione.dc.html" style="height:46px;border-radius:13px;border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:2px;color:#25160A;">CREA UN ACCOUNT</a>
+    </div>
+    <div class="panel" style="position:absolute;top:620px;left:20px;width:350px;overflow:hidden;">
+      <a href="Main.dc.html" class="row-btn" style="height:52px;padding:0 16px;border-radius:0;box-sizing:border-box;"><span style="flex:1;font-size:14px;font-weight:700;color:#F08A8D;">Esci dalla sessione ospite</span><img src="../assets/ic_nav_back_cream.png" alt="" style="width:10px;height:10px;transform:scaleX(-1);opacity:0.55;"></a>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;bottom:26px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <div style="display:flex;gap:16px;"><a href="Privacy.dc.html" style="font-size:12px;font-weight:600;">Privacy Policy</a><a href="Termini.dc.html" style="font-size:12px;font-weight:600;">Termini di servizio</a></div>
+    <span style="font-size:10px;color:rgba(245,233,208,0.35);">Versione 0.1.0</span>
+  </div>
+
+  <!-- delete dialog -->
+  <sc-if value="{{showDelete}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi" onClick="{{closeDelete}}"></button>
+    <div role="dialog" aria-modal="true" aria-labelledby="del-title" style="position:absolute;left:24px;right:24px;top:200px;box-sizing:border-box;padding:22px 20px 20px;border-radius:22px;background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(229,72,77,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:28px;background:rgba(229,72,77,0.12);border:1px solid rgba(229,72,77,0.5);display:flex;align-items:center;justify-content:center;"><img src="../assets/ic_warn_cream.png" alt="" style="width:28px;height:26px;"></div>
+      <h2 id="del-title" style="margin:14px 0 0;font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;">Eliminare l'account?</h2>
+      <p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.65);">Perderai per sempre livello, esperienza, collezione, trofei e statistiche. L'operazione non si può annullare.</p>
+      <label for="del-confirm" style="align-self:stretch;text-align:left;margin-top:16px;font-size:12px;font-weight:700;color:rgba(245,233,208,0.75);">Scrivi <span style="color:#F08A8D;">ELIMINA</span> per confermare</label>
+      <input id="del-confirm" class="del-input" type="text" autocomplete="off" value="{{typed}}" onInput="{{onType}}" placeholder="ELIMINA" style="margin-top:8px;align-self:stretch;height:46px;box-sizing:border-box;padding:0 14px;border-radius:12px;border:1px solid rgba(229,72,77,0.4);background:rgba(255,255,255,0.05);color:#F5E9D0;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;text-transform:uppercase;">
+      <div style="align-self:stretch;display:flex;gap:10px;margin-top:18px;">
+        <button type="button" onClick="{{closeDelete}}" style="flex:1;height:48px;border-radius:13px;background:transparent;border:1px solid rgba(245,233,208,0.35);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">Annulla</button>
+        <sc-if value="{{canDelete}}" hint-placeholder-val="{{false}}"><button type="button" style="flex:1;height:48px;border-radius:13px;background:#E5484D;border:0;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">Elimina</button></sc-if>
+        <sc-if value="{{cannotDelete}}" hint-placeholder-val="{{true}}"><button type="button" disabled="" aria-disabled="true" style="flex:1;height:48px;border-radius:13px;background:rgba(229,72,77,0.25);border:0;color:rgba(255,255,255,0.45);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:not-allowed;">Elimina</button></sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ospite":{"editor":"boolean","default":false},"dialogo":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { music: true, sfx: true, vib: false, notif: true, del: null, typed: '' }; }
+  renderVals() {
+    const g = this.props.ospite === true;
+    const del = this.state.del !== null ? this.state.del : (this.props.dialogo === true);
+    const out = {
+      registered: !g, guest: g,
+      backHref: g ? 'ProfiloOspite.dc.html' : 'Profilo.dc.html',
+      showDelete: del && !g,
+      openDelete: () => this.setState({ del: true, typed: '' }),
+      closeDelete: () => this.setState({ del: false, typed: '' }),
+      typed: this.state.typed,
+      onType: (e) => this.setState({ typed: e.target.value }),
+      canDelete: this.state.typed.trim().toUpperCase() === 'ELIMINA',
+      cannotDelete: this.state.typed.trim().toUpperCase() !== 'ELIMINA'
+    };
+    ['music', 'sfx', 'vib', 'notif'].forEach((k) => {
+      out[k + 'On'] = this.state[k];
+      out[k + 'Off'] = !this.state[k];
+      out[k + 'Toggle'] = () => { const o = {}; o[k] = !this.state[k]; this.setState(o); };
+    });
+    return out;
+  }
+}
+</script>
+</body>
+</html>
