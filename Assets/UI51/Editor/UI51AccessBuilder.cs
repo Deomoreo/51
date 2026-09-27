@@ -264,10 +264,11 @@ namespace Project51.UI51.EditorTools
             UI51Build.Column(titles, 2f, null, TextAnchor.MiddleLeft, true, true);
             var title = UI51Build.Child(titles, "Title");
             UI51Build.Layout(title, -1f, 23f);
-            ui.Title = UI51Build.Text(title, "Termini di servizio", FontFace.CinzelBold, 20f, UI51Tokens.Cream);
+            // NoWrap: con Ellipsis TMP svuota il testo se la riga (line-height del font) supera l'altezza di layout.
+            ui.Title = NoWrap(UI51Build.Text(title, "Termini di servizio", FontFace.CinzelBold, 20f, UI51Tokens.Cream));
             var subtitle = UI51Build.Child(titles, "Subtitle");
             UI51Build.Layout(subtitle, -1f, 14f);
-            ui.Subtitle = UI51Build.Text(subtitle, "", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f));
+            ui.Subtitle = NoWrap(UI51Build.Text(subtitle, "", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f)));
 
             // Scroller: top 84, left 20, right 12, bottom 104 (padding destro 8 nel contenuto)
             var scrollRt = UI51Build.Stretch(UI51Build.Child(ui.Frame, "Scroll"), 20f, 104f, 12f, 84f);
@@ -342,8 +343,9 @@ namespace Project51.UI51.EditorTools
             fade.anchorMin = new Vector2(0f, 0f);
             fade.anchorMax = new Vector2(1f, 0f);
             fade.pivot = new Vector2(0.5f, 0f);
-            fade.anchoredPosition = Vector2.zero;
-            fade.sizeDelta = new Vector2(0f, 104f);
+            // scende di 80 oltre la safe area come Sheet(), o sotto resta una fascia di sfondo chiaro.
+            fade.anchoredPosition = new Vector2(0f, -80f);
+            fade.sizeDelta = new Vector2(0f, 184f);
             UI51Build.Shape(fade, UI51Shape.Linear(
                 (UI51Tokens.Rgba(5, 8, 15, 0f), 0f), (UI51Tokens.Rgba(5, 8, 15, 0.9f), 0.35f),
                 (UI51Tokens.Rgba(5, 8, 15, 0.9f), 1f)), 180f, Vector4.zero, 0f, Color.clear);
@@ -374,17 +376,12 @@ namespace Project51.UI51.EditorTools
 
         // --- Caricamento (AppLoadingV2/LoadingView)
 
-        static readonly string[] FillNames = { "ProgressFill", "Fill", "Progress", "Bar", "ProgressBar", "BarFill", "progressFill", "fill", "progressBar" };
-        static readonly string[] StepNames = { "StepText", "Step", "StatusText", "Status", "Label", "Message", "stepText", "statusText", "label" };
-        static readonly string[] PercentNames = { "PercentText", "Percent", "Pct", "PercentLabel", "percentText" };
-        static readonly string[] TipNames = { "TipText", "Tip", "Tips", "tipText", "HintText", "Hint" };
-
         static bool BuildLoading(Scene scene)
         {
             var view = FindPath(scene, "AppLoadingV2", "LoadingView");
             if (view == null) { Debug.LogError($"{Tag} AppLoadingV2/LoadingView non trovato: Caricamento non ricostruito."); return false; }
             MonoBehaviour loading = null;
-            foreach (var mb in view.GetComponents<MonoBehaviour>())
+            foreach (var mb in view.GetComponentsInParent<MonoBehaviour>(true))
                 if (mb != null && mb.GetType().Name == "AppLoadingView") loading = mb;
 
             var shade = UI51Shape.Linear(
@@ -398,15 +395,20 @@ namespace Project51.UI51.EditorTools
             CenterAt(glow, 195f, 260f, 360f, 360f);
             Logo(safe, 195f, 260f, 196f);
 
-            // Ventaglio di 5 dorsi 40x60, r5, ombra
+            // Ventaglio di 5 dorsi 40x60, r5, ombra. Posizioni fisse, niente LayoutGroup: LoadingWave cattura
+            // anchoredPosition a vista ancora non impaginata e le carte finirebbero tutte nello stesso punto.
             var cards = UI51Build.Child(safe, "Cards");
             TopBand(cards, 0f, 0f, 530f, 80f);
-            UI51Build.Row(cards, 10f, null, TextAnchor.MiddleCenter, false, false);
-            var back = UI51Build.Sprite("Cards", "back_giada");
+            var oldRow = cards.GetComponent<HorizontalLayoutGroup>();   // lasciato dalle build precedenti
+            if (oldRow != null) UnityEngine.Object.DestroyImmediate(oldRow);
+            var back =UI51Build.Sprite("Cards", "back_giada");
+            var cardRts = new RectTransform[5];
             for (int i = 0; i < 5; i++)
             {
-                var c = UI51Build.Child(cards, "Card" + i);
+                var c = cardRts[i] = UI51Build.Child(cards, "Card" + i);
                 UI51Build.Size(c, 40f, 60f);
+                c.anchorMin = c.anchorMax = c.pivot = new Vector2(0.5f, 0.5f);
+                c.anchoredPosition = new Vector2((i - 2) * 50f, 0f);
                 UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(c, "Shadow")), UI51Tokens.Navy, 5f, 0f, default, false,
                     new UI51Shadow(0f, 6f, 12f, UI51Tokens.BlackA(0.5f)));
                 var face = UI51Build.Stretch(UI51Build.Child(c, "Face"));
@@ -442,12 +444,27 @@ namespace Project51.UI51.EditorTools
             UI51Build.GetOrAdd<Mask>(fill).showMaskGraphic = false;
             UI51Build.Shape(UI51Build.Stretch(UI51Build.Child(fill, "Gradient")),
                 UI51Shape.Linear((UI51Tokens.Hex("#C4922F"), 0f), (UI51Tokens.Hex("#FCE29A"), 1f)), 90f, UI51Tokens.Radii(4f), 0f, Color.clear);
+            var shine = UI51Build.Stretch(UI51Build.Child(fill, "Shine"));
+            UI51Build.Shape(shine, UI51Shape.Linear((UI51Tokens.WhiteA(0f), 0f), (UI51Tokens.WhiteA(0.45f), 0.5f), (UI51Tokens.WhiteA(0f), 1f)),
+                90f, Vector4.zero, 0f, Color.clear);
 
-            var tipRt = UI51Build.Child(progress, "Tip");
-            UI51Build.Layout(tipRt, -1f, 40f);
+            // Fuori dalla colonna per lo stesso motivo delle carte (UIAnim.Tip anima la Y).
+            var oldTip = progress.Find("Tip");
+            if (oldTip != null) UnityEngine.Object.DestroyImmediate(oldTip.gameObject);
+            var tipRt = UI51Build.Child(safe, "Tip");
+            TopBand(tipRt, 40f, 40f, 696f, 40f);
             var tip = UI51Build.Text(tipRt, "", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Top);
             tip.enableWordWrapping = true;
             tip.lineSpacing = 9f;   // ~line-height 1.45
+
+            // Stato di errore (non nel mockup): Riprova/Annulla, spenti finche' AppLoadingView.Fail non li accende.
+            var actions = UI51Build.Child(safe, "Actions");
+            TopBand(actions, 40f, 40f, 740f, 98f);
+            UI51Build.Column(actions, 10f, null, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
+            var retry = GoldButton(actions, "Retry", "RIPROVA", 48f, 15f);
+            var cancel = GhostButton(actions, "Cancel", "Annulla", 40f);
+            retry.gameObject.SetActive(false);
+            cancel.gameObject.SetActive(false);
 
             var version = UI51Build.Child(safe, "Version");
             version.anchorMin = new Vector2(0f, 0f);
@@ -458,74 +475,40 @@ namespace Project51.UI51.EditorTools
             NoWrap(UI51Build.Text(version, "", FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(0.35f), TextAlignmentOptions.Center));
             UI51Build.GetOrAdd<UI51VersionLabel>(version);
 
-            // Ricollegamento prudente: i nomi dei campi di AppLoadingView sono ipotizzati.
-            // Si applica solo se barra e testo di stato vengono agganciati; altrimenti resta la grafica legacy.
             if (loading == null)
             {
                 ui51.SetActive(false);
-                Debug.LogError($"{Tag} AppLoadingView non trovato su LoadingView: resta la grafica legacy.");
+                Debug.LogError($"{Tag} AppLoadingView non trovato su AppLoadingV2: resta la grafica legacy.");
                 return false;
             }
+            // La barra e' disegnata da Fill: AppLoadingView ne stira anchorMax.x = Progress.fillAmount (Image Simple, niente doppio taglio).
+            fill.anchorMin = Vector2.zero;
+            fill.anchorMax = new Vector2(0f, 1f);
+            fill.offsetMin = new Vector2(1f, 1f);
+            fill.offsetMax = new Vector2(-1f, -1f);
+            fillImg.type = Image.Type.Simple;
+            fillImg.fillAmount = 0f;
             var so = new SerializedObject(loading);
             so.Update();
-            bool fillOk = TryAssign(so, FillNames, fill.gameObject, out string fillType);
-            bool stepOk = TryAssign(so, StepNames, stepRt.gameObject, out _);
-            TryAssign(so, PercentNames, pctRt.gameObject, out _);
-            TryAssign(so, TipNames, tipRt.gameObject, out _);
-            if (!fillOk || !stepOk)
-            {
-                ui51.SetActive(false);
-                Debug.LogError($"{Tag} Campi di AppLoadingView non riconosciuti (barra: {fillOk}, stato: {stepOk}): " +
-                               "Caricamento UI51 lasciato spento, resta la grafica legacy. Va collegato a mano nell'Inspector.");
-                return false;
-            }
+            so.FindProperty("Status").objectReferenceValue = step;
+            so.FindProperty("Percent").objectReferenceValue = pct;
+            so.FindProperty("Progress").objectReferenceValue = fillImg;
+            so.FindProperty("ProgressFill").objectReferenceValue = fill;
+            so.FindProperty("ProgressShine").objectReferenceValue = shine;
+            so.FindProperty("Glow").objectReferenceValue = glow;
+            so.FindProperty("Logo").objectReferenceValue = safe.Find("Logo");
+            so.FindProperty("Tip").objectReferenceValue = tip;
+            so.FindProperty("RetryButton").objectReferenceValue = retry;
+            so.FindProperty("CancelButton").objectReferenceValue = cancel;
+            var cardsProp = so.FindProperty("Cards");
+            cardsProp.arraySize = cardRts.Length;
+            for (int i = 0; i < cardRts.Length; i++) cardsProp.GetArrayElementAtIndex(i).objectReferenceValue = cardRts[i];
             so.ApplyModifiedPropertiesWithoutUndo();
-
-            // La barra si riempie con fillAmount se il campo e' un Image, altrimenti via RectTransform (pivot a sinistra).
-            bool filled = fillType == "Image";
-            fillImg.type = filled ? Image.Type.Filled : Image.Type.Simple;
-            if (filled)
-            {
-                fillImg.fillMethod = Image.FillMethod.Horizontal;
-                fillImg.fillOrigin = (int)Image.OriginHorizontal.Left;
-                fillImg.fillAmount = 0f;
-            }
 
             ui51.SetActive(true);
             HideChild(view, "Background");
             HideChild(view, "DesignArea");
             return true;
-        }
-
-        /// <summary>
-        /// Assegna al primo campo trovato (tra nomi ipotizzati) un componente di go del tipo richiesto dal campo
-        /// (letto da "PPtr&lt;$Tipo&gt;"). Nessuna assegnazione se il tipo non torna.
-        /// </summary>
-        static bool TryAssign(SerializedObject so, string[] names, GameObject go, out string fieldType)
-        {
-            fieldType = null;
-            foreach (var n in names)
-            {
-                var p = so.FindProperty(n);
-                if (p == null || p.propertyType != SerializedPropertyType.ObjectReference) continue;
-                string type = p.type;
-                if (type.StartsWith("PPtr<$") && type.EndsWith(">")) type = type.Substring(6, type.Length - 7);
-                UnityEngine.Object value = null;
-                if (type == "GameObject") value = go;
-                else
-                    foreach (var c in go.GetComponents<Component>())
-                    {
-                        for (var t = c.GetType(); t != null && value == null; t = t.BaseType)
-                            if (t.Name == type) value = c;
-                        if (value != null) break;
-                    }
-                if (value == null) continue;
-                p.objectReferenceValue = value;
-                if (p.objectReferenceValue != value) continue;
-                fieldType = type;
-                return true;
-            }
-            return false;
         }
 
         // --- Collegamenti agli script esistenti
@@ -681,8 +664,11 @@ namespace Project51.UI51.EditorTools
             sheet.pivot = new Vector2(0.5f, 0f);
             sheet.offsetMin = new Vector2(-1f, -1f);
             sheet.offsetMax = new Vector2(1f, sheet.offsetMax.y);
-            sheet.anchoredPosition = new Vector2(0f, -1f);
-            padding.left += 1; padding.right += 1; padding.bottom += 1;
+            // Safe finisce al bordo della safe area: il foglio scende di Bleed oltre, cosi' copre anche
+            // la fascia dell'indicatore home (il contenuto resta dov'e', compensato nel padding).
+            const int Bleed = 80;
+            sheet.anchoredPosition = new Vector2(0f, -1f - Bleed);
+            padding.left += 1; padding.right += 1; padding.bottom += 1 + Bleed;
             UI51Build.Shape(sheet, fill, 180f, UI51Tokens.RadiiTop(26f), 1f, UI51Tokens.GoldA(0.3f));
             UI51Build.Column(sheet, spacing, padding, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
             UI51Build.Fit(sheet, false, true);

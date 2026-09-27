@@ -54,7 +54,9 @@ namespace Project51.UI51
         {
             m_T = t;
             if (m_Box == null) return;
-            m_Box.color = UI51Tokens.WhiteA(Mathf.Lerp(0.06f, 0.1f, t));
+            // fill, non color: color e' una tinta moltiplicata sul riempimento (0.06 x 0.06 = invisibile).
+            m_Box.color = Color.white;
+            m_Box.fill = UI51Shape.Solid(UI51Tokens.WhiteA(Mathf.Lerp(0.06f, 0.1f, t)));
             m_Box.borderColor = Color.Lerp(UI51Tokens.GoldA(0.3f), UI51Tokens.Gold, t);
         }
 

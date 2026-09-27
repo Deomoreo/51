@@ -101,6 +101,7 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Legal.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Glows.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerHandNumberTests.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51AccessBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2ShaderBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.QuickDeckPolish.cs" />
     <Compile Include="Assets\Tests\Editor\MatchConfigStorageTests.cs" />

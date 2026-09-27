@@ -27,6 +27,7 @@ namespace Project51.UIV2.Core
         public RectTransform Glow;
         public RectTransform Logo;
         public TMP_Text Tip;
+        public TMP_Text Percent;
         [Min(0)] public float MinimumDuration = 3f;
         public bool IsVisible => View != null && View.gameObject.activeSelf;
         private Coroutine operation;
@@ -174,6 +175,7 @@ namespace Project51.UIV2.Core
             if (!IsVisible) return;
             if (indeterminate) Progress.fillAmount = .25f + .35f * Mathf.PingPong(Time.unscaledTime * .45f, 1);
             if (ProgressFill != null) ProgressFill.anchorMax = new Vector2(Progress.fillAmount, 1);
+            if (Percent != null) Percent.text = indeterminate ? "" : Mathf.RoundToInt(Progress.fillAmount * 100) + "%";
             if (ProgressShine != null)
             {
                 // shimmer del mockup: striscia larga 30% da -40% a 120% del riempimento, 1.4 s ease-in-out.

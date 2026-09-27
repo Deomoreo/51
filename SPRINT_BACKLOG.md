@@ -9,16 +9,29 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 27/09, versione 2.26
+## ▶ PUNTO DI RIPRESA — 27/09, versione 2.27
 
-**2.26:** UI51 Fase 2 (Accesso), scritta nel cloud: **non ancora compilata né eseguita**. Menu **Tools/UI51/Build Fase 2 (Accesso)** (`Assets/UI51/Editor/UI51AccessBuilder.cs`) in `MainMenu.unity`.
+**2.27:** Fase 2 UI51 provata in Unity. Build Fase 2 pulito (0 errori, 0 warning), Play senza errori in console. Login, Registrazione, Termini/Privacy e Caricamento verificati nel Simulator su iPhone 12 e SE contro i mockup (`Design/51_handoff/.../mockups/*.dc.html`).
+- Campi di `AppLoadingView` collegati. Aggiunto `Percent`: la percentuale sotto la barra, vuota quando il caricamento è indeterminato.
+- Correzioni:
+  - `UI51Input`: i campi erano invisibili, perché `color` è una tinta. Ora si imposta `fill`.
+  - Lo sheet ora arriva fino al bordo, con un'estensione di 80 px sotto la safe area.
+  - I titoli di Termini/Privacy erano vuoti per via dell'Ellipsis su un rect basso. Ora usano NoWrap.
+  - Nella schermata legale la dissolvenza in basso si estende oltre la safe area.
+  - Caricamento: le carte dell'onda erano schiacciate a sinistra. Il LayoutGroup è stato tolto e ogni carta ha una posizione assoluta, perché UIKeyframes legge la posizione quando parte.
+  - Caricamento: il suggerimento veniva tagliato. Ora è un figlio diretto di Safe.
+- Scostamenti residui:
+  - Sui telefoni col notch `DesignCanvasFit` scala a circa 0.9x, quindi logo e titoli sono un po' più bassi del mockup. Si può cambiare, serve il via.
+  - L'etichetta versione mostra "v2.27" invece del segnaposto del mockup.
+  - I testi legali sono quelli veri (10-11 voci d'indice).
+  - Il colore dell'etichetta Step è leggermente diverso.
+
+**2.26:** UI51 Fase 2 (Accesso), scritta nel cloud. Menu **Tools/UI51/Build Fase 2 (Accesso)** (`Assets/UI51/Editor/UI51AccessBuilder.cs`) in `MainMenu.unity`.
 - Main (login), Registrazione, Termini/Privacy (un solo LegalModalV2 con indice e sezioni), Caricamento. Solo grafica: gli script esistenti restano, il builder ricollega i campi serializzati.
 - Ogni schermata ha la struttura UI51 → Bg (envelope) → Overlay → Safe (`DesignCanvasFit` 390×844, ora con `Reference` e `Fill` pubblici). Le grafiche legacy (`Design`, `Dim`, `Background`, `DesignArea`) vengono spente, non cancellate.
-- Caricamento: i nomi dei campi di `AppLoadingView` sono ipotizzati. Se barra o testo di stato non si agganciano, UI51 resta spenta e la console dà l'errore: in quel caso vanno collegati a mano.
-- Da fare in locale: eseguire il menu, test EditMode, verifica nel Simulator (iPhone 12 e SE) contro i mockup, refresh del grafo.
 
 **Rimandati Fase 2:**
-- Grafica non ancora animata o collegata: barre e bagliore della robustezza password; globo (lingua) senza funzione; animazioni del caricamento (respiro, bagliore, shimmer, onda) e dissolvenza dei suggerimenti.
+- Grafica non ancora animata o collegata: barre e bagliore della robustezza password; globo (lingua) senza funzione. (Le animazioni del caricamento funzionano dalla 2.27.)
 - AuthUIController non modificato (file ISO-8859/CRLF): i suoi bottoni indietro restano sui vecchi oggetti, quelli nuovi li governa AuthScreensV2. `LoginBack` aggiunto anche se non è nel mockup.
 - Approssimazioni: sfondo "center 30%"; interlinea TMP; riempimento della barra senza estremità arrotondata; "mt -4" di Password dimenticata; bordo laterale e inferiore dello sheet nascosti dall'offset; ombra del titolo della registrazione; stile della scrollbar legale.
 - Dipende dallo script: formato di "Lo sapevi?". Omessa la nota segnaposto in fondo ai documenti legali.
@@ -40,7 +53,7 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 - Test EditMode `UI51FoundationTests` (fotogrammi emoticon, letter-spacing). Compilazione, test e refresh del grafo vanno fatti in locale.
 
 **Aperti UI51 (ognuno col via):**
-- Fase 2 da provare in Unity (vedi 2.26). Fasi 3–10: Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
+- Fase 2 provata (vedi 2.27), da committare col via. Fasi 3–10: Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
 - Rimandati: coriandoli → F7; ConnectionOverlay → F9; ventaglio carte prese, picker emoticon, "+N" ed emo-fly → F5; input nel Dialog → F4.
 - Scostamenti noti: niente blur di sfondo; gradienti conici resi lineari; bordi superiori di sheet e nav approssimati.
 
