@@ -9,7 +9,19 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 27/09, versione 2.25
+## ▶ PUNTO DI RIPRESA — 27/09, versione 2.26
+
+**2.26:** UI51 Fase 2 (Accesso), scritta nel cloud: **non ancora compilata né eseguita**. Menu **Tools/UI51/Build Fase 2 (Accesso)** (`Assets/UI51/Editor/UI51AccessBuilder.cs`) in `MainMenu.unity`.
+- Main (login), Registrazione, Termini/Privacy (un solo LegalModalV2 con indice e sezioni), Caricamento. Solo grafica: gli script esistenti restano, il builder ricollega i campi serializzati.
+- Ogni schermata ha la struttura UI51 → Bg (envelope) → Overlay → Safe (`DesignCanvasFit` 390×844, ora con `Reference` e `Fill` pubblici). Le grafiche legacy (`Design`, `Dim`, `Background`, `DesignArea`) vengono spente, non cancellate.
+- Caricamento: i nomi dei campi di `AppLoadingView` sono ipotizzati. Se barra o testo di stato non si agganciano, UI51 resta spenta e la console dà l'errore: in quel caso vanno collegati a mano.
+- Da fare in locale: eseguire il menu, test EditMode, verifica nel Simulator (iPhone 12 e SE) contro i mockup, refresh del grafo.
+
+**Rimandati Fase 2:**
+- Grafica non ancora animata o collegata: barre e bagliore della robustezza password; globo (lingua) senza funzione; animazioni del caricamento (respiro, bagliore, shimmer, onda) e dissolvenza dei suggerimenti.
+- AuthUIController non modificato (file ISO-8859/CRLF): i suoi bottoni indietro restano sui vecchi oggetti, quelli nuovi li governa AuthScreensV2. `LoginBack` aggiunto anche se non è nel mockup.
+- Approssimazioni: sfondo "center 30%"; interlinea TMP; riempimento della barra senza estremità arrotondata; "mt -4" di Password dimenticata; bordo laterale e inferiore dello sheet nascosti dall'offset; ombra del titolo della registrazione; stile della scrollbar legale.
+- Dipende dallo script: formato di "Lo sapevi?". Omessa la nota segnaposto in fondo ai documenti legali.
 
 **2.25:** Fase 1 UI51 provata in Unity. Build All pulito (0 errori, 0 warning); test EditMode 288 ok, 0 falliti, 7 saltati (Explicit). Gallery verificata nel Simulator su iPhone 12 e SE.
 - Correzioni: i fogli emoticon ora hanno 8 fotogrammi (serviva SetDirty sull'importer); `PlayerBanner.m_Name` rinominato `nameText` (era duplicato).
@@ -28,7 +40,7 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 - Test EditMode `UI51FoundationTests` (fotogrammi emoticon, letter-spacing). Compilazione, test e refresh del grafo vanno fatti in locale.
 
 **Aperti UI51 (ognuno col via):**
-- Fasi 2–10: Login/Registrazione/Caricamento, Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
+- Fase 2 da provare in Unity (vedi 2.26). Fasi 3–10: Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
 - Rimandati: coriandoli → F7; ConnectionOverlay → F9; ventaglio carte prese, picker emoticon, "+N" ed emo-fly → F5; input nel Dialog → F4.
 - Scostamenti noti: niente blur di sfondo; gradienti conici resi lineari; bordi superiori di sheet e nav approssimati.
 
