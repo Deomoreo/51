@@ -85,7 +85,7 @@ namespace Project51.UI51
             var alphas = new GradientAlphaKey[n];
             for (int i = 0; i < n; i++)
             {
-                var s = i < stops.Length ? stops[i] : (Color.white, 0f);
+                (Color color, float time) s = i < stops.Length ? stops[i] : (Color.white, 0f);
                 colors[i] = new GradientColorKey(s.color, s.time);
                 alphas[i] = new GradientAlphaKey(s.color.a, s.time);
             }
