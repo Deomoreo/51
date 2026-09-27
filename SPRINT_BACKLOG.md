@@ -9,7 +9,20 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 25/09, versione 2.23
+## ▶ PUNTO DI RIPRESA — 27/09, versione 2.24
+
+**2.24:** UI51 Fase 1, Fondamenta del nuovo design (`Design/51_handoff`, SPEC autorevole). Solo file nuovi sotto `Assets/UI51/`: nessuna scena o asset esistente toccato.
+- Arte importata per area in `Assets/UI51/Art/<Area>/` con un Sprite Atlas per area (sfondi esclusi). Font Cinzel/Nunito come TMP dinamici con accentate italiane.
+- Token (colori, raggi, font, letter-spacing), shader `UI51/Shape` (rettangolo arrotondato con gradiente) e `UI51/Banner` (parametrico, 6 stili), preset `UIAnim` sez. 6.
+- Componenti e prefab sez. 3: UI51_Root (Canvas 390×844, match 0.5, SafeArea), bottoni, toggle, pannello, tab, AvatarFrame, badge, PlayerBanner ×3, BottomNav, BottomSheet, Dialog, emoticon da fogli 4×2.
+- Scena di prova `Assets/UI51/Scenes/UI51_Gallery.unity` (fuori dai Build Settings) con i bottoni PROVE.
+- Menu unico: **Tools/UI51/Build All (Fase 1)**. Si ferma se una scena aperta ha modifiche non salvate.
+- Test EditMode `UI51FoundationTests` (fotogrammi emoticon, letter-spacing). Compilazione, test e refresh del grafo vanno fatti in locale.
+
+**Aperti UI51 (ognuno col via):**
+- Fasi 2–10: Login/Registrazione/Caricamento, Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
+- Rimandati: coriandoli → F7; ConnectionOverlay → F9; ventaglio carte prese, picker emoticon, "+N" ed emo-fly → F5; input nel Dialog → F4.
+- Scostamenti noti: niente blur di sfondo; gradienti conici resi lineari; bordi superiori di sheet e nav approssimati.
 
 **2.23:** correzioni chieste dall'utente dopo la 2.22.
 - La tab Negozio è tornata nella bottom bar (BottomNavPolishBuilder, RestoreShop). La 2.22 l'aveva tolta seguendo la revisione approvata. L'icona è ancora `ic_cart` arancio: manca `ic_cart_cream`.
