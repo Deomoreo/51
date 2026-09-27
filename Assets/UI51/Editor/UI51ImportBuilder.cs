@@ -49,7 +49,7 @@ namespace Project51.UI51.EditorTools
         {
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
             if (ti == null) return;
-            bool changed = ApplyCommon(ti, 2048);
+            bool changed = ApplyCommon(ti, 2048, !path.Contains("/Backgrounds/"));
             if (ti.spriteImportMode != SpriteImportMode.Single) { ti.spriteImportMode = SpriteImportMode.Single; changed = true; }
             if (changed) ti.SaveAndReimport();
         }
@@ -59,7 +59,7 @@ namespace Project51.UI51.EditorTools
         {
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
             if (ti == null) return;
-            bool changed = ApplyCommon(ti, 1024);
+            bool changed = ApplyCommon(ti, 1024, true);
             if (ti.spriteImportMode != SpriteImportMode.Multiple) { ti.spriteImportMode = SpriteImportMode.Multiple; changed = true; }
 
             ti.GetSourceTextureWidthAndHeight(out int w, out int h);
@@ -80,10 +80,12 @@ namespace Project51.UI51.EditorTools
                         old.Zip(sheet, (a, b) => a.name == b.name && a.rect == b.rect).All(x => x);
             if (!same) { ti.spritesheet = sheet; changed = true; }
 #pragma warning restore 618
-            if (changed) ti.SaveAndReimport();
+            // 2022.3: il setter di spritesheet non sporca l'importer, senza SetDirty i rect non finiscono nel .meta.
+            if (changed) { EditorUtility.SetDirty(ti); ti.SaveAndReimport(); }
         }
 
-        static bool ApplyCommon(TextureImporter ti, int maxSize)
+        /// <summary>atlased: sorgente di uno Sprite Atlas, va non compressa (comprime l'atlas).</summary>
+        static bool ApplyCommon(TextureImporter ti, int maxSize, bool atlased)
         {
             bool changed = false;
             if (ti.textureType != TextureImporterType.Sprite) { ti.textureType = TextureImporterType.Sprite; changed = true; }
@@ -92,6 +94,7 @@ namespace Project51.UI51.EditorTools
             if (ti.maxTextureSize != maxSize) { ti.maxTextureSize = maxSize; changed = true; }
             if (!Mathf.Approximately(ti.spritePixelsPerUnit, 100f)) { ti.spritePixelsPerUnit = 100f; changed = true; }
             if (ti.wrapMode != TextureWrapMode.Clamp) { ti.wrapMode = TextureWrapMode.Clamp; changed = true; }
+            if (atlased && ti.textureCompression != TextureImporterCompression.Uncompressed) { ti.textureCompression = TextureImporterCompression.Uncompressed; changed = true; }
             return changed;
         }
 

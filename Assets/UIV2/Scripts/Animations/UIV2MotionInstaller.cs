@@ -26,6 +26,7 @@ namespace Project51.UIV2.Animations
         public static bool ShouldAnimate(UnityEngine.UI.Button button)
         {
             if (button == null || button.transition == UnityEngine.UI.Selectable.Transition.Animation) return false;
+            if (button.GetComponent<Project51.UI51.UI51Press>() != null) return false; // UI51 ha la sua pressione
             string name = button.name.ToLowerInvariant();
             if (name.Contains("dimmer") || name.Contains("dimbackground") || name == "dim" || name.Contains("backdrop") || name.Contains("overlay")) return false;
             if (button.GetComponent<DismissOnBackdrop>() != null || button.GetComponent("PrimaryButtonUI") != null) return false;

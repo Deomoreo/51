@@ -15,6 +15,9 @@ namespace Project51.UI51.EditorTools
     /// </summary>
     public static class UI51PrefabBuilder
     {
+        // Sheet e dialog stanno nella SafeArea: scrim e fondo dello sheet sforano di tanto oltre gli inset (notch, home indicator).
+        const float SafeBleed = 120f;
+
         [MenuItem("Tools/UI51/Component Prefabs")]
         private static void Menu() => Build();
 
@@ -79,13 +82,13 @@ namespace Project51.UI51.EditorTools
             });
         }
 
-        static void GoldBody(GameObject root, float w, float h, float radius, FontFace face, float size, float spacing,
+        internal static void GoldBody(GameObject root, float w, float h, float radius, FontFace face, float size, float spacing,
             string label, params UI51Shadow[] shadows) =>
             ButtonBody(root, w, h, UI51Tokens.GoldButtonFill(), UI51Tokens.Radii(radius), 1f, UI51Tokens.GoldButtonBorder,
                 face, size, spacing, UI51Tokens.OnGold, label, shadows);
 
         /// <summary>Corpo comune: UI51Shape cliccabile + Button + UI51Press, etichetta centrata a tutta misura.</summary>
-        static void ButtonBody(GameObject root, float w, float h, Gradient fill, Vector4 radii, float borderWidth, Color borderColor,
+        internal static void ButtonBody(GameObject root, float w, float h, Gradient fill, Vector4 radii, float borderWidth, Color borderColor,
             FontFace face, float size, float spacing, Color textColor, string label, params UI51Shadow[] shadows)
         {
             var rt = UI51Build.Center((RectTransform)root.transform, w, h);
@@ -212,7 +215,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "m_PulseRing", pulse);
                 UI51Build.Ref(so, "m_Background", bg);
                 UI51Build.Ref(so, "m_Avatar", avatar);
-                UI51Build.Ref(so, "m_Name", name);
+                UI51Build.Ref(so, "nameText", name);
                 UI51Build.Ref(so, "m_Level", level);
                 UI51Build.Ref(so, "m_Chip", chip);
                 UI51Build.Ref(so, "m_CardBack", back);
@@ -342,19 +345,20 @@ namespace Project51.UI51.EditorTools
             var rt = UI51Build.Stretch((RectTransform)root.transform);
             var sheetComp = UI51Build.GetOrAdd<BottomSheet>(root);
 
-            var scrim = UI51Build.Stretch(UI51Build.Child(rt, "Scrim"));
+            var scrim = UI51Build.Stretch(UI51Build.Child(rt, "Scrim"), -SafeBleed, -SafeBleed, -SafeBleed, -SafeBleed);
             var scrimShape = UI51Build.Solid(scrim, UI51Tokens.Scrim, 0f, 0f, default, true);
             UI51Build.Button(scrim, scrimShape);
 
+            // Il fondo scende di SafeBleed sotto la SafeArea fino al bordo schermo; il padding lo ricompensa.
             var sheet = UI51Build.Child(rt, "Sheet");
             sheet.anchorMin = new Vector2(0f, 0f);
             sheet.anchorMax = new Vector2(1f, 0f);
             sheet.pivot = new Vector2(0.5f, 0f);
-            sheet.anchoredPosition = Vector2.zero;
+            sheet.anchoredPosition = new Vector2(0f, -SafeBleed);
             sheet.sizeDelta = new Vector2(0f, 300f);
             UI51Build.Shape(sheet, UI51Tokens.SheetFill(), 180f, UI51Tokens.RadiiTop(UI51Tokens.RadiusSheet), 1f,
                 UI51Tokens.GoldA(0.4f), true, new UI51Shadow(0f, -12f, 40f, UI51Tokens.BlackA(0.5f)));
-            UI51Build.Column(sheet, 0f, UI51Build.Pad(12, 20, 24, 20), TextAnchor.UpperCenter, true, true);
+            UI51Build.Column(sheet, 0f, UI51Build.Pad(12, 20, 24 + (int)SafeBleed, 20), TextAnchor.UpperCenter, true, true);
             UI51Build.Fit(sheet, false, true);
 
             // Maniglia 40x4 crema .25 in cima.
@@ -407,7 +411,7 @@ namespace Project51.UI51.EditorTools
             var rt = UI51Build.Stretch((RectTransform)root.transform);
             var dialog = UI51Build.GetOrAdd<UI51Dialog>(root);
 
-            var scrim = UI51Build.Stretch(UI51Build.Child(rt, "Scrim"));
+            var scrim = UI51Build.Stretch(UI51Build.Child(rt, "Scrim"), -SafeBleed, -SafeBleed, -SafeBleed, -SafeBleed);
             UI51Build.Solid(scrim, UI51Tokens.BlackA(0.55f), 0f, 0f, default, true);
 
             var card = UI51Build.Child(rt, "Card");
@@ -422,16 +426,18 @@ namespace Project51.UI51.EditorTools
             UI51Build.Column(card, 0f, UI51Build.Pad(22, 20, 20, 20), TextAnchor.UpperCenter, true, true);
             UI51Build.Fit(card, false, true);
 
-            // Cerchio icona 56: bianco tinto da Paint (oro/rosso .12, bordo .5).
+            // Cerchio icona 56 + 14 di stacco nella stessa riga, cosi' Show la spegne intera senza icona.
+            // Bianco tinto da Paint (oro/rosso .12, bordo .5).
+            var oldGap = card.Find("GapIcon");
+            if (oldGap != null) UnityEngine.Object.DestroyImmediate(oldGap.gameObject);
             var iconRow = UI51Build.Child(card, "IconRow");
-            UI51Build.Layout(iconRow, -1f, 56f);
-            var circleRt = UI51Build.Center(UI51Build.Child(iconRow, "IconCircle"), 56f, 56f);
+            UI51Build.Layout(iconRow, -1f, 70f);
+            var circleRt = UI51Build.Place(UI51Build.Child(iconRow, "IconCircle"), new Vector2(0.5f, 1f), new Vector2(56f, 56f), Vector2.zero);
             var circle = UI51Build.Solid(circleRt, Color.white, 28f, 1f, UI51Tokens.GoldA(0.5f));
             circle.color = UI51Tokens.GoldA(0.12f);
             var iconRt = UI51Build.Center(UI51Build.Child(circleRt, "Icon"), 28f, 26f);
             var icon = UI51Build.Image(iconRt, UI51Build.Sprite("Common", "ic_warn_cream"), UI51Tokens.Gold);
 
-            Spacer(card, "GapIcon", 14f);
             var title = UI51Build.Text(UI51Build.Child(card, "Title"), "Abbandonare la partita?", FontFace.CinzelBold, 19f,
                 UI51Tokens.Cream, TextAlignmentOptions.Center);
             Spacer(card, "GapText", 10f);
@@ -470,6 +476,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "m_Scrim", scrim);
                 UI51Build.Ref(so, "m_Card", card);
                 UI51Build.Ref(so, "m_CardShape", cardShape);
+                UI51Build.Ref(so, "m_IconRow", iconRow.gameObject);
                 UI51Build.Ref(so, "m_IconCircle", circle);
                 UI51Build.Ref(so, "m_Icon", icon);
                 UI51Build.Ref(so, "m_Title", title);
@@ -550,6 +557,17 @@ namespace Project51.UI51.EditorTools
             line.sizeDelta = new Vector2(0f, 1f);
             UI51Build.Solid(line, UI51Tokens.GoldA(0.3f), 0f);
             UI51Build.Layout(line, -1f, -1f, -1f, -1f, true);
+
+            // La barra sta nella SafeArea: questo prolungamento copre l'inset in basso (home indicator) fino al bordo schermo.
+            var fill = UI51Build.Child(rt, "SafeBottomFill");
+            fill.anchorMin = new Vector2(0f, 0f);
+            fill.anchorMax = new Vector2(1f, 0f);
+            fill.pivot = new Vector2(0.5f, 1f);
+            fill.anchoredPosition = Vector2.zero;
+            fill.sizeDelta = new Vector2(0f, 60f);
+            UI51Build.Solid(fill, UI51Tokens.NavBar, 0f).raycastTarget = false;
+            UI51Build.Layout(fill, -1f, -1f, -1f, -1f, true);
+            fill.SetAsFirstSibling();
 
             string[] icons = { "ic_home_cream", "ic_cards_cream", "ic_chest_cream", "ic_person_cream" };
             string[] names = { "Gioca", "Collezione", "Negozio", "Profilo" };

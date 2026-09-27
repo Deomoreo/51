@@ -20,6 +20,7 @@ namespace Project51.UI51
         [SerializeField] RectTransform m_Scrim;
         [SerializeField] RectTransform m_Card;
         [SerializeField] UI51Shape m_CardShape;
+        [SerializeField] GameObject m_IconRow;
         [SerializeField] UI51Shape m_IconCircle;
         [SerializeField] Image m_Icon;
         [SerializeField] TMP_Text m_Title;
@@ -42,7 +43,7 @@ namespace Project51.UI51
         }
 
         /// <summary>
-        /// Mostra il dialog. cancelLabel null = solo conferma. icon null = cerchio nascosto.
+        /// Mostra il dialog. cancelLabel null = solo conferma. icon null = riga dell'icona nascosta (niente spazio vuoto).
         /// </summary>
         public void Show(string title, string text, string confirmLabel, Action onConfirm,
             string cancelLabel = null, Action onCancel = null, Sprite icon = null, bool danger = false)
@@ -62,7 +63,7 @@ namespace Project51.UI51
             if (m_ConfirmLabel != null) m_ConfirmLabel.text = confirmLabel ?? string.Empty;
             if (m_CancelLabel != null) m_CancelLabel.text = cancelLabel ?? string.Empty;
             if (m_Cancel != null) m_Cancel.gameObject.SetActive(!string.IsNullOrEmpty(cancelLabel));
-            if (m_IconCircle != null) m_IconCircle.gameObject.SetActive(icon != null);
+            if (m_IconRow != null) m_IconRow.SetActive(icon != null);
             if (m_Icon != null)
             {
                 m_Icon.sprite = icon;

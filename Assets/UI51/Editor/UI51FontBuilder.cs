@@ -64,7 +64,10 @@ namespace Project51.UI51.EditorTools
                 AssetDatabase.AddObjectToAsset(asset.material, asset);
             }
 
-            asset.TryAddCharacters(Charset, out string missing);
+            // TryAddCharacters restituisce tutto come "mancante" se non c'e' niente di nuovo: i mancanti veri li dice HasCharacters.
+            asset.TryAddCharacters(Charset, out _);
+            asset.HasCharacters(Charset, out System.Collections.Generic.List<char> missingList);
+            string missing = missingList == null ? null : new string(missingList.ToArray());
             // Le pagine nuove dell'atlas multi-pagina vanno salvate dentro l'asset.
             var pages = asset.atlasTextures;
             for (int i = 0; i < pages.Length; i++)
