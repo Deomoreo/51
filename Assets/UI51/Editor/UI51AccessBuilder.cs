@@ -590,7 +590,7 @@ namespace Project51.UI51.EditorTools
             });
         }
 
-        static void SetArray(SerializedObject so, string field, params UnityEngine.Object[] values)
+        internal static void SetArray(SerializedObject so, string field, params UnityEngine.Object[] values)
         {
             var p = so.FindProperty(field);
             if (p == null || !p.isArray) { Debug.LogError($"{Tag} Campo array {field} non trovato su {so.targetObject.GetType().Name}."); return; }
@@ -601,7 +601,7 @@ namespace Project51.UI51.EditorTools
         // --- Mattoni
 
         /// <summary>UI51 (stretch) -> Bg (envelope) -> Overlay (opzionale) -> Safe (DesignCanvasFit 390x844). Ritorna Safe.</summary>
-        static RectTransform BuildScreen(Transform panel, Sprite bgSprite, Gradient overlay)
+        internal static RectTransform BuildScreen(Transform panel, Sprite bgSprite, Gradient overlay)
         {
             var root = UI51Build.Stretch(UI51Build.Child(panel, "UI51"));
             var bg = UI51Build.Stretch(UI51Build.Child(root, "Bg"));
@@ -626,7 +626,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Centro in px del mockup (x da sinistra, y dall'alto), ancorato in alto al centro.</summary>
-        static RectTransform CenterAt(RectTransform rt, float x, float y, float w, float h)
+        internal static RectTransform CenterAt(RectTransform rt, float x, float y, float w, float h)
         {
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -636,7 +636,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Fascia larga quanto il genitore meno i margini, a top px dall'alto, alta h.</summary>
-        static RectTransform TopBand(RectTransform rt, float left, float right, float top, float h)
+        internal static RectTransform TopBand(RectTransform rt, float left, float right, float top, float h)
         {
             rt.anchorMin = new Vector2(0f, 1f);
             rt.anchorMax = new Vector2(1f, 1f);
@@ -646,7 +646,7 @@ namespace Project51.UI51.EditorTools
             return rt;
         }
 
-        static void Logo(RectTransform safe, float x, float y, float width)
+        internal static void Logo(RectTransform safe, float x, float y, float width)
         {
             var logo = UI51Build.Child(safe, "Logo");
             var sprite = UI51Build.Sprite("Common", "logo_51");
@@ -656,7 +656,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Foglio in basso a tutta larghezza (bordo solo in alto: i lati escono di 1px), altezza dal contenuto.</summary>
-        static RectTransform Sheet(RectTransform safe, RectOffset padding, float spacing, Gradient fill)
+        internal static RectTransform Sheet(RectTransform safe, RectOffset padding, float spacing, Gradient fill)
         {
             var sheet = UI51Build.Child(safe, "Sheet");
             sheet.anchorMin = new Vector2(0f, 0f);
@@ -675,7 +675,7 @@ namespace Project51.UI51.EditorTools
             return sheet;
         }
 
-        static Button RoundButton(RectTransform parent, string name, bool right, float size, float radius, Color fill, Sprite icon, float iconSize)
+        internal static Button RoundButton(RectTransform parent, string name, bool right, float size, float radius, Color fill, Sprite icon, float iconSize)
         {
             var rt = UI51Build.Child(parent, name);
             var anchor = new Vector2(right ? 1f : 0f, 1f);
@@ -687,7 +687,7 @@ namespace Project51.UI51.EditorTools
             return b;
         }
 
-        static TMP_InputField BuildInput(RectTransform parent, string name, string placeholder, Sprite icon, TMP_InputField.ContentType type, float height)
+        internal static TMP_InputField BuildInput(RectTransform parent, string name, string placeholder, Sprite icon, TMP_InputField.ContentType type, float height)
         {
             var rt = UI51Build.Child(parent, name);
             UI51Build.Layout(rt, -1f, height);
@@ -734,7 +734,7 @@ namespace Project51.UI51.EditorTools
             return field;
         }
 
-        static Button GoldButton(RectTransform parent, string name, string label, float height, float fontSize)
+        internal static Button GoldButton(RectTransform parent, string name, string label, float height, float fontSize)
         {
             var rt = UI51Build.Child(parent, name);
             UI51PrefabBuilder.GoldBody(rt.gameObject, 346f, height, UI51Tokens.RadiusButton, FontFace.CinzelBold, fontSize, 2f, label,
@@ -743,7 +743,7 @@ namespace Project51.UI51.EditorTools
             return rt.GetComponent<Button>();
         }
 
-        static Button GhostButton(RectTransform parent, string name, string label, float height)
+        internal static Button GhostButton(RectTransform parent, string name, string label, float height)
         {
             var rt = UI51Build.Child(parent, name);
             UI51PrefabBuilder.ButtonBody(rt.gameObject, 346f, height, UI51Shape.Solid(UI51Tokens.WhiteA(0.07f)), UI51Tokens.Radii(14f), 1f,
@@ -753,7 +753,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Testo cliccabile (il testo stesso fa da bersaglio del raycast).</summary>
-        static Button Link(RectTransform parent, string name, string label, FontFace face, float size, Color color, TextAlignmentOptions align, float height)
+        internal static Button Link(RectTransform parent, string name, string label, FontFace face, float size, Color color, TextAlignmentOptions align, float height)
         {
             var rt = UI51Build.Child(parent, name);
             UI51Build.Layout(rt, -1f, height);
@@ -763,7 +763,7 @@ namespace Project51.UI51.EditorTools
             return UI51Build.Button(t, t);
         }
 
-        static TextMeshProUGUI Status(RectTransform parent, string name)
+        internal static TextMeshProUGUI Status(RectTransform parent, string name)
         {
             var rt = UI51Build.Child(parent, name);
             var t = UI51Build.Text(rt, "", FontFace.NunitoSemiBold, 12f, UI51Tokens.DangerText, TextAlignmentOptions.Center);
@@ -773,7 +773,7 @@ namespace Project51.UI51.EditorTools
             return t;
         }
 
-        static void Version(RectTransform parent, float alpha)
+        internal static void Version(RectTransform parent, float alpha)
         {
             var rt = UI51Build.Child(parent, "Version");
             UI51Build.Layout(rt, -1f, 14f);
@@ -781,7 +781,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.GetOrAdd<UI51VersionLabel>(rt);
         }
 
-        static void OrLine(RectTransform row, string name)
+        internal static void OrLine(RectTransform row, string name)
         {
             var rt = UI51Build.Child(row, name);
             UI51Build.Size(rt, 0f, 1f);
@@ -789,7 +789,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Image(rt, null, UI51Tokens.WhiteA(0.18f), false, false);
         }
 
-        static TextMeshProUGUI NoWrap(TextMeshProUGUI t)
+        internal static TextMeshProUGUI NoWrap(TextMeshProUGUI t)
         {
             t.enableWordWrapping = false;
             t.overflowMode = TextOverflowModes.Overflow;
@@ -798,13 +798,13 @@ namespace Project51.UI51.EditorTools
 
         // --- Scena
 
-        static void HideChild(Transform parent, string name)
+        internal static void HideChild(Transform parent, string name)
         {
             var t = parent.Find(name);
             if (t != null) t.gameObject.SetActive(false);
         }
 
-        static GameObject PanelRef(SerializedObject authSo, string field, Scene scene, string fallbackName)
+        internal static GameObject PanelRef(SerializedObject authSo, string field, Scene scene, string fallbackName)
         {
             var p = authSo.FindProperty(field);
             if (p != null && p.objectReferenceValue is GameObject go) return go;
@@ -814,7 +814,7 @@ namespace Project51.UI51.EditorTools
             return null;
         }
 
-        static Transform FindPath(Scene scene, string parentName, string name)
+        internal static Transform FindPath(Scene scene, string parentName, string name)
         {
             foreach (var root in scene.GetRootGameObjects())
                 foreach (var t in root.GetComponentsInChildren<Transform>(true))
@@ -822,7 +822,7 @@ namespace Project51.UI51.EditorTools
             return null;
         }
 
-        static bool HasDirtyScene()
+        internal static bool HasDirtyScene()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {

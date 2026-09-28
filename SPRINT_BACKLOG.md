@@ -9,7 +9,28 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 27/09, versione 2.27
+## ▶ PUNTO DI RIPRESA — 29/09, versione 2.28
+
+**2.28:** UI51 Fase 3 (Home e pannelli) costruita e provata in Unity. Menu **Tools/UI51/Build Fase 3 (Home)** (`Assets/UI51/Editor/UI51HomeBuilder.cs`) in `MainMenu.unity`. Build pulito (0 errori, 0 warning); test EditMode 288 ok, 0 falliti, 7 saltati (Explicit). Non ancora committata: serve il via.
+- Costruito: testata account (avatar, "Livello N", barra XP) e testata ospite (badge OSPITE, Registrati), colonna dei pulsanti laterali, tile Modalità e Mazzo, GIOCA, barra in basso, pannello Modalità a 3 schede (Online, Allenamento, Stanza privata) e pannello Mazzo.
+- Decisioni dell'utente: Amici, Missioni e Notizie nascoste per ora; ambiente animato della Home mantenuto.
+- Script toccati, solo agganci opzionali (vuoti = UIV2 classica): `UIV2TopBar` (SetGuest, Registrati), `UIV2SelectorChip` (SetBadge), `SelectorOptionViewData` (Caption, ShortName), `QuickSelectionPanels` (schede, CONFERMA, testo difficoltà), `HomeScreenV2` (SetGuest), `HomeV2Integration`.
+- Verificato nel Simulator su iPhone 12 e SE: Home ospite, Home con account, le tre schede di Modalità, pannello Mazzo. Su iPhone 12 le misure coincidono col mockup (avatar 58, margini 20/14, tile 169×64, GIOCA 350×60, 24 sopra la nav). Su SE tutto entra senza sovrapposizioni.
+- Correzioni:
+  - Testi spariti: i rect erano più bassi della riga TMP. Altezze alzate di 2-4 unità.
+  - Celle e schede alte 0: nelle righe serviva `childForceExpandHeight`.
+  - Ospite: Opzioni sale in cima, la colonna destra ora è impilata.
+  - Spunta di selezione fatta con due tratti `UI51Shape` (nel mockup è un tratto SVG, non l'icona).
+  - "ALLENAMENTO" nella tile era tagliato: il testo si riduce da 9 a 7 pt.
+  - GIOCA si intravedeva dietro i pannelli: fondo dei pannelli pieno (il .97 del mockup conta su una sfocatura che non abbiamo).
+- Differenze dal mockup rimaste (ognuna col via):
+  - Mancano: titolo di rango; monete e gemme (nascoste); azioni di Posta, Premi e Classifica; campo del codice nella scheda Stanza privata; sfocatura dietro i pannelli; mazzi bloccati.
+  - Diverse: barra in basso alta 61 invece di 72; 3 livelli di difficoltà invece di 4; angoli delle anteprime dei mazzi quasi squadrati; il pulsante del mazzo dice "USA QUESTO MAZZO" con nome e numero di carte sulla riga sopra.
+  - Barra in basso: l'icona selezionata si ingrandisce un po'; le icone inattive non sono attenuate; etichette tutte in grassetto.
+  - Pulsanti laterali: l'avviso di novità è un pallino, non un numero.
+  - I mockup dei pannelli non si aprono nel browser (manca `support.js`): confrontati con le misure del loro sorgente.
+- ASSET MANCANTI DA CREARE: nessuno. Monete e gemme non sono tra le icone controllate, ma per ora sono nascoste.
+- Prossimo: Fase 4 (Collezione, Profilo, Impostazioni), col via.
 
 **2.27:** Fase 2 UI51 provata in Unity. Build Fase 2 pulito (0 errori, 0 warning), Play senza errori in console. Login, Registrazione, Termini/Privacy e Caricamento verificati nel Simulator su iPhone 12 e SE contro i mockup (`Design/51_handoff/.../mockups/*.dc.html`).
 - Campi di `AppLoadingView` collegati. Aggiunto `Percent`: la percentuale sotto la barra, vuota quando il caricamento è indeterminato.
@@ -53,7 +74,7 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 - Test EditMode `UI51FoundationTests` (fotogrammi emoticon, letter-spacing). Compilazione, test e refresh del grafo vanno fatti in locale.
 
 **Aperti UI51 (ognuno col via):**
-- Fase 2 provata (vedi 2.27), da committare col via. Fasi 3–10: Home e pannelli, Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
+- Fase 2 committata (`aeb3bfc`). Fase 3 (Home e pannelli) provata (vedi 2.28), da committare col via. Fasi 4–10: Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
 - Rimandati: coriandoli → F7; ConnectionOverlay → F9; ventaglio carte prese, picker emoticon, "+N" ed emo-fly → F5; input nel Dialog → F4.
 - Scostamenti noti: niente blur di sfondo; gradienti conici resi lineari; bordi superiori di sheet e nav approssimati.
 

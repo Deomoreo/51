@@ -59,6 +59,7 @@ namespace Project51.UIV2.Core
             home.OnDeckPressed += OpenDecks;
             home.OnSettingsPressed += OpenSettings;
             CardDecks.SelectionChanged += RefreshDecks;
+            if (topBar != null) topBar.OnRegisterPressed += OpenRegistration;
             if (profile != null)
             {
                 profile.OnSettingsPressed += OpenSettings;
@@ -279,12 +280,15 @@ namespace Project51.UIV2.Core
             });
             // No authoritative currency/energy service exists yet; do not display preview balances.
             topBar.SetResources(null);
+            topBar.SetGuest(isGuest);
+            home.SetGuest(isGuest);
         }
 
         private void OnDestroy()
         {
             if (home != null) { home.OnPlayPressed -= Play; home.OnModePressed -= OpenModes; home.OnDeckPressed -= OpenDecks; home.OnSettingsPressed -= OpenSettings; }
             CardDecks.SelectionChanged -= RefreshDecks;
+            if (topBar != null) topBar.OnRegisterPressed -= OpenRegistration;
             if (profile != null)
             {
                 profile.OnSettingsPressed -= OpenSettings;

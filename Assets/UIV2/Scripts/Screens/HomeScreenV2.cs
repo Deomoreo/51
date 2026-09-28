@@ -73,6 +73,8 @@ namespace Project51.UIV2.Screens
         {
             _currentMode = mode;
             if (modeSelector != null) modeSelector.SetValue(mode != null ? mode.DisplayName : "-", mode?.Icon);
+            if (modeSelector != null && mode != null && mode.Caption != null) modeSelector.SetSmallLabel(mode.Caption);
+            if (modeSelector != null && mode != null) modeSelector.SetBadge(mode.ShortName);
         }
 
         public void SetDeck(SelectorOptionViewData deck)
@@ -99,6 +101,13 @@ namespace Project51.UIV2.Screens
         public void SetDeckInteractable(bool interactable)
         {
             if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
+        }
+
+        /// <summary>UI51: l'ospite vede solo Opzioni tra i pulsanti laterali.</summary>
+        public void SetGuest(bool guest)
+        {
+            foreach (var action in new[] { rewardsButton, rankingButton, mailButton })
+                if (action != null) action.gameObject.SetActive(!guest);
         }
 
         public void SetPendingActionsInteractable(bool interactable)

@@ -66,8 +66,8 @@
     <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Editor\TableTopBarBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2DesignBuilder.cs" />
-    <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51Build.cs" />
+    <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\InGameSettingsTests.cs" />
     <Compile Include="Assets\Editor\HomeScreenBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.ComingSoon.cs" />
@@ -147,6 +147,7 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.IconSetV2.cs" />
     <Compile Include="Assets\Editor\PremiBuilder.cs" />
     <Compile Include="Assets\Editor\DeckPageBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51HomeBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\AccountDeletionTests.cs" />
     <Compile Include="Assets\Editor\BackdropDismissBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\PunteggioManagerTests.cs" />

@@ -22,6 +22,11 @@ namespace Project51.UIV2.Core
         public Button JoinRoom;
         public ScrollRect ModeScroll;
         public RoomFlowV2 RoomFlow;
+        // UI51 (opzionali): schede Online/Allenamento/Stanza privata, CONFERMA che chiude, testo della difficolta'.
+        public Button[] Tabs;
+        public GameObject[] TabPages;
+        public Button ModeConfirm;
+        public TMP_Text DifficultyInfo;
         private string pendingDeck;
         public bool IsOpen => DeckModal.IsOpen || ModeModal.IsOpen;
 
@@ -33,6 +38,17 @@ namespace Project51.UIV2.Core
             Confirm.onClick.AddListener(ConfirmDeck);
             CreateRoom.onClick.AddListener(() => OpenRoomFlow(true));
             JoinRoom.onClick.AddListener(() => OpenRoomFlow(false));
+            if (Tabs != null) for (int i = 0; i < Tabs.Length; i++) { int index = i; Tabs[i].onClick.AddListener(() => ShowTab(index)); }
+            if (ModeConfirm != null) ModeConfirm.onClick.AddListener(() => ModeModal.Close());
+        }
+
+        private void ShowTab(int index)
+        {
+            if (Tabs == null || TabPages == null) return;
+            for (int i = 0; i < TabPages.Length; i++) TabPages[i].SetActive(i == index);
+            for (int i = 0; i < Tabs.Length; i++) Tabs[i].GetComponent<SelectableToggleItem>().SetSelected(i == index);
+            if (ModeConfirm != null) ModeConfirm.gameObject.SetActive(index != 2);
+            ModeScroll.verticalNormalizedPosition = 1;
         }
         /// <summary>
         /// Crea/entra in stanza privata: il pannello Modalita' si chiude per lasciare il posto al
@@ -82,6 +98,8 @@ namespace Project51.UIV2.Core
         private void ShowModes()
         {
             ModeModal.Open(); ModeScroll.verticalNormalizedPosition = 1; RefreshMode();
+            var intent = Modes.CurrentSelection.Intent;
+            ShowTab(intent == MatchIntent.Training ? 1 : intent == MatchIntent.PrivateRoom ? 2 : 0);
         }
         private void ChooseMode(int index)
         {
@@ -105,17 +123,22 @@ namespace Project51.UIV2.Core
             return c.Intent == MatchIntent.Training ? index + 3 : index;
         }
 
-        /// <summary>Titolo e icona della riga scelta: il pulsante MODALITA' della Home li ripete uguali.</summary>
+        /// <summary>Testi della tile Modalita' della Home (didascalia, valore, sigla) come nel mockup UI51.</summary>
         public SelectorOptionViewData ModeOption(MatchConfig c)
         {
             int index = ModeIndex(c);
             var row = index >= 0 && index < ModeButtons.Length ? ModeButtons[index].transform : CreateRoom.transform;
-            var title = row.Find("TitleText");
             var icon = row.Find("Icon");
+            int f = c.Format == GameFormat.OneVsOne ? 0 : c.Format == GameFormat.TwoVsTwo ? 1 : 2;
+            string label = new[] { "1 vs 1", "2 vs 2", "1 vs 3" }[f], shortName = new[] { "1v1", "2v2", "1v3" }[f];
+            string level = c.BotDifficulty == BotDifficulty.Easy ? "Facile" : c.BotDifficulty == BotDifficulty.Hard ? "Difficile" : "Medio";
+            bool bot = c.Intent == MatchIntent.Training, room = c.Intent == MatchIntent.PrivateRoom;
             return new SelectorOptionViewData
             {
                 Id = c.Intent.ToString(),
-                DisplayName = index >= 0 && title != null ? title.GetComponent<TMP_Text>().text : "Stanza privata",
+                DisplayName = bot ? shortName + " · " + level : label,
+                Caption = bot ? "ALLENAMENTO" : room ? "STANZA PRIVATA" : "ONLINE",
+                ShortName = bot ? "BOT" : room ? "PRIV" : shortName,
                 Icon = icon != null ? icon.GetComponent<Image>().sprite : null,
             };
         }
@@ -127,6 +150,9 @@ namespace Project51.UIV2.Core
             for (int i = 0; i < ModeButtons.Length; i++) ModeButtons[i].GetComponent<SelectableToggleItem>().SetSelected(i == selected);
             var levels = new[] { BotDifficulty.Easy, BotDifficulty.Medium, BotDifficulty.Hard };
             for (int i = 0; i < DifficultyButtons.Length; i++) DifficultyButtons[i].GetComponent<SelectableToggleItem>().SetSelected(levels[i] == c.BotDifficulty);
+            if (DifficultyInfo != null) DifficultyInfo.text = c.BotDifficulty == BotDifficulty.Easy ? "Il bot commette errori: ideale per imparare le regole."
+                : c.BotDifficulty == BotDifficulty.Hard ? "Il bot conta le carte e punta alle combinazioni migliori."
+                : "Il bot gioca in modo equilibrato, senza strategie avanzate.";
         }
     }
 }

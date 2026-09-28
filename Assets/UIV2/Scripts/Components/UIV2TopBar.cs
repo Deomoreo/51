@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -30,6 +31,24 @@ namespace Project51.UIV2.Components
         [SerializeField] private UIV2ProgressBar xpBar;
         // Numero livello dentro la stella accanto alla barra XP (il genitore e' la stella).
         [SerializeField] private TMP_Text levelLabel;
+        // UI51 (Fase 3): testata account/ospite, "Livello N" e pulsante Registrati. Vuoti = UIV2 classica.
+        [SerializeField] private TMP_Text levelCaption;
+        [SerializeField] private GameObject accountGroup;
+        [SerializeField] private GameObject guestGroup;
+        [SerializeField] private Button registerButton;
+
+        public event Action OnRegisterPressed;
+
+        private void Awake()
+        {
+            if (registerButton != null) registerButton.onClick.AddListener(() => OnRegisterPressed?.Invoke());
+        }
+
+        public void SetGuest(bool guest)
+        {
+            if (accountGroup != null) accountGroup.SetActive(!guest);
+            if (guestGroup != null) guestGroup.SetActive(guest);
+        }
 
         private readonly List<UIV2ResourcePill> _spawned = new List<UIV2ResourcePill>();
         private readonly List<string> _currencies = new List<string>();
@@ -44,6 +63,7 @@ namespace Project51.UIV2.Components
                 portraitImage.enabled = player.Avatar != null;
             }
             if (nameLabel != null) nameLabel.text = player.DisplayName;
+            if (levelCaption != null) levelCaption.text = "Livello " + player.Level;
             if (energyBar != null) energyBar.gameObject.SetActive(player.EnergyMax > 0);
             if (xpBar != null) xpBar.gameObject.SetActive(player.XpMax > 0);
             if (levelLabel != null)

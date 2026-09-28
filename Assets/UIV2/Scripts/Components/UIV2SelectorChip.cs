@@ -16,12 +16,18 @@ namespace Project51.UIV2.Components
         [SerializeField] private TMP_Text smallLabel;
         [SerializeField] private TMP_Text valueLabel;
         [SerializeField] private Button button;
+        [SerializeField] private TMP_Text badgeLabel; // UI51: sigla nel tondo (1v1, BOT...), opzionale
 
         public Button Button => button;
 
         public void SetSmallLabel(string text)
         {
             if (smallLabel != null) smallLabel.text = text;
+        }
+
+        public void SetBadge(string text)
+        {
+            if (badgeLabel != null && text != null) badgeLabel.text = text;
         }
 
         public void SetValue(string value, Sprite iconSprite = null)
