@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using NUnit.Framework;
+using Project51.Auth;
 using Project51.UIV2.Data;
 using Project51.UIV2.Screens;
 using TMPro;
@@ -75,6 +77,59 @@ namespace Project51.Tests
             Assert.AreEqual("38%", TileValue("winRateTile"));
             var register = (Component)new SerializedObject(screen).FindProperty("registerButton").objectReferenceValue;
             Assert.IsFalse(register.gameObject.activeSelf);
+        }
+
+        [Test]
+        public void CosmeticsFallBackToTheDefaultsAndLockWhatIsNotEarned()
+        {
+            Assert.AreEqual(1, ProfileCosmetics.FrameIndex(null));
+            Assert.AreEqual(1, ProfileCosmetics.FrameIndex("sconosciuta"));
+            Assert.AreEqual(3, ProfileCosmetics.FrameIndex("notte"));
+            Assert.AreEqual(0, ProfileCosmetics.BannerIndex(""));
+            Assert.AreEqual(2, ProfileCosmetics.BannerIndex("porpora"));
+            Assert.IsTrue(ProfileCosmetics.BannerUnlocked(1, 1));
+            Assert.IsFalse(ProfileCosmetics.BannerUnlocked(2, ProfileCosmetics.PorporaLevel - 1));
+            Assert.IsTrue(ProfileCosmetics.BannerUnlocked(2, ProfileCosmetics.PorporaLevel));
+            Assert.IsFalse(ProfileCosmetics.BannerUnlocked(3, 99));
+            Assert.AreEqual(ProfileCosmetics.FrameIds.Length, ProfileCosmetics.FrameNames.Length);
+            Assert.AreEqual(ProfileCosmetics.BannerIds.Length, ProfileCosmetics.BannerNames.Length);
+            Assert.AreEqual(ProfileCosmetics.BannerIds.Length, ProfileCosmetics.BannerTags.Length);
+        }
+
+        [Test]
+        public void TheLookIsSavedInOneWriteAndTheCacheOnlyAdoptsWhatTheCloudAccepted()
+        {
+            var service = new ProfileService();
+            int writes = 0, updates = 0;
+            bool accept = false, saved = false;
+            string error = null;
+            Dictionary<string, string> sent = null;
+            service.SendUserData = (data, ok, fail) =>
+            {
+                writes++;
+                sent = data;
+                if (accept) ok(); else fail("rete");
+            };
+            service.OnProfileUpdated += () => updates++;
+
+            service.SetCosmetics("avatar_03", "smeraldo", "porpora", () => saved = true, e => error = e);
+            Assert.AreEqual(1, writes, "una richiesta sola");
+            Assert.AreEqual(3, sent.Count, "avatar, cornice e banner insieme");
+            Assert.IsFalse(saved);
+            Assert.AreEqual("rete", error);
+            Assert.AreEqual("default", service.AvatarId);
+            Assert.AreEqual("oro", service.FrameId);
+            Assert.AreEqual("notte", service.BannerId);
+            Assert.AreEqual(0, updates, "la carta non cambia se il cloud rifiuta");
+
+            accept = true;
+            service.SetCosmetics("avatar_03", "smeraldo", "porpora", () => saved = true);
+            Assert.IsTrue(saved);
+            Assert.AreEqual(2, writes);
+            Assert.AreEqual("avatar_03", service.AvatarId);
+            Assert.AreEqual("smeraldo", service.FrameId);
+            Assert.AreEqual("porpora", service.BannerId);
+            Assert.AreEqual(1, updates, "un solo aggiornamento della carta");
         }
     }
 }

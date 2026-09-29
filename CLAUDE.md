@@ -23,7 +23,7 @@ Keep this file short: it is loaded on every session.
 - In the desktop app you may adjust session model/effort yourself when the task clearly warrants it; say so in one line.
 
 ## Context hygiene
-- Auto-compact is set at 150k tokens (see .claude/settings.json). Do not fight it.
+- Auto-compact is set at 300k tokens (see .claude/settings.json). Do not fight it.
 - When a task is finished: save anything durable to memory, give a 3-line summary, and tell the user a fresh session/`/clear` is a good idea before an unrelated task.
 - Never paste large files or long command output back; grep or read line ranges.
 

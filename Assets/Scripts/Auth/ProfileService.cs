@@ -56,8 +56,6 @@ namespace Project51.Auth
         public string BannerId => GetPlayerData(DATA_BANNER_ID, "notte");
         public string FrameId => GetPlayerData(DATA_FRAME_ID, "oro");
         public string TitleId => GetPlayerData(DATA_TITLE_ID, "");
-        public void SetBanner(string id) => SetPlayerData(DATA_BANNER_ID, id);
-        public void SetFrame(string id) => SetPlayerData(DATA_FRAME_ID, id);
         public void SetTitle(string id) => SetPlayerData(DATA_TITLE_ID, id);
         
         // Eventi
@@ -305,6 +303,50 @@ namespace Project51.Auth
                     onError?.Invoke(error.ErrorMessage);
                 }
             );
+        }
+
+        /// <summary>Invio a PlayFab di piu' chiavi in UNA richiesta. Sostituibile nei test.</summary>
+        public Action<Dictionary<string, string>, Action, Action<string>> SendUserData = SendToPlayFab;
+
+        /// <summary>
+        /// Avatar, cornice e banner in una richiesta sola, con un solo esito.
+        /// La cache cambia solo dopo il si' di PlayFab.
+        /// </summary>
+        public void SetCosmetics(string avatarId, string frameId, string bannerId,
+            Action onSuccess = null, Action<string> onError = null)
+        {
+            var data = new Dictionary<string, string>
+            {
+                { DATA_AVATAR_ID, avatarId }, { DATA_FRAME_ID, frameId }, { DATA_BANNER_ID, bannerId }
+            };
+            SendUserData(data,
+                () =>
+                {
+                    foreach (var pair in data) _playerDataCache[pair.Key] = pair.Value;
+                    Debug.Log("[ProfileService] Cosmetics updated");
+                    OnProfileUpdated?.Invoke();
+                    onSuccess?.Invoke();
+                },
+                error =>
+                {
+                    Debug.LogWarning($"[ProfileService] Failed to update cosmetics: {error}");
+                    OnError?.Invoke(error);
+                    onError?.Invoke(error);
+                });
+        }
+
+        private static void SendToPlayFab(Dictionary<string, string> data, Action onSuccess, Action<string> onError)
+        {
+            try
+            {
+                PlayFabClientAPI.UpdateUserData(
+                    new UpdateUserDataRequest { Data = data, Permission = UserDataPermission.Public },
+                    result => onSuccess(), error => onError(error.ErrorMessage));
+            }
+            catch (PlayFabException e) // sessione PlayFab assente: l'SDK lancia invece di rispondere
+            {
+                onError(e.Message);
+            }
         }
         
         /// <summary>

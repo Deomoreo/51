@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Project51.UI51;
 
 namespace Project51.UIV2.Screens
 {
@@ -43,6 +44,12 @@ namespace Project51.UIV2.Screens
         [SerializeField] private Color normalLabelColor = Color.white;
         [SerializeField] private CollectionTab initialTab = CollectionTab.Decks;
 
+        [Header("UI51 (facoltativo): schede a segmenti, col conteggio accanto al nome")]
+        [SerializeField] private SegmentedTabs segmentedTabs;
+        [SerializeField] private string[] tabNames; // indice = (int)CollectionTab
+
+        private readonly string[] tabCounts = new string[3];
+
         public CollectionDecksPanel DecksPanel => decksPanel;
         public CollectionEmoticonsPanel EmoticonsPanel => emoticonsPanel;
         public CollectionAccusiPanel AccusiPanel => accusiPanel;
@@ -60,7 +67,33 @@ namespace Project51.UIV2.Screens
                     if (tabs[i] != null && tabs[i].Button != null) tabs[i].Button.onClick.AddListener(() => SetTab(tab));
                 }
             }
+            if (segmentedTabs != null) segmentedTabs.onTabChanged.AddListener(index => SetTab((CollectionTab)index));
             ApplyTab(initialTab);
+        }
+
+        /// <summary>Conteggio accanto al nome della scheda ("4", "2/3"); vuoto = solo il nome.</summary>
+        public void SetTabCount(CollectionTab tab, string count)
+        {
+            tabCounts[(int)tab] = count;
+            PaintSegments();
+        }
+
+        /// <summary>Nome + conteggio piccolo: oro .75 sulla scheda attiva, crema .4 sulle altre (mockup Collezione).</summary>
+        public static string TabLabel(string name, string count, bool selected)
+        {
+            if (string.IsNullOrEmpty(count)) return name;
+            var color = selected ? UI51Tokens.GoldA(0.75f) : UI51Tokens.CreamA(0.4f);
+            return $"{name}<space=6><size=10><color=#{ColorUtility.ToHtmlStringRGBA(color)}>{count}</color></size>";
+        }
+
+        private void PaintSegments()
+        {
+            if (segmentedTabs == null || tabNames == null) return;
+            var labels = new string[tabNames.Length];
+            for (int i = 0; i < labels.Length; i++)
+                labels[i] = TabLabel(tabNames[i], i < tabCounts.Length ? tabCounts[i] : null, i == (int)CurrentTab);
+            segmentedTabs.SetLabels(labels);
+            segmentedTabs.Select((int)CurrentTab, false);
         }
 
         public void SetTabInteractable(CollectionTab tab, bool interactable)
@@ -80,6 +113,7 @@ namespace Project51.UIV2.Screens
         private void ApplyTab(CollectionTab tab)
         {
             CurrentTab = tab;
+            PaintSegments();
             if (tabs == null) return;
 
             for (int i = 0; i < tabs.Length; i++)

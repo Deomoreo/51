@@ -33,6 +33,11 @@ namespace Project51.UIV2.Core
         [SerializeField] private QuickSelectionPanels quickPanels;
         [SerializeField] private StartScreenV2 startScreen;
         [SerializeField] private CanvasGroup homeAmbient;
+        [Header("UI51 (opzionali)")]
+        [SerializeField] private ProfileEditorV2 profileEditor;
+        [SerializeField] private CanvasGroup pagesBackground;
+        [SerializeField] private CanvasGroup topBarGroup;
+        [SerializeField] private CanvasGroup[] pageHeaders;
 
         private static MatchConfig sessionSelection;
         private AuthBootstrapper auth;
@@ -64,8 +69,11 @@ namespace Project51.UIV2.Core
             {
                 profile.OnSettingsPressed += OpenSettings;
                 profile.OnRegisterPressed += OpenRegistration;
+                profile.OnLoginPressed += OpenLogin;
+                profile.OnEditPressed += OpenProfileEditor;
                 profile.SetActionsAvailable(settings != null, authUI != null, false);
             }
+            if (profileEditor != null) profileEditor.OnSave += SaveCosmetics;
             if (collection != null)
             {
                 collection.DecksPanel.OnDeckActionPressed += SelectDeck;
@@ -142,6 +150,43 @@ namespace Project51.UIV2.Core
             authUI.ShowRegisterPanel();
         }
 
+        private void OpenLogin()
+        {
+            if (authUI == null) return;
+            authUI.ShowAuthUI();
+            authUI.ShowLoginPanel();
+        }
+
+        private void OpenProfileEditor()
+        {
+            // CloudReady: durante il ricaricamento dopo un accesso la cache e' ancora del profilo precedente.
+            if (profileEditor == null || !CloudReady() || !HasRealLogin()) return;
+            if (!CanNavigate() || pager.IsMoving) return;
+            var cloud = auth.Profile;
+            profileEditor.Open(cloud.AvatarId, cloud.FrameId, cloud.BannerId, PlayerXp.LevelOf(cloud.XP),
+                auth.PlayFabAuth.GetBestDisplayName());
+        }
+
+        private void SaveCosmetics(string avatarId, string frameId, string bannerId)
+        {
+            var cloud = auth?.Profile;
+            if (cloud == null || !HasRealLogin() || !CloudReady()) { profileEditor.SaveFinished(false); return; }
+            if (avatarId == cloud.AvatarId && frameId == cloud.FrameId && bannerId == cloud.BannerId)
+            {
+                profileEditor.SaveFinished(true); // niente da scrivere: il cloud ha gia' questo aspetto
+                return;
+            }
+            // Una scrittura sola: la carta si aggiorna una volta, con OnProfileUpdated.
+            cloud.SetCosmetics(avatarId, frameId, bannerId,
+                () => { if (this != null && profileEditor != null) profileEditor.SaveFinished(true); },
+                error => { if (this != null && profileEditor != null) profileEditor.SaveFinished(false); });
+        }
+
+        private bool HasRealLogin() => auth?.PlayFabAuth != null && auth.PlayFabAuth.HasRealLogin;
+
+        private bool CloudReady() => !loadingProfile && auth?.Profile != null && auth.Profile.IsLoaded
+            && profileOwnerId == auth.PlayFabAuth?.PlayFabId;
+
         private void OpenDecks(SelectorOptionViewData unused)
         {
             if (CanNavigate() && !pager.IsMoving) quickPanels.OpenDecks();
@@ -165,6 +210,7 @@ namespace Project51.UIV2.Core
                 decks.Add(new DeckViewData { Id = item.Id, Name = item.DisplayName, Subtitle = item.Subtitle,
                     Artwork = item.Artwork, Unlocked = true, Equipped = item.Id == selected });
             collection.DecksPanel.Bind(decks, decks.Count);
+            collection.SetTabCount(CollectionTab.Decks, decks.Count.ToString());
         }
 
         private void SelectionChanged(MatchConfig config)
@@ -183,6 +229,7 @@ namespace Project51.UIV2.Core
         {
             if(quickPanels.RoomFlow!=null&&quickPanels.RoomFlow.IsOpen)return false;
             if (modes.IsOpen || quickPanels.IsOpen || (settings != null && settings.IsOpen)) return false;
+            if (profileEditor != null && profileEditor.IsOpen) return false;
             if (AppLoadingView.Instance != null && AppLoadingView.Instance.IsVisible) return false;
             if (startScreen != null && startScreen.View.blocksRaycasts) return false;
             var gate = homeCanvas.GetComponent<CanvasGroup>();
@@ -195,6 +242,26 @@ namespace Project51.UIV2.Core
             navigation.SelectIndex(index, notify: false);
             RefreshProfile();
             ShowAmbient(showingHome);
+            ShowPageChrome(index);
+        }
+
+        // Pagine UI51: sfondo sfocato al posto di quello della Home e intestazione propria al posto della
+        // barra del giocatore (voce vuota in pageHeaders = su quella pagina resta la barra).
+        private void ShowPageChrome(int index)
+        {
+            if (pagesBackground != null) Fade(pagesBackground, !showingHome);
+            if (pageHeaders == null || pageHeaders.Length == 0) return;
+            bool ownHeader = index < pageHeaders.Length && pageHeaders[index] != null;
+            for (int i = 0; i < pageHeaders.Length; i++)
+                if (pageHeaders[i] != null) Fade(pageHeaders[i], i == index);
+            if (topBarGroup != null) Fade(topBarGroup, !ownHeader);
+        }
+
+        private static void Fade(CanvasGroup group, bool on)
+        {
+            group.DOKill();
+            group.blocksRaycasts = on;
+            group.DOFade(on ? 1f : 0f, UIV2Motion.Page).SetUpdate(true);
         }
 
         // Sfondo animato solo sulla pagina Gioca: spento (non solo trasparente) altrove, cosi' i tween si fermano.
@@ -243,15 +310,16 @@ namespace Project51.UIV2.Core
             if (topBar == null) return;
             string displayName = auth?.PlayFabAuth?.GetBestDisplayName();
             var cloud = auth?.Profile;
-            bool isGuest = auth?.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin;
-            bool cloudLoaded = !loadingProfile && cloud != null && cloud.IsLoaded
-                && profileOwnerId == auth?.PlayFabAuth?.PlayFabId;
+            bool isGuest = !HasRealLogin();
+            bool cloudLoaded = CloudReady();
             // Gli ospiti non guadagnano XP (spinta a registrarsi): livello 1 fisso.
             int totalXp = isGuest ? 0 : cloudLoaded ? cloud.XP : progress != null ? progress.Exp : 0;
             string playFabId = auth?.PlayFabAuth?.PlayFabId;
             int level = PlayerXp.LevelOf(totalXp);
             int xp = PlayerXp.XpInLevel(totalXp);
             int maxXp = PlayerXp.XpToNext(level);
+            bool cosmetics = !isGuest && cloudLoaded && profileEditor != null;
+            Sprite avatar = cosmetics ? profileEditor.AvatarFor(cloud.AvatarId) : null;
             if (profile != null)
             {
                 profile.Bind(new ProfileViewData
@@ -261,6 +329,9 @@ namespace Project51.UIV2.Core
                     PlayerId = isGuest || string.IsNullOrEmpty(playFabId) ? null
                         : "#" + playFabId.Substring(0, Mathf.Min(8, playFabId.Length)).ToUpperInvariant(),
                     IsGuest = isGuest,
+                    Avatar = avatar,
+                    FrameId = cosmetics ? cloud.FrameId : null,
+                    BannerId = cosmetics ? cloud.BannerId : null,
                     Level = level, XpCurrent = xp, XpMax = maxXp,
                     HasProgress = cloudLoaded || progress != null,
                     HasMatchStats = !isGuest && cloudLoaded,
@@ -273,6 +344,7 @@ namespace Project51.UIV2.Core
             {
                 DisplayName = string.IsNullOrEmpty(displayName) ? "Ospite" : displayName,
                 Level = level,
+                Avatar = avatar,
                 XpCurrent = xp,
                 XpMax = isGuest ? 0 : maxXp, // 0 = esagono livello e barra XP nascosti per gli ospiti
                 EnergyCurrent = 0,
@@ -293,7 +365,15 @@ namespace Project51.UIV2.Core
             {
                 profile.OnSettingsPressed -= OpenSettings;
                 profile.OnRegisterPressed -= OpenRegistration;
+                profile.OnLoginPressed -= OpenLogin;
+                profile.OnEditPressed -= OpenProfileEditor;
             }
+            if (profileEditor != null) profileEditor.OnSave -= SaveCosmetics;
+            if (pagesBackground != null) pagesBackground.DOKill();
+            if (topBarGroup != null) topBarGroup.DOKill();
+            if (pageHeaders != null)
+                foreach (var header in pageHeaders)
+                    if (header != null) header.DOKill();
             if (collection != null) collection.DecksPanel.OnDeckActionPressed -= SelectDeck;
             if (modes != null)
             {

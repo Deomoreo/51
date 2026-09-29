@@ -3,7 +3,9 @@ using Project51.Core;
 using Project51.Unity;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UI51Toggle = Project51.UI51.UI51Toggle;
 
 namespace Project51.UIV2.Core
 {
@@ -33,6 +35,24 @@ namespace Project51.UIV2.Core
         [SerializeField] private RectTransform[] rowsAfterAccount;
         [SerializeField] private RectTransform footer;
 
+        [Header("UI51 (opzionali): vuoti = aspetto classico")]
+        [SerializeField] private UI51Toggle sfxSwitch;
+        [SerializeField] private UI51Toggle musicSwitch;
+        [SerializeField] private UI51Toggle vibrationSwitch;
+        [SerializeField] private UI51Toggle graphicsSwitch;
+        [Tooltip("Intestazione ACCOUNT e i suoi pannelli: solo dopo l'ingresso.")]
+        [SerializeField] private GameObject accountSection;
+        [Tooltip("Login vero: email, Esci, Elimina account.")]
+        [SerializeField] private GameObject accountGroup;
+        [Tooltip("Ospite: invito a registrarsi e uscita dalla sessione.")]
+        [SerializeField] private GameObject guestGroup;
+        [SerializeField] private TMP_Text emailLabel;
+        [Tooltip("Esci (account) ed Esci dalla sessione ospite.")]
+        [SerializeField] private Button[] logoutButtons;
+        [SerializeField] private Button privacyButton;
+        [SerializeField] private Button termsButton;
+        [SerializeField] private LegalModalV2 legal;
+
         public const string AccountHeaderText = "ACCOUNT";
         public const string GeneralHeaderText = "GENERALE";
 
@@ -57,6 +77,17 @@ namespace Project51.UIV2.Core
             if (reducedGraphicsToggle != null) reducedGraphicsToggle.OnChanged += GamePreferences.SetReducedGraphics;
             GamePreferences.Changed += RefreshGraphicsChoice;
             if (deleteAccountButton != null) deleteAccountButton.onClick.AddListener(OpenDeleteAccount);
+            if (sfxSwitch != null) sfxSwitch.onValueChanged.AddListener(GameAudioPreferences.SetEffectsEnabled);
+            if (musicSwitch != null) musicSwitch.onValueChanged.AddListener(GameAudioPreferences.SetMusicEnabled);
+            if (vibrationSwitch != null) vibrationSwitch.onValueChanged.AddListener(GamePreferences.SetVibrationEnabled);
+            if (graphicsSwitch != null) graphicsSwitch.onValueChanged.AddListener(GamePreferences.SetReducedGraphics);
+            if (logoutButtons != null)
+                foreach (var b in logoutButtons) if (b != null) b.onClick.AddListener(Logout);
+            if (legal != null)
+            {
+                if (privacyButton != null) privacyButton.onClick.AddListener(legal.ShowPrivacy);
+                if (termsButton != null) termsButton.onClick.AddListener(legal.ShowTerms);
+            }
             panel.SetActive(false);
         }
 
@@ -74,6 +105,13 @@ namespace Project51.UIV2.Core
             audioToggle.SetOn(GameAudioPreferences.Enabled);
             if (musicToggle != null) musicToggle.SetOn(GameAudioPreferences.MusicChoice);
             if (vibrationToggle != null) vibrationToggle.SetOn(GamePreferences.VibrationEnabled);
+            if (sfxSwitch != null)
+            {
+                GameAudioPreferences.FoldMasterIntoChannels();
+                sfxSwitch.SetIsOn(GameAudioPreferences.EffectsChoice, false, false);
+            }
+            if (musicSwitch != null) musicSwitch.SetIsOn(GameAudioPreferences.MusicChoice, false, false);
+            if (vibrationSwitch != null) vibrationSwitch.SetIsOn(GamePreferences.VibrationEnabled, false, false);
             RefreshGraphicsChoice();
 
             // Prima dell'ingresso non esiste un account da mostrare (la sessione ospite tecnica di
@@ -82,6 +120,10 @@ namespace Project51.UIV2.Core
             bool entered = startScreen == null || startScreen.HasEntered;
             bool realAccount = entered && auth != null && auth.IsLoggedIn && auth.HasRealLogin;
             ApplyAccountLayout(entered, realAccount);
+            if (accountSection != null) accountSection.SetActive(entered);
+            if (accountGroup != null) accountGroup.SetActive(realAccount);
+            if (guestGroup != null) guestGroup.SetActive(entered && !realAccount);
+            if (emailLabel != null) emailLabel.text = MaskEmail(auth?.Email);
             var footerText = footer != null ? footer.GetComponent<TMP_Text>() : null;
             if (footerText != null) footerText.text = "51Cirulla · v" + Application.version;
             if (panelMotion == null)
@@ -141,6 +183,25 @@ namespace Project51.UIV2.Core
         private void RefreshGraphicsChoice()
         {
             if (reducedGraphicsToggle != null) reducedGraphicsToggle.SetOn(GamePreferences.ReducedGraphics);
+            if (graphicsSwitch != null) graphicsSwitch.SetIsOn(GamePreferences.ReducedGraphics, false);
+        }
+
+        /// <summary>"giocatore@mail.com" -> "g•••••@mail.com"; vuoto se l'email non e' nota.</summary>
+        public static string MaskEmail(string email)
+        {
+            int at = string.IsNullOrEmpty(email) ? -1 : email.IndexOf('@');
+            return at < 1 ? "" : email[0] + "•••••" + email.Substring(at);
+        }
+
+        // Esci: stessa uscita del pannello account (AuthScreensV2.Logout). Si ricarica la scena perche'
+        // senza ricarica la Home resta "entrata" e Indietro ci riporta dentro come ospite non scelto.
+        private void Logout()
+        {
+            if (panelMotion != null) panelMotion.CloseImmediate();
+            else panel.SetActive(false);
+            var bootstrapper = AuthBootstrapper.Instance;
+            if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
+            if (!AppLoading.LoadScene(AppFlowManager.SCENE_MAIN_MENU)) SceneManager.LoadScene(AppFlowManager.SCENE_MAIN_MENU);
         }
 
         public void EnsureReducedGraphicsToggle()

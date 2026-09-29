@@ -58,7 +58,9 @@ namespace Project51.UI51
             m_T = t;
             if (m_Track != null)
             {
-                m_Track.color = Color.Lerp(UI51Tokens.WhiteA(0.08f), UI51Tokens.Gold, t);
+                // fill, non color: color e' una tinta che spegne anche il bordo (oro .4 x .08 = invisibile).
+                m_Track.color = Color.white;
+                m_Track.fill = UI51Shape.Solid(Color.Lerp(UI51Tokens.WhiteA(0.08f), UI51Tokens.Gold, t));
                 m_Track.borderColor = UI51Tokens.GoldA(Mathf.Lerp(0.4f, 0f, t));
             }
             if (m_Knob != null)

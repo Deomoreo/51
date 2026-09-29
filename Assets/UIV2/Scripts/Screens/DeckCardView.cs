@@ -28,6 +28,8 @@ namespace Project51.UIV2.Screens
         [Header("Stili")]
         [SerializeField] private Sprite lockedArtSprite;
         [SerializeField] private Color lockedArtTint = new Color(0.6f, 0.6f, 0.6f, 1f);
+        [Tooltip("Falso = l'arte riempie tutta la carta (UI51: i dorsi hanno proporzioni un po' diverse fra loro).")]
+        [SerializeField] private bool preserveArtAspect = true;
         [SerializeField] private Sprite ownedActionSprite;
         [SerializeField] private Sprite lockedActionSprite;
         [SerializeField] private Color equippedBorderColor = new Color32(232, 178, 74, 255);
@@ -71,7 +73,7 @@ namespace Project51.UIV2.Screens
 
             if (art != null)
             {
-                art.preserveAspect = true;
+                art.preserveAspect = preserveArtAspect;
                 if (locked)
                 {
                     if (lockedArtSprite != null) art.sprite = lockedArtSprite;

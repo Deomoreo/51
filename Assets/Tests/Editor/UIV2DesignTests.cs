@@ -61,6 +61,28 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void StylingSkipsEverythingUnderUI51Nodes()
+        {
+            var root = new GameObject("Fixture", typeof(RectTransform));
+            try
+            {
+                var header = new GameObject("UI51CollectionHeader", typeof(RectTransform));
+                header.transform.SetParent(root.transform, false);
+                var own = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+                own.transform.SetParent(header.transform, false);
+                var themed = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+                themed.transform.SetParent(root.transform, false);
+                own.fontSize = themed.fontSize = 22;
+                var font = own.font;
+                UIV2DesignSystem.Apply(root, Theme);
+                Assert.AreEqual(22f, own.fontSize, "UI51 headers keep their own size.");
+                Assert.AreSame(font, own.font, "UI51 headers keep their own font.");
+                Assert.AreEqual(Theme.CaptionSize, themed.fontSize, "Control: the same text outside UI51 is themed.");
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void ApplyingDesignTwicePreservesContentInputStateAndGeometry()
         {
             var root = new GameObject("Fixture", typeof(RectTransform));

@@ -125,6 +125,7 @@
     <Compile Include="Assets\Scripts\UI\SwipeSectionNavigator.cs" />
     <Compile Include="Assets\Scripts\Auth\AccountDeletionService.cs" />
     <Compile Include="Assets\Scripts\UI\PanelClassificaController.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Screens\ProfileEditorV2.cs" />
     <Compile Include="Assets\UIV2\Tests\HomeV2PreviewBootstrap.cs" />
     <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
     <Compile Include="Assets\UIV2\Tests\ProfileV2PreviewBootstrap.cs" />
@@ -270,6 +271,7 @@
     <Compile Include="Assets\UIV2\Scripts\Data\RoundResultEntryViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2PlayerRow.cs" />
     <Compile Include="Assets\Scripts\UI\PortraitCanvasMatch.cs" />
+    <Compile Include="Assets\UIV2\Scripts\Data\ProfileCosmetics.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableToggleGroup.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionScreenV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2ModalHost.cs" />

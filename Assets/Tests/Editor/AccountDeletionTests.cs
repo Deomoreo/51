@@ -63,6 +63,60 @@ namespace Project51.Tests
         {
             Assert.AreEqual(expected, AccountDeletionService.Classify(code, networkError));
         }
+
+        [TestCase("ELIMINA", true)]
+        [TestCase("  elimina ", true)]
+        [TestCase("ELIMIN", false)]
+        [TestCase("ELIMINA!", false)]
+        [TestCase("", false)]
+        [TestCase(null, false)]
+        public void ConfirmWord(string typed, bool expected)
+        {
+            Assert.AreEqual(expected, Project51.UIV2.Core.DeleteAccountModalV2.IsConfirmWord(typed));
+        }
+
+        // iPhone 12 (1170x2532, area sicura alta 2391, 2.7121 px per unita'): finestra da 1848.6 a 872.2 px.
+        [TestCase(0f, 0f)]        // tastiera chiusa o Editor
+        [TestCase(600f, 0f)]      // tastiera piu' bassa della finestra
+        [TestCase(1008f, 62.07f)] // tastiera da 336 pt: sale di 50 + 12 di stacco
+        [TestCase(3000f, 188f)]   // misura assurda: si ferma al bordo alto dell'area sicura
+        public void KeyboardLift(float keyboardPx, float expected)
+        {
+            Assert.AreEqual(expected, Project51.UIV2.Core.DeleteAccountModalV2.KeyboardLift(keyboardPx, 872.2f, 1848.6f, 2391f, 2.7121f), 0.1f);
+        }
+
+        [TestCase("giocatore@mail.com", "g•••••@mail.com")]
+        [TestCase("@mail.com", "")]
+        [TestCase("senzachiocciola", "")]
+        [TestCase(null, "")]
+        public void MaskEmail(string email, string expected)
+        {
+            Assert.AreEqual(expected, Project51.UIV2.Core.SettingsV2Integration.MaskEmail(email));
+        }
+
+        [Test]
+        public void MarkRegistered_TurnsTheSessionIntoARealLoginWithEmail()
+        {
+            const string realKey = "Project51_HasRealLogin", registeredKey = "Project51_IsRegistered";
+            int savedReal = PlayerPrefs.GetInt(realKey, 0), savedRegistered = PlayerPrefs.GetInt(registeredKey, 0);
+            try
+            {
+                PlayerPrefs.SetInt(realKey, 0);
+                var auth = new PlayFabAuthService();
+                Assert.IsFalse(auth.HasRealLogin, "Control: guest before registering.");
+
+                auth.MarkRegistered("giocatore@mail.com");
+
+                Assert.IsTrue(auth.HasRealLogin, "Account UI (profile editor, delete account) is gated by this flag.");
+                Assert.AreEqual("giocatore@mail.com", auth.Email);
+            }
+            finally
+            {
+                PlayerPrefs.SetInt(realKey, savedReal);
+                PlayerPrefs.SetInt(registeredKey, savedRegistered);
+                PlayerPrefs.Save();
+            }
+        }
     }
 }
 #endif

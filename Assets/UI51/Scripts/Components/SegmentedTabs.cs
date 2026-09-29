@@ -98,8 +98,10 @@ namespace Project51.UI51
         {
             if (tab.shape != null)
             {
-                tab.shape.color = active ? UI51Tokens.GoldA(0.16f) : Color.clear;
-                tab.shape.borderColor = active ? UI51Tokens.GoldA(0.7f) : Color.clear;
+                // color e' una tinta su tutta la forma, bordo compreso: il colore va nel riempimento.
+                tab.shape.fill = UI51Shape.Solid(UI51Tokens.GoldA(0.16f));
+                tab.shape.borderColor = UI51Tokens.GoldA(0.7f);
+                tab.shape.color = active ? Color.white : Color.clear;
             }
             if (tab.label != null)
             {

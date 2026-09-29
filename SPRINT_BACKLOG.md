@@ -9,9 +9,60 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 29/09, versione 2.28
+## ▶ PUNTO DI RIPRESA — 29/09, versione 2.30
 
-**2.28:** UI51 Fase 3 (Home e pannelli) costruita e provata in Unity. Menu **Tools/UI51/Build Fase 3 (Home)** (`Assets/UI51/Editor/UI51HomeBuilder.cs`) in `MainMenu.unity`. Build pulito (0 errori, 0 warning); test EditMode 288 ok, 0 falliti, 7 saltati (Explicit). Non ancora committata: serve il via.
+**2.30:** chiusi i 13 punti rimasti aperti dalla Fase 4. Build pulito (0 errori); test EditMode 316 totali: 309 ok, 0 falliti, 7 saltati (Explicit). Non committata, come la 2.29: serve il via.
+- Fatto e provato nel Simulator su iPhone 12 e SE:
+  - Emoticon: il tocco in griglia toglie un'emoticon già in uso e aggiunge in coda una libera. A slot pieni il tocco su una libera non cambia niente. Testo d'aiuto: "Tocca un'emoticon qui sotto per aggiungerla" oppure "Slot pieni: tocca un'emoticon per toglierla". Non è un aggancio opzionale: vale anche per la schermata classica (`CollectionCosmeticsV2.Toggle`). Test: `EmoticonToggleRemovesOneInUseAndAppendsAFreeOne`.
+  - Profilo ospite: il testo ora dice "Mazzi, emoticon e accusi da sbloccare". Righe dei vantaggi alte 47 (erano 55): su iPhone SE CREA UN ACCOUNT si vede intero senza scorrere.
+  - Salvataggio dell'aspetto: una sola scrittura per avatar, cornice e banner (`ProfileService.SetCosmetics`), con l'esito a schermo. Durante l'invio SALVA è attenuato e il foglio non si chiude. Se va bene: "Aspetto salvato" e chiusura. Se fallisce: "Non salvato: le tue scelte sono ancora qui. Riprova." e il foglio resta aperto. Dopo 15 secondi senza risposta si può riprovare. Test: `TheLookIsSavedInOneWriteAndTheCacheOnlyAdoptsWhatTheCloudAccepted`.
+  - Dialogo Elimina account: se la tastiera copre i pulsanti, la finestra sale quanto basta (`DeleteAccountModalV2.KeyboardLift`, 4 test). Nell'Editor la tastiera non esiste, quindi lì non cambia niente.
+- Revisione del codice (3 aree): un solo difetto, corretto. Toccando Elimina o Annulla la tastiera si chiude e la finestra sarebbe scesa sotto il dito, facendo perdere il tocco: ora non scende finché c'è un dito sullo schermo. Si vede solo su un telefono vero.
+- Decisioni prese (restano così finché non le cambi):
+  - Notifiche: riga nascosta. L'app non manda notifiche.
+  - "Cambia password": nascosta finché su PlayFab non c'è il modello di e-mail per il recupero (H5). Intanto si usa "Password dimenticata?" dall'Accesso.
+  - Lingua: riga informativa "Italiano", non si tocca. C'è una sola lingua.
+  - Riga "prossimo sblocco" nel Profilo: non costruita. L'unico sblocco a livello che esiste (banner Porpora al livello 10) si vede già nell'editor con il lucchetto.
+  - Collezione: "Prossimi sblocchi", "Nuova emoticon", monete e gemme restano nascosti finché non esistono negozio, missioni e valute.
+  - Sfocatura dietro i pannelli del menu: resta solo il velo scuro. Al tavolo la sfocatura c'è già e la usano i pannelli della Fase 5.
+  - Cornice e banner scelti visibili al tavolo (D2): diventa il primo passo della Fase 5, con i banner nuovi.
+- Restano a te (non si possono fare dall'Editor):
+  - Prova con un accesso vero: Profilo con account, editor, SALVA (salvataggio reale su PlayFab), registrazione dall'app.
+  - Prova su un telefono vero: tastiera nel dialogo Elimina account.
+- Limite noto del salvataggio: se la risposta arriva dopo i 15 secondi e nel frattempo si è premuto di nuovo SALVA, il messaggio può non corrispondere all'ultima richiesta. L'aspetto salvato resta comunque quello accettato da PlayFab.
+- ASSET MANCANTI DA CREARE: nessuno.
+- Prossimo: Fase 5 (Tavolo 1v1), col via sul piano.
+
+**2.29:** UI51 Fase 4 (Collezione, Profilo, Impostazioni) costruita e provata in Unity. Menu **Tools/UI51/Build Fase 4 (Collezione, Profilo, Impostazioni)** (`Assets/UI51/Editor/UI51MetaBuilder.cs`) in `MainMenu.unity`. Build pulito (0 errori); test EditMode 310 totali: 303 ok, 0 falliti, 7 saltati (Explicit). Non committata: serve il via.
+- Costruito:
+  - Impostazioni e dialogo "Elimina account".
+  - Profilo: stato ospite, stato account, editor di Avatar, Cornice e Banner.
+  - Collezione: intestazione, schede a segmenti col conteggio ("Mazzi 4", "Emoticon 3/3", "Accuso 1"), griglia dei mazzi, emoticon (3 slot "In partita" più griglia), scheda Accuso.
+- Decisioni dell'utente: editor del profilo costruito e collegato; "Grafica ridotta" tenuta nelle Impostazioni (sezione GRAFICA).
+- Script toccati, solo agganci opzionali (vuoti = UIV2 classica): `CollectionScreenV2` (schede a segmenti, `SetTabCount`), `CollectionEmoticonsPanel` (`equippedCountLabel`), `CollectionCosmeticsV2` (`PreviewFist`, ordine degli slot), `DeckCardView` (`preserveArtAspect`), `UIV2CollectionCard` (`orderLabel`), `CollectionItemViewData` (`Order`), `ProfileScreenV2`, `ProfileEditorV2` e `ProfileCosmetics` (nuovi), `SettingsV2Integration`, `DeleteAccountModalV2`, `HomeV2Integration`.
+- Verificato nel Simulator su iPhone 12 e SE: Impostazioni, dialogo Elimina account, Profilo ospite, le tre schede della Collezione. Provati: scelta del mazzo, rimozione e aggiunta di un'emoticon, messaggi d'aiuto, ANTEPRIMA dell'accuso, tocchi, dissolvenza delle intestazioni. Preferenze del giocatore rimesse com'erano dopo le prove.
+- Verificato solo con dati di prova: Profilo con account ed editor (nessun accesso reale, SALVA mai premuto). "Elimina" non è mai stato premuto.
+- Correzioni:
+  - Intestazioni di Collezione e Profilo: in gioco uscivano in Poppins invece che in Cinzel e Nunito. `UIV2DesignSystem` ora salta ogni nodo il cui nome comincia per "UI51" (prima solo il nome esatto). Nella prima verifica del Profilo l'errore era sfuggito. Test: `StylingSkipsEverythingUnderUI51Nodes`.
+  - Scheda Accuso su iPhone SE: sforava di 1 unità. Area del pugno alta 186 invece di 190.
+- Correzioni nate dalla revisione del codice (4 aree, ogni difetto controverificato):
+  - "Esci" dalle Impostazioni: non ricaricava la scena, e Indietro riportava nella Home come ospite non scelto. Ora fa la stessa uscita del pannello account (`SettingsV2Integration.Logout`). Provato in gioco da ospite su iPhone 12: si torna all'Accesso con "Continua come ospite".
+  - Registrazione dall'app: l'account restava in veste ospite fino al riavvio (niente editor, niente "Elimina account", niente XP). Difetto precedente alla Fase 4. Ora `AuthUIController` chiama `PlayFabAuthService.MarkRegistered(email)`. Test: `MarkRegistered_TurnsTheSessionIntoARealLoginWithEmail`. Non provato con una registrazione vera.
+  - Editor del profilo: con rete lenta, subito dopo un accesso, poteva aprirsi sui dati del profilo precedente. Ora usa la stessa condizione della carta (`HomeV2Integration.CloudReady`).
+  - CREA UN ACCOUNT nel Profilo ospite: dopo il primo tocco restava rimpicciolito al 97% (due effetti al tocco sullo stesso pulsante). Il builder ora toglie `UI51Press` da quel pulsante. Provato in gioco: torna al 100%.
+  - Segnalazione smentita dal controllo in Unity: lo scorrimento di Profilo e Collezione usa la colonna nuova, anche dopo aver riaperto la scena da disco e in gioco.
+  - Salvataggio dell'aspetto (fino a 3 scritture separate, senza messaggio se una falliva): corretto in 2.30.
+- Differenze dal mockup rimaste (ognuna col via):
+  - Impostazioni: riga Notifiche e "Cambia password" nascoste; Lingua "Italiano" non si tocca; velo dietro i pannelli senza sfocatura; il dialogo tiene il cerchio rosso anche nel messaggio finale.
+  - Profilo: l'intestazione sta nella barra in alto e il contenuto parte circa 17 unità più in basso; si vedono solo dati veri; 8 avatar; banner "Stellato"; cerchio dell'ospite a bordo continuo; la riga "prossimo sblocco" non c'è. Chiusi in 2.30: CREA UN ACCOUNT su iPhone SE, esito del salvataggio dell'aspetto.
+  - Collezione: scheda "Mazzi" al posto di "Dorsi" (dalla 2.30 anche nel testo del Profilo ospite); 4 mazzi veri; "Prossimi sblocchi", "Nuova emoticon", monete e gemme nascosti; conteggio "6 / 6" invece di "6 disponibili"; bordi tratteggiati resi continui; arte dei mazzi adattata alla carta (fino al 6% di deformazione); carte dei mazzi senza animazione al tocco.
+  - Emoticon: dalla 2.30 il tocco in griglia toglie un'emoticon già in uso, come nel mockup.
+  - Accuso: ANTEPRIMA fa battere il pugno sul posto, senza suono; "In uso" è fisso perché l'accuso è uno solo; "Nuovi accusi in arrivo" è un testo fisso.
+- Da provare su un telefono vero: la tastiera nel dialogo Elimina account (dalla 2.30 la finestra sale da sola).
+- ASSET MANCANTI DA CREARE: nessuno.
+- Prossimo: Fase 5 (Tavolo 1v1), col via.
+
+**2.28:** UI51 Fase 3 (Home e pannelli) costruita e provata in Unity. Menu **Tools/UI51/Build Fase 3 (Home)** (`Assets/UI51/Editor/UI51HomeBuilder.cs`) in `MainMenu.unity`. Build pulito (0 errori, 0 warning); test EditMode 288 ok, 0 falliti, 7 saltati (Explicit). Committata in `42bef09`, non inviata al server.
 - Costruito: testata account (avatar, "Livello N", barra XP) e testata ospite (badge OSPITE, Registrati), colonna dei pulsanti laterali, tile Modalità e Mazzo, GIOCA, barra in basso, pannello Modalità a 3 schede (Online, Allenamento, Stanza privata) e pannello Mazzo.
 - Decisioni dell'utente: Amici, Missioni e Notizie nascoste per ora; ambiente animato della Home mantenuto.
 - Script toccati, solo agganci opzionali (vuoti = UIV2 classica): `UIV2TopBar` (SetGuest, Registrati), `UIV2SelectorChip` (SetBadge), `SelectorOptionViewData` (Caption, ShortName), `QuickSelectionPanels` (schede, CONFERMA, testo difficoltà), `HomeScreenV2` (SetGuest), `HomeV2Integration`.
@@ -30,7 +81,7 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
   - Pulsanti laterali: l'avviso di novità è un pallino, non un numero.
   - I mockup dei pannelli non si aprono nel browser (manca `support.js`): confrontati con le misure del loro sorgente.
 - ASSET MANCANTI DA CREARE: nessuno. Monete e gemme non sono tra le icone controllate, ma per ora sono nascoste.
-- Prossimo: Fase 4 (Collezione, Profilo, Impostazioni), col via.
+- Seguita dalla Fase 4 (vedi 2.29).
 
 **2.27:** Fase 2 UI51 provata in Unity. Build Fase 2 pulito (0 errori, 0 warning), Play senza errori in console. Login, Registrazione, Termini/Privacy e Caricamento verificati nel Simulator su iPhone 12 e SE contro i mockup (`Design/51_handoff/.../mockups/*.dc.html`).
 - Campi di `AppLoadingView` collegati. Aggiunto `Percent`: la percentuale sotto la barra, vuota quando il caricamento è indeterminato.
@@ -74,7 +125,7 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 - Test EditMode `UI51FoundationTests` (fotogrammi emoticon, letter-spacing). Compilazione, test e refresh del grafo vanno fatti in locale.
 
 **Aperti UI51 (ognuno col via):**
-- Fase 2 committata (`aeb3bfc`). Fase 3 (Home e pannelli) provata (vedi 2.28), da committare col via. Fasi 4–10: Collezione/Profilo/Impostazioni, Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
+- Fase 2 committata (`aeb3bfc`). Fase 3 committata (`42bef09`). Fase 4 (Collezione, Profilo, Impostazioni) provata (vedi 2.29), da committare col via. Fasi 5–10: Tavolo 1v1, Tavolo 2v2/1v3, Fine smazzata/partita, Amici/Posta/Notizie/Premi, Overlay connessione, Pulizia (lista file per file da confermare).
 - Rimandati: coriandoli → F7; ConnectionOverlay → F9; ventaglio carte prese, picker emoticon, "+N" ed emo-fly → F5; input nel Dialog → F4.
 - Scostamenti noti: niente blur di sfondo; gradienti conici resi lineari; bordi superiori di sheet e nav approssimati.
 
@@ -363,7 +414,7 @@ valuta o ricompensa finta aggiunta. Nessuna build Android eseguita in questo gir
 | # | Cosa | Stato |
 |---|------|-------|
 | D1 | Profilo: dati reali (livello, XP, statistiche) | ☑ 2.12 livello nell'esagono in Home, nome ospite "Ospite XXXX". 2.13: ospiti senza XP né ricompense (invito a registrarsi al posto della barra), ID accorciato a "#XXXXXXXX" e nascosto agli ospiti. Aperto: l'ospite è un account nuovo a ogni avvio (nome e statistiche cloud non restano) |
-| D2 | Scelta di icona e banner nel profilo, visibili al tavolo | ☐ |
+| D2 | Scelta di icona e banner nel profilo, visibili al tavolo | ◐ 2.29: editor di avatar, cornice e banner nel Profilo; l'avatar scelto si vede anche nella Home. Provato solo con dati di prova. Aperto: al tavolo non si vedono ancora |
 | D3 | Posta (mockup 06): messaggi e ricompense dal server | ☐ |
 | D4 | Amici (mockup 07): lista, richieste, invito in stanza (attiva "Amici" in sala d'attesa) | ☐ |
 | D5 | Classifica, tornei, eventi | ⏸ futuro |

@@ -23,8 +23,8 @@ namespace Project51.UI51.EditorTools
         const string ScenePath = "Assets/Scenes/MainMenu.unity";
         const string Tag = "[UI51 Home]";
         // Gli host UIV2 sono in unita' 1080 di larghezza: ogni contenitore UI51 e' largo 390 e scalato.
-        const float S = 1080f / 390f;
-        const float TopBarH = 262f / S; // altezza di TopBarHost in unita' mockup
+        internal const float S = 1080f / 390f;
+        internal const float TopBarH = 262f / S; // altezza di TopBarHost in unita' mockup
 
         [MenuItem("Tools/UI51/Build Fase 3 (Home)")]
         private static void Menu() => Build();
@@ -636,9 +636,9 @@ namespace Project51.UI51.EditorTools
         // --- Mattoni comuni
 
         /// <summary>Contenitore 390 di larghezza scalato a tutta larghezza dell'host, agganciato in alto, fuori dai layout group.</summary>
-        static RectTransform Container(Transform host)
+        internal static RectTransform Container(Transform host, string name = "UI51")
         {
-            var rt = UI51Build.Child(host, "UI51");
+            var rt = UI51Build.Child(host, name);
             rt.anchorMin = new Vector2(0.5f - 0.5f / S, 1f - 1f / S);
             rt.anchorMax = new Vector2(0.5f + 0.5f / S, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
@@ -649,7 +649,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>UI51 -> Safe (DesignCanvasFit 390x844) -> Sheet con maniglia e intestazione (titolo, sottotitolo, chiudi).</summary>
-        static RectTransform SheetFrame(Transform modal, string title, string subtitle, out Button close)
+        internal static RectTransform SheetFrame(Transform modal, string title, string subtitle, out Button close)
         {
             var root = UI51Build.Stretch(UI51Build.Child(modal, "UI51"));
             var safe = UI51Build.Child(root, "Safe");
@@ -685,7 +685,7 @@ namespace Project51.UI51.EditorTools
             return sheet;
         }
 
-        static void WireModal(AnimatedModalV2 modal, RectTransform sheet, Button close)
+        internal static void WireModal(AnimatedModalV2 modal, RectTransform sheet, Button close)
         {
             var group = UI51Build.GetOrAdd<CanvasGroup>(modal);
             UI51Build.Wire(modal, so =>
@@ -704,7 +704,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Spunta del mockup (path SVG M5 12.5 l4.5 4.5 L19 7.5 su 24) fatta con due tratti arrotondati OnGold.</summary>
-        static void CheckMark(RectTransform parent, float size, float strokeSvg)
+        internal static void CheckMark(RectTransform parent, float size, float strokeSvg)
         {
             var glyph = UI51Build.Center(UI51Build.Child(parent, "Glyph"), size, size);
             UI51Build.Remove<Image>(glyph.gameObject); // prima versione: icona tinta
@@ -721,14 +721,14 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Bersaglio trasparente a tutta misura + Button + pressione.</summary>
-        static Button Hit(RectTransform rt)
+        internal static Button Hit(RectTransform rt)
         {
             var hit = UI51Build.Image(rt, null, Color.clear, true, false);
             UI51Build.GetOrAdd<UI51Press>(rt);
             return UI51Build.Button(hit, hit);
         }
 
-        static SelectableToggleItem Toggle(RectTransform rt, GameObject on, GameObject off, GameObject check, GameObject glow)
+        internal static SelectableToggleItem Toggle(RectTransform rt, GameObject on, GameObject off, GameObject check, GameObject glow)
         {
             var t = UI51Build.GetOrAdd<SelectableToggleItem>(rt);
             UI51Build.Wire(t, so =>

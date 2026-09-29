@@ -16,6 +16,9 @@ namespace Project51.UI51
         [SerializeField] TMP_InputField m_Field;
         [SerializeField] UI51Shape m_Box;
         [SerializeField] float m_Duration = 0.15f;
+        [Tooltip("Bordo a riposo e col focus: oro .3 -> oro pieno (rosso nella conferma Elimina account).")]
+        [SerializeField] Color m_Border = new Color(243f / 255f, 201f / 255f, 105f / 255f, 0.3f);
+        [SerializeField] Color m_BorderFocus = new Color(243f / 255f, 201f / 255f, 105f / 255f, 1f);
 
         float m_T;
 
@@ -57,7 +60,7 @@ namespace Project51.UI51
             // fill, non color: color e' una tinta moltiplicata sul riempimento (0.06 x 0.06 = invisibile).
             m_Box.color = Color.white;
             m_Box.fill = UI51Shape.Solid(UI51Tokens.WhiteA(Mathf.Lerp(0.06f, 0.1f, t)));
-            m_Box.borderColor = Color.Lerp(UI51Tokens.GoldA(0.3f), UI51Tokens.Gold, t);
+            m_Box.borderColor = Color.Lerp(m_Border, m_BorderFocus, t);
         }
 
 #if UNITY_EDITOR

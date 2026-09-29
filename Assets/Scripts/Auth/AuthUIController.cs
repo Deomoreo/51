@@ -448,6 +448,8 @@ namespace Project51.Auth
                 result =>
                 {
                     MarkRegisteredLocal(true);
+                    // Da qui e' un login vero: senza questo Profilo e Impostazioni restano in veste ospite.
+                    Project51.Auth.AuthBootstrapper.Instance?.PlayFabAuth?.MarkRegistered(email);
                     
                     // Aggiorna display name tramite il servizio centrale, così la UI (Banner/LoginGate) riceve l'evento.
                     var bs = Project51.Auth.AuthBootstrapper.Instance;

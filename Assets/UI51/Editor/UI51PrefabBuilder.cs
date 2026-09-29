@@ -115,7 +115,7 @@ namespace Project51.UI51.EditorTools
         /// Face (Ring, Timer, Inner con maschera e Avatar) + Emoticon (cerchio crema con fotogrammi animati).
         /// emoSize: 34 per il proprio banner, 30 per gli avversari (mockup Tavolo).
         /// </summary>
-        static AvatarFrame BuildAvatar(GameObject root, float size, float ringWidth, FrameStyle frame, Sprite sprite, float emoSize)
+        internal static AvatarFrame BuildAvatar(GameObject root, float size, float ringWidth, FrameStyle frame, Sprite sprite, float emoSize)
         {
             var rt = UI51Build.Center((RectTransform)root.transform, size, size);
             var avatar = UI51Build.GetOrAdd<AvatarFrame>(root);
@@ -495,7 +495,7 @@ namespace Project51.UI51.EditorTools
 
         // --- Tab segmentate (SPEC §3.7)
 
-        static void BuildTabs(GameObject root)
+        internal static void BuildTabs(GameObject root)
         {
             var rt = UI51Build.Center((RectTransform)root.transform, 342f, 44f);
             UI51Build.Solid(rt, UI51Tokens.WhiteA(0.04f), UI51Tokens.RadiusTabs, 1f, UI51Tokens.GoldA(0.18f));
@@ -616,11 +616,11 @@ namespace Project51.UI51.EditorTools
 
         // --- Interruttore (mockup Impostazioni)
 
-        static void BuildToggle(GameObject root)
+        internal static void BuildToggle(GameObject root)
         {
             var rt = UI51Build.Center((RectTransform)root.transform, 46f, 26f);
-            var track = UI51Build.Solid(rt, Color.white, 13f, 1f, UI51Tokens.GoldA(0.4f), true);
-            track.color = UI51Tokens.WhiteA(0.08f);
+            // Riempimento, non tinta: la tinta spegnerebbe anche il bordo (vedi UI51Toggle.Apply).
+            var track = UI51Build.Solid(rt, UI51Tokens.WhiteA(0.08f), 13f, 1f, UI51Tokens.GoldA(0.4f), true);
 
             var knobRt = UI51Build.Place(UI51Build.Child(rt, "Knob"), new Vector2(0f, 0.5f), new Vector2(18f, 18f), new Vector2(13f, 0f));
             knobRt.pivot = new Vector2(0.5f, 0.5f);

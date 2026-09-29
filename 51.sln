@@ -7,13 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayFab", "PlayFab.csproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project51.Gameplay", "Project51.Gameplay.csproj", "{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{024587FC-86BF-81FB-0461-EDE08D4A36AB}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotonChat", "PhotonChat.csproj", "{037A4E31-F369-456B-262D-92E7A30A1B9B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotonUnityNetworking.Demos", "PhotonUnityNetworking.Demos.csproj", "{7AD730B8-8C09-5A40-8396-E455AE26973E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.Play.Games", "Google.Play.Games.csproj", "{642083BA-8F89-8670-E70F-21B1348CB086}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{024587FC-86BF-81FB-0461-EDE08D4A36AB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotonRealtime", "PhotonRealtime.csproj", "{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}"
 EndProject
@@ -61,6 +61,10 @@ Global
 		{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4B76BBC-EC57-0726-C3C9-1D847524FBBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{037A4E31-F369-456B-262D-92E7A30A1B9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{037A4E31-F369-456B-262D-92E7A30A1B9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{037A4E31-F369-456B-262D-92E7A30A1B9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -73,10 +77,6 @@ Global
 		{642083BA-8F89-8670-E70F-21B1348CB086}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{642083BA-8F89-8670-E70F-21B1348CB086}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{642083BA-8F89-8670-E70F-21B1348CB086}.Release|Any CPU.Build.0 = Release|Any CPU
-		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{024587FC-86BF-81FB-0461-EDE08D4A36AB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0EAB592F-A617-E9C3-30B5-9A8C7D8A30A0}.Release|Any CPU.ActiveCfg = Release|Any CPU

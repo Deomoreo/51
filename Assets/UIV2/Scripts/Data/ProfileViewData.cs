@@ -13,6 +13,8 @@ namespace Project51.UIV2.Data
         public string PlayerId;
         public int Level;
         public Sprite Avatar;           // null = silhouette generica cotta in avatar_frame
+        public string FrameId;          // id di ProfileCosmetics; vuoto = cornice iniziale
+        public string BannerId;
         public int XpCurrent;
         public int XpMax;
         public int MatchesPlayed;

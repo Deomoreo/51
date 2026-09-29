@@ -83,6 +83,32 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void MasterAudioOffMovesToTheTwoChannels()
+        {
+            bool master = GameAudioPreferences.Enabled;
+            try
+            {
+                GameAudioPreferences.SetMusicEnabled(true);
+                GameAudioPreferences.SetEffectsEnabled(true);
+                GameAudioPreferences.SetEnabled(false);
+
+                GameAudioPreferences.FoldMasterIntoChannels();
+                Assert.IsTrue(GameAudioPreferences.Enabled);
+                Assert.IsFalse(GameAudioPreferences.MusicChoice);
+                Assert.IsFalse(GameAudioPreferences.EffectsChoice);
+
+                GameAudioPreferences.SetEffectsEnabled(true);
+                GameAudioPreferences.FoldMasterIntoChannels();
+                Assert.IsTrue(GameAudioPreferences.EffectsEnabled, "Con l'audio generale acceso non tocca le scelte");
+                Assert.IsFalse(GameAudioPreferences.MusicEnabled);
+            }
+            finally
+            {
+                GameAudioPreferences.SetEnabled(master);
+            }
+        }
+
+        [Test]
         public void BoxBlurKeepsFlatImagesAndSpreadsABrightPoint()
         {
             const int size = 9;

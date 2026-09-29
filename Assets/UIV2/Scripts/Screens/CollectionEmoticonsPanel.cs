@@ -20,6 +20,7 @@ namespace Project51.UIV2.Screens
         [SerializeField] private TMP_Text equippedHeaderLabel;
         [SerializeField] private string equippedHeaderPrefix = "EQUIPAGGIATE";
         [SerializeField] private EmoticonSlotView[] equippedSlots;
+        [SerializeField] private TMP_Text equippedCountLabel; // facoltativo: "2 / 3"
 
         [Header("COLLEZIONE")]
         [SerializeField] private TMP_Text collectionCountLabel;
@@ -74,6 +75,8 @@ namespace Project51.UIV2.Screens
         public void SetEquipped(IReadOnlyList<CollectionItemViewData> equipped)
         {
             if (equippedHeaderLabel != null) equippedHeaderLabel.text = $"{equippedHeaderPrefix} {MiddleDot} {MaxEquipped} max";
+            if (equippedCountLabel != null)
+                equippedCountLabel.text = $"{Mathf.Min(equipped != null ? equipped.Count : 0, MaxEquipped)} / {MaxEquipped}";
             if (equippedSlots == null) return;
 
             for (int i = 0; i < equippedSlots.Length; i++)

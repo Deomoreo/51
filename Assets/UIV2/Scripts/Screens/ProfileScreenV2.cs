@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Project51.UI51;
 using Project51.UIV2.Components;
 using Project51.UIV2.Data;
 
@@ -44,15 +45,32 @@ namespace Project51.UIV2.Screens
         [SerializeField] private UIV2Button registerButton;
         [SerializeField] private UIV2Button shareButton;
 
+        [Header("UI51 (opzionali)")]
+        [SerializeField] private GameObject accountGroup;
+        [SerializeField] private GameObject guestGroup;
+        [SerializeField] private TMP_Text guestNameLabel;
+        [SerializeField] private AvatarFrame avatar;
+        [SerializeField] private UI51Shape banner;
+        [SerializeField] private TMP_Text levelLabel;
+        [SerializeField] private TMP_Text titleLabel;
+        [SerializeField] private TMP_Text idLabel;
+        [SerializeField] private TMP_Text xpHintLabel;
+        [SerializeField] private Button editButton;
+        [SerializeField] private Button loginButton;
+
         private readonly List<ProfileTrophyView> _spawnedTrophies = new List<ProfileTrophyView>();
 
         public event Action OnSettingsPressed;
         public event Action OnRegisterPressed;
         public event Action OnSharePressed;
         public event Action<CollectionItemViewData> OnTrophyPressed;
+        public event Action OnEditPressed;
+        public event Action OnLoginPressed;
 
         private void Awake()
         {
+            if (editButton != null) editButton.onClick.AddListener(() => OnEditPressed?.Invoke());
+            if (loginButton != null) loginButton.onClick.AddListener(() => OnLoginPressed?.Invoke());
             if (settingsButton != null) settingsButton.onClick.AddListener(() => OnSettingsPressed?.Invoke());
             if (registerButton != null && registerButton.Button != null) registerButton.Button.onClick.AddListener(() => OnRegisterPressed?.Invoke());
             if (shareButton != null && shareButton.Button != null) shareButton.Button.onClick.AddListener(() => OnSharePressed?.Invoke());
@@ -88,6 +106,31 @@ namespace Project51.UIV2.Screens
             SetTrophies(data.Trophies);
 
             if (registerButton != null) registerButton.gameObject.SetActive(data.IsGuest);
+            BindUI51(data);
+        }
+
+        private void BindUI51(ProfileViewData data)
+        {
+            if (accountGroup != null) accountGroup.SetActive(!data.IsGuest);
+            if (guestGroup != null) guestGroup.SetActive(data.IsGuest);
+            if (guestNameLabel != null) guestNameLabel.text = data.PlayerName;
+            if (avatar != null)
+            {
+                avatar.SetAvatar(data.Avatar);
+                ProfileCosmetics.ApplyFrame(avatar, ProfileCosmetics.FrameIndex(data.FrameId), 2f, 4f);
+            }
+            if (banner != null)
+            {
+                UI51Banners.Apply(banner, ProfileCosmetics.Banner(ProfileCosmetics.BannerIndex(data.BannerId)));
+                banner.borderColor = UI51Tokens.BorderGoldSoft; // il bordo resta quello dei pannelli
+            }
+            if (levelLabel != null) levelLabel.text = data.Level.ToString();
+            if (titleLabel != null) titleLabel.text = $"{levelPrefix} {data.Level}";
+            if (idLabel != null) idLabel.text = string.IsNullOrEmpty(data.PlayerId) ? string.Empty : "ID " + data.PlayerId;
+            if (xpHintLabel != null)
+                xpHintLabel.text = data.HasProgress && data.XpMax > 0
+                    ? $"Ancora {Mathf.Max(0, data.XpMax - data.XpCurrent)} XP per il livello {data.Level + 1}"
+                    : string.Empty;
         }
 
         public void SetXp(int current, int max, int nextLevel)

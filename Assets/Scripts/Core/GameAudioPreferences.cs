@@ -38,6 +38,18 @@ namespace Project51.Core
 
         public static void SetEffectsEnabled(bool on) => Write(EffectsKey, ref effects, on);
 
+        /// <summary>
+        /// Le Impostazioni UI51 hanno solo Musica ed Effetti: un audio generale spento passa sui due
+        /// canali, cosi' gli interruttori mostrano quello che si sente davvero.
+        /// </summary>
+        public static void FoldMasterIntoChannels()
+        {
+            if (Enabled) return;
+            SetMusicEnabled(false);
+            SetEffectsEnabled(false);
+            SetEnabled(true);
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Apply() => AudioListener.volume = Enabled ? 1f : 0f;
 

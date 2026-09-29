@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Project51.Core;
 using Project51.UIV2.Core;
+using Project51.UIV2.Screens;
 using UnityEngine;
 
 namespace Project51.Tests
@@ -28,6 +29,26 @@ namespace Project51.Tests
                 PlayerPrefs.SetString(key,"0,0,99,invalid,2,3,4");CollectionAssert.AreEqual(new[]{0,2,3},CollectionCosmeticsV2.Equipped);
             }
             finally{if(existed)PlayerPrefs.SetString(key,original);else PlayerPrefs.DeleteKey(key);PlayerPrefs.Save();}
+        }
+        [Test]
+        public void EmoticonToggleRemovesOneInUseAndAppendsAFreeOne()
+        {
+            const string key="Collection.Emoticons";bool existed=PlayerPrefs.HasKey(key);string original=PlayerPrefs.GetString(key);
+            try
+            {
+                PlayerPrefs.SetString(key,"0,1,2");Assert.IsFalse(CollectionCosmeticsV2.Toggle(3));CollectionAssert.AreEqual(new[]{0,1,2},CollectionCosmeticsV2.Equipped);
+                Assert.IsTrue(CollectionCosmeticsV2.Toggle(1));CollectionAssert.AreEqual(new[]{0,2},CollectionCosmeticsV2.Equipped);
+                Assert.IsTrue(CollectionCosmeticsV2.Toggle(1));CollectionAssert.AreEqual(new[]{0,2,1},CollectionCosmeticsV2.Equipped);
+                CollectionCosmeticsV2.Toggle(0);CollectionCosmeticsV2.Toggle(2);CollectionCosmeticsV2.Toggle(1);CollectionAssert.IsEmpty(CollectionCosmeticsV2.Equipped);
+            }
+            finally{if(existed)PlayerPrefs.SetString(key,original);else PlayerPrefs.DeleteKey(key);PlayerPrefs.Save();}
+        }
+        [Test]
+        public void CollectionTabLabelShowsCountOnlyWhenKnown()
+        {
+            Assert.AreEqual("Mazzi",CollectionScreenV2.TabLabel("Mazzi",null,true));Assert.AreEqual("Mazzi",CollectionScreenV2.TabLabel("Mazzi","",false));
+            string on=CollectionScreenV2.TabLabel("Emoticon","2/3",true),off=CollectionScreenV2.TabLabel("Emoticon","2/3",false);
+            StringAssert.StartsWith("Emoticon<",on);StringAssert.Contains(">2/3<",on);StringAssert.Contains(">2/3<",off);Assert.AreNotEqual(on,off);
         }
         [Test]
         public void AccusiSurviveRedealAndScoreOnlyOnceAtEnd()

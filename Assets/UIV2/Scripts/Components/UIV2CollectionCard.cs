@@ -35,6 +35,7 @@ namespace Project51.UIV2.Components
         [SerializeField] private Color equippedNameColor = Color.white;
         [SerializeField] private Color lockedNameColor = Color.white;
         [SerializeField] private string lockedTitleText;
+        [SerializeField] private TMP_Text orderLabel;
 
         private CollectionItemViewData _data;
 
@@ -75,6 +76,7 @@ namespace Project51.UIV2.Components
                 fillRect.offsetMax = new Vector2(-thickness, -thickness);
             }
             if (fill != null) fill.color = data.Unlocked ? unlockedFillColor : lockedFillColor;
+            if (orderLabel != null) orderLabel.text = data.Order > 0 ? data.Order.ToString() : string.Empty;
 
             if (data.Unlocked)
             {

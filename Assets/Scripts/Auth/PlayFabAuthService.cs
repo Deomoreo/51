@@ -55,6 +55,8 @@ namespace Project51.Auth
         public event Action<string> OnDisplayNameChanged;
         public bool IsLoggedIn => !string.IsNullOrEmpty(SessionTicket);
         public bool IsAccountLinked { get; private set; }
+        /// <summary>Email dell'account con login vero (null per l'ospite): le Impostazioni la mostrano mascherata.</summary>
+        public string Email { get; private set; }
         
         /// <summary>
         /// True se l'utente ha registrato username/email/password (non solo guest).
@@ -74,6 +76,13 @@ namespace Project51.Auth
         } // Closing brace for IsRegistered property
 
         public bool HasRealLogin => PlayerPrefs.GetInt(HAS_REAL_LOGIN_KEY, 0) == 1;
+
+        /// <summary>Registrazione riuscita dall'interfaccia: da qui l'account e' un login vero, con email nota.</summary>
+        public void MarkRegistered(string email)
+        {
+            IsRegistered = true;
+            Email = email;
+        }
 
         public void ClearRealLoginFlag()
         {
@@ -224,12 +233,14 @@ namespace Project51.Auth
                 // Returning registered user (no logout happened).
                 DisplayName = profile?.DisplayName ?? accountInfo?.Username;
                 IsRegistered = true;
+                Email = accountInfo?.PrivateInfo?.Email;
             }
             else
             {
                 // First-time guest OR user explicitly logged out.
                 // Force guest identity regardless of what PlayFab returns.
                 DisplayName = null;
+                Email = null;
             }
 
             OnDisplayNameChanged?.Invoke(DisplayName);
@@ -471,6 +482,7 @@ namespace Project51.Auth
             SessionTicket = null;
             PhotonCustomAuthToken = null;
             DisplayName = null;
+            Email = null;
             OnDisplayNameChanged?.Invoke(null);
             IsAccountLinked = false;
             
@@ -535,6 +547,7 @@ namespace Project51.Auth
                     
                     IsRegistered = true;
                     DisplayName = username;
+                    Email = email;
                     
                     // Aggiorna display name su PlayFab
                     UpdateDisplayName(username);
@@ -598,6 +611,7 @@ namespace Project51.Auth
                     var accountInfo = result.InfoResultPayload?.AccountInfo;
                     
                     DisplayName = profile?.DisplayName ?? accountInfo?.Username ?? "Player";
+                    Email = accountInfo?.PrivateInfo?.Email ?? email;
                     OnDisplayNameChanged?.Invoke(DisplayName);
                     
                     IsAccountLinked = accountInfo != null &&
