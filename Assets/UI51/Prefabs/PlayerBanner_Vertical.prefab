@@ -433,6 +433,9 @@ MonoBehaviour:
   m_CardBack: {fileID: 7751191704759603282}
   m_Captures: {fileID: 3698042484852331275}
   m_Style: 0
+  m_Dealer: {fileID: 0}
+  m_Scope: []
+  m_ScopeMore: {fileID: 0}
 --- !u!1 &4066759093918408474
 GameObject:
   m_ObjectHideFlags: 0

@@ -301,6 +301,7 @@ namespace Project51.UIV2.Core
             {
                 if (this == null) return;
                 loadingProfile = false;
+                auth.PublishLook(); // anche se il caricamento fallisce: niente aspetto dell'account di prima al tavolo
                 RefreshProfile();
             });
         }

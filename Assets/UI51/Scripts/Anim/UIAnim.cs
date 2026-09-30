@@ -444,7 +444,7 @@ namespace Project51.UI51
 
         /// <summary>
         /// Accuso al centro (SPEC §6): scurisce (0.3 s), pugno che cade e rimbalza (0.6 s), due onde d'urto oro
-        /// (0.9 s, la seconda +0.6 s), bagliore, tavolo che trema (0.35 s, +-5 px), testo (0.35 s dopo 0.45 s).
+        /// (0.9 s, la seconda parte a 0.62 s), bagliore, tavolo che trema (0.35 s, +-5 px), testo (0.35 s dopo 0.45 s).
         /// Si chiude a 2.6 s (root disattivato) e chiama onDone.
         /// </summary>
         public static Sequence Accuso(AccusoParts p, Action onDone = null)
@@ -460,7 +460,7 @@ namespace Project51.UI51
                     .Track(AnimProp.Alpha, 0f, 0f, 0.45f, 1f, 1f, 1f)
                     .Play(p.fist);
             AccusoRing(p.ring1, 0.28f);
-            AccusoRing(p.ring2, 0.88f);
+            AccusoRing(p.ring2, 0.62f); // animation-delay .62s del mockup
             if (p.glow != null)
                 new UIKeyframes(0.8f, UIEase.EaseOut)
                     .Track(AnimProp.Alpha, 0f, 0f, 0.4f, 0.95f, 1f, 0.6f)
@@ -493,12 +493,36 @@ namespace Project51.UI51
                 .Play(ring, delay);
         }
 
+        static readonly UIKeyframes ShakeKeys = new UIKeyframes(0.35f, UIEase.EaseInOut)
+            .Track(AnimProp.X, 0f, 0f, 0.2f, -5f, 0.4f, 4f, 0.6f, -3f, 0.8f, 2f, 1f, 0f)
+            .Track(AnimProp.Y, 0f, 0f, 0.2f, 2f, 0.4f, -3f, 0.6f, 1f, 0.8f, -1f, 1f, 0f);
+
         /// <summary>shake del tavolo (.35 s ease-in-out).</summary>
-        public static Tween Shake(RectTransform t, float delay = 0f) =>
-            new UIKeyframes(0.35f, UIEase.EaseInOut)
-                .Track(AnimProp.X, 0f, 0f, 0.2f, -5f, 0.4f, 4f, 0.6f, -3f, 0.8f, 2f, 1f, 0f)
-                .Track(AnimProp.Y, 0f, 0f, 0.2f, 2f, 0.4f, -3f, 0.6f, 1f, 0.8f, -1f, 1f, 0f)
-                .Play(t, delay);
+        public static Tween Shake(RectTransform t, float delay = 0f) => ShakeKeys.Play(t, delay);
+
+        /// <summary>Spostamento dello shake al tempo normalizzato t, in px CSS (y in giu').</summary>
+        public static Vector2 ShakeOffset(float t) =>
+            new Vector2(ShakeKeys.Evaluate(AnimProp.X, t, 0f), ShakeKeys.Evaluate(AnimProp.Y, t, 0f));
+
+        /// <summary>
+        /// Lo stesso shake su un oggetto del mondo (il tavolo, fuori dalla UI): unit = mondo per px del mockup.
+        /// Riparte dalla posa di riposo anche se ne interrompe uno in corso.
+        /// </summary>
+        public static Tween ShakeWorld(Transform t, float unit, float delay = 0f)
+        {
+            if (t == null || unit <= 0f) return null;
+            DOTween.Kill(t); // l'OnKill del precedente rimette la posa di riposo
+            var rest = t.localPosition;
+            return DOVirtual.Float(0f, 1f, GamePreferences.Scaled(ShakeKeys.Duration), v =>
+                {
+                    if (t == null) return;
+                    var o = ShakeOffset(v) * unit;
+                    t.localPosition = rest + new Vector3(o.x, -o.y, 0f);
+                })
+                .SetEase(Ease.Linear).SetDelay(GamePreferences.Scaled(delay)).SetUpdate(true)
+                .SetLink(t.gameObject).SetId(t)
+                .OnKill(() => { if (t != null) t.localPosition = rest; });
+        }
 
         /// <summary>shake orizzontale (overlay connessione, errore: .45 s dopo .15 s).</summary>
         public static Tween ShakeX(RectTransform t, float delay = 0.15f) =>

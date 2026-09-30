@@ -13,7 +13,7 @@ Never assume an asset is missing before checking the inventory. Never fake, stre
   - Icons2.png: more `ic_*`
   - PanelsNeutral_v2.png: tintable fill/ring shapes
   - Avatars.png
-  - 14_emoticon_set
+  - emoticons: `Assets/UI51/Art/Emoticons/emo_*_sheet_8frames.png` (14_emoticon_set was deleted on 27/09)
   - logo_51
   The `.meta` sprite list is authoritative (not `import_manifest.json`).
 - Also search `Assets/UIV2/`, `Assets/UI/`, `Assets/Audio`, and use Unity Search via Unity-MCP

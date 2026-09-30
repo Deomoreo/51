@@ -155,7 +155,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: -1
+  m_PreferredWidth: 0
   m_PreferredHeight: -1
   m_FlexibleWidth: 1
   m_FlexibleHeight: -1
@@ -1344,6 +1344,9 @@ MonoBehaviour:
   m_CardBack: {fileID: 8598149072671968075}
   m_Captures: {fileID: 7564587143925437961}
   m_Style: 0
+  m_Dealer: {fileID: 0}
+  m_Scope: []
+  m_ScopeMore: {fileID: 0}
 --- !u!1 &7917969384790222988
 GameObject:
   m_ObjectHideFlags: 0

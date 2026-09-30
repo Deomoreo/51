@@ -76,6 +76,7 @@
     <Compile Include="Assets\Scripts\Tests\TestDOTween.cs" />
     <Compile Include="Assets\Scripts\Auth\LoginGateUI.cs" />
     <Compile Include="Assets\Scripts\UI\OpenPanelShortcut.cs" />
+    <Compile Include="Assets\Scripts\UI\TableDeckView.cs" />
     <Compile Include="Assets\Scripts\UI\TabButtonUI.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\GameSocialV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileScreenV2.cs" />
@@ -88,6 +89,7 @@
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIHeaderWidget.cs" />
     <Compile Include="Assets\UI51\Scripts\Data\CosmeticCatalog.cs" />
+    <Compile Include="Assets\Scripts\UI\SorteggioView.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerBannerManager.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\NamePickNewGui.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\RewardViewData.cs" />

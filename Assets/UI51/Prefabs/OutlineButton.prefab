@@ -297,3 +297,4 @@ MonoBehaviour:
   m_Scale: 0.97
   m_Brightness: 1.08
   m_Duration: 0.08
+  m_DisabledGroup: {fileID: 0}

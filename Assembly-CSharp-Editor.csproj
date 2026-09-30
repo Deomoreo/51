@@ -88,9 +88,11 @@
     <Compile Include="Assets\Editor\PostaBuilder.cs" />
     <Compile Include="Assets\Editor\NegozioBuilder.cs" />
     <Compile Include="Assets\Editor\PanelMazzoBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\UI51TableTests.cs" />
     <Compile Include="Assets\Tests\Editor\FrontendExpansionTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAndAccusiRulesTests.cs" />
     <Compile Include="Assets\Editor\BottomNavPolishBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\NetworkAccusoSyncTests.cs" />
     <Compile Include="Assets\Editor\ClassificaBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.News.cs" />
     <Compile Include="Assets\Editor\UIV2FeedbackBuilder.cs" />
@@ -152,6 +154,7 @@
     <Compile Include="Assets\Tests\Editor\AccountDeletionTests.cs" />
     <Compile Include="Assets\Editor\BackdropDismissBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\PunteggioManagerTests.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51TableBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiCheckerTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Shop.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Collection.cs" />

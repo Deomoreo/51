@@ -109,7 +109,12 @@ namespace Project51.Auth
             // Inizializza servizi
             PlayFabAuth = new PlayFabAuthService();
             Profile = new ProfileService();
-            
+
+            // Il proprio aspetto come proprieta' Photon, per gli altri al tavolo.
+            Profile.OnProfileLoaded += PublishLook;
+            Profile.OnProfileUpdated += PublishLook;               // editor profilo e livello dopo la partita
+            PlayFabAuth.OnDisplayNameChanged += _ => PublishLook(); // "gioca come ospite" e logout alzano solo questo
+
             // Setup UI callback
             if (authUIComponent != null && authUIComponent is IAuthUI ui)
             {
@@ -173,6 +178,30 @@ namespace Project51.Auth
             {
                 StartAuthentication();
             }
+        }
+
+        /// <summary>Aspetto vero del profilo solo con login vero e profilo caricato: stesso criterio al tavolo e in rete.</summary>
+        public bool HasRealProfile => Profile != null && Profile.IsLoaded && PlayFabAuth != null && PlayFabAuth.HasRealLogin;
+
+        /// <summary>
+        /// Cornice, banner e livello come proprieta' del LocalPlayer Photon (id grezzi: li valida chi li legge,
+        /// ProfileCosmetics.ReadLook). Fuori stanza restano in cache e partono col prossimo ingresso; in stanza arrivano
+        /// subito. Ospite o profilo non caricato: chiavi tolte (null), perche' il LocalPlayer sopravvive a stanze e logout
+        /// e porterebbe l'aspetto dell'account precedente. Rilanciato a ogni ingresso da MatchmakingManager.OnJoinedRoom.
+        /// </summary>
+        public void PublishLook()
+        {
+            var local = PhotonNetwork.LocalPlayer;
+            if (local == null) return;
+            // Entrando o uscendo dalla stanza Photon rifiuta l'invio con un errore in console: ci pensa il prossimo OnJoinedRoom.
+            if (PhotonNetwork.CurrentRoom != null && !PhotonNetwork.InRoom) return;
+            bool real = HasRealProfile;
+            local.SetCustomProperties(new ExitGames.Client.Photon.Hashtable
+            {
+                { ProfileService.LookFrameKey, real ? Profile.FrameId : null },
+                { ProfileService.LookBannerKey, real ? Profile.BannerId : null },
+                { ProfileService.LookLevelKey, real ? (object)Project51.Core.PlayerXp.LevelOf(Profile.XP) : null },
+            });
         }
 
         public void LogoutAndRestart(bool clearRealAccountFlag = false)
@@ -446,7 +475,7 @@ namespace Project51.Auth
             Debug.Log("[AuthBootstrapper] Photon connected successfully");
             
             // Step 4: Load profile (opzionale, non blocca)
-            Profile.LoadProfile();
+            Profile.LoadProfile(PublishLook); // anche a caricamento fallito: toglie l'aspetto
             
             // Step 5: Check account link status
             PlayFabAuth.CheckAccountLinkStatus(isLinked =>

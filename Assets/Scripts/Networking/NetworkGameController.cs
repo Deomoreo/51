@@ -38,34 +38,46 @@ namespace Project51.Networking
                 Debug.LogWarning("Cannot send accuso: not in a Photon room!");
                 return;
             }
-            photonView.RPC(nameof(RPC_ReceiveAccuso), RpcTarget.All, playerIndex, accusoType);
+            // Chiamato subito dopo TryPlayerAccuso: il totale di smazzata del dichiarante e' gia'
+            // aggiornato. I riceventi si allineano a quello (vedi AlignAccusoTotal).
+            var gs = turnController != null ? turnController.GameState : null;
+            if (gs == null || playerIndex < 0 || playerIndex >= gs.NumPlayers)
+            {
+                Debug.LogWarning($"Cannot send accuso for player {playerIndex}: no GameState");
+                return;
+            }
+            // Smazzata e carte nel mazzo identificano la mano: chi e' ancora alla mano prima la tiene da parte.
+            photonView.RPC(nameof(RPC_ReceiveAccuso), RpcTarget.All, playerIndex, accusoType, gs.Players[playerIndex].RoundAccusiPoints, gs.RoundIndex, gs.Deck.Count);
         }
 
         /// <summary>
         /// RPC to apply accuso on all clients.
         /// </summary>
         [PunRPC]
-        private void RPC_ReceiveAccuso(int playerIndex, int accusoType)
+        private void RPC_ReceiveAccuso(int playerIndex, int accusoType, int declarerRoundTotal, int roundIndex, int deckCount)
         {
-            // If TurnController/GameState not yet ready (scene just loaded), buffer and apply later
-            if (turnController == null || turnController.GameState == null)
+            // If TurnController/GameState not yet ready (scene just loaded), buffer and apply later.
+            // Idem se qui l'ultima mossa della mano prima e' ancora in animazione o in coda: applicato
+            // ora, il reset di fine mano lo cancellerebbe e il Master lo ridichiarerebbe (punti doppi).
+            // Si riprova a ogni mossa applicata (OnMoveExecuted) e a ogni stato completo.
+            if (turnController == null || turnController.GameState == null
+                || CompareHand(turnController.GameState, roundIndex, deckCount) < 0)
             {
                 if (pendingAccusi != null)
                 {
-                    pendingAccusi.Add((playerIndex, accusoType));
+                    pendingAccusi.Add((playerIndex, accusoType, declarerRoundTotal, roundIndex, deckCount));
                 }
                 return;
             }
-            // Update PlayerState.AccusiPoints according to type
             var gs = turnController.GameState;
             if (playerIndex < 0 || playerIndex >= gs.NumPlayers) return;
-            var player = gs.Players[playerIndex];
-            // Stesse regole della partita (moltiplicatore / accusi disattivati) usate da RoundManager.
-            int points = (gs.Rules ?? MatchRules.Default).AccusoPoints(accusoType == (int)AccusoType.Decino ? 10 : 3);
-            int newlyAwarded = Mathf.Max(0, points - player.AccusiPoints);
-            player.RoundAccusiPoints += newlyAwarded;
-            player.AccusiPoints = Mathf.Max(player.AccusiPoints, points);
-            if (newlyAwarded > 0) GamePresentation.ShowAccuso(playerIndex, accusoType);
+            if (CompareHand(gs, roundIndex, deckCount) > 0)
+            {
+                // Mano gia' passata: non puo' succedere con l'ordine di Photon; uno stato completo la copre.
+                Debug.LogWarning($"[NET] Accuso of player {playerIndex} for a past hand ignored");
+                return;
+            }
+            if (AlignAccusoTotal(gs.Players[playerIndex], declarerRoundTotal) > 0) GamePresentation.ShowAccuso(playerIndex, accusoType);
 
             // Segna il giocatore come "gia' risolto" anche su QUESTO client: se questo e' il Master
             // e la dichiarazione era manuale (arrivata da un altro client), il fallback automatico
@@ -83,8 +95,37 @@ namespace Project51.Networking
             // restavano visivamente coperte finche' non arrivava una mossa qualunque a fare scattare
             // un ForceRefresh per un motivo completamente diverso (da qui il "si girano solo dopo che
             // qualcuno gioca una carta", che in realta' era solo il prossimo refresh casuale).
-            var cardViewMgr = FindObjectOfType<CardViewManager>();
-            cardViewMgr?.ForceRefresh();
+            // Non durante il volo della distribuzione (accuso tenuto da parte e applicato alla nuova mano):
+            // mostrerebbe le carte nuove al loro posto prima di distribuirle. Le gira l'apertura della finestra.
+            if (!turnController.IsDealInProgress) FindObjectOfType<CardViewManager>()?.ForceRefresh();
+        }
+
+        /// <summary>
+        /// Porta gli accusi del dichiarante al totale di smazzata che ha inviato. Prima si
+        /// ricalcolavano i punti dal tipo sottraendo AccusiPoints, che conteneva anche lo 15/30 del
+        /// mazziere: i riceventi assegnavano meno punti del mittente. Restituisce i punti nuovi, 0 se
+        /// gia' contati (eco del mittente, dichiarazione incrociata giocatore/fallback del Master,
+        /// buffer svuotato dopo uno stato completo che li includeva gia').
+        /// </summary>
+        public static int AlignAccusoTotal(PlayerState player, int declarerRoundTotal)
+        {
+            int newlyAwarded = declarerRoundTotal - player.RoundAccusiPoints;
+            if (newlyAwarded <= 0) return 0;
+            player.RoundAccusiPoints += newlyAwarded;
+            player.AccusiPoints += newlyAwarded;
+            player.RoundAccusiCount++; // un RPC = un accuso (bonus XP a fine partita)
+            return newlyAwarded;
+        }
+
+        /// <summary>
+        /// Mano di questo stato rispetto a quella dell'accuso (smazzata, carte nel mazzo dopo la
+        /// distribuzione, uguali su tutti i client): negativo = non ancora arrivati, 0 = stessa mano,
+        /// positivo = gia' passata.
+        /// </summary>
+        public static int CompareHand(GameState gs, int roundIndex, int deckCount)
+        {
+            if (gs.RoundIndex != roundIndex) return gs.RoundIndex.CompareTo(roundIndex);
+            return deckCount.CompareTo(gs.Deck.Count);
         }
 
         private readonly Dictionary<int, float> emoticonLastSeen = new Dictionary<int, float>();
@@ -109,12 +150,16 @@ namespace Project51.Networking
         {
             if (pendingAccusi == null || pendingAccusi.Count == 0) return;
             if (turnController == null || turnController.GameState == null) return;
-            foreach (var pa in pendingAccusi)
-            {
-                RPC_ReceiveAccuso(pa.playerIndex, pa.accusoType);
-            }
+            // Quelli di una mano non ancora raggiunta tornano in coda da soli (RPC_ReceiveAccuso).
+            var batch = new List<(int playerIndex, int accusoType, int roundTotal, int roundIndex, int deckCount)>(pendingAccusi);
             pendingAccusi.Clear();
+            foreach (var pa in batch)
+            {
+                RPC_ReceiveAccuso(pa.playerIndex, pa.accusoType, pa.roundTotal, pa.roundIndex, pa.deckCount);
+            }
         }
+
+        private void OnMoveApplied(Move move) => FlushPendingAccusi();
 
         #endregion
 
@@ -126,7 +171,7 @@ namespace Project51.Networking
         [SerializeField] private bool logNetworkMoves = true;
 
         // Buffer for early accuso events arriving before GameState is ready
-        private List<(int playerIndex, int accusoType)> pendingAccusi = new List<(int, int)>();
+        private List<(int playerIndex, int accusoType, int roundTotal, int roundIndex, int deckCount)> pendingAccusi = new List<(int, int, int, int, int)>();
 
         // Client-side: richiede lo stato iniziale al Master finche' non lo riceve.
         private Coroutine _requestInitialStateCoroutine;
@@ -164,7 +209,8 @@ namespace Project51.Networking
 
             // Subscribe to TurnController events
             turnController.OnLocalPlayerMoveRequested += SendMove;
-            
+            turnController.OnMoveExecuted += OnMoveApplied;
+
             // If we're in multiplayer and we're the Master Client, we'll send the initial GameState
             // after TurnController.StartNewGame() is called
             if (PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient)
@@ -360,6 +406,7 @@ namespace Project51.Networking
             if (turnController != null)
             {
                 turnController.OnLocalPlayerMoveRequested -= SendMove;
+                turnController.OnMoveExecuted -= OnMoveApplied;
             }
 
             if (_requestInitialStateCoroutine != null)
@@ -593,7 +640,10 @@ namespace Project51.Networking
                 _requestInitialStateCoroutine = null;
             }
 
-            // Apply any pending accusi received before GameState was ready
+            // Apply any pending accusi received before GameState was ready. Quelli di una smazzata piu'
+            // avanti di questo stato vengono da una partita finita (rivincita, RoundIndex torna a 1): con
+            // l'ordine di Photon un accuso vero di una smazzata futura non arriva prima del suo stato.
+            pendingAccusi.RemoveAll(pa => pa.roundIndex > gameState.RoundIndex);
             FlushPendingAccusi();
         }
 

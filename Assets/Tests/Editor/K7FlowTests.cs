@@ -84,4 +84,35 @@ public class K7FlowTests
         }
         finally { UnityEngine.Object.DestroyImmediate(root); }
     }
+
+    // UI51 Fase 5 S10: in 1v1 gira la ruota del mockup al posto del vecchio pannello; offline AL TAVOLO chiude subito.
+    [TestCase(0)] [TestCase(2)]
+    public void OneVsOneShowsTheWheelAndHandsBackOnContinue(int winner)
+    {
+        var root = new GameObject("K7 wheel");
+        var controller = root.AddComponent<DealerRouletteController>();
+        var panel = new GameObject("Panel"); panel.transform.SetParent(root.transform);
+        var wheel = new GameObject("UI51"); wheel.transform.SetParent(panel.transform);
+        var design = new GameObject("Design"); design.transform.SetParent(panel.transform);
+        var slots = new GameObject[4];
+        for (int i = 0; i < 4; i++) { slots[i] = new GameObject("Slot" + i); slots[i].transform.SetParent(design.transform); }
+        void Set(string name, object data) => typeof(DealerRouletteController).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, data);
+        Set("panelRoot", panel); Set("slotRoots", slots); Set("ui51Wheel", wheel); Set("legacyOnly", new[] { design });
+        try
+        {
+            var routine = controller.PlayRoulette(new[] { "Tu", "-", "Bot 2", "-" }, winner, 2);
+            Assert.IsTrue(routine.MoveNext());
+            var wait = (System.Collections.IEnumerator)routine.Current;
+            Assert.IsTrue(wait.MoveNext());
+            Assert.IsTrue(panel.activeSelf && wheel.activeSelf, "ruota accesa");
+            Assert.IsFalse(design.activeSelf, "vecchio pannello spento");
+            Assert.AreEqual(winner == 0, controller.WheelLocalDealer);
+            controller.Continue();
+            Assert.IsFalse(wait.MoveNext());
+            Assert.IsFalse(panel.activeSelf);
+            Assert.IsFalse(routine.MoveNext());
+            Assert.AreEqual(7.7f, DealerRouletteController.Timing(DealerRouletteController.WheelEndAt, true), "online: tempi fissi");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+    }
 }

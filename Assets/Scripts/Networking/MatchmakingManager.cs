@@ -405,6 +405,10 @@ namespace Project51.Networking
 
         public override void OnJoinedRoom()
         {
+            // Aspetto (cornice, banner, livello) a ogni ingresso, rientro compreso: una pubblicazione fatta durante
+            // l'ingresso o fuori stanza non arriva al server da sola.
+            var auth = Project51.Auth.AuthBootstrapper.Instance;
+            if (auth != null) auth.PublishLook();
             // Rientro in una partita gia' iniziata (stanza chiusa): lo gestisce NetworkGameController.
             if (!PhotonNetwork.CurrentRoom.IsOpen)
             {

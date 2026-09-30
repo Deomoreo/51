@@ -31,6 +31,21 @@ namespace Project51.UIV2.Data
 
         public static BannerStyle Banner(int index) => (BannerStyle)index;
 
+        /// <summary>
+        /// Aspetto di un altro giocatore dalle sue proprieta' Photon (AuthBootstrapper.PublishLook): le scrive un altro
+        /// client, quindi solo i tipi attesi e valori nei limiti (id sconosciuto = Oro / Notte, livello 1..MaxLevel), mai
+        /// un'eccezione dentro il Refresh. Dato solo da mostrare: mai per premi o matchmaking.
+        /// False se non ne ha pubblicato uno (bot, ospite, versione senza aspetto in rete).
+        /// </summary>
+        public static bool ReadLook(System.Collections.IDictionary props, out int frame, out int style, out int level)
+        {
+            var id = props?[Project51.Auth.ProfileService.LookFrameKey] as string;
+            frame = FrameIndex(id);
+            style = BannerIndex(props?[Project51.Auth.ProfileService.LookBannerKey] as string);
+            level = props?[Project51.Auth.ProfileService.LookLevelKey] is int l ? Math.Max(1, Math.Min(l, Project51.Core.PlayerXp.MaxLevel)) : 1;
+            return id != null;
+        }
+
         // ponytail: Aurora (pass) e Stellato (negozio) restano chiusi finche' pass e negozio non esistono;
         // quando arrivano, qui va chiesto a loro.
         public static bool BannerUnlocked(int index, int level) => index < 2 || (index == 2 && level >= PorporaLevel);

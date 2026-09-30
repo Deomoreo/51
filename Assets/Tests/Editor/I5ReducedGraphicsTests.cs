@@ -345,10 +345,16 @@ public class I5ReducedGraphicsTests
         yield return new WaitForSecondsRealtime(.3f);
         table.Open();
         yield return new WaitForSecondsRealtime(.3f);
-        Assert.IsTrue(table.FastAnimations.IsOn);
+        // UI51 (Fase 5 S9): il vecchio interruttore resta spento in scena, si tocca quello nuovo.
+        System.Action flip = () =>
+        {
+            if (table.GraphicsSwitch != null) table.GraphicsSwitch.Toggle();
+            else table.FastAnimations.GetComponent<Button>().onClick.Invoke();
+        };
+        Assert.IsTrue(table.GraphicsSwitch != null ? table.GraphicsSwitch.isOn : table.FastAnimations.IsOn);
         Assert.IsFalse(table.Blur.HasSnapshot);
         Assert.IsFalse(table.Blur.GetComponent<RawImage>().enabled);
-        table.FastAnimations.GetComponent<Button>().onClick.Invoke();
+        flip();
         yield return new WaitForEndOfFrame();
         yield return null;
         Assert.IsFalse(GamePreferences.ReducedGraphics);
@@ -356,9 +362,9 @@ public class I5ReducedGraphicsTests
         Assert.IsTrue(table.Blur.GetComponent<RawImage>().enabled);
         Assert.AreEqual(1f, table.GetComponent<CanvasGroup>().alpha);
         var snapshot = table.Blur.GetComponent<RawImage>().texture;
-        table.FastAnimations.GetComponent<Button>().onClick.Invoke();
+        flip();
         Assert.IsFalse(table.Blur.GetComponent<RawImage>().enabled);
-        table.FastAnimations.GetComponent<Button>().onClick.Invoke();
+        flip();
         Assert.AreSame(snapshot, table.Blur.GetComponent<RawImage>().texture);
         Assert.IsTrue(table.Blur.GetComponent<RawImage>().enabled);
         Debug.Log("I5_TABLE_PASS: shared toggle, initial reduced backdrop, clean capture and immediate snapshot restore.");

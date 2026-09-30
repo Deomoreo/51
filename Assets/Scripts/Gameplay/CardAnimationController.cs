@@ -12,6 +12,8 @@ namespace Project51.Unity
     /// </summary>
     public sealed class CardAnimationController : MonoBehaviour
     {
+        private const int DealFlightSortingBoost = 30; // tavolo 10+ e dorsi 20+ a riposo: in volo il tavolo passa sopra
+
         [Header("Timing")]
         [SerializeField] private float playDuration = 0.35f;
         [SerializeField] private float capturePreviewDuration = 0.45f;
@@ -293,6 +295,8 @@ namespace Project51.Unity
 
             float stagger = staggerOverride >= 0f ? staggerOverride : dealRevealStagger;
             var sequence = DOTween.Sequence().SetTarget(this);
+            // In volo sopra le carte gia' posate: dal mazzo (in alto a sinistra) quelle del tavolo passano sui dorsi avversari.
+            var boosted = new List<KeyValuePair<SpriteRenderer, int>>();
             for (int i = 0; i < stagedCards.Count; i++)
             {
                 var staged = stagedCards[i];
@@ -312,11 +316,23 @@ namespace Project51.Unity
                 {
                     cardTransform.position = originPosition;
                     cardTransform.localScale = finalScale * 0.12f;
-                    if (cardRenderer != null) cardRenderer.enabled = true;
+                    if (cardRenderer == null) return;
+                    cardRenderer.enabled = true;
+                    if (cardRenderer.sortingOrder >= 400) return; // gia' in volo alto
+                    boosted.Add(new KeyValuePair<SpriteRenderer, int>(cardRenderer, cardRenderer.sortingOrder));
+                    cardRenderer.sortingOrder += DealFlightSortingBoost;
                 });
                 sequence.Insert(startAt, cardTransform.DOMove(finalPosition, dealRevealDuration).SetEase(playEase));
                 sequence.Insert(startAt, cardTransform.DOScale(finalScale, dealRevealDuration).SetEase(Ease.OutBack));
             }
+
+            TweenCallback land = () =>
+            {
+                foreach (var b in boosted)
+                    if (b.Key != null && b.Key.sortingOrder == b.Value + DealFlightSortingBoost) b.Key.sortingOrder = b.Value;
+                boosted.Clear();
+            };
+            sequence.OnComplete(land).OnKill(land);
 
             PlayDealSound(stagedCards.Count, stagger);
             return Paced(sequence);

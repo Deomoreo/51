@@ -36,6 +36,8 @@ namespace Project51.Auth
         public const string DATA_BANNER_ID = "BannerId";
         public const string DATA_FRAME_ID = "FrameId";
         public const string DATA_TITLE_ID = "TitleId";
+        // Aspetto come proprieta' del giocatore Photon: lo scrive AuthBootstrapper.PublishLook, lo legge ProfileCosmetics.ReadLook.
+        public const string LookFrameKey = "fr", LookBannerKey = "bn", LookLevelKey = "lv";
         
         // Cache locale
         private Dictionary<string, string> _playerDataCache = new Dictionary<string, string>();

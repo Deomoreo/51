@@ -71,6 +71,7 @@ namespace Project51.Unity
             pendingLocalMove = null;
             isMoveAnimationInProgress = false;
             isRedealPendingVisual = false;
+            isDealFlightPending = false;
             isRedealAnimationInProgress = false;
             pendingRedealVisualCopies.Clear();
             isAccusoWindowOpen = false;
@@ -175,6 +176,7 @@ namespace Project51.Unity
         private CirullaAI cirullaAI;
         private bool isMoveAnimationInProgress;
         private bool isRedealPendingVisual;
+        private bool isDealFlightPending; // le carte distribuite stanno ancora volando dal mazzo
         private bool isRedealAnimationInProgress;
         private readonly List<Transform> pendingRedealVisualCopies = new List<Transform>();
         private List<CardViewManager.StagedCard> pendingInitialHandStagedCards;
@@ -266,6 +268,8 @@ namespace Project51.Unity
         public event System.Action<Move> OnLocalPlayerMoveRequested;
 
         public GameState GameState => gameState;
+        /// <summary>Distribuzione in corso: il mazzo sul tavolo resta visibile finche' le ultime carte non sono partite.</summary>
+        public bool IsDealInProgress => isDealFlightPending;
         public RoundManager RoundManager => roundManager;
         public int CurrentPlayerIndex => gameState?.CurrentPlayerIndex ?? -1;
         
@@ -582,7 +586,11 @@ namespace Project51.Unity
         // poi apre la finestra Accuso manuale. In multiplayer, solo il Master Client dichiara
         // automaticamente allo scadere e sincronizza via RPC (le dichiarazioni manuali restano
         // per-client, ognuno dichiara solo se stesso - vedi TryDeclareLocalManualAccuso).
-        if (introCoroutine != null) StopCoroutine(introCoroutine);
+        if (introCoroutine != null)
+        {
+            StopCoroutine(introCoroutine); // non esegue il finally: la ruota del sorteggio resterebbe su
+            if (dealerRouletteController != null) dealerRouletteController.Hide();
+        }
         introCoroutine = StartCoroutine(DeclareInitialAccusiWithDelay());
     }
 
@@ -595,6 +603,7 @@ namespace Project51.Unity
         private System.Collections.IEnumerator DeclareInitialAccusiWithDelay()
         {
             isRedealPendingVisual = true; // stesso guard usato per il redeal: tiene ferma l'IA/le mosse
+            isDealFlightPending = true;
 
             try
             {
@@ -643,6 +652,7 @@ namespace Project51.Unity
                 }
 
                 // 4) Finestra Accuso, come sempre.
+                isDealFlightPending = false;
                 yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
             }
             finally
@@ -661,6 +671,7 @@ namespace Project51.Unity
                 pendingInitialHandStagedCards = null;
                 pendingInitialTableStagedCards = null;
                 isRedealPendingVisual = false;
+                isDealFlightPending = false;
             }
 
             RefreshValidMoves();
@@ -713,7 +724,9 @@ namespace Project51.Unity
                 dealerRouletteController = FindObjectOfType<DealerRouletteController>(true);
             }
 
-            if (dealerRouletteController != null)
+            // In 1 contro 1 la ruota del sorteggio (mockup) gira solo a inizio partita e alla rivincita; nelle smazzate dopo
+            // il mazziere ruota e si sposta solo il gettone M (scelta dell'utente, 30/09). A 4 la roulette resta a ogni smazzata.
+            if (dealerRouletteController != null && (gameState.NumPlayers != 2 || gameState.RoundIndex <= 1))
             {
                 var names = new string[4];
                 for (int p = 0; p < gameState.NumPlayers && p < 4; p++)
@@ -772,7 +785,7 @@ namespace Project51.Unity
                 for (int i = 0; i < sweptCards.Count; i++)
                 {
                     Vector3 tablePos = cardViewManager.GetTableCardPosition(sweptCards.Count, i);
-                    var ghost = cardViewManager.SpawnGhostCardView(sweptCards[i], dealerOrigin);
+                    var ghost = cardViewManager.SpawnGhostCardView(sweptCards[i], dealerOrigin, sweptCards.Count);
                     if (ghost == null) continue;
 
                     ghosts.Add(ghost);
@@ -900,13 +913,15 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Posizione mondo della "seduta" del dealer - vedi CardViewManager.GetPlayerHandAnchor,
-        /// che e' l'unica fonte di verita' per queste posizioni (responsive, non pixel fissi).
+        /// Da dove partono le carte distribuite: il mazzo sul cuscino (UI51 Fase 5, S4). Senza banner
+        /// (nessun tavolo da cui misurarlo) la "seduta" del mazziere, CardViewManager.GetPlayerHandAnchor.
+        /// Chi distribuisce lo dice il gettone "M" sul suo banner.
         /// </summary>
         private Vector3 GetDealerSeatPosition()
         {
             if (cardViewManager == null || gameState == null) return Vector3.zero;
-            return cardViewManager.GetPlayerHandAnchor(GetDealerRelativeSlot(), gameState.NumPlayers);
+            return cardViewManager.TryGetDeckPosition(out var deck, out _) ? deck
+                : cardViewManager.GetPlayerHandAnchor(GetDealerRelativeSlot(), gameState.NumPlayers);
         }
 
         /// <summary>
@@ -1176,7 +1191,7 @@ namespace Project51.Unity
         private System.Collections.IEnumerator ExecuteMoveWithAnimation(Move move, bool fromNetwork)
         {
             isMoveAnimationInProgress = true;
-            bool scopaFeedbackPending = IsScopaCapture(move);
+            bool scopaFeedbackPending = IsScopaCapture(gameState, move);
 
             var hiddenRenderers = new List<SpriteRenderer>();
             var visualCopies = new List<Transform>();
@@ -1205,7 +1220,7 @@ namespace Project51.Unity
                     hiddenRenderers.Add(playedCardView.CardRenderer);
 
                     Vector3 tableTarget = cardViewManager.GetNextTableCardPosition(gameState.Table.Count);
-                    float tableScale = cardViewManager.GetTableCardScale();
+                    float tableScale = cardViewManager.GetTableCardScale(gameState.Table.Count + 1);
                     Sequence playSequence = cardAnimationController.PlayCardToTable(
                         playedVisual,
                         playedVisualRenderer,
@@ -1418,6 +1433,7 @@ namespace Project51.Unity
             }
 
             isRedealPendingVisual = true;
+            isDealFlightPending = true;
             accusoAlreadyResolvedThisHand.Clear();
             StartCoroutine(HandleNewHandsRevealSequence());
         }
@@ -1495,7 +1511,9 @@ namespace Project51.Unity
                 // La finestra Accuso parte SOLO ora, a distribuzione visivamente completata: prima
                 // partiva ancor prima che le carte finissero di arrivare in mano (bug segnalato -
                 // il countdown scadeva senza che si potesse nemmeno vedere la mano nuova).
-                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: false);
+                isDealFlightPending = false;
+                // true come alla prima mano: le carte sono gia' arrivate, cosi' la mano accusata si gira durante il pugno.
+                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
 
                 if (capturedPileManager != null)
                 {
@@ -1520,6 +1538,7 @@ namespace Project51.Unity
                 }
 
                 isRedealPendingVisual = false;
+                isDealFlightPending = false;
                 isRedealAnimationInProgress = false;
 
                 // Stesso motivo del blocco analogo in ExecuteMoveWithAnimation: eventuali mosse
@@ -1839,9 +1858,9 @@ namespace Project51.Unity
 
         /// <summary>
         /// La presa svuota il tavolo e non e' l'ultima giocata della smazzata (stessa regola di
-        /// Rules51.ApplyMove). Va chiamata prima di applicare la mossa.
+        /// Rules51.ApplyMove). Va chiamata prima di applicare la mossa. Serve anche alla chip SCOPA della scelta della presa.
         /// </summary>
-        private bool IsScopaCapture(Move move)
+        public static bool IsScopaCapture(GameState gameState, Move move)
         {
             if (gameState == null || move == null || move.Type == MoveType.PlayOnly || move.CapturedCards == null) return false;
             if (move.CapturedCards.Count == 0 || move.CapturedCards.Count != gameState.Table.Count) return false;

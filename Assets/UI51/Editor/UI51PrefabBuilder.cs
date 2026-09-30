@@ -113,7 +113,8 @@ namespace Project51.UI51.EditorTools
 
         /// <summary>
         /// Face (Ring, Timer, Inner con maschera e Avatar) + Emoticon (cerchio crema con fotogrammi animati).
-        /// emoSize: 34 per il proprio banner, 30 per gli avversari (mockup Tavolo).
+        /// emoSize: 34 per il proprio banner, 33 per l'avversario in alto (il viso si vede ~27 come il 30 del mockup; a 36 il vapore di
+        /// "arrabbiato" uscirebbe dall'anello d'oro), 30 per i laterali.
         /// </summary>
         internal static AvatarFrame BuildAvatar(GameObject root, float size, float ringWidth, FrameStyle frame, Sprite sprite, float emoSize)
         {
@@ -243,7 +244,7 @@ namespace Project51.UI51.EditorTools
 
             var info = UI51Build.Child(content, "Info");
             UI51Build.Column(info, 1f, null, TextAnchor.MiddleLeft, true, true);
-            UI51Build.Layout(info, -1f, -1f, 1f);
+            UI51Build.Layout(info, 0f, -1f, 1f); // larghezza preferita 0: un nome lungo va in "..." invece di schiacciare avatar e chip
             var name = UI51Build.Text(UI51Build.Child(info, "Name"), "GiocatoreNapo", FontFace.NunitoExtraBold, 12f, UI51Tokens.Cream);
             name.enableWordWrapping = false;
             var level = UI51Build.Text(UI51Build.Child(info, "Level"), string.Format(PlayerBanner.LevelFormat, 12),
@@ -261,12 +262,12 @@ namespace Project51.UI51.EditorTools
             UI51Build.Row(content, 7f, UI51Build.Pad(0, 6, 0, 6), TextAnchor.MiddleLeft, true, false);
 
             var avatarRt = UI51Build.Child(content, "Avatar");
-            var avatar = BuildAvatar(avatarRt.gameObject, 36f, 2f, FrameStyle.Blu, UI51Build.Sprite("Avatars", "av_4"), 30f);
+            var avatar = BuildAvatar(avatarRt.gameObject, 36f, 2f, FrameStyle.Blu, UI51Build.Sprite("Avatars", "av_4"), 33f);
             UI51Build.Layout(avatar, 36f, 36f);
 
             var info = UI51Build.Child(content, "Info");
             UI51Build.Column(info, 3f, null, TextAnchor.MiddleLeft, true, true);
-            UI51Build.Layout(info, -1f, -1f, 1f);
+            UI51Build.Layout(info, 0f, -1f, 1f); // larghezza preferita 0: un nome lungo va in "..." invece di schiacciare avatar e chip
             var name = UI51Build.Text(UI51Build.Child(info, "Name"), "Marco_93", FontFace.NunitoExtraBold, 11f, UI51Tokens.Cream);
             name.enableWordWrapping = false;
 
@@ -276,6 +277,10 @@ namespace Project51.UI51.EditorTools
             var level = UI51Build.Text(UI51Build.Child(row, "Level"), string.Format(PlayerBanner.LevelFormat, 18),
                 FontFace.NunitoRegular, 9f, UI51Tokens.CreamA(0.55f));
             level.enableWordWrapping = false;
+            // "Liv. 100" con due cifre di carte prese sfora di 2: si stringe fino a 8 invece di diventare "Liv. 1...".
+            level.enableAutoSizing = true;
+            level.fontSizeMin = 8f;
+            level.fontSizeMax = 9f;
             level.rectTransform.sizeDelta = new Vector2(0f, 16f);
 
             var (chip, back, count) = CaptureChip(row, 16f, 4, 5, 3f, 8f, 12f, 10f, "9");

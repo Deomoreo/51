@@ -369,7 +369,7 @@ namespace Project51.UIV2.Core
             if (!finished && RoundPanel.activeInHierarchy)
             {
                 bool blocked = applicationPaused || !Application.isFocused || AppLoading.IsCovering ||
-                    (settings != null && settings.IsOpen) || RoundPanel.GetComponent<CanvasGroup>().alpha < .99f;
+                    (settings != null && (settings.IsOpen || settings.IsLeaveOpen)) || RoundPanel.GetComponent<CanvasGroup>().alpha < .99f;
                 bool authority = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
                 // Background/resume must not consume the entire reading interval in one frame.
                 if (autoAdvance.Advance(Mathf.Min(Time.unscaledDeltaTime, .25f), authority, blocked)) { Next(); return; }

@@ -13,7 +13,7 @@ namespace Project51.Unity.UI
     /// l'accuso manuale del giocatore locale durante la finestra aperta da TurnController
     /// (TryDeclareLocalManualAccuso). Durante la finestra il pulsante pulsa con il bagliore, un anello
     /// si svuota con il tempo rimasto e sopra la mano compare l'avviso: sempre, anche senza accuso in
-    /// mano, per non rivelare nulla a chi guarda. Grafica: Tools/UIV2/Build Accuso Window.
+    /// mano, per non rivelare nulla a chi guarda. Grafica: UI51TableBuilder (S6).
     /// </summary>
     public class TableActionButtonsController : MonoBehaviour
     {
@@ -27,6 +27,12 @@ namespace Project51.Unity.UI
         [SerializeField] private RingArcGraphic accusoRing;
         [SerializeField] private CanvasGroup accusoPrompt;
         [SerializeField] private float pulsesPerSecond = 1.6f;
+
+        [Header("UI51 (mockup Partita)")]
+        [Tooltip("Anello d'oro che pulsa dietro al medaglione mentre la finestra e' aperta. Collegato = niente pulsazione di scala.")]
+        [SerializeField] private Project51.UI51.UI51Shape accusoPulse;
+        [Tooltip("Riflesso che attraversa il medaglione mentre la finestra e' aperta.")]
+        [SerializeField] private RectTransform accusoShine;
 
         private TurnController turnController;
         private bool wasWindowOpen;
@@ -71,7 +77,8 @@ namespace Project51.Unity.UI
             if (accusoButton != null && !pressedThisWindow)
             {
                 float shake = !reduced && Time.unscaledTime < shakeUntil ? Mathf.Sin(Time.unscaledTime * 60f) * 6f : 0f;
-                accusoButton.transform.localScale = Vector3.one * (1f + 0.1f * wave);
+                // Col medaglione UI51 pulsa l'anello (SetCalling): la scala resta a UI51Press.
+                if (accusoPulse == null) accusoButton.transform.localScale = Vector3.one * (1f + 0.1f * wave);
                 accusoButton.transform.localRotation = Quaternion.Euler(0f, 0f, shake);
             }
             if (accusoGlow != null)
@@ -103,6 +110,22 @@ namespace Project51.Unity.UI
                 accusoButton.transform.localScale = Vector3.one;
                 accusoButton.transform.localRotation = Quaternion.identity;
             }
+            SetCalling(open);
+        }
+
+        /// <summary>Medaglione UI51 che chiama: anello che pulsa (1.6 s, 10 px, .6) e riflesso, solo senza grafica ridotta.</summary>
+        private void SetCalling(bool on)
+        {
+            if (accusoPulse != null)
+            {
+                if (on) Project51.UI51.UIAnim.Pulse(accusoPulse, 10f, 1.6f, 0.6f);
+                else Project51.UI51.UIAnim.Stop(accusoPulse);
+            }
+            if (accusoShine != null)
+            {
+                accusoShine.gameObject.SetActive(on && Project51.UI51.UIAnim.DecorativeLoops);
+                if (on) Project51.UI51.UIAnim.Shine(accusoShine);
+            }
         }
 
         private void OnEmojiClicked()
@@ -120,12 +143,17 @@ namespace Project51.Unity.UI
             if (turnController == null || !turnController.IsAccusoWindowOpen || pressedThisWindow) return;
 
             bool declared = turnController.TryDeclareLocalManualAccuso();
+            // Gia' contato (fallback del Master arrivato prima del tocco, finestra riaperta da un rientro):
+            // come un accuso riuscito, niente scossa d'errore.
+            var state = turnController.GameState;
+            if (!declared && state != null) declared = state.Players[GameModeService.Current.LocalPlayerIndex].AccusiPoints > 0;
             if (declared)
             {
                 // Dichiarato: il pugno parte da GameSocialV2, il pulsante smette di chiamare.
                 pressedThisWindow = true;
                 accusoButton.transform.localScale = Vector3.one;
                 accusoButton.transform.localRotation = Quaternion.identity;
+                SetCalling(false);
             }
             else
             {

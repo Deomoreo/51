@@ -21,6 +21,7 @@ namespace Project51.Unity
         private bool isClickable = false;
         private bool enableHover = false;
         [SerializeField] private float raiseAmount = 0.35f;
+        private float raiseOverride = -1f;
         [SerializeField] private float hoverRaiseAmount = 0.12f;
         [SerializeField] private float hoverScaleMultiplier = 1.08f;
         [SerializeField] private float hoverAnimDuration = 0.1f;
@@ -398,15 +399,19 @@ namespace Project51.Unity
             }
         }
 
+        private static readonly System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult> s_UiHits =
+            new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+
         private static bool IsPointerOverUI()
         {
             var eventSystem = UnityEngine.EventSystems.EventSystem.current;
             if (eventSystem == null) return false;
-            for (int i = 0; i < Input.touchCount; i++)
-            {
-                if (eventSystem.IsPointerOverGameObject(Input.GetTouch(i).fingerId)) return true;
-            }
-            return eventSystem.IsPointerOverGameObject();
+            // Raycast nuovo nel punto del tocco: sul telefono i dati del dito arrivano all'EventSystem solo dopo OnMouseDown,
+            // e un tocco su un velo (visore delle scope, scelta della presa) giocava la carta sotto. Nell'Editor era gia' cosi'.
+            eventSystem.RaycastAll(new UnityEngine.EventSystems.PointerEventData(eventSystem) { position = Input.mousePosition }, s_UiHits);
+            foreach (var hit in s_UiHits)
+                if (hit.module is UnityEngine.UI.GraphicRaycaster) return true;
+            return false;
         }
 
         private TurnController _turnControllerCache;
@@ -484,13 +489,18 @@ namespace Project51.Unity
             selectionCoroutine = StartCoroutine(SelectionCoroutine(selected));
         }
 
+        private float Raise => raiseOverride >= 0f ? raiseOverride : raiseAmount;
+
+        /// <summary>Quanto sale da selezionata, in unita' mondo; negativo = quello di sempre (mano). Tavolo 1v1: 4 del mockup.</summary>
+        public void SetRaiseOverride(float worldLift) => raiseOverride = worldLift;
+
         private System.Collections.IEnumerator SelectionCoroutine(bool select)
         {
             float elapsed = 0f;
             var startScale = GetPoseScale();
             var targetScale = select ? displayScale * 1.12f : displayScale;
             var startPos = transform.position;
-            var targetPos = select ? originalPosition + Vector3.up * raiseAmount : originalPosition;
+            var targetPos = select ? originalPosition + Vector3.up * Raise : originalPosition;
             if (spriteRenderer != null)
             {
                 if (select)
@@ -934,7 +944,7 @@ namespace Project51.Unity
             if (mattaFlip != null && CardRenderer != null) SetFlipFactor(flipFactor);
             if (dropShadow != null)
                 dropShadow.SetElevation(Mathf.Clamp01((transform.position.y - originalPosition.y) /
-                    Mathf.Max(.01f, raiseAmount)));
+                    Mathf.Max(.01f, Raise)));
             bool haloOn = mattaHalo != null && mattaHalo.gameObject.activeSelf;
             if (moveHintGlow != null && moveHintGlow.gameObject.activeSelf)
             {

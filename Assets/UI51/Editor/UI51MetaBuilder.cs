@@ -1151,24 +1151,24 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Colonna a tutta larghezza, altezza dai figli.</summary>
-        static void Stack(RectTransform rt, float spacing, RectOffset padding = null) =>
+        internal static void Stack(RectTransform rt, float spacing, RectOffset padding = null) =>
             UI51Build.Column(rt, spacing, padding, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
 
-        static void Gap(Transform parent, string name, float height) =>
+        internal static void Gap(Transform parent, string name, float height) =>
             UI51Build.Layout(UI51Build.Child(parent, name), -1f, height);
 
-        static void Wrap(TextMeshProUGUI t, float lineSpacing)
+        internal static void Wrap(TextMeshProUGUI t, float lineSpacing)
         {
             t.enableWordWrapping = true;
             t.overflowMode = TextOverflowModes.Overflow;
             t.lineSpacing = lineSpacing;
         }
 
-        /// <summary>Etichetta maiuscola oro + quello che segue, a 6 px.</summary>
-        static RectTransform Section(RectTransform body, string name, string caption)
+        /// <summary>Etichetta maiuscola oro + quello che segue, a gap px.</summary>
+        internal static RectTransform Section(RectTransform body, string name, string caption, float gap = 6f)
         {
             var section = UI51Build.Child(body, name);
-            Stack(section, 6f);
+            Stack(section, gap);
             var cap = UI51Build.Child(section, "Caption");
             UI51Build.Layout(cap, -1f, 14f);
             UI51AccessBuilder.NoWrap(UI51Build.Text(cap, caption, FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold,
@@ -1176,7 +1176,7 @@ namespace Project51.UI51.EditorTools
             return section;
         }
 
-        static RectTransform Panel(RectTransform parent, string name)
+        internal static RectTransform Panel(RectTransform parent, string name)
         {
             var panel = UI51Build.Child(parent, name);
             UI51Build.Shape(panel, UI51Tokens.PanelFill(), 180f, UI51Tokens.Radii(16f), 1f, UI51Tokens.BorderGoldSoft);
@@ -1185,7 +1185,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Riga alta 52: titolo (e sottotitolo) a sinistra, a destra resta lo spazio per interruttore, valore o freccia.</summary>
-        static RectTransform Row(RectTransform panel, string name, string title, string subtitle = null, Color? color = null)
+        internal static RectTransform Row(RectTransform panel, string name, string title, string subtitle = null, Color? color = null)
         {
             var row = UI51Build.Child(panel, name);
             UI51Build.Layout(row, -1f, 52f);
@@ -1203,20 +1203,21 @@ namespace Project51.UI51.EditorTools
             return row;
         }
 
-        static void Divider(RectTransform panel, string name)
+        internal static void Divider(RectTransform panel, string name)
         {
             var d = UI51Build.Child(panel, name);
             UI51Build.Layout(d, -1f, 1f);
             UI51Build.Image(UI51Build.Stretch(UI51Build.Child(d, "Line"), 16f, 0f, 16f, 0f), null, UI51Tokens.GoldA(0.12f), false, false);
         }
 
-        static UI51Toggle Switch(RectTransform row)
+        internal static UI51Toggle Switch(RectTransform row)
         {
             var rt = UI51Build.Child(row, "Switch");
             UI51PrefabBuilder.BuildToggle(rt.gameObject);
             UI51Build.Place(rt, new Vector2(1f, 0.5f), new Vector2(46f, 26f), new Vector2(-16f, 0f));
             // 46x26 e' piccolo per il dito: area di tocco 70x52, invisibile (il clic risale all'interruttore).
-            UI51Build.Image(UI51Build.Stretch(UI51Build.Child(rt, "Hit"), -12f, -13f, -12f, -13f), null, Color.clear, true, false);
+            UI51Build.Image(UI51Build.Stretch(UI51Build.Child(rt, "Hit"), -12f, -13f, -12f, -13f), null, Color.clear, true, false)
+                .canvasRenderer.cullTransparentMesh = false; // trasparente ma deve prendere i tocchi
             return rt.GetComponent<UI51Toggle>();
         }
 

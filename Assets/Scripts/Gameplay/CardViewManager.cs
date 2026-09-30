@@ -64,7 +64,22 @@ namespace Project51.Unity
         private const float TableCardDesignHeight = 157f;
         private const float WorldPerMockupPixel = CameraResponsiveFit.DesignWorldHeight / CameraResponsiveFit.DesignHeightPx;
 
-        private float EffectiveLocalPlayerCardScale => ScaleForDesignHeight(LocalHandCardDesignHeight);
+        // UI51 Fase 5, tavolo 1v1 (mockup Partita, largo 390): misure del mockup in unita' x MockupUnit = pixel di design.
+        // I campi del layout ancorato ai banner restano per i 4 giocatori, fino alla Fase 6.
+        private const float MockupUnit = 1080f / 390f; // = UI51TableBuilder.Unit, che Gameplay non vede
+        private const float DuelHandCardHeight = 143f * MockupUnit, DuelHandCardWidth = 92f * MockupUnit, DuelHandStep = 99f * MockupUnit;
+        private const float DuelHandAboveBanner = 129.5f * MockupUnit; // centro mano - centro banner
+        private const float DuelTopHandBelowBanner = 74.5f * MockupUnit, DuelTopHandStep = 56f * MockupUnit, DuelOpponentCardHeight = 71f * MockupUnit;
+        // Fascia del tavolo tra le due mani. Sotto: 10 oltre la carta propria selezionata (CardView: +0,35 mondo = 24,27 e x1,12 = 8,58).
+        private const float DuelTableGapTop = 10f * MockupUnit, DuelTableGapBottom = 43f * MockupUnit, DuelTableAreaWidth = 340f; // 6 dal feltro: la carta scelta (x1,12) resta dentro al filo d'oro
+        private const float DuelTableCardLift = 4f * MockupUnit; // mockup: la carta del tavolo scelta sale di 4
+        private const float TableRowGap = 12f; // tra le righe: due carte scelte una sopra l'altra (x1,12 e +4) non si toccano
+
+        private bool IsDuel => turnController != null && turnController.GameState != null && turnController.GameState.NumPlayers == 2;
+
+        private float EffectiveLocalPlayerCardScale => IsDuel && TryGetBannerRect(0, out _)
+            ? ScaleForDesignBox(DuelHandCardHeight, DuelHandCardWidth)
+            : ScaleForDesignHeight(LocalHandCardDesignHeight);
         private float EffectiveOpponentCardScale => ScaleForDesignHeight(opponentCardHeight);
         private float EffectiveTableCardScale => ScaleForDesignHeight(TableCardDesignHeight);
 
@@ -75,7 +90,19 @@ namespace Project51.Unity
             return Mathf.Max(0.05f, designHeight * WorldPerMockupPixel / Mathf.Max(0.01f, spriteHeight));
         }
 
-        public float GetTableCardScale() => EffectiveTableCardScale;
+        /// <summary>Come ScaleForDesignHeight, ma senza superare designWidth: i mazzi piu' larghi del mockup (classico, giada).</summary>
+        private static float ScaleForDesignBox(float designHeight, float designWidth)
+        {
+            var back = CardDecks.LoadForMatch()?.Back;
+            float h = back != null ? back.bounds.size.y : 1.8f, w = back != null ? back.bounds.size.x : 1.16f;
+            return Mathf.Max(0.05f, Mathf.Min(designHeight / Mathf.Max(0.01f, h), designWidth / Mathf.Max(0.01f, w)) * WorldPerMockupPixel);
+        }
+
+        /// <summary>Scala delle carte del tavolo quando ce ne sono totalCards (nel 1v1 si stringono per starci).</summary>
+        private float TableCardScale(int totalCards) =>
+            TryDuelTableLayout(totalCards, 0, out _, out float scale) ? scale : EffectiveTableCardScale;
+
+        public float GetTableCardScale(int totalCards = 1) => TableCardScale(totalCards);
 
         /// <summary>
         /// Scala carta-in-mano per un giocatore specifico: quella del giocatore locale
@@ -185,6 +212,7 @@ namespace Project51.Unity
         private List<Card> selectionTableCards = new List<Card>();
         // Visual helpers for alternative highlighting
         private List<Card> currentlyHighlightedCards = new List<Card>();
+        private Card chooserCard; // carta della mano che ha aperto il vassoio della presa
         private bool helpShownForCurrentSelection = false;
 
         // Helper: expected order of suits in cardSprites should match this enum ordering
@@ -223,7 +251,7 @@ namespace Project51.Unity
                 if (p == localIndex) continue;
                 var hand = players[p].Hand;
 
-                bool hasAccuso = players[p].AccusiPoints >= 3;
+                bool hasAccuso = players[p].AccusiPoints > 0;
                 bool faceUp = hasAccuso;
 
                 for (int i = 0; i < hand.Count; i++)
@@ -274,6 +302,7 @@ namespace Project51.Unity
                         cardView.CardRenderer.enabled = !suppressNewCardVisibility;
                     }
 
+                    cardView.SetRaiseOverride(-1f); // la vista puo' arrivare dal tavolo (resync, rivincita)
                     Vector3 position;
                     float baseRotation = 0f;
 
@@ -283,14 +312,17 @@ namespace Project51.Unity
                     if (TryGetBannerHandCenter(slot, out var handCenter, out _))
                     {
                         // Mockup 09: carte piccole sotto al banner in alto, coricate sul bordo ai lati.
-                        cardView.SetDisplayScale(CompactOpponentScale(cardView));
+                        // 1v1 (mockup Partita): dorsi dritti da 71 ogni 56 sotto al banner avversario.
+                        bool duel = numPlayers == 2;
+                        cardView.SetDisplayScale(CompactOpponentScale(cardView, duel ? DuelOpponentCardHeight : opponentCardHeight));
                         float k = WorldPerDesignPixel();
                         float t = FanT(hand.Count, i);
                         float centered = i - (hand.Count - 1) / 2f;
                         if (slot == 2)
                         {
-                            position = handCenter + Vector3.right * (centered * topHandStep * k);
-                            cardView.transform.rotation = Quaternion.Euler(0, 0, 180f + Mathf.Lerp(topHandFanDegrees, -topHandFanDegrees, t));
+                            float fan = duel ? 0f : topHandFanDegrees;
+                            position = handCenter + Vector3.right * (centered * (duel ? DuelTopHandStep : topHandStep) * k);
+                            cardView.transform.rotation = Quaternion.Euler(0, 0, 180f + Mathf.Lerp(fan, -fan, t));
                         }
                         else
                         {
@@ -750,12 +782,15 @@ namespace Project51.Unity
         // Tutte le misure sono pixel del mockup 1080x1920 (y verso il basso), relative al centro
         // del banner del posto. Mani e mazzetti seguono i banner veri della scena: se un banner
         // viene spostato, carte e prese lo seguono senza toccare questi numeri.
+        // Dalla UI51 Fase 5 questi campi valgono per i 4 giocatori; il 1v1 usa le misure Duel* del mockup Partita.
+        // Il banner proprio sta in fondo in tutti i modi: la mano sta sopra (valore negativo) e senza ventaglio, piccola
+        // come prima perche' non tocchi il tavolo a 3 righe su iPhone SE.
         [Header("Layout tavolo ancorato ai banner (mockup 09_tavolo_v4)")]
         [SerializeField] private bool anchorLayoutToBanners = true;
-        [SerializeField] private float localHandBelowBanner = 335f;
+        [SerializeField] private float localHandBelowBanner = -296.6f;
         [SerializeField] private float localHandStep = 165f;
-        [SerializeField] private float localHandSideDrop = 30f;
-        [SerializeField] private float localHandFanDegrees = 8f;
+        [SerializeField] private float localHandSideDrop = 0f;
+        [SerializeField] private float localHandFanDegrees = 0f;
         [SerializeField] private float topHandBelowBanner = 128f;
         [SerializeField] private float topHandStep = 65f;
         [SerializeField] private float topHandFanDegrees = 8f;
@@ -769,9 +804,9 @@ namespace Project51.Unity
         private static readonly string[] BannerNamesBySlot = { "Banner_Local", "Banner_Left", "Banner_Top", "Banner_Right" };
         private static readonly Vector2[] CapturedPileOffsetsBySlot =
         {
-            new Vector2(244f, -6f),   // locale: a destra del banner
+            new Vector2(194.4f, 0f),  // locale: la pastiglia prese del banner UI51 (misurata in Play, Fase 5)
             new Vector2(105f, 101f),  // sinistra: sotto il banner, verso il centro
-            new Vector2(255f, -5f),   // alto: a destra del banner
+            new Vector2(5.5f, 24.9f), // alto: la pastiglia prese sotto al nome
             new Vector2(-91f, 101f),  // destra: sotto il banner, verso il centro
         };
 
@@ -820,9 +855,11 @@ namespace Project51.Unity
             return screenPerDesign * worldPerScreen;
         }
 
+        private static readonly Vector3[] BannerCorners = new Vector3[4]; // tavolo e mazzo la chiamano a ogni frame
+
         private Vector3 BannerCenterWorld(RectTransform rect)
         {
-            var corners = new Vector3[4];
+            var corners = BannerCorners;
             rect.GetWorldCorners(corners);
             Vector3 screenCenter = (corners[0] + corners[2]) * 0.5f;
             Vector3 world = layoutCamera.ScreenToWorldPoint(screenCenter);
@@ -867,10 +904,10 @@ namespace Project51.Unity
             switch (slot)
             {
                 case 0:
-                    center = new Vector3(screenCenterX, bannerCenter.y - localHandBelowBanner * k, 0f);
+                    center = new Vector3(screenCenterX, bannerCenter.y + (IsDuel ? DuelHandAboveBanner : -localHandBelowBanner) * k, 0f);
                     break;
                 case 2:
-                    center = new Vector3(screenCenterX, bannerCenter.y - topHandBelowBanner * k, 0f);
+                    center = new Vector3(screenCenterX, bannerCenter.y - (IsDuel ? DuelTopHandBelowBanner : topHandBelowBanner) * k, 0f);
                     break;
                 default:
                     var corners = new Vector3[4];
@@ -884,11 +921,11 @@ namespace Project51.Unity
             return true;
         }
 
-        private float CompactOpponentScale(CardView view)
+        private float CompactOpponentScale(CardView view, float designHeight)
         {
             var sprite = view != null && view.CardRenderer != null ? view.CardRenderer.sprite : null;
             float spriteHeight = sprite != null ? sprite.bounds.size.y : 1.8f;
-            return Mathf.Max(0.05f, opponentCardHeight * WorldPerDesignPixel() / Mathf.Max(0.01f, spriteHeight));
+            return Mathf.Max(0.05f, designHeight * WorldPerDesignPixel() / Mathf.Max(0.01f, spriteHeight));
         }
 
         private static float FanT(int totalCards, int cardIndex)
@@ -906,8 +943,98 @@ namespace Project51.Unity
 
         #endregion
 
+        /// <summary>
+        /// n carte in un'area areaW x areaH (unita' del mockup Partita): larghe 70 fino a 4, 60 fino a 8, poi 54; spazio 10,
+        /// 8 oltre le 8 (tra le righe sempre TableRowGap); righe bilanciate (7 = 4 + 3), al massimo 4 per riga fino a 8 carte e 5 oltre. Se l'altezza non basta
+        /// prova piu' colonne (fino a 8) e tiene la carta piu' larga; a pari larghezza meno colonne. Alta 1,55 volte la larghezza.
+        /// </summary>
+        public static void TableGrid(int n, float areaW, float areaH, out int columns, out int rows, out float cardW, out float gap)
+        {
+            columns = rows = 0;
+            cardW = 0f;
+            gap = n <= 8 ? 10f : 8f;
+            if (n <= 0) return;
+            float wMax = n <= 4 ? 70f : n <= 8 ? 60f : 54f, best = float.NegativeInfinity;
+            for (int c = Mathf.Min(n, n <= 8 ? 4 : 5); c <= Mathf.Min(n, 8); c++)
+            {
+                int r = (n + c - 1) / c, cols = (n + r - 1) / r; // righe bilanciate: mai una carta sola sotto una riga piena
+                float w = Mathf.Min(wMax, (areaW - (cols - 1) * gap) / cols, (areaH - (r - 1) * TableRowGap) / (r * 1.55f));
+                if (w > best + 0.01f) { best = w; columns = cols; rows = r; }
+                if (w >= wMax) break;
+            }
+            cardW = Mathf.Max(1f, Mathf.Floor(best));
+        }
+
+        /// <summary>Fascia del tavolo 1v1 tra la mano avversaria e la propria: centro in mondo, altezza in unita' del mockup.</summary>
+        private bool TryGetDuelTableBand(out Vector3 center, out float heightU)
+        {
+            center = Vector3.zero;
+            heightU = 0f;
+            if (!IsDuel || !TryGetBannerHandCenter(0, out var own, out _) || !TryGetBannerHandCenter(2, out var top, out _)) return false;
+            float k = WorldPerDesignPixel();
+            float bandTop = top.y - (DuelOpponentCardHeight * 0.5f + DuelTableGapTop) * k;
+            float bandBottom = own.y + (DuelHandCardHeight * 0.5f + DuelTableGapBottom) * k;
+            heightU = (bandTop - bandBottom) / (MockupUnit * k);
+            center = new Vector3(GetTableCenterPosition().x, (bandTop + bandBottom) * 0.5f, 0f);
+            return true;
+        }
+
+        /// <summary>
+        /// Bordo esterno del tavolo (mockup Partita: x 10..380, 17 sopra il centro del banner in alto, 97 sotto quello proprio).
+        /// Mondo con y in su: yMax e' il bordo alto. unit = mondo per unita' del mockup.
+        /// </summary>
+        public static Rect TableRim(float centerX, float topBannerY, float ownBannerY, float unit) =>
+            Rect.MinMaxRect(centerX - 185f * unit, ownBannerY + 97f * unit, centerX + 185f * unit, topBannerY - 17f * unit);
+
+        /// <summary>Centro del mazzo: 42 dentro il bordo sinistro, 32 sopra quello alto (il cuscino poggia sul bordo).</summary>
+        public static Vector2 DeckCenter(Rect rim, float unit) => new Vector2(rim.xMin + 42f * unit, rim.yMax + 32f * unit);
+
+        /// <summary>Bordo del tavolo dai banner mio e in alto (1v1 e 4 giocatori). False senza banner.</summary>
+        public bool TryGetTableRim(out Rect rim, out float unit)
+        {
+            rim = default;
+            unit = 0f;
+            if (!TryGetBannerRect(0, out var own) || !TryGetBannerRect(2, out var top)) return false;
+            unit = MockupUnit * WorldPerDesignPixel();
+            rim = TableRim(GetTableCenterPosition().x, BannerCenterWorld(top).y, BannerCenterWorld(own).y, unit);
+            return unit > 0f && rim.height > 0f;
+        }
+
+        /// <summary>Centro del mazzo sul cuscino (mondo): da qui partono le carte distribuite.</summary>
+        public bool TryGetDeckPosition(out Vector3 position, out float unit)
+        {
+            position = Vector3.zero;
+            if (!TryGetTableRim(out var rim, out unit)) return false;
+            position = DeckCenter(rim, unit);
+            return true;
+        }
+
+        /// <summary>Posto e scala della carta index su total nel tavolo 1v1 (TableGrid nella fascia). False fuori dal 1v1.</summary>
+        private bool TryDuelTableLayout(int total, int index, out Vector3 position, out float scale)
+        {
+            position = Vector3.zero;
+            scale = 0f;
+            if (total <= 0 || !TryGetDuelTableBand(out var center, out float heightU)) return false;
+            TableGrid(total, DuelTableAreaWidth, heightU, out _, out int rows, out float w, out float gap);
+            int small = total / rows, extra = total % rows; // le prime "extra" righe hanno una carta in piu'
+            int row = 0, start = 0, inRow = small + (extra > 0 ? 1 : 0);
+            while (index >= start + inRow && row < rows - 1)
+            {
+                start += inRow;
+                row++;
+                inRow = small + (row < extra ? 1 : 0);
+            }
+            float u = MockupUnit * WorldPerDesignPixel();
+            float x = (index - start - (inRow - 1) * 0.5f) * (w + gap) * u;
+            float y = ((rows - 1) * 0.5f - row) * (w * 1.55f + TableRowGap) * u;
+            position = center + new Vector3(x, y, 0f);
+            scale = ScaleForDesignBox(w * 1.55f * MockupUnit, w * MockupUnit);
+            return true;
+        }
+
         private Vector3 CalculateTableCardPosition(int totalCards, int cardIndex)
         {
+            if (TryDuelTableLayout(totalCards, cardIndex, out var duelPosition, out _)) return duelPosition;
             Vector3 center = GetTableCenterPosition();
             if (TryGetBannerRect(0, out _))
             {
@@ -946,15 +1073,17 @@ namespace Project51.Unity
         /// il reveal dell'accuso del dealer). Il chiamante e' responsabile di distruggerla con
         /// view.DestroyView() quando ha finito.
         /// </summary>
-        public CardView SpawnGhostCardView(Card card, Vector3 position)
+        public CardView SpawnGhostCardView(Card card, Vector3 position, int totalCards = 1)
         {
             var view = CreateCardView(card, faceUp: true, clickable: false);
             if (view == null) return null;
 
-            view.SetDisplayScale(EffectiveTableCardScale);
+            view.SetDisplayScale(TableCardScale(totalCards));
+            view.SetBaseSortingOrder(10); // come le carte del tavolo: sopra al mazzo (5) da cui partono
             view.SetPosition(position);
             view.transform.rotation = Quaternion.identity;
-            if (view.CardRenderer != null) view.CardRenderer.enabled = true;
+            // Nascosta finche' parte il suo volo (PlayDealtCardsFromOrigin la accende a 0,12x): ferma sul mazzo si vedrebbe intera.
+            if (view.CardRenderer != null) view.CardRenderer.enabled = false;
             return view;
         }
 
@@ -989,7 +1118,7 @@ namespace Project51.Unity
             // Il pannello di scelta presa non deve restare aperto se il turno e' passato.
             if (moveSelectionUI != null && moveSelectionUI.IsVisible && !IsMyTurnToPlay)
             {
-                moveSelectionUI.Hide();
+                moveSelectionUI.Cancel(); // anche le carte sollevate tornano giu'
             }
 
             // Refresh card views
@@ -1148,7 +1277,10 @@ namespace Project51.Unity
 
                 Vector3 position = CalculateTableCardPosition(tableCards.Count, i);
 
-                cardView.SetDisplayScale(EffectiveTableCardScale);
+                cardView.SetDisplayScale(TableCardScale(tableCards.Count));
+                // Scelta sale di 4 come nel mockup (Partita e Partita4), non di 24 come in mano: toccherebbe la mano avversaria
+                // su iPhone SE, e con la scelta della presa salgono insieme tutte le carte delle prese.
+                cardView.SetRaiseOverride(DuelTableCardLift * WorldPerDesignPixel());
                 cardView.SetPosition(position);
                 cardView.SetBaseSortingOrder(10 + i);
 
@@ -1428,15 +1560,17 @@ namespace Project51.Unity
                 }
 
                 cardView.SetBaseSortingOrder(CenterFirstSortingOrder(40, handCards.Count, i));
+                cardView.SetRaiseOverride(-1f); // la vista puo' arrivare dal tavolo (smazzata precedente)
 
                 if (TryGetBannerHandCenter(0, out var handCenter, out _))
                 {
-                    // Mockup 09: ventaglio leggero, laterali un po' piu' in basso, centrale davanti.
+                    // 4 giocatori: ventaglio e discesa dai campi (0 = in fila). 1v1: sempre in fila, ogni 99.
                     float k = WorldPerDesignPixel();
                     float centered = i - (handCards.Count - 1) / 2f;
                     float edge = handCards.Count > 1 ? Mathf.Abs(centered) / ((handCards.Count - 1) / 2f) : 0f;
-                    cardView.SetPosition(handCenter + new Vector3(centered * localHandStep * k, -edge * localHandSideDrop * k, 0f));
-                    cardView.transform.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(localHandFanDegrees, -localHandFanDegrees, FanT(handCards.Count, i)));
+                    cardView.SetPosition(handCenter + new Vector3(centered * (IsDuel ? DuelHandStep : localHandStep) * k, -edge * (IsDuel ? 0f : localHandSideDrop) * k, 0f));
+                    float fan = IsDuel ? 0f : localHandFanDegrees;
+                    cardView.transform.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(fan, -fan, FanT(handCards.Count, i)));
                     continue;
                 }
 
@@ -1716,6 +1850,13 @@ namespace Project51.Unity
                 return;
             }
 
+            // Vassoio della presa aperto: la stessa carta lo lascia com'e', un'altra lo chiude e fa la sua strada.
+            if (moveSelectionUI != null && moveSelectionUI.IsVisible)
+            {
+                if (clickedCardView.Card.Equals(chooserCard)) return;
+                moveSelectionUI.Cancel();
+            }
+
             // Visual feedback: select this card and deselect others (works without separate UI)
             foreach (var kv in activeCardViews)
             {
@@ -1817,13 +1958,27 @@ namespace Project51.Unity
             // Show UI with move options
             if (moveSelectionUI != null)
             {
+                var gameState = turnController != null ? turnController.GameState : null;
                 var choices = uniqueMoves.Select(m => new MoveSelectionUI.CaptureChoice
                 {
                     Title = FormatMoveTitle(m),
                     Detail = FormatMoveDetail(m),
                     Cards = (m.CapturedCards ?? new List<Card>()).Select(GetSpriteForCard).Where(sprite => sprite != null).ToList(),
+                    Denari = (m.CapturedCards ?? new List<Card>()).Count(c => c.Suit == Suit.Denari),
+                    Scopa = TurnController.IsScopaCapture(gameState, m),
+                    TableCards = (m.CapturedCards ?? new List<Card>())
+                        .Select(c => activeCardViews.TryGetValue(c, out var v) && v != null ? (Renderer)v.CardRenderer : null)
+                        .Where(r => r != null).ToList(),
                 }).ToList();
 
+                // Mockup: salgono insieme le carte di tutte le prese; anelli colorati e numeri li mette il vassoio.
+                ClearArrowsAndHighlights();
+                currentlyHighlightedCards = uniqueMoves.SelectMany(m => m.CapturedCards ?? new List<Card>()).Distinct().ToList();
+                foreach (var c in currentlyHighlightedCards)
+                    if (activeCardViews.TryGetValue(c, out var v)) v.SetSelected(true);
+                chooserCard = playedCard;
+
+                var back = MatchDeck != null ? MatchDeck.Back : defaultCardBack;
                 moveSelectionUI.ShowCaptureChoices(choices,
                     idx =>
                     {
@@ -1842,7 +1997,8 @@ namespace Project51.Unity
                         ClearArrowsAndHighlights();
                         foreach (var kv in activeCardViews)
                             kv.Value?.SetSelected(false);
-                    });
+                    },
+                    playedCard: GetSpriteForCard(playedCard), cardBack: back);
             }
             else
             {

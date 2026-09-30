@@ -662,6 +662,13 @@ namespace Project51.UI51.EditorTools
 
             var sheet = UI51AccessBuilder.Sheet(safe, UI51Build.Pad(12, 20, 24, 20), 14f, // opaco: senza il blur del mockup il .97 lascia trasparire GIOCA
                 UI51Shape.Linear((UI51Tokens.Rgba(12, 26, 50, 1f), 0f), (UI51Tokens.Rgba(6, 13, 27, 1f), 1f)));
+            SheetHeader(sheet, title, subtitle, out close);
+            return sheet;
+        }
+
+        /// <summary>Maniglia 40x4 e intestazione alta 42 (titolo, sottotitolo, chiudi 36) in cima a un foglio dal basso.</summary>
+        internal static void SheetHeader(RectTransform sheet, string title, string subtitle, out Button close)
+        {
             var handle = UI51Build.Child(sheet, "Handle");
             UI51Build.Layout(handle, -1f, 4f);
             UI51Build.Solid(UI51Build.Center(UI51Build.Child(handle, "Bar"), 40f, 4f), UI51Tokens.CreamA(0.25f), 2f);
@@ -682,7 +689,6 @@ namespace Project51.UI51.EditorTools
             close = UI51Build.Button(shape, shape);
             UI51Build.GetOrAdd<UI51Press>(closeRt);
             UI51Build.Image(UI51Build.Center(UI51Build.Child(closeRt, "Icon"), 14f, 14f), UI51Build.Sprite("Common", "ic_close_cream"), Color.white);
-            return sheet;
         }
 
         internal static void WireModal(AnimatedModalV2 modal, RectTransform sheet, Button close)

@@ -96,7 +96,8 @@ namespace Project51.Tests
             mi.Invoke(rm, null);
 
             // Dealer should have received 1 accuso point and taken the table
-            Assert.AreEqual(1, state.Players[state.DealerIndex].AccusiPoints);
+            Assert.AreEqual(1, state.Players[state.DealerIndex].RoundAccusiPoints);
+            Assert.AreEqual(0, state.Players[state.DealerIndex].AccusiPoints, "Dealer 15/30 is not a hand accuso");
             Assert.AreEqual(0, state.Table.Count);
             Assert.IsTrue(state.Players[state.DealerIndex].CapturedCards.Count >= 3);
         }

@@ -2,6 +2,8 @@ using System.Linq;
 using UnityEngine;
 using Project51.Core;
 using Project51.Unity;
+using Project51.UIV2.Core;
+using Project51.UIV2.Data;
 
 namespace Project51.Unity.UI
 {
@@ -21,6 +23,28 @@ namespace Project51.Unity.UI
 
         [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati da Tools/UIV2/Apply Table Layout V4.")]
         [SerializeField] private Sprite[] seatAvatars = new Sprite[0];
+
+        [Tooltip("UI51: stessi indici di banners. Dove c'e' un banner UI51 quello storico resta solo come ancora delle carte. Assegnati da Tools/UI51/Build Fase 5.")]
+        [SerializeField] private Project51.UI51.PlayerBanner[] ui51Banners = new Project51.UI51.PlayerBanner[0];
+
+        [Header("UI51 visore delle scope (S7). Assegnati da Tools/UI51/Build Fase 5.")]
+        [SerializeField] private GameObject scopeViewer;
+        [SerializeField] private TMPro.TMP_Text scopeTitle;
+        [SerializeField] private TMPro.TMP_Text scopeCaptures;
+        [SerializeField] private TMPro.TMP_Text scopeCount;
+        [Tooltip("Card0/Face del ventaglio: modello, le altre carte sono sue copie.")]
+        [SerializeField] private UnityEngine.UI.Image scopeFace;
+        [Tooltip("Aree di tocco sulle scope, stessi indici di banners (vuoto dove il posto non ne ha).")]
+        [SerializeField] private UnityEngine.UI.Button[] scopeHits = new UnityEngine.UI.Button[0];
+
+        private readonly System.Collections.Generic.List<UnityEngine.UI.Image> scopeFaces = new System.Collections.Generic.List<UnityEngine.UI.Image>();
+        private Vector2 scopeRest;
+        private int scopeSlot = -1;
+        private int scopeShown;
+        private bool accusoWas;
+
+        private readonly Sprite[] ui51Avatars = new Sprite[4];
+        private readonly int[] ui51Looks = { int.MinValue, int.MinValue, int.MinValue, int.MinValue }; // per slot; livello -1 da' chiavi negative
 
         private TurnController turnController;
         private CardViewManager cardViewManager;
@@ -45,6 +69,11 @@ namespace Project51.Unity.UI
             }
 
             var state = turnController != null ? turnController.GameState : null;
+            // Visore delle scope: si chiude a fine smazzata e quando si apre la finestra dell'accuso (ACCUSA starebbe
+            // sotto al velo), non al cambio di turno. Solo sul fronte: aprirlo durante la finestra resta possibile.
+            bool accuso = turnController != null && turnController.IsAccusoWindowOpen;
+            if (scopeSlot >= 0 && (state == null || state.RoundEnded || accuso && !accusoWas)) CloseScope();
+            accusoWas = accuso;
             if (state == null) return;
 
             int numPlayers = state.NumPlayers;
@@ -61,6 +90,20 @@ namespace Project51.Unity.UI
                 var player = state.Players[p];
                 var banner = banners[relative];
                 banner.gameObject.SetActive(true);
+                var ui51 = UI51Banner(relative);
+                if (ui51 != null)
+                {
+                    RefreshUI51(ui51, relative, p, player);
+                    // Senza scope il tocco non fa nulla: niente click ne' vibrazione.
+                    if (relative < scopeHits.Length && scopeHits[relative] != null)
+                        scopeHits[relative].interactable = player.ScopaCards != null && player.ScopaCards.Count > 0;
+                    if (relative == scopeSlot) ShowScope(relative, p, player);
+                    // ponytail: tutti contro tutti la pillola mostra solo chi e' in testa; gli altri punti
+                    // stanno al posto del livello ("34 pt": "punti" non entra nei 120) fino alla pillola a 4 della Fase 6.
+                    if (relative != 0 && numPlayers > 2 && !state.TeamMode)
+                        ui51.SetInfo(MatchScore.Totals(state)[MatchScore.EntryOf(state, p)] + " pt");
+                    continue;
+                }
                 banner.SetName(GetDisplayName(p));
                 // ponytail: ritratto per posto, non per profilo; serve un AvatarId sincronizzato per sceglierlo.
                 if (seatAvatars.Length > 0) banner.SetAvatar(seatAvatars[p % seatAvatars.Length]);
@@ -114,8 +157,178 @@ namespace Project51.Unity.UI
                 {
                     banner?.SetDealerIndicator(false);
                 }
+                foreach (var banner in ui51Banners)
+                {
+                    if (banner != null) banner.SetDealer(false);
+                }
             }
-            GetBannerForPlayer(playerIndex)?.SetDealerIndicator(active);
+
+            var state = turnController != null ? turnController.GameState : null;
+            var ui51 = state != null
+                ? UI51Banner(ResolveRelativeSlot(playerIndex, GameModeService.Current.LocalPlayerIndex, state.NumPlayers))
+                : null;
+            if (ui51 != null) ui51.SetDealer(active);
+            else GetBannerForPlayer(playerIndex)?.SetDealerIndicator(active);
+        }
+
+        /// <summary>Tocco sulle scope del posto relativo slot (Button di UI51ScopeHit): apre il visore.</summary>
+        public void OpenScope(int slot)
+        {
+            // Finestra dell'accuso aperta da meno di un giro: il fronte chiude solo un visore gia' aperto, non questo.
+            accusoWas = turnController != null && turnController.IsAccusoWindowOpen;
+            // Il vassoio della presa (ordine 550) coprirebbe il visore: si annulla, la carta si puo' scegliere di nuovo.
+            var capture = FindObjectOfType<MoveSelectionUI>();
+            if (capture != null && capture.IsVisible) capture.Cancel();
+            scopeSlot = slot;
+            Refresh();
+        }
+
+        /// <summary>Tocco sul velo del visore, o chiusura automatica da Refresh.</summary>
+        public void CloseScope()
+        {
+            scopeSlot = -1;
+            if (scopeViewer != null) scopeViewer.SetActive(false);
+        }
+
+        /// <summary>Titolo e chip del visore delle scope (mockup Partita).</summary>
+        public static void ScopeTexts(bool mine, string name, int captures, int scope, out string title, out string chipA, out string chipB)
+        {
+            title = mine ? "Le tue scope" : "Le scope di " + name;
+            chipA = captures == 1 ? "1 carta presa" : captures + " carte prese";
+            chipB = scope == 1 ? "1 scopa" : scope + " scope";
+        }
+
+        /// <summary>Ventaglio del mockup fino a 6 carte (passo 40, 9 gradi, 6 in giu'); oltre, stessa sagoma delle 6.</summary>
+        public static void FanPose(int count, out float step, out float degrees, out float drop)
+        {
+            float k = count > 6 ? 5f / (count - 1) : 1f;
+            step = 40f * k;
+            degrees = 9f * k;
+            drop = 6f * k;
+        }
+
+        /// <summary>
+        /// Visore aperto: testi a ogni giro, ventaglio solo all'apertura o quando cambia il numero di scope.
+        /// Senza scope (smazzata nuova) si chiude.
+        /// </summary>
+        private void ShowScope(int slot, int p, PlayerState player)
+        {
+            var cards = GetScopeSprites(player);
+            int n = cards.Count;
+            if (scopeViewer == null || scopeFace == null || n == 0)
+            {
+                CloseScope();
+                return;
+            }
+            string title, chipA, chipB;
+            ScopeTexts(slot == 0, GetDisplayName(p), turnController.GetDisplayedCapturedCount(p), n, out title, out chipA, out chipB);
+            scopeTitle.text = title;
+            scopeCaptures.text = chipA;
+            scopeCount.text = chipB;
+
+            if (scopeFaces.Count == 0)
+            {
+                scopeFaces.Add(scopeFace);
+                scopeRest = ((RectTransform)scopeFace.transform.parent).anchoredPosition;
+            }
+            while (scopeFaces.Count < n)
+            {
+                var model = scopeFace.transform.parent;
+                scopeFaces.Add(Instantiate(model, model.parent).Find("Face").GetComponent<UnityEngine.UI.Image>());
+            }
+            bool opening = !scopeViewer.activeSelf;
+            scopeViewer.SetActive(true);
+            for (int i = 0; i < scopeFaces.Count; i++)
+            {
+                if (i < n) scopeFaces[i].sprite = cards[i];
+                var card = scopeFaces[i].transform.parent.gameObject;
+                if (card.activeSelf != i < n) card.SetActive(i < n);
+            }
+            if (!opening && n == scopeShown) return;
+
+            scopeShown = n;
+            float step, degrees, drop;
+            FanPose(n, out step, out degrees, out drop);
+            var fan = new System.Collections.Generic.List<RectTransform>(n);
+            for (int i = 0; i < n; i++)
+            {
+                var rt = (RectTransform)scopeFaces[i].transform.parent;
+                Project51.UI51.UIAnim.Stop(rt); // il kill riscrive la posa finale del ventaglio di prima
+                rt.anchoredPosition = scopeRest + new Vector2(step * (i - (n - 1) * 0.5f), 0f);
+                rt.localRotation = Quaternion.identity;
+                rt.localScale = Vector3.one;
+                fan.Add(rt);
+            }
+            if (opening) Project51.UI51.UIAnim.FadeIn((RectTransform)scopeViewer.transform, 0.2f);
+            Project51.UI51.UIAnim.Fan(fan, 0.06f, degrees, drop);
+        }
+
+        /// <summary>Ritratto del giocatore p, lo stesso del suo banner (ruota del sorteggio).</summary>
+        internal Sprite SeatAvatar(int p) => seatAvatars.Length > 0 ? seatAvatars[p % seatAvatars.Length] : null;
+
+        /// <summary>Banner UI51 del posto relativo (0 io, 1 sinistra, 2 alto, 3 destra); null se il posto non ne ha.</summary>
+        public Project51.UI51.PlayerBanner UI51Banner(int slot)
+        {
+            return slot >= 0 && slot < ui51Banners.Length ? ui51Banners[slot] : null;
+        }
+
+        /// <summary>
+        /// Stessi dati del banner storico, senza punteggio (in UI51 sta nella pillola in alto) e
+        /// senza mazzetto prese (in UI51 e' il numero dentro al banner).
+        /// </summary>
+        private void RefreshUI51(Project51.UI51.PlayerBanner banner, int slot, int p, PlayerState player)
+        {
+            banner.SetName(GetDisplayName(p));
+            // AvatarFrame.SetAvatar rifa' il ritaglio a ogni chiamata: solo quando il ritratto cambia.
+            var avatar = seatAvatars.Length > 0 ? seatAvatars[p % seatAvatars.Length] : null;
+            if (avatar != null && avatar != ui51Avatars[slot] && banner.avatar != null)
+            {
+                ui51Avatars[slot] = avatar;
+                banner.avatar.SetAvatar(avatar);
+            }
+            banner.SetTurn(p == turnController.CurrentPlayerIndex);
+            banner.SetCaptures(turnController.GetDisplayedCapturedCount(p));
+            banner.SetCardBack(GetMatchCardBack());
+            banner.SetScope(GetScopeSprites(player));
+            ApplyLook(banner, slot, p);
+        }
+
+        /// <summary>
+        /// Cornice, banner e livello. Il proprio: dal profilo (ospite, offline o profilo non arrivato: Oro, Notte;
+        /// livello come in Home). Avversario umano: quello che pubblica lui (AuthBootstrapper.PublishLook).
+        /// Bot, ospite o client che non pubblica: come lo costruisce UI51PrefabBuilder (cornice Blu, Notte, livello nascosto).
+        /// </summary>
+        private void ApplyLook(Project51.UI51.PlayerBanner banner, int slot, int p)
+        {
+            int frame, style, level;
+            if (slot == 0)
+            {
+                var auth = Project51.Auth.AuthBootstrapper.Instance;
+                bool real = auth != null && auth.HasRealProfile;
+                frame = ProfileCosmetics.FrameIndex(real ? auth.Profile.FrameId : null);
+                style = ProfileCosmetics.BannerIndex(real ? auth.Profile.BannerId : null);
+                // Come Home: registrato col profilo cloud non arrivato = livello dai progressi locali.
+                var local = Project51.Auth.PlayerProgressLocal.Instance;
+                bool registered = auth != null && auth.PlayFabAuth != null && auth.PlayFabAuth.HasRealLogin;
+                level = real ? PlayerXp.LevelOf(auth.Profile.XP) : registered && local != null ? local.Level : 1;
+            }
+            else
+            {
+                bool human = GameModeService.Current.IsHumanPlayer(p);
+                var owner = human ? GameSocialV2.PlayerAt(p) : null;
+                if (human && owner == null) return; // roster non ancora fissato o rientro in corso: resta l'aspetto di prima
+                if (owner == null || !ProfileCosmetics.ReadLook(owner.CustomProperties, out frame, out style, out level))
+                {
+                    frame = 3; style = 0; level = -1;
+                }
+            }
+
+            int look = frame + 10 * style + 100 * level;
+            if (look == ui51Looks[slot]) return;
+            ui51Looks[slot] = look;
+            banner.SetStyle(ProfileCosmetics.Banner(style));
+            ProfileCosmetics.ApplyFrame(banner.avatar, frame, 2f, 2f);
+            banner.SetLevel(level);
         }
 
         /// <summary>
@@ -172,7 +385,7 @@ namespace Project51.Unity.UI
                     var name = auth != null && auth.PlayFabAuth != null ? auth.PlayFabAuth.GetBestDisplayName() : null;
                     return string.IsNullOrEmpty(name) ? "Tu" : name;
                 }
-                return $"Giocatore {playerIndex + 1}";
+                return GameSocialV2.PlayerName(playerIndex); // nickname vero dell'avversario online
             }
             return $"Bot {playerIndex + 1}";
         }

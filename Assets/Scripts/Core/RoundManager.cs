@@ -198,7 +198,8 @@ namespace Project51.Core
 
         private void DeclareDealerAccuso(int dealer, AccusoType type, int basePoints)
         {
-            state.Players[dealer].AccusiPoints += ApplyAccusiRulePoints(basePoints);
+            // Solo nel totale di smazzata: AccusiPoints e' "Cirulla/Decino di questa mano" (scopre la
+            // mano, allinea gli accusi in rete) e non deve contare lo 15/30 del mazziere.
             state.Players[dealer].RoundAccusiPoints += ApplyAccusiRulePoints(basePoints);
             state.Players[dealer].RoundAccusiCount++;
             // Copia PRIMA di svuotare il tavolo: TakeTableByPlayer chiama state.Table.Clear().
@@ -224,6 +225,10 @@ namespace Project51.Core
         {
             var rules = GetRules();
             if (rules != null && !rules.EnableAccusi)
+                return false;
+            // Un accuso per giocatore per mano. AccusiPoints conta solo Cirulla/Decino di questa mano ed e'
+            // nello stato di rete: regge anche a una finestra riaperta da uno stato completo (rientro online).
+            if (state.Players[playerIndex].AccusiPoints > 0)
                 return false;
 
             if (accuso == AccusoType.Cirulla)

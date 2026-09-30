@@ -48,7 +48,7 @@ namespace Project51.UIV2.Core
             // Slot nell'ordine scelto, lo stesso che GameSocialV2 usa al tavolo (Bind li metteva in ordine di catalogo).
             Screen.EmoticonsPanel.SetEquipped(equipped.Select(i=>items[i]).ToArray());
             Screen.SetTabCount(CollectionTab.Emoticons,equipped.Length+"/3");
-            Screen.AccusiPanel.Bind(new[]{new AccusoViewData{Id="pugno",Title="Pugno sul tavolo",Subtitle="Standard · disponibile",Description="Quando accusi, batti il pugno e fai tremare il tavolo: tutti i giocatori lo vedranno.",ShortDescription="Impatto e salto delle carte",Artwork=PugnoArtwork,Unlocked=true,Equipped=true}},1);
+            Screen.AccusiPanel.Bind(new[]{new AccusoViewData{Id="pugno",Title="Pugno sul tavolo",Subtitle="Standard · disponibile",Description="Quando accusi, batti il pugno e fai tremare il tavolo: tutti i giocatori lo vedranno.",ShortDescription="Pugno e tavolo che trema",Artwork=PugnoArtwork,Unlocked=true,Equipped=true}},1);
             Screen.SetTabCount(CollectionTab.Accusi,"1");
             if(Feedback!=null)Feedback.text=equipped.Length<3?"Tocca un'emoticon qui sotto per aggiungerla":"Slot pieni: tocca un'emoticon per toglierla";
         }

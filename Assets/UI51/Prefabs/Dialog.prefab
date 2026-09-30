@@ -938,6 +938,7 @@ MonoBehaviour:
   m_Scale: 0.97
   m_Brightness: 1.08
   m_Duration: 0.08
+  m_DisabledGroup: {fileID: 0}
 --- !u!1 &5064680351957661276
 GameObject:
   m_ObjectHideFlags: 0
@@ -1280,6 +1281,7 @@ MonoBehaviour:
   m_Scale: 0.97
   m_Brightness: 1.08
   m_Duration: 0.08
+  m_DisabledGroup: {fileID: 0}
 --- !u!1 &5275008004340062505
 GameObject:
   m_ObjectHideFlags: 0
