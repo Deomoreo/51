@@ -44,7 +44,17 @@ namespace Project51.Auth
         
         private bool _isAuthConfigured;
         private float _connectionStartTime;
-        
+
+        // Stanze separate per versione dell'app (via dell'utente, 30/09): ConnectUsingSettings sovrascrive GameVersion con
+        // AppSettings.AppVersion, vuota nell'asset, quindi versioni diverse finivano nella stessa stanza. Vale per ogni
+        // connessione (qui, MatchmakingManager, NetworkManager).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void MatchOnlySameAppVersion()
+        {
+            var settings = PhotonNetwork.PhotonServerSettings;
+            if (settings != null) settings.AppSettings.AppVersion = Application.version;
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -132,9 +142,6 @@ namespace Project51.Auth
             {
                 PhotonNetwork.NickName = nickname;
             }
-            
-            // Game version per matchmaking
-            PhotonNetwork.GameVersion = Application.version;
             
             // Configura settings ottimali per mobile
             ConfigurePhotonSettings();

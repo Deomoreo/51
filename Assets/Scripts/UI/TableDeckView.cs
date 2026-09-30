@@ -11,7 +11,7 @@ namespace Project51.Unity.UI
     /// UI51 Fase 5 (S4, mockup Partita): cuscino rosso col mazzo in alto a sinistra del tavolo, su un canvas nel mondo
     /// (ordine 5: sopra al feltro, sotto a tutte le carte). Segue il bordo del tavolo (CardViewManager.TryGetDeckPosition);
     /// il mazzo si vede finche' ci sono carte da distribuire. Toccandolo il mazzo si solleva e compare il medaglione
-    /// con le carte rimaste, che sparisce dopo 2,4 s; un nuovo tocco riparte da zero. Tutto locale, niente rete.
+    /// con le carte rimaste, che sparisce 2,4 s dopo l'ultimo tocco. Tutto locale, niente rete.
     /// </summary>
     [RequireComponent(typeof(Canvas))]
     public class TableDeckView : MonoBehaviour
@@ -74,14 +74,16 @@ namespace Project51.Unity.UI
         public void Tap()
         {
             if (m_Medal == null || m_Count == null) return;
-            var deck = m_Turn != null && m_Turn.GameState != null ? m_Turn.GameState.Deck : null;
-            if (m_Stack != null && m_Stack.gameObject.activeInHierarchy) UIAnim.DeckLift(m_Stack);
+            // Con il medaglione gia' aperto un nuovo tocco lo tiene aperto e basta: prima sollevamento e conteggio
+            // ripartivano da zero a ogni tocco (utente, 01/10).
             if (!m_Medal.gameObject.activeSelf)
             {
+                var deck = m_Turn != null && m_Turn.GameState != null ? m_Turn.GameState.Deck : null;
+                if (m_Stack != null && m_Stack.gameObject.activeInHierarchy) UIAnim.DeckLift(m_Stack);
                 m_Medal.gameObject.SetActive(true);
                 UIAnim.DeckPop(m_Medal);
+                UIAnim.CountSteps(m_Count, 0, deck != null ? deck.Count : 0);
             }
-            UIAnim.CountSteps(m_Count, 0, deck != null ? deck.Count : 0);
             if (m_Hide != null) StopCoroutine(m_Hide);
             m_Hide = StartCoroutine(HideLater());
         }

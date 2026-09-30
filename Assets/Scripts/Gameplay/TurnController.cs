@@ -1227,6 +1227,8 @@ namespace Project51.Unity
                         tableTarget,
                         0f,
                         tableScale);
+                    // Il tavolo fa posto mentre la carta vola: atterra nel suo posto libero, non a meta' su quella centrale.
+                    cardViewManager.GlideTableCards(gameState.Table, gameState.Table.Count + 1, playSequence.Duration() / playSequence.timeScale);
                     yield return playSequence.WaitForCompletion();
 
                     bool isCapture = move.Type != MoveType.PlayOnly && move.CapturedCards != null && move.CapturedCards.Count > 0;
@@ -1290,6 +1292,9 @@ namespace Project51.Unity
                                 capturedTransforms,
                                 capturedRenderers,
                                 pileTarget);
+                            // Le carte che restano chiudono i buchi mentre la presa vola via, invece di scattare al refresh.
+                            var remaining = gameState.Table.Where(c => !move.CapturedCards.Contains(c)).ToList();
+                            cardViewManager.GlideTableCards(remaining, remaining.Count, captureSequence.Duration() / captureSequence.timeScale);
                             yield return captureSequence.WaitForCompletion();
                         }
                     }

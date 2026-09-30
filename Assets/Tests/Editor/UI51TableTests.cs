@@ -352,6 +352,33 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void DragThresholdIsAboutOnePointSixMillimetres()
+        {
+            Assert.AreEqual(10, Project51.UIV2.Animations.UIV2MotionInstaller.DragThreshold(0f), "DPI sconosciuti: default Unity");
+            Assert.AreEqual(10, Project51.UIV2.Animations.UIV2MotionInstaller.DragThreshold(96f), "Editor");
+            Assert.AreEqual(20, Project51.UIV2.Animations.UIV2MotionInstaller.DragThreshold(326f), "iPhone SE");
+            Assert.AreEqual(29, Project51.UIV2.Animations.UIV2MotionInstaller.DragThreshold(460f), "iPhone 12");
+        }
+
+        [Test]
+        public void HoverKeepsTheCardWhileThePointerIsOnItsRestPlace()
+        {
+            // Carta della mano 1v1 misurata dal vivo (iPhone 12): collider 1.222x1.8 a scala 1.086, hover +0.12 e x1.08.
+            var size = new Vector2(1.222f, 1.8f);
+            var rest = new Vector3(0f, -3.108f, 0f);
+            var scale = new Vector3(1.086f, 1.086f, 1f);
+            var bottomEdge = new Vector3(0.2f, rest.y - 0.9f * 1.086f + 0.02f, 0f); // l'ultimo tocco rimasto sul bordo basso
+            Assert.IsTrue(Project51.Unity.CardView.BoxContains(bottomEdge, rest, Quaternion.identity, scale, Vector2.zero, size));
+            Assert.IsFalse(Project51.Unity.CardView.BoxContains(bottomEdge, rest + Vector3.up * 0.12f, Quaternion.identity, scale * 1.08f,
+                Vector2.zero, size), "sollevata sfugge al puntatore: senza il posto a riposo entrava e usciva in continuo");
+            // Ventaglio a 4: il punto si misura nella rotazione della carta.
+            var fan = Quaternion.Euler(0f, 0f, 30f);
+            var corner = rest + fan * new Vector3(0.6f * 1.086f, 0.89f * 1.086f, 0f);
+            Assert.IsTrue(Project51.Unity.CardView.BoxContains(corner, rest, fan, scale, Vector2.zero, size));
+            Assert.IsFalse(Project51.Unity.CardView.BoxContains(corner, rest, Quaternion.identity, scale, Vector2.zero, size));
+        }
+
+        [Test]
         public void SorteggioStopsTheDealerUnderThePointer()
         {
             // Posto w della ruota (0 io, 1 avversario) a w*180+90 gradi CSS: a ruota ferma dentro lo spicchio in alto.

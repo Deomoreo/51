@@ -138,7 +138,6 @@ namespace Project51.Networking
             }
 
             PhotonNetwork.AutomaticallySyncScene = true;
-            PhotonNetwork.GameVersion = Application.version;
 
             Debug.Log($"Connecting to Photon as '{PhotonNetwork.NickName}'...");
             PhotonNetwork.ConnectUsingSettings();

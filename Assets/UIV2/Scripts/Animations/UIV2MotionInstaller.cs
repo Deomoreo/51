@@ -20,8 +20,20 @@ namespace Project51.UIV2.Animations
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (!scene.IsValid() || !scene.isLoaded) return;
-            foreach (var root in scene.GetRootGameObjects()) Apply(root);
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                Apply(root);
+                foreach (var events in root.GetComponentsInChildren<UnityEngine.EventSystems.EventSystem>(true))
+                    events.pixelDragThreshold = DragThreshold(Screen.dpi);
+            }
         }
+
+        /// <summary>
+        /// Soglia di trascinamento in pixel per circa 1,6 mm di dito (10 dp, come le liste di Android e iOS). I 10 pixel fissi di
+        /// Unity sui telefoni veri sono mezzo millimetro: un tocco che rotola appena diventava un trascinamento e il pulsante
+        /// sotto non partiva (visto con il vassoio delle prese, S8). DPI sconosciuti (0) o bassi: i 10 pixel di sempre.
+        /// </summary>
+        public static int DragThreshold(float dpi) => Mathf.Max(10, Mathf.RoundToInt(dpi / 160f * 10f));
 
         public static bool ShouldAnimate(UnityEngine.UI.Button button)
         {

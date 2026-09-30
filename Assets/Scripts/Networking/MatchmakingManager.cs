@@ -35,7 +35,6 @@ namespace Project51.Networking
         public event Action<Photon.Realtime.Player> OnPlayerLeft;
 
         [Header("Settings")]
-        [SerializeField] private string gameVersion = "1.0";
         [SerializeField] private int roomCodeLength = 5;
 
         private void Awake()
@@ -157,7 +156,6 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.GameVersion = gameVersion;
                 PhotonNetwork.ConnectUsingSettings();
             }
             else if (PhotonNetwork.IsConnectedAndReady)
@@ -187,7 +185,6 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.GameVersion = gameVersion;
                 PhotonNetwork.ConnectUsingSettings();
             }
             else if (PhotonNetwork.IsConnectedAndReady)
@@ -217,7 +214,6 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.GameVersion = gameVersion;
                 PhotonNetwork.ConnectUsingSettings();
             }
             else if (PhotonNetwork.IsConnectedAndReady)

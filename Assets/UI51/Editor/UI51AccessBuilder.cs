@@ -440,11 +440,22 @@ namespace Project51.UI51.EditorTools
             fill.pivot = new Vector2(0f, 0.5f);
             fill.offsetMin = new Vector2(1f, 1f);
             fill.offsetMax = new Vector2(-1f, -1f);
-            var fillImg = UI51Build.Image(fill, AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd"), Color.white, false, false);
-            UI51Build.GetOrAdd<Mask>(fill).showMaskGraphic = false;
-            UI51Build.Shape(UI51Build.Stretch(UI51Build.Child(fill, "Gradient")),
+            // Fill porta solo misura e valore (AppLoadingView.Progress, immagine spenta); il ritaglio tondo e' Clip. Prima la maschera
+            // era lo sprite di Unity stirato: le estremita' si deformavano mentre la barra cresceva (utente, 01/10).
+            var fillImg = UI51Build.Image(fill, null, Color.white, false, false);
+            fillImg.enabled = false;
+            UI51Build.Remove<Mask>(fill.gameObject);
+            foreach (var stale in new[] { "Gradient", "Shine" })
+            {
+                var old = fill.Find(stale);
+                if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
+            }
+            var clip = UI51Build.Stretch(UI51Build.Child(fill, "Clip"));
+            UI51Build.Solid(clip, Color.white, 4f);
+            UI51Build.GetOrAdd<Mask>(clip).showMaskGraphic = false;
+            UI51Build.Shape(UI51Build.Stretch(UI51Build.Child(clip, "Gradient")),
                 UI51Shape.Linear((UI51Tokens.Hex("#C4922F"), 0f), (UI51Tokens.Hex("#FCE29A"), 1f)), 90f, UI51Tokens.Radii(4f), 0f, Color.clear);
-            var shine = UI51Build.Stretch(UI51Build.Child(fill, "Shine"));
+            var shine = UI51Build.Stretch(UI51Build.Child(clip, "Shine"));
             UI51Build.Shape(shine, UI51Shape.Linear((UI51Tokens.WhiteA(0f), 0f), (UI51Tokens.WhiteA(0.45f), 0.5f), (UI51Tokens.WhiteA(0f), 1f)),
                 90f, Vector4.zero, 0f, Color.clear);
 
@@ -669,7 +680,8 @@ namespace Project51.UI51.EditorTools
             const int Bleed = 80;
             sheet.anchoredPosition = new Vector2(0f, -1f - Bleed);
             padding.left += 1; padding.right += 1; padding.bottom += 1 + Bleed;
-            UI51Build.Shape(sheet, fill, 180f, UI51Tokens.RadiiTop(26f), 1f, UI51Tokens.GoldA(0.3f));
+            // Il foglio prende i tocchi: senza, un tocco sul fondo arrivava al velo dietro e chiudeva il pannello (utente, 01/10).
+            UI51Build.Shape(sheet, fill, 180f, UI51Tokens.RadiiTop(26f), 1f, UI51Tokens.GoldA(0.3f), true);
             UI51Build.Column(sheet, spacing, padding, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
             UI51Build.Fit(sheet, false, true);
             return sheet;

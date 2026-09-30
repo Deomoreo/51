@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 using Project51.Core;
 using System;
 #if UNITY_EDITOR
@@ -270,13 +271,48 @@ namespace Project51.Unity
         /// (7 di Coppe) non ripristinato. Ogni frame in cui isMouseOver e' vero verifichiamo che
         /// il mouse sia REALMENTE ancora sopra il collider e, se non lo e' piu', forziamo la
         /// stessa pulizia di OnMouseExit.
+        /// Isteresi: l'hover solleva e ingrandisce la carta, e col suo collider la allontana dal puntatore. Con il
+        /// puntatore sul bordo basso la carta usciva, riscendeva, rientrava... e pulsava "grande piccola" senza fine
+        /// (utente, 01/10: la carta centrale a inizio smazzata, dove era rimasto l'ultimo tocco). Ora esce solo
+        /// quando il puntatore non e' piu' ne' sulla carta ne' sul suo posto a riposo.
         /// </summary>
         private void Update()
         {
-            if (isMouseOver && !IsPointerActuallyOverCollider())
+            if (isMouseOver && !PointerStillOver())
             {
-                OnMouseExit();
+                EndHover();
             }
+        }
+
+        // Una sola carta sollevata dall'hover alla volta (con l'isteresi due carte sovrapposte potevano esserlo entrambe).
+        private static CardView s_Hovered;
+
+        /// <summary>
+        /// Sui telefoni Input.mousePosition resta dove e' finito l'ultimo tocco: senza dito sullo schermo non c'e'
+        /// hover, altrimenti restava sollevata la carta capitata li' sotto.
+        /// </summary>
+        private static bool PointerLive => Input.touchCount > 0 || !Input.touchSupported;
+
+        private bool PointerStillOver() => PointerLive && (IsPointerActuallyOverCollider() || IsPointerOverRestPose());
+
+        /// <summary>Il puntatore e' sul posto a riposo della carta (posizione e scala del layout), ovunque l'abbia portata l'hover.</summary>
+        private bool IsPointerOverRestPose()
+        {
+            var box = GetComponent<BoxCollider2D>();
+            var cam = Camera.main;
+            if (box == null || cam == null) return false;
+            Vector3 screen = Input.mousePosition;
+            if (float.IsNaN(screen.x) || float.IsInfinity(screen.x) || float.IsNaN(screen.y) || float.IsInfinity(screen.y)) return false;
+            screen.z = Mathf.Abs(cam.transform.position.z - originalPosition.z);
+            return BoxContains(cam.ScreenToWorldPoint(screen), originalPosition, transform.rotation, displayScale, box.offset, box.size);
+        }
+
+        /// <summary>Il punto (mondo) cade nel BoxCollider2D di una carta messa in questa posa.</summary>
+        public static bool BoxContains(Vector3 world, Vector3 position, Quaternion rotation, Vector3 scale, Vector2 offset, Vector2 size)
+        {
+            Vector3 local = Quaternion.Inverse(rotation) * (world - position);
+            Vector2 d = new Vector2(local.x / scale.x, local.y / scale.y) - offset;
+            return Mathf.Abs(d.x) <= size.x * 0.5f && Mathf.Abs(d.y) <= size.y * 0.5f;
         }
 
         private bool IsPointerActuallyOverCollider()
@@ -304,6 +340,7 @@ namespace Project51.Unity
             // Stessa difesa di Update/IsPointerActuallyOverCollider ma per il caso in cui la
             // carta venga disattivata (nascosta, distrutta, riusata) mentre il mouse era ancora
             // sopra: in quel caso OnMouseExit non scatta affatto.
+            if (s_Hovered == this) s_Hovered = null;
             if (isMouseOver)
             {
                 isMouseOver = false;
@@ -326,8 +363,11 @@ namespace Project51.Unity
 
         private void OnMouseEnter()
         {
+            if (!PointerLive || (isMouseOver && s_Hovered == this)) return; // gia' sollevata: niente seconda scia
+            if (s_Hovered != null && s_Hovered != this) s_Hovered.EndHover();
+            s_Hovered = this;
             isMouseOver = true;
-            
+
             // Simple hover effect only when enabled: slightly scale up
             if (enableHover)
             {
@@ -351,7 +391,18 @@ namespace Project51.Unity
 
         private void OnMouseExit()
         {
+            // Il collider e' salito con la carta: finche' il puntatore e' sul suo posto a riposo resta sollevata (vedi Update).
+            if (isMouseOver && PointerStillOver()) return;
+            EndHover();
+        }
+
+        private void EndHover()
+        {
+            if (s_Hovered == this) s_Hovered = null;
+            bool wasOver = isMouseOver;
             isMouseOver = false;
+            // Mai sollevata (ingresso ignorato senza dito): nessuna posa da rimettere, e una carta in volo non va tirata a riposo.
+            if (!wasOver) return;
 
             if (!isDragging && enableHover)
             {
@@ -565,6 +616,22 @@ namespace Project51.Unity
                     transform.position = position;
                 }
             }
+        }
+
+        /// <summary>
+        /// Nuova posa di riposo raggiunta scivolando invece che di scatto (il tavolo che si riordina mentre la carta giocata
+        /// vola). Il refresh successivo, con gli stessi valori, non la interrompe: SetPosition e SetDisplayScale escono subito.
+        /// </summary>
+        public void GlideTo(Vector3 position, float scale, float duration)
+        {
+            originalPosition = position;
+            displayScale = new Vector3(Mathf.Max(0.01f, scale), Mathf.Max(0.01f, scale), 1f);
+            if (isSelected || isDragging) return;
+            if (isMouseOver && enableHover) { AnimateHover(true); return; }
+            StopPoseAnimations();
+            transform.DOKill();
+            transform.DOMove(position, duration).SetEase(Ease.OutCubic).SetLink(gameObject);
+            transform.DOScale(displayScale, duration).SetEase(Ease.OutCubic).SetLink(gameObject);
         }
 
         private void AnimateHover(bool enter)

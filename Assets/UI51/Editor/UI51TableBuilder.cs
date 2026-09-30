@@ -288,12 +288,12 @@ namespace Project51.UI51.EditorTools
             var felt = UnityEngine.Object.FindObjectOfType<Project51.Unity.TableFeltRenderer>(true);
             var camera = Camera.main;
             var blur = UI51Build.Sprite("Backgrounds", "home_bg_blur");
-            var sun = UI51Build.Sprite("Common", "sun_emblem");
+            var sun = UI51Build.Sprite("Common", "Sun_fix");
             var cardBack = Resources.Load<Sprite>("Cards/CardBack");
             if (ambient == null || fitter == null || felt == null || camera == null || blur == null || sun == null || cardBack == null)
             {
                 Debug.LogError($"{Tag} Manca un pezzo del tavolo (GameBackground con GameBackgroundFitter, TableFeltRenderer, Main Camera, " +
-                               "home_bg_blur, sun_emblem, Resources/Cards/CardBack). Tavolo non toccato.");
+                               "home_bg_blur, Sun_fix, Resources/Cards/CardBack). Tavolo non toccato.");
                 return;
             }
 
@@ -1066,12 +1066,12 @@ namespace Project51.UI51.EditorTools
             var bg = UI51Build.Sprite("Backgrounds", "home_bg_blur");
             var wash = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UIV2/Art/Generated/glow_soft_pill.png");
             var glow = UI51Build.Sprite("Common", "Bagliore_morbido");
-            var sun = UI51Build.Sprite("Common", "sun_emblem");
+            var sun = UI51Build.Sprite("Common", "Sun_fix");
             var avatarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("AvatarFrame"));
             if (design == null || bg == null || wash == null || glow == null || sun == null || avatarPrefab == null)
             {
                 Debug.LogError($"{Tag} Manca un pezzo del sorteggio (DealerRoulette/Design, home_bg_blur, glow_soft_pill, Bagliore_morbido, " +
-                               "sun_emblem, prefab AvatarFrame). Sorteggio non toccato.");
+                               "Sun_fix, prefab AvatarFrame). Sorteggio non toccato.");
                 return;
             }
             var panel = roulette.gameObject;

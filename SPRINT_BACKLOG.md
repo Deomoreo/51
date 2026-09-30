@@ -9,17 +9,28 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 30/09, versione 2.31
+## ▶ PUNTO DI RIPRESA — 01/10, versione 2.33
 
-**2.31:** Fase 5 (Tavolo 1v1) finita: fatti anche S9 (opzioni e abbandono) e S10 (Sorteggio). Build pulito (0 errori); test EditMode 343 totali: 336 ok, 0 falliti, 7 saltati (Explicit). Committata in locale il 30/09 (nessun push).
+**2.33:** le correzioni chieste il 01/10. Build pulito (0 errori); test EditMode 345 totali: 338 ok, 0 falliti, 7 saltati (Explicit). Non committata, come la 2.32: serve il tuo via.
+- Pannelli: toccando dentro un pannello (scelta dell'icona, modalità, mazzo, stanza privata...) non si chiude più; si chiude toccando fuori o sulla X. Il foglio non prendeva il tocco, che passava al velo dietro. Provati dal vivo tutti i pannelli del menu che si possono aprire (Modalità, Mazzo, Editor del profilo, Impostazioni, Termini, Elimina account, Crea/Entra stanza) con 25 tocchi dentro ciascuno: nessuno arriva al velo. Al tavolo opzioni e abbandono erano già a posto. Restano nella scena 3 pannelli vecchi che nessun pulsante apre più (`SettingsModal`, `ModePanelContainer`, `DeckPanelRoot`).
+- Barra di caricamento: sale solo in avanti e a velocità costante, non si deforma più (estremità sempre tonde, il riflesso resta dentro) e la schermata si chiude solo a barra piena.
+- Carta che pulsava "grande piccola": succedeva quando l'ultimo tocco (per esempio "Continua" o "AL TAVOLO") restava sul bordo basso di una carta della mano. L'hover la solleva, lei sfuggiva al punto toccato, riscendeva e ripartiva, senza fine. Ora resta sollevata finché il puntatore è sul suo posto; sui telefoni l'hover c'è solo con il dito sullo schermo, quindi a inizio smazzata nessuna carta resta su. Provato dal vivo: prima oscillava di continuo, ora sale una volta e sta ferma, e scende quando il puntatore va via. Test: `HoverKeepsTheCardWhileThePointerIsOnItsRestPlace`.
+- Mazzo: toccandolo più volte il medaglione resta aperto (sparisce 2,4 s dopo l'ultimo tocco) senza ripartire con sollevamento e conteggio.
+- Carta giocata: le carte in tavola ora si spostano mentre la carta vola, così atterra nel suo posto libero invece che a metà sopra quella centrale; dopo una presa le carte rimaste chiudono i buchi scivolando. Prima il tavolo si sistemava di scatto dopo l'atterraggio e, con l'ultima carta della mano, solo alla distribuzione seguente. Provato con 34 giocate automatiche: nessuna carta atterrata sopra un'altra, nessuno scatto del tavolo.
+- Emblema del sole: il tuo `Sun_fix.png` al posto di `sun_emblem`, al centro della ruota del Sorteggio e sul tavolo. Il pezzo di nastro in basso non c'è più.
+- ASSET MANCANTI DA CREARE: nessuno.
+- Prossimo passo: i mockup che mancano, a partire dalla Fase 6 (tavolo a 4 giocatori). Il tuo via è arrivato il 01/10 ("non ci fermiamo").
+
+**2.32:** i quattro punti a cui hai detto sì il 30/09. Build pulito (0 errori); test EditMode 344 totali: 337 ok, 0 falliti, 7 saltati (Explicit). Non committata: serve il tuo via.
+- Soglia di trascinamento: in tutte le scene ora vale circa 1,6 mm di dito invece di 10 pixel fissi (29 pixel su iPhone 12, 20 su iPhone SE, 10 nell'Editor). Un tocco che rotola appena non diventa più un trascinamento, quindi i pulsanti dentro le liste che scorrono partono. Si vede solo su un telefono vero. Test: `DragThresholdIsAboutOnePointSixMillimetres`.
+- Photon: le stanze ora sono separate per versione dell'app (2.32 gioca solo con 2.32). Prima la versione restava vuota e telefoni con build diverse finivano insieme, perdendo per esempio gli accusi. Tolte le vecchie righe che provavano a impostarla senza effetto.
+- Fase 4 rilanciata: i 4 interruttori delle Impostazioni del menu (Effetti, Musica, Vibrazione, Grafica ridotta) ora prendono il tocco su tutta la loro area. Provato dal vivo; nella scena cambiano solo quelli e il numero di versione.
+- Worktree vecchio `.claude/worktrees/focused-heisenberg-90035f` cancellato (le correzioni degli accusi erano già tutte nel commit della Fase 5). Resta una cartella vuota che Windows tiene occupata: si può cancellare a mano.
+- Resta a te: prova online con due telefoni con la STESSA versione (accusi e ruota del Sorteggio). Con la 2.32 due versioni diverse non si trovano più: installa la stessa build su entrambi.
+
+**2.31:** Fase 5 (Tavolo 1v1) finita: fatti anche S9 (opzioni e abbandono) e S10 (Sorteggio). Build pulito (0 errori); test EditMode 343 totali: 336 ok, 0 falliti, 7 saltati (Explicit). Committata in locale il 30/09 (commit 53bc0ac, nessun push).
 - S9 e S10: dettagli nel blocco della Fase 5 qui sotto.
-- ASSET MANCANTI DA CREARE: emblema del sole (`sun_emblem`) senza il pezzo di nastro che si vede in basso, al centro della ruota del Sorteggio.
-- Aspettano il tuo sì (uno per uno):
-  - soglia di trascinamento in tutta l'app scalata sui DPI del telefono;
-  - cancellare il vecchio worktree `.claude/worktrees/focused-heisenberg-90035f`;
-  - prova online con due telefoni con la STESSA versione (accusi e ruota del Sorteggio);
-  - Photon AppVersion vuota: versioni diverse finiscono nella stessa stanza (cambio di configurazione);
-  - Fase 4, Impostazioni del menu: gli interruttori probabilmente non prendono il tocco sulla loro area trasparente. Il builder è corretto, serve rilanciare Fase 4;
+- ASSET MANCANTI DA CREARE: emblema del sole (`sun_emblem`) senza il pezzo di nastro che si vede in basso, al centro della ruota del Sorteggio. Arrivato il 01/10 (`Sun_fix.png`), messo nella 2.33.
 
 **2.30:** chiusi i 13 punti rimasti aperti dalla Fase 4. Build pulito (0 errori); test EditMode 316 totali: 309 ok, 0 falliti, 7 saltati (Explicit). Committata in locale il 29/09 insieme alla 2.29 (commit 1457601, nessun push).
 - Fatto e provato nel Simulator su iPhone 12 e SE:

@@ -1097,6 +1097,19 @@ namespace Project51.Unity
         }
 
         /// <summary>
+        /// Le carte del tavolo scivolano nei posti che avranno dopo la mossa (cards = quelle che restano, in ordine;
+        /// totalCards = quante saranno), mentre la mossa e' ancora in volo. Prima restavano ferme e scattavano al refresh:
+        /// la carta giocata atterrava a meta' su quella centrale e, con l'ultima carta della mano, ci restava fino alla
+        /// distribuzione seguente (utente, 01/10).
+        /// </summary>
+        public void GlideTableCards(IReadOnlyList<Card> cards, int totalCards, float duration)
+        {
+            for (int i = 0; i < cards.Count; i++)
+                if (activeCardViews.TryGetValue(cards[i], out var view) && view != null)
+                    view.GlideTo(CalculateTableCardPosition(totalCards, i), TableCardScale(totalCards), duration);
+        }
+
+        /// <summary>
         /// Refreshes all card views to match the current game state.
         /// </summary>
         private void RefreshCardViews()

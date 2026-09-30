@@ -34,6 +34,10 @@ namespace Project51.UIV2.Core
         private Tween fade;
         private bool loadingScene;
         private bool indeterminate;
+        // Valore disegnato della barra: solo in avanti e a velocita' costante verso Progress.fillAmount, come il
+        // "transition: width .25s linear" del mockup. Prima seguiva salti e andirivieni del valore (utente, 01/10).
+        private float shown;
+        private const float FillPerSecond = .8f;
         private Action entranceReady;
         private string failedScene;
         private int tipIndex = -1;
@@ -61,7 +65,7 @@ namespace Project51.UIV2.Core
             fade?.Kill(); View.gameObject.SetActive(true);
             if (!wasVisible)
             {
-                View.alpha = 0; tipIndex = -1;
+                View.alpha = 0; tipIndex = -1; shown = 0;
                 if (UIAnim.DecorativeLoops) { UIAnim.LoadingWave(Cards); UIAnim.Blink(Glow, .55f, .95f, 3f); }
                 UIAnim.Breathe(Logo);
             }
@@ -113,6 +117,7 @@ namespace Project51.UIV2.Core
                 yield return null;
             }
             Progress.fillAmount = 1;
+            yield return BarFull();
             var ready = entranceReady; entranceReady = null; operation = null;
             ready?.Invoke(); Hide();
         }
@@ -133,7 +138,7 @@ namespace Project51.UIV2.Core
             // Gli effetti della schermata che si sta lasciando (fine partita, accusi, carte) non
             // devono accompagnare il caricamento e riaffiorare sulla schermata nuova.
             Project51.Unity.GameAudio.StopAllEffects();
-            indeterminate = false; Progress.fillAmount = 0;
+            indeterminate = false; Progress.fillAmount = 0; shown = 0;
             // Finish covering the old scene before loading/activation can replace it.
             while (fade != null && fade.IsActive() && !fade.IsComplete()) yield return null;
             if (!Application.CanStreamedLevelBeLoaded(scene))
@@ -151,11 +156,19 @@ namespace Project51.UIV2.Core
             }
             load.allowSceneActivation = true;
             yield return load; yield return null; yield return null;
-            Progress.fillAmount = 1; loadingScene = false; operation = null; Hide();
+            Progress.fillAmount = 1;
+            yield return BarFull();
+            loadingScene = false; operation = null; Hide();
+        }
+        // La schermata si chiude solo con la barra davvero al 100% (al massimo 1,25 s di corsa; 2 s di sicurezza).
+        private IEnumerator BarFull()
+        {
+            float until = Time.realtimeSinceStartup + 2f;
+            while (ProgressFill != null && shown < 1f && Time.realtimeSinceStartup < until) yield return null;
         }
         private void Fail(string message)
         {
-            indeterminate = false; Status.text = message; Progress.fillAmount = 0;
+            indeterminate = false; Status.text = message; Progress.fillAmount = 0; shown = 0;
             RetryButton.gameObject.SetActive(true); CancelButton.gameObject.SetActive(true);
         }
         private void Retry()
@@ -173,9 +186,18 @@ namespace Project51.UIV2.Core
         private void Update()
         {
             if (!IsVisible) return;
-            if (indeterminate) Progress.fillAmount = .25f + .35f * Mathf.PingPong(Time.unscaledTime * .45f, 1);
-            if (ProgressFill != null) ProgressFill.anchorMax = new Vector2(Progress.fillAmount, 1);
-            if (Percent != null) Percent.text = indeterminate ? "" : Mathf.RoundToInt(Progress.fillAmount * 100) + "%";
+            // Durata ignota (accesso): sale piano verso il 60% senza mai tornare indietro (prima andava avanti e indietro).
+            if (indeterminate && Progress.fillAmount < .6f)
+                Progress.fillAmount += (.6f - Progress.fillAmount) * (1f - Mathf.Exp(-Time.unscaledDeltaTime / 3f));
+            shown = Mathf.MoveTowards(shown, Mathf.Max(shown, Progress.fillAmount), Time.unscaledDeltaTime * FillPerSecond);
+            if (ProgressFill != null)
+            {
+                // Mai piu' stretta che alta: le estremita' tonde restano tonde anche all'inizio.
+                float minX = (ProgressFill.rect.height - ProgressFill.offsetMax.x + ProgressFill.offsetMin.x) /
+                    Mathf.Max(1f, ((RectTransform)ProgressFill.parent).rect.width);
+                ProgressFill.anchorMax = new Vector2(shown > 0f ? Mathf.Max(shown, minX) : 0f, 1);
+            }
+            if (Percent != null) Percent.text = indeterminate ? "" : Mathf.RoundToInt((ProgressFill != null ? shown : Progress.fillAmount) * 100) + "%";
             if (ProgressShine != null)
             {
                 // shimmer del mockup: striscia larga 30% da -40% a 120% del riempimento, 1.4 s ease-in-out.
