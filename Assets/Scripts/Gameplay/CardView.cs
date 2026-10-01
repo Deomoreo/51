@@ -104,6 +104,9 @@ namespace Project51.Unity
         public event Action<CardView> OnCardDoubleClicked;
         public event Action<CardView, Vector3> OnDragReleased;
 
+        /// <summary>Tocco su una carta che non si gioca (carte accusate di un altro): lo decide chi la mette in scena.</summary>
+        public Action<CardView> Tapped;
+
         /// <summary>
         /// Initializes this view with a specific card.
         /// </summary>
@@ -257,6 +260,11 @@ namespace Project51.Unity
                     lastClickTime = now;
                     OnCardClicked?.Invoke(this);
                 }
+            }
+            else if (Tapped != null && !IsPointerOverUI())
+            {
+                GameFeedback.TryHaptic(false);
+                Tapped(this);
             }
         }
 
@@ -1004,6 +1012,62 @@ namespace Project51.Unity
 
         public bool HasMoveHint => moveHintGlow != null && moveHintGlow.gameObject.activeSelf;
 
+        // ==== Carte accusate: bordo pieno dietro alla carta (mockup Partita, Partita4) ====
+        private SpriteRenderer outline;
+        private static Sprite outlineSprite;
+        private const int OutlinePixels = 64, OutlineCornerPixels = 16; // sprite 9-slice generato, 100 px per unita'
+
+        /// <summary>Bordo attorno alla carta spesso width volte la sua larghezza (0 = spento), angoli come quelli della carta.</summary>
+        public void SetOutline(Color color, float width)
+        {
+            if (width <= 0f || CardRenderer == null || CardRenderer.sprite == null)
+            {
+                if (outline != null) outline.gameObject.SetActive(false);
+                return;
+            }
+
+            if (outline == null)
+            {
+                var child = new GameObject("Outline");
+                child.transform.SetParent(CardRenderer.transform, false);
+                child.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+                outline = child.AddComponent<SpriteRenderer>();
+                outline.drawMode = SpriteDrawMode.Sliced;
+                outline.sprite = OutlineSprite();
+            }
+
+            var bounds = CardRenderer.sprite.bounds;
+            float t = bounds.size.x * width;
+            // Angoli della carta circa al 9% della larghezza, piu' lo spessore. Un filo dietro alla carta (z): stesso ordine,
+            // cosi' sta sopra alla sua ombra (coda 2999) e sotto alla faccia.
+            float s = (0.09f * bounds.size.x + t) / (OutlineCornerPixels / 100f);
+            outline.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, 0.01f);
+            outline.transform.localScale = new Vector3(s, s, 1f);
+            outline.size = new Vector2(bounds.size.x + 2f * t, bounds.size.y + 2f * t) / s;
+            outline.color = color;
+            outline.gameObject.SetActive(true);
+        }
+
+        private static Sprite OutlineSprite()
+        {
+            if (outlineSprite != null) return outlineSprite;
+            const int n = OutlinePixels, r = OutlineCornerPixels;
+            var texture = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+            var pixels = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    // Rettangolo bianco ad angoli tondi di raggio r, bordo sfumato di un pixel.
+                    float dx = Mathf.Max(r - x - 0.5f, x + 0.5f - (n - r), 0f), dy = Mathf.Max(r - y - 0.5f, y + 0.5f - (n - r), 0f);
+                    pixels[y * n + x] = new Color32(255, 255, 255, (byte)(255f * Mathf.Clamp01(r + 0.5f - Mathf.Sqrt(dx * dx + dy * dy))));
+                }
+            texture.SetPixels32(pixels);
+            texture.Apply();
+            outlineSprite = Sprite.Create(texture, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(r, r, r, r));
+            outlineSprite.hideFlags = HideFlags.DontSave;
+            return outlineSprite;
+        }
+
         private void LateUpdate()
         {
             // Pose coroutines run before LateUpdate: keep Matta's width independent of
@@ -1012,6 +1076,12 @@ namespace Project51.Unity
             if (dropShadow != null)
                 dropShadow.SetElevation(Mathf.Clamp01((transform.position.y - originalPosition.y) /
                     Mathf.Max(.01f, Raise)));
+            if (outline != null && outline.gameObject.activeSelf && CardRenderer != null)
+            {
+                outline.enabled = CardRenderer.enabled;
+                outline.sortingLayerID = CardRenderer.sortingLayerID;
+                outline.sortingOrder = CardRenderer.sortingOrder;
+            }
             bool haloOn = mattaHalo != null && mattaHalo.gameObject.activeSelf;
             if (moveHintGlow != null && moveHintGlow.gameObject.activeSelf)
             {

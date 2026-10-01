@@ -9,7 +9,28 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 01/10, versione 2.33
+## ▶ PUNTO DI RIPRESA — 01/10, versione 2.34
+
+**2.34:** UI51 Fase 6 (tavolo a 4 giocatori: mockup `Partita4` nella disposizione compatta, e Sorteggio a 4) costruita e provata in Unity. La costruisce lo stesso menu della Fase 5, **Tools/UI51/Build Fase 5 (Tavolo 1v1)** (`Assets/UI51/Editor/UI51TableBuilder.cs`), dentro i suoi passi: rilanciarlo rifà tutte e due le fasi. Build pulito (0 errori); test EditMode 349 totali: 342 ok, 0 falliti, 7 saltati (Explicit). Non committata: serve il tuo via.
+- ☑ S1 pillola del punteggio a 4: tutti contro tutti "TU · A 51 · " e i 3 avversari nell'ordine dei posti, nomi tagliati a 5 lettere; nel 2 contro 2 "NOI" e "LORO".
+- ☑ S2 posti laterali: banner verticali 64x100 del mockup a sinistra e a destra, scope coricate che sporgono verso il tavolo, gettone "M" del mazziere, dorsi piccoli coricati. Toccando le scope di un laterale si apre il visore, come per il posto in alto.
+- ☑ S3 altezza dei posti laterali: si mettono tra il mio banner e quello in alto, in modo che la fascia delle carte in tavola resti alta 190 come nel mockup, senza salire oltre il posto del mockup né toccare il cuscino del mazzo.
+- ☑ S4 tavolo a 4: fascia e griglia delle carte in tavola tra i posti laterali e la mia mano. Su iPhone SE la mia mano passa da 143 a 98 di altezza solo quando la fascia del tavolo resterebbe sotto 150 (anche quando non ci sarebbe spazio affatto).
+- ☑ S5 compagno nel 2 contro 2: bot e ospiti con anello d'oro per il compagno e blu per gli avversari; i giocatori con un account tengono la loro cornice. Sotto al nome del compagno c'è "Compagno" al posto del livello; il suo banner in alto è più largo di 16 perché "Compagno" e il chip delle carte prese ci stiano interi (nel mockup il chip sborda), e resta centrato con gettone e scope alla solita distanza.
+- ☑ S6 carte accusate: le carte accusate degli altri hanno un bordo d'oro netto (il bagliore morbido su carte così piccole non si vedeva). Toccandole si apre il visore "Carte accusate da X" con i chip "Accuso" e "+N punti". Nel 1v1 le carte accusate dell'avversario si vedono grandi (alte 80, passo 60) e dritte come nel mockup, con bordo e bagliore; toccate aprono lo stesso visore.
+- ☑ S7 Sorteggio a 4: la ruota del mockup con 4 spicchi, la croce d'oro e i 4 avatar coi nomi sempre dritti; in alto "PARTITA 2 VS 2" o "TUTTI CONTRO TUTTI". Gira solo a inizio partita e alla rivincita, come nel 1v1 (scelta tua): la vecchia roulette a ogni smazzata non parte più. Sotto al mazziere: "Distribuisce X: inizia Y", oppure "giochi tu per primo", oppure "Distribuisci tu: gli altri giocano prima di te".
+- Provato nel Simulator su iPhone 12 e SE: 2 contro 2, tutti contro tutti, e il 1v1 per controllare che non sia cambiato niente.
+- Revisione del codice chiusa con 2 correzioni: una carta passata da una mano accusata al tavolo o alla mia mano non risponde più al tocco con la vibrazione; su schermi così bassi che il tavolo non avrebbe spazio, la mia mano si rimpicciolisce invece di restare grande.
+- ASSET MANCANTI DA CREARE: nessuno.
+- Rimandati o da decidere, ognuno col tuo via:
+  - Scheda del profilo rapido (`Partita4Profilo`): ancora rimandata, come nella Fase 5.
+  - 1v1: il bordo delle carte accusate è pieno, senza lo stacco sottile tra carta e bordo che c'è nel mockup.
+  - Il visore delle carte accusate mostra la matta come carta normale, non trasformata.
+  - A 4 giocatori, carte accusate di chi sta in alto: le ho abbassate di 6 e messe dritte (leggibili da te), mentre ai lati restano coricate. Non c'è un mockup: scelta mia.
+  - Resta a te: prova online con due telefoni con la stessa versione 2.34 (ora anche a 4 la ruota gira solo a inizio partita).
+  - Vecchia roulette a 4 (`Design`, nuvolette) ancora nella scena: si toglie nella Fase 10 (pulizia).
+  - Della Fase 5 restano da fare `PartitaTavoloPieno` e `PartitaBanner`.
+- Prossimo passo: Fase 7 (`FineSmazzata*`, `FinePartita*`), poi Fase 8 (Amici, Posta, Notizie, Premi), Fase 9 (`Conn*`), Fase 10 (pulizia). Ognuna parte col tuo via.
 
 **2.33:** le correzioni chieste il 01/10. Build pulito (0 errori); test EditMode 345 totali: 338 ok, 0 falliti, 7 saltati (Explicit). Non committata, come la 2.32: serve il tuo via.
 - Pannelli: toccando dentro un pannello (scelta dell'icona, modalità, mazzo, stanza privata...) non si chiude più; si chiude toccando fuori o sulla X. Il foglio non prendeva il tocco, che passava al velo dietro. Provati dal vivo tutti i pannelli del menu che si possono aprire (Modalità, Mazzo, Editor del profilo, Impostazioni, Termini, Elimina account, Crea/Entra stanza) con 25 tocchi dentro ciascuno: nessuno arriva al velo. Al tavolo opzioni e abbandono erano già a posto. Restano nella scena 3 pannelli vecchi che nessun pulsante apre più (`SettingsModal`, `ModePanelContainer`, `DeckPanelRoot`).

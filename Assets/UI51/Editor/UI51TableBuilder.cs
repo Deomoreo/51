@@ -17,6 +17,8 @@ namespace Project51.UI51.EditorTools
     /// pugno al centro del tavolo che trema); S7 visore delle scope (tocco sulle scope di un banner); S8 scelta della presa
     /// (vassoio dal basso con le prese in fila, anelli e numeri sulle carte del tavolo); S9 foglio delle opzioni e finestra
     /// "Abbandonare la partita?"; S10 ruota del sorteggio in 1 contro 1 (a 4 resta la vecchia roulette).
+    /// Fase 6 (mockup Partita4, disposizione compatta) negli stessi passi: pillola a 4 punteggi, banner verticali ai lati con
+    /// scope coricate, gettone e tocco sulle scope, dorsi piccoli degli altri tre.
     /// Le misure del mockup sono su 390 di larghezza, il tavolo e' disegnato su 1080: i nodi UI51 stanno
     /// dentro contenitori con scala <see cref="Unit"/>, cosi' nel codice restano i numeri del mockup.
     /// Il vecchio aspetto resta in scena spento. Idempotente: rieseguirlo riusa i nodi per nome.
@@ -42,28 +44,32 @@ namespace Project51.UI51.EditorTools
             var banners = UnityEngine.Object.FindObjectOfType<PlayerBannerManager>(true);
             var seatLocal = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Local");
             var seatTop = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Top");
+            var seatLeft = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Left");
+            var seatRight = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Right");
             var ownPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Own"));
             var rivalPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Opponent"));
+            var sidePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Vertical"));
             var morePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("Badge_More"));
             if (topBar == null || settings == null || bar == null)
             {
                 Debug.LogError($"{Tag} Manca un pezzo del tavolo (GameCanvas/TableTopBar, TableTopBarController, InGameSettingsV2). Non tocco nulla.");
                 return;
             }
-            if (banners == null || seatLocal == null || seatTop == null || ownPrefab == null || rivalPrefab == null || morePrefab == null)
+            if (banners == null || seatLocal == null || seatTop == null || seatLeft == null || seatRight == null ||
+                ownPrefab == null || rivalPrefab == null || sidePrefab == null || morePrefab == null)
             {
-                Debug.LogError($"{Tag} Manca un pezzo dei banner (PlayerBannerManager, PlayerBanners/Banner_Local e Banner_Top, " +
-                               "prefab PlayerBanner_Own, PlayerBanner_Opponent, Badge_More). Non tocco nulla.");
+                Debug.LogError($"{Tag} Manca un pezzo dei banner (PlayerBannerManager, PlayerBanners/Banner_Local, Banner_Top, Banner_Left e " +
+                               "Banner_Right, prefab PlayerBanner_Own, PlayerBanner_Opponent, PlayerBanner_Vertical, Badge_More). Non tocco nulla.");
                 return;
             }
 
             BuildTopHud(topBar, bar, settings);
-            BuildBanners(banners, seatLocal, seatTop, ownPrefab, rivalPrefab, morePrefab);
-            BuildLayout(scene, seatLocal, seatTop);
+            BuildBanners(banners, seatLocal, seatTop, seatLeft, seatRight, ownPrefab, rivalPrefab, sidePrefab, morePrefab);
+            BuildLayout(scene, seatLocal, seatTop, seatLeft, seatRight);
             BuildTable(scene);
             BuildEmoticons(scene, seatLocal);
             BuildAccuso(scene);
-            BuildScope(banners, seatLocal, seatTop, bar.parent);
+            BuildScope(banners, seatLocal, seatTop, seatLeft, seatRight, bar.parent);
             BuildCapture(UnityEngine.Object.FindObjectOfType<Project51.Unity.MoveSelectionUI>(true), seatLocal);
             BuildOptions(settings);
             BuildLeave(settings);
@@ -105,6 +111,15 @@ namespace Project51.UI51.EditorTools
             UI51Build.Image(targetRt, null, UI51Tokens.GoldA(0.14f), false, false);
             SideLine(targetRt, "BorderLeft", 0f);
             SideLine(targetRt, "BorderRight", 1f);
+            // Fase 6, tutti contro tutti a 4: gli altri due rivali, divisi da un filo piu' tenue (accesi da TableTopBarController).
+            var more = new TextMeshProUGUI[2][];
+            for (int i = 0; i < more.Length; i++)
+            {
+                more[i] = Segment(pill, "Rival" + (i + 2), 14, "RIVALE", 9f, UI51Tokens.CreamA(0.6f), "0", 17f, UI51Tokens.Cream);
+                var segment = more[i][0].transform.parent;
+                SideLine((RectTransform)segment, "BorderLeft", 0f, 0.2f);
+                segment.gameObject.SetActive(false);
+            }
 
             UI51Build.Wire(controller, so =>
             {
@@ -113,6 +128,14 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "targetScore", target[1]);
                 UI51Build.Ref(so, "rivalLabel", rival[0]);
                 UI51Build.Ref(so, "rivalScore", rival[1]);
+                var labels = so.FindProperty("moreLabels");
+                var scores = so.FindProperty("moreScores");
+                labels.arraySize = scores.arraySize = more.Length;
+                for (int i = 0; i < more.Length; i++)
+                {
+                    labels.GetArrayElementAtIndex(i).objectReferenceValue = more[i][0];
+                    scores.GetArrayElementAtIndex(i).objectReferenceValue = more[i][1];
+                }
             });
             UI51Build.Wire(settings, so => UI51Build.Ref(so, "OpenButton", options));
             Listen(leave, settings.OpenLeave); // finestra "Abbandonare la partita?" (S9)
@@ -134,8 +157,8 @@ namespace Project51.UI51.EditorTools
         /// agganciano a loro (CardViewManager) e LocalSeatBottomShift li sposta; la loro grafica si spegne. Il banner proprio
         /// parte dal bordo sinistro del posto, quello in alto ne prende il centro; posto e misure del mockup: BuildLayout (S3).
         /// </summary>
-        static void BuildBanners(PlayerBannerManager manager, Transform seatLocal, Transform seatTop,
-            GameObject ownPrefab, GameObject rivalPrefab, GameObject morePrefab)
+        static void BuildBanners(PlayerBannerManager manager, Transform seatLocal, Transform seatTop, Transform seatLeft, Transform seatRight,
+            GameObject ownPrefab, GameObject rivalPrefab, GameObject sidePrefab, GameObject morePrefab)
         {
             // Proprio: scope a destra, 26x40, sporgono di 8 + 13 per carta (la prima e' sopra); "+N" fino a 80 dal bordo.
             var own = Banner(seatLocal, ownPrefab, 0f, 186f, morePrefab, new Vector2(186f + 80f, 13f), new Vector2(4f, -26f),
@@ -143,18 +166,27 @@ namespace Project51.UI51.EditorTools
             // In alto: scope sopra al banner, 24x37 (mockup: due carte a 70 e 83), le altre verso sinistra.
             var rival = Banner(seatTop, rivalPrefab, 0.5f, 120f, morePrefab, new Vector2(131f, -24f), new Vector2(-29f, 13f),
                 i => new Vector3(83f - 13f * i, -13f, i % 2 == 0 ? 3f : -4f), new Vector2(24f, 37f), true);
+            // Lati (Fase 6, Partita4 compatta): verticali 64x100. Scopa coricata 37x24 a 26 dall'alto che sporge di 14 verso
+            // l'esterno (carta 24x37 girata di 90), le altre 13 piu' in giu'; "+N" sotto la quarta; gettone 30 sopra l'angolo esterno.
+            var left = Banner(seatLeft, sidePrefab, 0.5f, 64f, morePrefab, new Vector2(23f, 91f), new Vector2(0f, -30f),
+                i => new Vector3(-7.5f, 19.5f + 13f * i, i % 2 == 0 ? 90f : 94f), new Vector2(24f, 37f), true, 100f);
+            var right = Banner(seatRight, sidePrefab, 0.5f, 64f, morePrefab, new Vector2(78f, 91f), new Vector2(40f, -30f),
+                i => new Vector3(47.5f, 19.5f + 13f * i, i % 2 == 0 ? 90f : 86f), new Vector2(24f, 37f), true, 100f);
 
             own.SetName("Tu");
             own.SetLevel(1);
-            rival.SetName(string.Empty);
-            rival.SetLevel(-1); // livello e aspetto degli avversari: passo S2b
+            foreach (var other in new[] { rival, left, right })
+            {
+                other.SetName(string.Empty);
+                other.SetLevel(-1); // livello e aspetto degli avversari: passo S2b
+            }
 
             UI51Build.Wire(manager, so =>
             {
                 var list = so.FindProperty("ui51Banners");
-                list.arraySize = 4; // 0 locale, 1 sinistra, 2 alto, 3 destra
-                for (int i = 0; i < 4; i++)
-                    list.GetArrayElementAtIndex(i).objectReferenceValue = i == 0 ? own : i == 2 ? rival : null;
+                var seats = new[] { own, left, rival, right }; // 0 locale, 1 sinistra, 2 alto, 3 destra
+                list.arraySize = seats.Length;
+                for (int i = 0; i < seats.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = seats[i];
             });
         }
 
@@ -163,12 +195,12 @@ namespace Project51.UI51.EditorTools
         /// nell'angolo in alto a sinistra del banner. card(i) = sinistra, alto, rotazione in gradi della scopa i.
         /// </summary>
         static PlayerBanner Banner(Transform seat, GameObject prefab, float alignX, float width, GameObject morePrefab,
-            Vector2 moreAt, Vector2 dealerAt, System.Func<int, Vector3> card, Vector2 cardSize, bool firstCardOnTop)
+            Vector2 moreAt, Vector2 dealerAt, System.Func<int, Vector3> card, Vector2 cardSize, bool firstCardOnTop, float height = 50f)
         {
             foreach (Transform child in seat)
                 if (child.name != "UI51Banner") child.gameObject.SetActive(false);
 
-            var holder = UI51Build.Place(UI51Build.Child(seat, "UI51Banner"), new Vector2(alignX, 0.5f), new Vector2(width, 50f), Vector2.zero);
+            var holder = UI51Build.Place(UI51Build.Child(seat, "UI51Banner"), new Vector2(alignX, 0.5f), new Vector2(width, height), Vector2.zero);
             holder.localScale = new Vector3(Unit, Unit, 1f);
 
             var scope = UI51Build.Stretch(UI51Build.Child(holder, "Scope"));
@@ -229,7 +261,7 @@ namespace Project51.UI51.EditorTools
         /// Emoticons, FrontendExpansionBuilder Game, TablePlayerBannersBuilder, TableActionButtonsBuilder, TableDesignAreaBuilder,
         /// TableFeltBuilder, UIV2 Build Accuso Window): rimettono i posti, il tavolo, le emoticon e l'accuso di prima.
         /// </summary>
-        static void BuildLayout(UnityEngine.SceneManagement.Scene scene, Transform seatLocal, Transform seatTop)
+        static void BuildLayout(UnityEngine.SceneManagement.Scene scene, Transform seatLocal, Transform seatTop, Transform seatLeft, Transform seatRight)
         {
             var shifter = UnityEngine.Object.FindObjectOfType<LocalSeatBottomShift>(true);
             var cards = UnityEngine.Object.FindObjectOfType<Project51.Unity.CardViewManager>(true);
@@ -248,6 +280,10 @@ namespace Project51.UI51.EditorTools
             float row = 1920f / Unit - 18f - 25f; // centro della fila in fondo: banner alto 50, a 18 dal fondo
             Seat(seatTop, 135f + 60f, 82f + 25f, 120f);
             Seat(seatLocal, 60f + 93f, row, 186f);
+            // Lati (Fase 6): 64x100 a 22 dai bordi; l'altezza la decide LocalSeatBottomShift.SideSeatY anche a runtime.
+            float side = LocalSeatBottomShift.SideSeatY(82f + 25f, row);
+            Seat(seatLeft, 22f + 32f, side, 64f, 100f);
+            Seat(seatRight, 390f - 22f - 32f, side, 64f, 100f);
             // Emoji e ACCUSA ai lati del banner (grafica nuova in BuildEmoticons e BuildAccuso).
             Center(emoji, 34f, row);
             foreach (var n in accuso) Center(UI51AccessBuilder.FindPath(scene, "TableActionButtons", n), 353f, row + 1f);
@@ -260,14 +296,23 @@ namespace Project51.UI51.EditorTools
                 var top = so.FindProperty("topTargets");
                 top.arraySize = 1;
                 top.GetArrayElementAtIndex(0).objectReferenceValue = seatTop;
+                var sides = so.FindProperty("sideTargets");
+                sides.arraySize = 2;
+                sides.GetArrayElementAtIndex(0).objectReferenceValue = seatLeft;
+                sides.GetArrayElementAtIndex(1).objectReferenceValue = seatRight;
             });
-            // Mano propria nei 4 giocatori: sopra al banner e in fila (nel 1v1 decide CardViewManager).
-            // Scritti qui: il prefab in memoria tiene i vecchi 30 e 8 finche' non viene reimportato.
+            // Fase 6 (Partita4): la mia mano e' quella del 1v1 (CardViewManager). Dorsi da 30 per gli altri tre: in alto dritti
+            // ogni 23, 22 sotto al centro del banner (ne spuntano 12, il resto sta dietro); ai lati coricati ogni 23 sull'altezza
+            // del banner, centro a 61 dal bordo esterno. Scritti qui: il prefab in memoria tiene i valori vecchi.
             UI51Build.Wire(cards, so =>
             {
-                so.FindProperty("localHandBelowBanner").floatValue = -296.6f;
-                so.FindProperty("localHandSideDrop").floatValue = 0f;
-                so.FindProperty("localHandFanDegrees").floatValue = 0f;
+                so.FindProperty("opponentCardHeight").floatValue = 30f * Unit;
+                so.FindProperty("topHandBelowBanner").floatValue = 22f * Unit;
+                so.FindProperty("topHandStep").floatValue = 23f * Unit;
+                so.FindProperty("topHandFanDegrees").floatValue = 0f;
+                so.FindProperty("sideHandBelowBanner").floatValue = 0f;
+                so.FindProperty("sideHandInsetFromBannerEdge").floatValue = 61f * Unit;
+                so.FindProperty("sideHandStep").floatValue = 23f * Unit;
             });
         }
 
@@ -676,19 +721,26 @@ namespace Project51.UI51.EditorTools
         /// a banner e scelta emoticon, che vincono dove si sovrappongono. Il visore e' l'ultimo figlio di GameCanvas: sopra
         /// banner e pulsanti, sotto scelta della presa, pugno e risultati. Dati, apertura e chiusura in PlayerBannerManager.
         /// </summary>
-        static void BuildScope(PlayerBannerManager manager, Transform seatLocal, Transform seatTop, Transform canvas)
+        static void BuildScope(PlayerBannerManager manager, Transform seatLocal, Transform seatTop, Transform seatLeft, Transform seatRight,
+            Transform canvas)
         {
             var own = seatLocal.Find("UI51Banner/Scope") as RectTransform;
             var top = seatTop.Find("UI51Banner/Scope") as RectTransform;
-            if (own == null || top == null)
+            var left = seatLeft.Find("UI51Banner/Scope") as RectTransform;
+            var right = seatRight.Find("UI51Banner/Scope") as RectTransform;
+            if (own == null || top == null || left == null || right == null)
             {
-                Debug.LogError($"{Tag} Manca Scope nei banner UI51 (Banner_Local e Banner_Top, S2). Visore delle scope non toccato.");
+                Debug.LogError($"{Tag} Manca Scope nei banner UI51 (Banner_Local, Banner_Top, Banner_Left, Banner_Right, S2). Visore delle scope non toccato.");
                 return;
             }
 
             // Mia: da 180 (prima c'e' la scelta emoticon) a 266, carte e "+N". In alto: carte, "+N" e meta' alta del banner,
-            // 4 sotto la pillola del punteggio.
-            var hits = new[] { ScopeHit(own, manager, 0, 180f, 0f, 86f, 50f), null, ScopeHit(top, manager, 2, 44f, -24f, 87f, 49f) };
+            // 4 sotto la pillola del punteggio. Ai lati (Fase 6): le carte coricate fino alla quarta e 30 dentro al banner.
+            var hits = new[]
+            {
+                ScopeHit(own, manager, 0, 180f, 0f, 86f, 50f), ScopeHit(left, manager, 1, -14f, 22f, 44f, 72f),
+                ScopeHit(top, manager, 2, 44f, -24f, 87f, 49f), ScopeHit(right, manager, 3, 34f, 22f, 44f, 72f),
+            };
 
             var viewer = UI51Build.Stretch(UI51Build.Child(canvas, "UI51ScopeViewer"));
             viewer.SetAsLastSibling();
@@ -1053,11 +1105,12 @@ namespace Project51.UI51.EditorTools
         // --- S10: sorteggio
 
         /// <summary>
-        /// Mockup Sorteggio, solo 1 contro 1: DealerRoulette/UI51 accanto al vecchio Design, che resta per le partite a 4.
-        /// Schermata intera in scala uniforme (BuildScreen: DesignCanvasFit 390x844, come Accesso): intestazione, ruota a due
-        /// spicchi con avatar e nomi, mozzo col sole, lancetta, stato, scheda MAZZIERE, conto e AL TAVOLO ("Continue": suono
-        /// UiConfirm). Tempi e animazioni in SorteggioView, attesa e consegna in DealerRouletteController.PlayWheel.
-        /// Non rieseguire Tools/UIV2/Build Dealer Roulette: ricrea DealerRoulette da zero e perde questi nodi.
+        /// Mockup Sorteggio (1 contro 1) e Sorteggio4 (Fase 6): DealerRoulette/UI51 accanto al vecchio Design, spento quando
+        /// gira la ruota. Schermata intera in scala uniforme (BuildScreen: DesignCanvasFit 390x844, come Accesso): intestazione,
+        /// ruota a 2 o 4 spicchi con avatar e nomi, mozzo col sole, lancetta, stato, scheda MAZZIERE, conto e AL TAVOLO
+        /// ("Continue": suono UiConfirm). Tempi, animazioni e spicchi in SorteggioView, attesa e consegna in
+        /// DealerRouletteController.PlayWheel. Non rieseguire Tools/UIV2/Build Dealer Roulette: ricrea DealerRoulette da zero
+        /// e perde questi nodi.
         /// </summary>
         static void BuildSorteggio(PlayerBannerManager banners)
         {
@@ -1087,7 +1140,7 @@ namespace Project51.UI51.EditorTools
                 false, false);
 
             // Intestazione: testi allineati in alto sul top del mockup, senza "..." (altezze = righe CSS).
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Mode"), 20f, 20f, 60f, 15f),
+            var mode = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Mode"), 20f, 20f, 60f, 15f),
                 "PARTITA 1 VS 1", FontFace.CinzelSemiBold, 11f, UI51Tokens.Gold, TextAlignmentOptions.Top, 3f));
             UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Title"), 20f, 20f, 81f, 32f),
                 "Chi fa il mazziere?", FontFace.CinzelBold, 24f, UI51Tokens.Cream, TextAlignmentOptions.Top));
@@ -1103,16 +1156,31 @@ namespace Project51.UI51.EditorTools
             Color green = UI51Tokens.Hex("#0F5A42"), blue = UI51Tokens.Hex("#123B6B");
             UI51Build.Shape(face, UI51Shape.Linear((green, 0f), (green, 0.499f), (blue, 0.501f), (blue, 1f)), 90f, UI51Tokens.Radii(142f),
                 0f, Color.clear);
-            UI51Build.Solid(UI51Build.Center(UI51Build.Child(face, "Line"), 2f, 284f), UI51Tokens.GoldA(0.75f), 0f); // copre lo stacco
-            var seatAvatars = new AvatarFrame[2];
-            var seatNames = new TextMeshProUGUI[2];
-            for (int i = 0; i < 2; i++)
+            var line = UI51Build.Solid(UI51Build.Center(UI51Build.Child(face, "Line"), 2f, 284f), UI51Tokens.GoldA(0.75f), 0f); // copre lo stacco
+            // A 4 (Sorteggio4): spicchi CSS da 90 gradi orari da mezzogiorno nei colori del mockup (0 in alto a destra = io, poi
+            // in ordine di posto) dentro al cerchio della faccia, e la seconda riga d'oro. Accesi da SorteggioView.
+            var slices = UI51Build.Center(UI51Build.Child(face, "Slices4"), 284f, 284f);
+            slices.SetAsFirstSibling();
+            UI51Build.Solid(slices, Color.white, 142f);
+            UI51Build.GetOrAdd<Mask>(slices).showMaskGraphic = false;
+            string[] sliceColors = { "#123B6B", "#0F5A42", "#1B2F57", "#0C4A36" };
+            for (int i = 0; i < sliceColors.Length; i++)
+                UI51Build.Solid(UI51Build.Place(UI51Build.Child(slices, "Slice" + i), new Vector2(0.5f, 0.5f), new Vector2(142f, 142f),
+                    new Vector2(i < 2 ? 71f : -71f, i == 0 || i == 3 ? 71f : -71f)), UI51Tokens.Hex(sliceColors[i]), 0f);
+            var cross = UI51Build.Center(UI51Build.Child(face, "Cross"), 284f, 2f);
+            UI51Build.Solid(cross, UI51Tokens.GoldA(0.75f), 0f);
+            cross.SetSiblingIndex(line.transform.GetSiblingIndex() + 1); // sotto agli avatar
+            var seats = new RectTransform[4];
+            var seatAvatars = new AvatarFrame[4];
+            var seatNames = new TextMeshProUGUI[4];
+            for (int i = 0; i < seats.Length; i++)
             {
-                // Perno al centro girato come nel mockup (io a 90 gradi CSS, l'avversario a 270). Avatar e nome stanno in Upright,
-                // che SorteggioView tiene dritto mentre la ruota gira (scelta dell'utente 30/09; il mockup li fa girare): in cima
-                // avatar a raggio 90 e nome a 51 come nel mockup, in fondo l'avatar resta a 9 dal sole.
-                var seat = UI51Build.Place(UI51Build.Child(face, "Seat" + i), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-                seat.localRotation = Quaternion.Euler(0f, 0f, i == 0 ? -90f : 90f);
+                // Perno al centro girato come nel mockup (SorteggioView: spicchio i a (i + 0,5) * 360 / n gradi CSS; qui quelli
+                // a 4). Avatar e nome stanno in Upright, che SorteggioView tiene dritto mentre la ruota gira (scelta dell'utente
+                // 30/09; il mockup li fa girare): in cima avatar a raggio 90 e nome a 51 come nel mockup, in fondo l'avatar resta
+                // a 9 dal sole.
+                var seat = seats[i] = UI51Build.Place(UI51Build.Child(face, "Seat" + i), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+                seat.localRotation = Quaternion.Euler(0f, 0f, -(i + 0.5f) * 90f);
                 var upright = UI51Build.Place(UI51Build.Child(seat, "Upright"), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(0f, 82f));
                 upright.localRotation = Quaternion.Inverse(seat.localRotation);
                 foreach (var moved in new[] { "Avatar", "Name" }) // scene costruite prima: si spostano, i collegamenti restano
@@ -1201,10 +1269,14 @@ namespace Project51.UI51.EditorTools
             {
                 UI51Build.Ref(so, "m_Roulette", roulette);
                 UI51Build.Ref(so, "m_Banners", banners);
+                UI51Build.Ref(so, "m_Mode", mode);
                 UI51Build.Ref(so, "m_Face", face);
+                UI51Build.Ref(so, "m_Slices4", slices.gameObject);
+                UI51Build.Ref(so, "m_Cross", cross.gameObject);
                 UI51Build.Ref(so, "m_Pointer", pointer);
-                UI51AccessBuilder.SetArray(so, "m_SeatAvatars", seatAvatars[0], seatAvatars[1]);
-                UI51AccessBuilder.SetArray(so, "m_SeatNames", seatNames[0], seatNames[1]);
+                UI51AccessBuilder.SetArray(so, "m_Seats", seats);
+                UI51AccessBuilder.SetArray(so, "m_SeatAvatars", seatAvatars);
+                UI51AccessBuilder.SetArray(so, "m_SeatNames", seatNames);
                 UI51Build.Ref(so, "m_Status", status);
                 UI51Build.Ref(so, "m_Card", card);
                 UI51Build.Ref(so, "m_WinAvatar", winAvatar);
@@ -1279,12 +1351,12 @@ namespace Project51.UI51.EditorTools
             return rt;
         }
 
-        static void Seat(Transform seat, float centerX, float centerY, float width)
+        static void Seat(Transform seat, float centerX, float centerY, float width, float height = 50f)
         {
             var rt = (RectTransform)seat;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(width, 50f) * Unit;
+            rt.sizeDelta = new Vector2(width, height) * Unit;
             Center(rt, centerX, centerY);
         }
 
@@ -1324,7 +1396,7 @@ namespace Project51.UI51.EditorTools
             return new[] { l, v };
         }
 
-        static void SideLine(RectTransform parent, string name, float x)
+        static void SideLine(RectTransform parent, string name, float x, float alpha = 0.35f)
         {
             var rt = UI51Build.Child(parent, name);
             rt.anchorMin = new Vector2(x, 0f);
@@ -1333,7 +1405,7 @@ namespace Project51.UI51.EditorTools
             rt.sizeDelta = new Vector2(1f, 0f);
             rt.anchoredPosition = Vector2.zero;
             UI51Build.Layout(rt, ignore: true);
-            UI51Build.Image(rt, null, UI51Tokens.GoldA(0.35f), false, false);
+            UI51Build.Image(rt, null, UI51Tokens.GoldA(alpha), false, false);
         }
     }
 }

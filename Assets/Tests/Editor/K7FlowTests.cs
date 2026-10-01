@@ -85,9 +85,10 @@ public class K7FlowTests
         finally { UnityEngine.Object.DestroyImmediate(root); }
     }
 
-    // UI51 Fase 5 S10: in 1v1 gira la ruota del mockup al posto del vecchio pannello; offline AL TAVOLO chiude subito.
-    [TestCase(0)] [TestCase(2)]
-    public void OneVsOneShowsTheWheelAndHandsBackOnContinue(int winner)
+    // UI51 Fase 5 S10 e Fase 6: in 1v1 e a 4 gira la ruota del mockup al posto del vecchio pannello; offline AL TAVOLO
+    // chiude subito. Il mazziere arriva come spicchio: in 1v1 i posti 0 e 2 sono gli spicchi 0 e 1.
+    [TestCase(2, 0)] [TestCase(2, 2)] [TestCase(4, 1)] [TestCase(4, 3)]
+    public void TheWheelShowsAndHandsBackOnContinue(int players, int winner)
     {
         var root = new GameObject("K7 wheel");
         var controller = root.AddComponent<DealerRouletteController>();
@@ -100,13 +101,16 @@ public class K7FlowTests
         Set("panelRoot", panel); Set("slotRoots", slots); Set("ui51Wheel", wheel); Set("legacyOnly", new[] { design });
         try
         {
-            var routine = controller.PlayRoulette(new[] { "Tu", "-", "Bot 2", "-" }, winner, 2);
+            var routine = controller.PlayRoulette(new[] { "Tu", "Bot 2", "Bot 3", "Bot 4" }, winner, players, players == 4);
             Assert.IsTrue(routine.MoveNext());
             var wait = (System.Collections.IEnumerator)routine.Current;
             Assert.IsTrue(wait.MoveNext());
             Assert.IsTrue(panel.activeSelf && wheel.activeSelf, "ruota accesa");
             Assert.IsFalse(design.activeSelf, "vecchio pannello spento");
+            Assert.AreEqual(players, controller.WheelPlayers);
+            Assert.AreEqual(players == 2 ? winner / 2 : winner, controller.WheelDealer);
             Assert.AreEqual(winner == 0, controller.WheelLocalDealer);
+            Assert.AreEqual(players == 4, controller.WheelTeams);
             controller.Continue();
             Assert.IsFalse(wait.MoveNext());
             Assert.IsFalse(panel.activeSelf);

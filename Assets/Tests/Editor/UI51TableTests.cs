@@ -17,9 +17,13 @@ namespace Project51.Tests
     {
         private static string Pill(GameState state, int local)
         {
-            TableTopBarController.ScorePill(state, local, p => p + "-nome molto lungo", // il posto davanti: sopravvive al taglio a 12
-                out string me, out string mine, out string rival, out string theirs);
-            return me + " " + mine + " | " + rival + " " + theirs;
+            var labels = new string[3];
+            var scores = new string[3];
+            int n = TableTopBarController.ScorePill(state, local, p => p + "-nome molto lungo", // il posto davanti: sopravvive al taglio
+                out string me, out string mine, labels, scores);
+            string pill = me + " " + mine;
+            for (int i = 0; i < n; i++) pill += " | " + labels[i] + " " + scores[i];
+            return pill;
         }
 
         [Test]
@@ -41,12 +45,23 @@ namespace Project51.Tests
         }
 
         [Test]
-        public void ScorePillFreeForAllShowsTheLeadingRival()
+        public void ScorePillFreeForAllShowsEveryRivalInSeatOrderWithShortNames()
         {
             var s = new GameState(4) { MatchTotals = new[] { 10, 25, 31, 25 } };
-            Assert.AreEqual("TU 10 | 2-NOME MOLTO 31", Pill(s, 0));
-            // Io in testa: tra i due rivali a pari punti, il primo dopo di me nel giro (posto 3).
-            Assert.AreEqual("TU 31 | 3-NOME MOLTO 25", Pill(s, 2));
+            // Sinistra, alto, destra = i posti dopo il mio nel giro; nomi tagliati a 5 ("1-NOM").
+            Assert.AreEqual("TU 10 | 1-NOM 25 | 2-NOM 31 | 3-NOM 25", Pill(s, 0));
+            Assert.AreEqual("TU 31 | 3-NOM 25 | 0-NOM 10 | 1-NOM 25", Pill(s, 2));
+            s.Players[3].TotalScore = MatchScore.CappottoScore; // con tre rivali il cappotto si accorcia
+            Assert.AreEqual("TU 10 | 1-NOM 25 | 2-NOM 31 | 3-NOM CAPP.", Pill(s, 0));
+        }
+
+        [Test]
+        public void SideSeatsSitBetweenTheTopAndOwnBannersLikePartita4()
+        {
+            Assert.AreEqual(300f, LocalSeatBottomShift.SideSeatY(107f, 801f), 0.01f);   // mockup: 250 + 50
+            Assert.AreEqual(266f, LocalSeatBottomShift.SideSeatY(154f, 767f), 0.01f);   // iPhone 12: fascia del tavolo alta 190 come nel mockup
+            Assert.AreEqual(210f, LocalSeatBottomShift.SideSeatY(107f, 650.3f), 0.01f); // 16:9: 103 sotto quello in alto, gettone sotto al mazzo
+            Assert.AreEqual(300f, LocalSeatBottomShift.SideSeatY(107f, 900f), 0.01f);   // mai piu' giu' del mockup
         }
 
         [Test]
@@ -110,6 +125,23 @@ namespace Project51.Tests
             Assert.AreEqual("5x2 54 8", Grid(9, 350f, 179.7f)); // lo spazio 12 tra le righe ci sta ancora su SE
             Assert.AreEqual("0x0 0 10", Grid(0, 350f, 179.7f));
             Assert.AreEqual("6x2 50 8", Grid(12, 340f, 179.7f)); // fascia vera del 1v1: 6 dal feltro
+        }
+
+        [Test]
+        public void TableGridForFourPlayersFollowsPartita4()
+        {
+            // Partita4: al massimo 62, spazio 8 (tra le righe resta TableRowGap), si parte da una colonna. Fascia 340x191 (iPhone 12).
+            string Grid4(int n)
+            {
+                Project51.Unity.CardViewManager.TableGrid(n, 340f, 191f, out int c, out int r, out float w, out float g, true);
+                return c + "x" + r + " " + w + " " + g;
+            }
+            Assert.AreEqual("1x1 62 8", Grid4(1));
+            Assert.AreEqual("4x1 62 8", Grid4(4));
+            Assert.AreEqual("5x1 61 8", Grid4(5));
+            Assert.AreEqual("3x2 57 8", Grid4(6));
+            Assert.AreEqual("5x2 57 8", Grid4(9));
+            Assert.AreEqual("6x2 50 8", Grid4(12));
         }
 
         private static string Rim(float topBanner, float ownBanner)
@@ -285,6 +317,10 @@ namespace Project51.Tests
             Assert.AreEqual("Le scope di Marco_93|14 carte prese|1 scopa", title + "|" + chipA + "|" + chipB);
             PlayerBannerManager.ScopeTexts(false, "Bot 2", 1, 2, out title, out chipA, out chipB);
             Assert.AreEqual("1 carta presa|2 scope", chipA + "|" + chipB);
+            PlayerBannerManager.AccusedTexts("Marco", 3, out title, out chipA, out chipB);
+            Assert.AreEqual("Carte accusate da Marco|Accuso|+3 punti", title + "|" + chipA + "|" + chipB);
+            PlayerBannerManager.AccusedTexts("Bot 2", 1, out title, out chipA, out chipB);
+            Assert.AreEqual("+1 punto", chipB);
         }
 
         [Test]
@@ -381,17 +417,27 @@ namespace Project51.Tests
         [Test]
         public void SorteggioStopsTheDealerUnderThePointer()
         {
-            // Posto w della ruota (0 io, 1 avversario) a w*180+90 gradi CSS: a ruota ferma dentro lo spicchio in alto.
-            for (int n = 0; n < 50; n++)
-                for (int w = 0; w < 2; w++)
-                    Assert.LessOrEqual(Mathf.Abs(Mathf.DeltaAngle(0f, w * 180f + 90f + UIAnim.WheelTarget(w, 2))), 45f);
+            // Spicchio w di n (0 io, poi in ordine di posto) centrato a (w + 0,5) * 360 / n gradi CSS: a ruota ferma il
+            // mazziere sta sotto la lancetta, al massimo a un quarto di spicchio dal centro.
+            foreach (int n in new[] { 2, 4 })
+                for (int k = 0; k < 50; k++)
+                    for (int w = 0; w < n; w++)
+                        Assert.LessOrEqual(Mathf.Abs(Mathf.DeltaAngle(0f, (w + 0.5f) * 360f / n + UIAnim.WheelTarget(w, n))), 90f / n);
 
-            Project51.Unity.UI.SorteggioView.Texts(true, "Marco_93", out string name, out string note);
-            Assert.AreEqual("Sei tu!", name);
-            Assert.AreEqual("Distribuisci tu: Marco_93 gioca per primo", note);
-            Project51.Unity.UI.SorteggioView.Texts(false, "Marco_93", out name, out note);
-            Assert.AreEqual("Marco_93", name);
-            Assert.AreEqual("Distribuisce Marco_93: giochi tu per primo", note);
+            var texts = new System.Func<int, bool, bool, string>((players, mine, meFirst) =>
+            {
+                Project51.Unity.UI.SorteggioView.Texts(players, mine, "Marco_93", meFirst, mine ? "Tore_NA" : "Giulia", out string name, out string note);
+                return name + "|" + note;
+            });
+            Assert.AreEqual("Sei tu!|Distribuisci tu: Tore_NA gioca per primo", texts(2, true, false));
+            Assert.AreEqual("Marco_93|Distribuisce Marco_93: giochi tu per primo", texts(2, false, true));
+            Assert.AreEqual("Sei tu!|Distribuisci tu: gli altri giocano prima di te", texts(4, true, false));
+            Assert.AreEqual("Marco_93|Distribuisce Marco_93: giochi tu per primo", texts(4, false, true));
+            Assert.AreEqual("Marco_93|Distribuisce Marco_93: inizia Giulia", texts(4, false, false));
+
+            Assert.AreEqual("PARTITA 1 VS 1", Project51.Unity.UI.SorteggioView.ModeLabel(2, false));
+            Assert.AreEqual("PARTITA 2 VS 2", Project51.Unity.UI.SorteggioView.ModeLabel(4, true));
+            Assert.AreEqual("TUTTI CONTRO TUTTI", Project51.Unity.UI.SorteggioView.ModeLabel(4, false));
         }
 
         private static string Shown(Image[] slots, UI51Badge more, TMPro.TMP_Text label)

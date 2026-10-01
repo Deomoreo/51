@@ -13,8 +13,9 @@ namespace Project51.Unity
     /// gira rallentando fino a fermarsi sul mazziere, poi trofeo, chip MAZZIERE e CONTINUA.
     /// Se nessuno preme CONTINUA il pannello si chiude da solo dopo autoContinueSeconds.
     /// Grafica costruita da Tools/UIV2/Build Dealer Roulette.
-    /// UI51 Fase 5 (S10): in 1 contro 1 al suo posto gira la ruota del mockup Sorteggio (ui51Wheel, SorteggioView):
-    /// tempi fissi online, AL TAVOLO la salta offline dopo il risultato. Chi distribuisce resta winningSlot (deciso dal master).
+    /// UI51 Fase 5 (S10): in 1 contro 1 al suo posto gira la ruota del mockup Sorteggio (ui51Wheel, SorteggioView), e dalla
+    /// Fase 6 anche a 4 (Sorteggio4, quattro spicchi): tempi fissi online, AL TAVOLO la salta offline dopo il risultato.
+    /// Chi distribuisce resta winningSlot (deciso dal master).
     /// </summary>
     public class DealerRouletteController : MonoBehaviour
     {
@@ -63,8 +64,11 @@ namespace Project51.Unity
         /// <summary>Online i tempi sono fissi (tutti aprono la finestra Accuso insieme); offline seguono le animazioni veloci.</summary>
         public static float Timing(float seconds, bool online) => online ? seconds : GamePreferences.Scaled(seconds);
 
-        /// <summary>Ruota in corso: il mazziere e' il giocatore locale.</summary>
-        public bool WheelLocalDealer { get; private set; }
+        /// <summary>Ruota in corso: spicchi (2 o 4), mazziere come spicchio (0 = io, poi in ordine di posto), a coppie.</summary>
+        public int WheelPlayers { get; private set; } = 2;
+        public int WheelDealer { get; private set; }
+        public bool WheelTeams { get; private set; }
+        public bool WheelLocalDealer => WheelDealer == 0;
         public bool WheelOnline { get; private set; }
 
         private bool continuePressed;
@@ -89,14 +93,15 @@ namespace Project51.Unity
         /// Fa girare la selezione tra i posti occupati e la ferma su winningSlot. Non blocca mai la
         /// sequenza di TurnController: se il pannello non e' configurato esce subito.
         /// </summary>
-        public IEnumerator PlayRoulette(string[] namesBySlot, int winningSlot, int playerCount)
+        public IEnumerator PlayRoulette(string[] namesBySlot, int winningSlot, int playerCount, bool teams = false)
         {
             if (panelRoot == null || namesBySlot == null || namesBySlot.Length != 4 || slotRoots == null || slotRoots.Length != 4) yield break;
 
-            bool wheel = playerCount == 2 && ui51Wheel != null;
+            bool wheel = (playerCount == 2 || playerCount == 4) && ui51Wheel != null;
             if (ui51Wheel != null) ui51Wheel.SetActive(false);
             foreach (var part in legacyOnly) if (part != null) part.SetActive(!wheel);
-            if (wheel) { yield return PlayWheel(winningSlot == 0); yield break; }
+            // In 1 contro 1 i posti sono 0 e 2, sulla ruota spicchi 0 e 1.
+            if (wheel) { yield return PlayWheel(playerCount == 2 ? winningSlot / 2 : winningSlot, playerCount, teams); yield break; }
 
             // Ordine orario come al tavolo: basso, sinistra, alto, destra. In 1v1 solo basso e alto.
             var slots = playerCount == 2 ? new List<int> { 0, 2 } : new List<int> { 0, 1, 2, 3 };
@@ -162,13 +167,15 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Ruota 1v1: SorteggioView (OnEnable) la anima con gli stessi tempi; qui l'attesa, il suono del risultato e la
+        /// Ruota: SorteggioView (OnEnable) la anima con gli stessi tempi; qui l'attesa, il suono del risultato e la
         /// consegna. Un Hide() nel frattempo la chiude (wheelShow cambia) senza che questa fine spenga una ruota nuova.
         /// </summary>
-        private IEnumerator PlayWheel(bool localDealer)
+        private IEnumerator PlayWheel(int dealer, int players, bool teams)
         {
             int show = ++wheelShow;
-            WheelLocalDealer = localDealer;
+            WheelDealer = dealer;
+            WheelPlayers = players;
+            WheelTeams = teams;
             WheelOnline = GameModeService.Current.IsMultiplayer;
             continuePressed = false;
             panelRoot.SetActive(true);

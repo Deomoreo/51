@@ -41,6 +41,7 @@ namespace Project51.Unity.UI
         private Vector2 scopeRest;
         private int scopeSlot = -1;
         private int scopeShown;
+        private bool scopeAccused; // il visore mostra le carte accusate (in mano) invece delle scope
         private bool accusoWas;
 
         private readonly Sprite[] ui51Avatars = new Sprite[4];
@@ -56,6 +57,9 @@ namespace Project51.Unity.UI
             cardViewManager = FindObjectOfType<CardViewManager>();
             InvokeRepeating(nameof(Refresh), 0.2f, 0.2f);
         }
+
+        private void OnEnable() => CardViewManager.AccusedHandTapped += OpenAccused;
+        private void OnDisable() => CardViewManager.AccusedHandTapped -= OpenAccused;
 
         private void Refresh()
         {
@@ -98,10 +102,6 @@ namespace Project51.Unity.UI
                     if (relative < scopeHits.Length && scopeHits[relative] != null)
                         scopeHits[relative].interactable = player.ScopaCards != null && player.ScopaCards.Count > 0;
                     if (relative == scopeSlot) ShowScope(relative, p, player);
-                    // ponytail: tutti contro tutti la pillola mostra solo chi e' in testa; gli altri punti
-                    // stanno al posto del livello ("34 pt": "punti" non entra nei 120) fino alla pillola a 4 della Fase 6.
-                    if (relative != 0 && numPlayers > 2 && !state.TeamMode)
-                        ui51.SetInfo(MatchScore.Totals(state)[MatchScore.EntryOf(state, p)] + " pt");
                     continue;
                 }
                 banner.SetName(GetDisplayName(p));
@@ -172,7 +172,16 @@ namespace Project51.Unity.UI
         }
 
         /// <summary>Tocco sulle scope del posto relativo slot (Button di UI51ScopeHit): apre il visore.</summary>
-        public void OpenScope(int slot)
+        public void OpenScope(int slot) => OpenViewer(slot, false);
+
+        /// <summary>Tocco sulle carte accusate del giocatore assoluto p (CardViewManager): stesso visore, "Carte accusate da".</summary>
+        private void OpenAccused(int p)
+        {
+            var state = turnController != null ? turnController.GameState : null;
+            if (state != null) OpenViewer(ResolveRelativeSlot(p, GameModeService.Current.LocalPlayerIndex, state.NumPlayers), true);
+        }
+
+        private void OpenViewer(int slot, bool accused)
         {
             // Finestra dell'accuso aperta da meno di un giro: il fronte chiude solo un visore gia' aperto, non questo.
             accusoWas = turnController != null && turnController.IsAccusoWindowOpen;
@@ -180,6 +189,7 @@ namespace Project51.Unity.UI
             var capture = FindObjectOfType<MoveSelectionUI>();
             if (capture != null && capture.IsVisible) capture.Cancel();
             scopeSlot = slot;
+            scopeAccused = accused;
             Refresh();
         }
 
@@ -198,6 +208,14 @@ namespace Project51.Unity.UI
             chipB = scope == 1 ? "1 scopa" : scope + " scope";
         }
 
+        /// <summary>Titolo e chip del visore delle carte accusate (mockup Partita: "Accuso", "+3 punti").</summary>
+        public static void AccusedTexts(string name, int points, out string title, out string chipA, out string chipB)
+        {
+            title = "Carte accusate da " + name;
+            chipA = "Accuso";
+            chipB = "+" + points + (points == 1 ? " punto" : " punti");
+        }
+
         /// <summary>Ventaglio del mockup fino a 6 carte (passo 40, 9 gradi, 6 in giu'); oltre, stessa sagoma delle 6.</summary>
         public static void FanPose(int count, out float step, out float degrees, out float drop)
         {
@@ -213,7 +231,7 @@ namespace Project51.Unity.UI
         /// </summary>
         private void ShowScope(int slot, int p, PlayerState player)
         {
-            var cards = GetScopeSprites(player);
+            var cards = scopeAccused ? Sprites(player.AccusiPoints > 0 ? player.Hand : null) : GetScopeSprites(player);
             int n = cards.Count;
             if (scopeViewer == null || scopeFace == null || n == 0)
             {
@@ -221,7 +239,8 @@ namespace Project51.Unity.UI
                 return;
             }
             string title, chipA, chipB;
-            ScopeTexts(slot == 0, GetDisplayName(p), turnController.GetDisplayedCapturedCount(p), n, out title, out chipA, out chipB);
+            if (scopeAccused) AccusedTexts(GetDisplayName(p), player.AccusiPoints, out title, out chipA, out chipB);
+            else ScopeTexts(slot == 0, GetDisplayName(p), turnController.GetDisplayedCapturedCount(p), n, out title, out chipA, out chipB);
             scopeTitle.text = title;
             scopeCaptures.text = chipA;
             scopeCount.text = chipB;
@@ -290,15 +309,18 @@ namespace Project51.Unity.UI
             banner.SetCaptures(turnController.GetDisplayedCapturedCount(p));
             banner.SetCardBack(GetMatchCardBack());
             banner.SetScope(GetScopeSprites(player));
-            ApplyLook(banner, slot, p);
+            var state = turnController.GameState;
+            int local = GameModeService.Current.LocalPlayerIndex;
+            ApplyLook(banner, slot, p, state.TeamMode && p != local && MatchScore.EntryOf(state, p) == MatchScore.EntryOf(state, local));
         }
 
         /// <summary>
         /// Cornice, banner e livello. Il proprio: dal profilo (ospite, offline o profilo non arrivato: Oro, Notte;
         /// livello come in Home). Avversario umano: quello che pubblica lui (AuthBootstrapper.PublishLook).
         /// Bot, ospite o client che non pubblica: come lo costruisce UI51PrefabBuilder (cornice Blu, Notte, livello nascosto).
+        /// A coppie il compagno (Partita4): "Compagno" al posto del livello e, se non pubblica un aspetto, cornice Oro.
         /// </summary>
-        private void ApplyLook(Project51.UI51.PlayerBanner banner, int slot, int p)
+        private void ApplyLook(Project51.UI51.PlayerBanner banner, int slot, int p, bool partner)
         {
             int frame, style, level;
             if (slot == 0)
@@ -319,17 +341,30 @@ namespace Project51.Unity.UI
                 if (human && owner == null) return; // roster non ancora fissato o rientro in corso: resta l'aspetto di prima
                 if (owner == null || !ProfileCosmetics.ReadLook(owner.CustomProperties, out frame, out style, out level))
                 {
-                    frame = 3; style = 0; level = -1;
+                    frame = partner ? 1 : 3; style = 0; level = -1;
                 }
             }
 
-            int look = frame + 10 * style + 100 * level;
+            int look = frame + 10 * style + 100 * level + (partner ? 1000000 : 0);
             if (look == ui51Looks[slot]) return;
             ui51Looks[slot] = look;
             banner.SetStyle(ProfileCosmetics.Banner(style));
             ProfileCosmetics.ApplyFrame(banner.avatar, frame, 2f, 2f);
-            banner.SetLevel(level);
+            if (partner) banner.SetInfo(PartnerLabel);
+            else banner.SetLevel(level);
+            // "Compagno" col chip non sta nei 120 del banner in alto (nel mockup il chip sborda di 22): il compagno lo ha
+            // piu' largo di PartnerWiden per lato. Cresce a destra e il suo contenitore scorre a sinistra: resta centrato,
+            // e gettone del mazziere e scope (fratelli nel contenitore) restano alla stessa distanza dal banner.
+            var pill = (RectTransform)banner.transform;
+            var holder = (RectTransform)pill.parent;
+            float widen = partner ? PartnerWiden : 0f;
+            pill.offsetMax = new Vector2(2f * widen, pill.offsetMax.y);
+            holder.anchoredPosition = new Vector2(-widen * holder.localScale.x, holder.anchoredPosition.y);
         }
+
+        /// <summary>Riga sotto al nome del compagno a coppie, al posto del livello (mockup Partita4).</summary>
+        public const string PartnerLabel = "Compagno";
+        public const float PartnerWiden = 8f;
 
         /// <summary>
         /// Stessa convenzione a indice relativo gia' usata in
@@ -350,15 +385,16 @@ namespace Project51.Unity.UI
         /// che gia' possiede la mappatura Card -> Sprite (Assets/UI_SPEC_Tavolo.md, sezione 4:
         /// "carte vere che spuntano da dietro il banner", non gettoni/icone generiche).
         /// </summary>
-        private System.Collections.Generic.List<Sprite> GetScopeSprites(PlayerState player)
+        private System.Collections.Generic.List<Sprite> GetScopeSprites(PlayerState player) => Sprites(player.ScopaCards);
+
+        private System.Collections.Generic.List<Sprite> Sprites(System.Collections.Generic.IEnumerable<Card> cards)
         {
-            var scopaCards = player.ScopaCards;
-            if (scopaCards == null || scopaCards.Count == 0 || cardViewManager == null)
+            if (cards == null || cardViewManager == null)
             {
                 return new System.Collections.Generic.List<Sprite>();
             }
 
-            return scopaCards
+            return cards
                 .Select(c => cardViewManager.GetSpriteForCard(c))
                 .Where(s => s != null)
                 .ToList();

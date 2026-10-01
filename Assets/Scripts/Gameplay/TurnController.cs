@@ -724,9 +724,9 @@ namespace Project51.Unity
                 dealerRouletteController = FindObjectOfType<DealerRouletteController>(true);
             }
 
-            // In 1 contro 1 la ruota del sorteggio (mockup) gira solo a inizio partita e alla rivincita; nelle smazzate dopo
-            // il mazziere ruota e si sposta solo il gettone M (scelta dell'utente, 30/09). A 4 la roulette resta a ogni smazzata.
-            if (dealerRouletteController != null && (gameState.NumPlayers != 2 || gameState.RoundIndex <= 1))
+            // La ruota del sorteggio (mockup) gira solo a inizio partita e alla rivincita; nelle smazzate dopo il mazziere
+            // ruota e si sposta solo il gettone M (scelta dell'utente: 1 contro 1 il 30/09, a 4 il 01/10).
+            if (dealerRouletteController != null && gameState.RoundIndex <= 1)
             {
                 var names = new string[4];
                 for (int p = 0; p < gameState.NumPlayers && p < 4; p++)
@@ -739,7 +739,7 @@ namespace Project51.Unity
                     if (string.IsNullOrEmpty(names[i])) names[i] = "-";
                 }
 
-                yield return dealerRouletteController.PlayRoulette(names, GetDealerRelativeSlot(), gameState.NumPlayers);
+                yield return dealerRouletteController.PlayRoulette(names, GetDealerRelativeSlot(), gameState.NumPlayers, gameState.TeamMode);
 
                 // La fanfara d'inizio partita sta qui, non prima della roulette: suonata all'inizio
                 // arrivava mentre lo schermo era ancora coperto dal caricamento, prima che ci fosse
