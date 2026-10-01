@@ -195,13 +195,28 @@ namespace Project51.Auth
             if (local == null) return;
             // Entrando o uscendo dalla stanza Photon rifiuta l'invio con un errore in console: ci pensa il prossimo OnJoinedRoom.
             if (PhotonNetwork.CurrentRoom != null && !PhotonNetwork.InRoom) return;
-            bool real = HasRealProfile;
-            local.SetCustomProperties(new ExitGames.Client.Photon.Hashtable
+            local.SetCustomProperties(HasRealProfile
+                ? LookProps(Profile.FrameId, Profile.BannerId, Profile.XP, Profile.TotalGames, Profile.Wins, Profile.TotalScope, PlayFabAuth.PlayFabId)
+                : LookProps(null, null, 0, 0, 0, 0, null));
+        }
+
+        /// <summary>
+        /// Proprieta' Photon dell'aspetto e del profilo rapido. frame null = ospite o profilo non caricato: tutte le chiavi a null
+        /// (Photon le toglie). Le legge ProfileCosmetics.ReadLook / ReadStats.
+        /// </summary>
+        public static ExitGames.Client.Photon.Hashtable LookProps(string frame, string banner, int xp, int games, int wins, int scope, string playFabId)
+        {
+            bool real = frame != null;
+            return new ExitGames.Client.Photon.Hashtable
             {
-                { ProfileService.LookFrameKey, real ? Profile.FrameId : null },
-                { ProfileService.LookBannerKey, real ? Profile.BannerId : null },
-                { ProfileService.LookLevelKey, real ? (object)Project51.Core.PlayerXp.LevelOf(Profile.XP) : null },
-            });
+                { ProfileService.LookFrameKey, real ? frame : null },
+                { ProfileService.LookBannerKey, real ? banner : null },
+                { ProfileService.LookLevelKey, real ? (object)Project51.Core.PlayerXp.LevelOf(xp) : null },
+                { ProfileService.LookGamesKey, real ? (object)games : null },
+                { ProfileService.LookWinsKey, real ? (object)wins : null },
+                { ProfileService.LookScopeKey, real ? (object)scope : null },
+                { ProfileService.LookIdKey, real && !string.IsNullOrEmpty(playFabId) ? playFabId : null },
+            };
         }
 
         public void LogoutAndRestart(bool clearRealAccountFlag = false)

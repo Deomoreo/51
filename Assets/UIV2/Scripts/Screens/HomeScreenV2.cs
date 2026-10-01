@@ -18,6 +18,8 @@ namespace Project51.UIV2.Screens
         [SerializeField] private UIV2QuickActionButton rewardsButton;
         [SerializeField] private UIV2QuickActionButton rankingButton;
         [SerializeField] private UIV2QuickActionButton mailButton;
+        [Tooltip("UI51 Notizie, sotto a Posta (vuoto = nessun pulsante).")]
+        [SerializeField] private UIV2QuickActionButton newsButton;
         [Tooltip("Opzioni, sotto a Posta. Sempre attivo: non fa parte delle azioni ancora da fare.")]
         [SerializeField] private UIV2QuickActionButton settingsButton;
         [SerializeField] private UIV2SelectorChip modeSelector;
@@ -30,6 +32,7 @@ namespace Project51.UIV2.Screens
         public event Action OnRewardsPressed;
         public event Action OnRankingPressed;
         public event Action OnMailPressed;
+        public event Action OnNewsPressed;
         public event Action OnSettingsPressed;
         public event Action OnPlayPressed;
         public event Action<SelectorOptionViewData> OnModePressed;
@@ -40,6 +43,7 @@ namespace Project51.UIV2.Screens
             if (rewardsButton != null) rewardsButton.OnClicked += () => OnRewardsPressed?.Invoke();
             if (rankingButton != null) rankingButton.OnClicked += () => OnRankingPressed?.Invoke();
             if (mailButton != null) mailButton.OnClicked += () => OnMailPressed?.Invoke();
+            if (newsButton != null) newsButton.OnClicked += () => OnNewsPressed?.Invoke();
             if (settingsButton != null) settingsButton.OnClicked += () => OnSettingsPressed?.Invoke();
             if (playButton != null && playButton.Button != null)
             {
@@ -98,6 +102,11 @@ namespace Project51.UIV2.Screens
             if (mailButton != null) mailButton.SetBadgeCount(count);
         }
 
+        public void SetNewsBadge(int count)
+        {
+            if (newsButton != null) newsButton.SetBadgeCount(count);
+        }
+
         public void SetDeckInteractable(bool interactable)
         {
             if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
@@ -106,7 +115,7 @@ namespace Project51.UIV2.Screens
         /// <summary>UI51: l'ospite vede solo Opzioni tra i pulsanti laterali.</summary>
         public void SetGuest(bool guest)
         {
-            foreach (var action in new[] { rewardsButton, rankingButton, mailButton })
+            foreach (var action in new[] { rewardsButton, rankingButton, mailButton, newsButton })
                 if (action != null) action.gameObject.SetActive(!guest);
         }
 

@@ -286,6 +286,7 @@ namespace Project51.Unity
         /// </summary>
         private void Update()
         {
+            PointerMoved();
             if (isMouseOver && !PointerStillOver())
             {
                 EndHover();
@@ -302,6 +303,28 @@ namespace Project51.Unity
         private static bool PointerLive => Input.touchCount > 0 || !Input.touchSupported;
 
         private bool PointerStillOver() => PointerLive && (IsPointerActuallyOverCollider() || IsPointerOverRestPose());
+
+        // Puntatore mosso in questo fotogramma (calcolato una volta per fotogramma, dal primo Update o OnMouseOver).
+        private static Vector3 s_PrevPointer;
+        private static int s_PointerFrame = -1;
+        private static bool s_PointerMoved;
+
+        /// <summary>
+        /// Solleva solo un puntatore che si muove: una carta che scivola sotto un puntatore fermo (col mouse, la vicina che
+        /// prende il posto di quella appena giocata; a inizio smazzata, la carta che arriva dove era l'ultimo tocco) resta giu'.
+        /// Utente 01/10: "la carta che si alza quando viene giocata una carta". Il dito che tocca sposta il puntatore: si solleva.
+        /// </summary>
+        private static bool PointerMoved()
+        {
+            if (Time.frameCount != s_PointerFrame)
+            {
+                s_PointerFrame = Time.frameCount;
+                Vector3 p = Input.mousePosition;
+                s_PointerMoved = (p - s_PrevPointer).sqrMagnitude > 1f;
+                s_PrevPointer = p;
+            }
+            return s_PointerMoved;
+        }
 
         /// <summary>Il puntatore e' sul posto a riposo della carta (posizione e scala del layout), ovunque l'abbia portata l'hover.</summary>
         private bool IsPointerOverRestPose()
@@ -369,9 +392,18 @@ namespace Project51.Unity
             if (dropShadow != null) dropShadow.SetElevation(0f);
         }
 
-        private void OnMouseEnter()
+        private void OnMouseEnter() => TryBeginHover();
+
+        // La carta e' sotto al puntatore ma non sollevata (ci e' scivolata sotto): si solleva appena il puntatore si muove.
+        private void OnMouseOver()
+        {
+            if (!isMouseOver) TryBeginHover();
+        }
+
+        private void TryBeginHover()
         {
             if (!PointerLive || (isMouseOver && s_Hovered == this)) return; // gia' sollevata: niente seconda scia
+            if (!PointerMoved()) return;
             if (s_Hovered != null && s_Hovered != this) s_Hovered.EndHover();
             s_Hovered = this;
             isMouseOver = true;

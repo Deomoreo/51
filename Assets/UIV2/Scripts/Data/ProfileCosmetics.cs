@@ -46,6 +46,26 @@ namespace Project51.UIV2.Data
             return id != null;
         }
 
+        /// <summary>
+        /// Statistiche del profilo rapido dalle proprieta' Photon di un altro giocatore (stesse regole di ReadLook: solo int,
+        /// mai negativi, vittorie al massimo quante le partite). False se non le ha pubblicate (bot, ospite, versione vecchia).
+        /// playFabId null = niente pulsanti Aggiungi amico / Silenzia / Segnala.
+        /// </summary>
+        public static bool ReadStats(System.Collections.IDictionary props, out int games, out int wins, out int scope, out string playFabId)
+        {
+            bool has = props?[Project51.Auth.ProfileService.LookGamesKey] is int;
+            games = has ? Math.Max(0, (int)props[Project51.Auth.ProfileService.LookGamesKey]) : 0;
+            wins = props?[Project51.Auth.ProfileService.LookWinsKey] is int w ? Math.Max(0, Math.Min(w, games)) : 0;
+            scope = props?[Project51.Auth.ProfileService.LookScopeKey] is int s ? Math.Max(0, s) : 0;
+            playFabId = props?[Project51.Auth.ProfileService.LookIdKey] as string;
+            if (playFabId != null && (playFabId.Length == 0 || playFabId.Length > 32)) playFabId = null;
+            return has;
+        }
+
+        /// <summary>Vittorie in percentuale intera ("58%"); senza partite "-" (il trattino lungo puo' mancare nell'atlante del font).</summary>
+        public static string WinRate(int wins, int games) =>
+            games <= 0 ? "-" : (int)Math.Round(100.0 * Math.Max(0, Math.Min(wins, games)) / games) + "%";
+
         // ponytail: Aurora (pass) e Stellato (negozio) restano chiusi finche' pass e negozio non esistono;
         // quando arrivano, qui va chiesto a loro.
         public static bool BannerUnlocked(int index, int level) => index < 2 || (index == 2 && level >= PorporaLevel);

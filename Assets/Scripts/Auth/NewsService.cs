@@ -23,6 +23,15 @@ namespace Project51.Auth
         }
     }
 
+    /// <summary>Notizia letta per la pagina UI51 (NewsService.Parse).</summary>
+    public sealed class NewsStory
+    {
+        public string Id, Title, Subtitle, Tag, Cta;
+        public bool Featured;
+        public string[] Paragraphs = new string[0];
+        public DateTime TimestampUtc;
+    }
+
     /// <summary>
     /// Novita' (C3, mockup 25). Il contenuto viene da PlayFab Title News, che si scrive da Game Manager
     /// (Content -> Title News) senza una nuova build. La lettura usa la sessione PlayFab gia' aperta
@@ -107,6 +116,76 @@ namespace Project51.Auth
             if (days < 365) { int m = days / 30; return m == 1 ? "1 mese fa" : m + " mesi fa"; }
             int y = days / 365;
             return y == 1 ? "1 anno fa" : y + " anni fa";
+        }
+
+        // --- Pagina UI51 (mockup Notizie): intestazione scritta nel testo della notizia su Game Manager
+
+        /// <summary>Etichette del mockup, nell'ordine dei colori della pagina.</summary>
+        public static readonly string[] Tags = { "NOVITÀ", "TORNEO", "COLLEZIONE", "AGGIORNAMENTO", "EVENTO", "AVVISO", "CONSIGLI" };
+        public const string DefaultCta = "HO CAPITO";
+        public const int MaxFeatured = 3;
+
+        private static readonly string[] MonthsLong =
+            { "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre" };
+
+        /// <summary>
+        /// Testo della notizia: righe iniziali "chiave: valore" (etichetta, sottotitolo, evidenza, pulsante), poi i paragrafi
+        /// separati da una riga vuota. Senza intestazione: NOVITÀ, sottotitolo = primo paragrafo, pulsante HO CAPITO.
+        /// </summary>
+        public static NewsStory Parse(NewsEntry entry)
+        {
+            var story = new NewsStory { Id = entry.Id, Title = entry.Title, TimestampUtc = entry.TimestampUtc, Tag = Tags[0], Cta = DefaultCta };
+            var lines = (entry.Body ?? string.Empty).Replace("\r", string.Empty).Split('\n');
+            int i = 0;
+            for (; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                int colon = line.IndexOf(':');
+                if (colon <= 0) break;
+                string key = line.Substring(0, colon).Trim().ToLowerInvariant(), value = line.Substring(colon + 1).Trim();
+                if (key == "etichetta")
+                {
+                    string tag = value.ToUpperInvariant() == "NOVITA" ? Tags[0] : value.ToUpperInvariant();
+                    if (Array.IndexOf(Tags, tag) >= 0) story.Tag = tag;
+                }
+                else if (key == "sottotitolo") story.Subtitle = value;
+                else if (key == "evidenza") story.Featured = Array.IndexOf(new[] { "sì", "si", "yes", "true", "1" }, value.ToLowerInvariant()) >= 0;
+                else if (key == "pulsante") { if (value.Length > 0) story.Cta = value.ToUpperInvariant(); }
+                else break; // una riga normale con i due punti: da qui e' testo
+            }
+
+            var paragraphs = new List<string>();
+            var current = new System.Text.StringBuilder();
+            for (; i <= lines.Length; i++)
+            {
+                string line = i < lines.Length ? lines[i].Trim() : string.Empty;
+                if (line.Length > 0) { if (current.Length > 0) current.Append(' '); current.Append(line); continue; }
+                if (current.Length > 0) paragraphs.Add(current.ToString());
+                current.Clear();
+            }
+            story.Paragraphs = paragraphs.ToArray();
+            if (string.IsNullOrEmpty(story.Subtitle) && paragraphs.Count > 0) story.Subtitle = paragraphs[0];
+            return story;
+        }
+
+        /// <summary>
+        /// In evidenza (carosello): quelle con "evidenza: sì", al massimo MaxFeatured; se nessuna, la piu' recente.
+        /// Le altre vanno nell'elenco. L'ordine (dalla piu' recente) resta quello di stories.
+        /// </summary>
+        public static void Split(List<NewsStory> stories, List<NewsStory> featured, List<NewsStory> rest)
+        {
+            featured.Clear();
+            rest.Clear();
+            foreach (var s in stories) if (s.Featured && featured.Count < MaxFeatured) featured.Add(s);
+            if (featured.Count == 0 && stories.Count > 0) featured.Add(stories[0]);
+            foreach (var s in stories) if (!featured.Contains(s)) rest.Add(s);
+        }
+
+        /// <summary>"24 settembre" (carosello e articolo) o "24 set" (elenco), come nel mockup.</summary>
+        public static string Date(DateTime date, bool shortMonth)
+        {
+            string month = MonthsLong[date.Month - 1];
+            return date.Day + " " + (shortMonth ? month.Substring(0, 3) : month);
         }
 
         private static void DevLog(string message)

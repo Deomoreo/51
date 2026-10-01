@@ -13,6 +13,8 @@ namespace Project51.UIV2.Core
     public sealed class GameSocialV2 : MonoBehaviour
     {
         public GameObject EmoticonPanel;
+        [Tooltip("Area di tocco del mio profilo rapido: spenta mentre la scelta emoticon e' aperta (un tocco che la chiude non apre la scheda).")]
+        public GameObject ProfileHit;
         public Button[] EmoticonButtons;
         public Button Close;
         public Sprite[] Sprites;
@@ -103,7 +105,7 @@ namespace Project51.UIV2.Core
             float w=n==0||row==null||QuickSlots.Length==0?quickFull:Mathf.Min(quickFull,n*((RectTransform)QuickSlots[0].transform).sizeDelta.x+(n-1)*row.spacing);
             bar.sizeDelta=new Vector2(w,bar.sizeDelta.y);bar.anchoredPosition=new Vector2(quickRight-w*(1f-bar.pivot.x),bar.anchoredPosition.y);
             if(QuickHint!=null){QuickHint.text="Nessuna emoticon\nScegline in Collezione";QuickHint.gameObject.SetActive(n==0);}
-            quickOpen=true;QuickBar.gameObject.SetActive(true);
+            quickOpen=true;QuickBar.gameObject.SetActive(true);if(ProfileHit!=null)ProfileHit.SetActive(false);
             var own=UI51Seat(0);if(own!=null)own.SetPicking(true);
             Project51.UI51.UIAnim.Pop(bar);
             quickCloseAt=Time.unscaledTime+QuickAutoClose;
@@ -112,7 +114,7 @@ namespace Project51.UIV2.Core
         {
             if(QuickBar==null||!quickOpen)return;
             // Chiusura secca come nel mockup; spegnendosi il pop si ferma e lascia la fila intera per la prossima volta.
-            quickOpen=false;QuickBar.gameObject.SetActive(false);
+            quickOpen=false;QuickBar.gameObject.SetActive(false);if(ProfileHit!=null)ProfileHit.SetActive(true);
             var own=UI51Seat(0,false);if(own!=null)own.SetPicking(false); // anche a banner spento: nome e chip tornano al prossimo giro
         }
         /// <summary>Banner UI51 al posto relativo (0 io, 2 in alto); null se il posto usa ancora la vecchia grafica o (shown) e' spento.</summary>
@@ -155,6 +157,12 @@ namespace Project51.UIV2.Core
             foreach(var p in room.Players.Values)if(seatMap.GetPlayerIndexForActor(p.ActorNumber)==player)return p;
             return null;
         }
+        /// <summary>Id PlayFab pubblicato dal giocatore al posto player (AuthBootstrapper.LookProps); null per bot, ospiti, fuori stanza.</summary>
+        public static string PlayFabIdAt(int player)
+        {
+            var p=PlayerAt(player);if(p==null)return null;
+            Project51.UIV2.Data.ProfileCosmetics.ReadStats(p.CustomProperties,out _,out _,out _,out string id);return id;
+        }
         private int Seat(int player)
         {
             if(turns==null)turns=FindObjectOfType<TurnController>(); // un'emoticon arrivata prima del primo Update: 1v1, non 4 posti
@@ -163,7 +171,10 @@ namespace Project51.UIV2.Core
         }
         public void ShowEmoticon(int player,int index)
         {
-            if(index<0||index>=Sprites.Length)return;int seat=Seat(player);var bubble=Bubbles[seat];
+            if(index<0||index>=Sprites.Length)return;
+            // "Silenzia emoticon" del profilo rapido: niente suono ne' nuvoletta per quel giocatore (questo dispositivo).
+            if(!GameModeService.Current.IsLocalPlayer(player)&&Project51.Auth.EmoticonMute.IsMuted(PlayFabIdAt(player)))return;
+            int seat=Seat(player);var bubble=Bubbles[seat];
             if(!GameModeService.Current.IsLocalPlayer(player))GameAudio.Play(SoundId.Notification,sync:GameAudio.Sync.Onset);
             // UI51: la mia sale dal banner e sparisce (una nuova riparte da capo), quella di un altro sta 3,2 s al posto del suo avatar.
             if(seat==0&&OwnFly!=null)

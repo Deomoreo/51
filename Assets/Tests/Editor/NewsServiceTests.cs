@@ -41,6 +41,56 @@ namespace Project51.Tests
             Assert.IsTrue(NewsService.IsNew(Now.AddDays(-(NewsService.FirstVisitNewDays - 1)), null, Now));
             Assert.IsFalse(NewsService.IsNew(Now.AddDays(-(NewsService.FirstVisitNewDays + 1)), null, Now));
         }
+
+        // --- Pagina UI51: intestazione nel testo della notizia
+
+        private static NewsStory Story(string body) => NewsService.Parse(new NewsEntry("n", "Titolo", body, Now));
+
+        [Test]
+        public void Parse_Header()
+        {
+            var s = Story("Etichetta: torneo\r\nsottotitolo: Sabato e domenica\nEvidenza: sì\npulsante: iscriviti\n\nPrimo paragrafo\nsu due righe.\n\n\nSecondo: con i due punti.");
+            Assert.AreEqual("TORNEO", s.Tag);
+            Assert.AreEqual("Sabato e domenica", s.Subtitle);
+            Assert.IsTrue(s.Featured);
+            Assert.AreEqual("ISCRIVITI", s.Cta);
+            CollectionAssert.AreEqual(new[] { "Primo paragrafo su due righe.", "Secondo: con i due punti." }, s.Paragraphs);
+        }
+
+        [Test]
+        public void Parse_PlainBody_Defaults()
+        {
+            var s = Story("Ora: le partite si salvano.\n\nAltro.");
+            Assert.AreEqual("NOVITÀ", s.Tag);
+            Assert.AreEqual(NewsService.DefaultCta, s.Cta);
+            Assert.IsFalse(s.Featured);
+            Assert.AreEqual("Ora: le partite si salvano.", s.Subtitle);
+            Assert.AreEqual(2, s.Paragraphs.Length);
+            Assert.AreEqual("NOVITÀ", Story("etichetta: Novita\n\nx").Tag);
+            Assert.AreEqual("NOVITÀ", Story("etichetta: sconosciuta\n\nx").Tag);
+            Assert.AreEqual(0, Story(null).Paragraphs.Length);
+        }
+
+        [Test]
+        public void Split_FeaturedOrNewest()
+        {
+            var a = Story("x"); var b = Story("evidenza: si\n\nx"); var c = Story("x");
+            var featured = new System.Collections.Generic.List<NewsStory>();
+            var rest = new System.Collections.Generic.List<NewsStory>();
+            NewsService.Split(new System.Collections.Generic.List<NewsStory> { a, b, c }, featured, rest);
+            CollectionAssert.AreEqual(new[] { b }, featured);
+            CollectionAssert.AreEqual(new[] { a, c }, rest);
+            NewsService.Split(new System.Collections.Generic.List<NewsStory> { a, c }, featured, rest);
+            CollectionAssert.AreEqual(new[] { a }, featured);
+            CollectionAssert.AreEqual(new[] { c }, rest);
+        }
+
+        [Test]
+        public void Date_LongAndShort()
+        {
+            Assert.AreEqual("24 settembre", NewsService.Date(new DateTime(2026, 9, 24), false));
+            Assert.AreEqual("3 gen", NewsService.Date(new DateTime(2026, 1, 3), true));
+        }
     }
 }
 #endif

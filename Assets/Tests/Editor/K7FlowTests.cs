@@ -19,11 +19,11 @@ public class K7FlowTests
         (bool)timer.GetType().GetMethod("Advance").Invoke(timer, new object[] { delta, authority, blocked });
 
     [Test]
-    public void RoundAdvancesExactlyOnceAfterEightVisibleSeconds()
+    public void RoundAdvancesExactlyOnceAfterTenVisibleSeconds()
     {
         var timer = Countdown(); Start(timer);
         Assert.IsFalse(Advance(timer, 3f));
-        Assert.IsFalse(Advance(timer, 4f));
+        Assert.IsFalse(Advance(timer, 6f));
         Assert.IsTrue(Advance(timer, 1f));
         Assert.IsFalse(Advance(timer, 100f));
     }
@@ -33,17 +33,17 @@ public class K7FlowTests
         var timer = Countdown(); Start(timer);
         Assert.IsFalse(Advance(timer, 3f));
         Assert.IsFalse(Advance(timer, 100f, blocked: true));
-        Assert.IsFalse(Advance(timer, 4f));
+        Assert.IsFalse(Advance(timer, 6f));
         Assert.IsTrue(Advance(timer, 1f));
     }
     [Test]
     public void NewHostGetsFreshReadingTimeAndCancelPreventsHiddenAdvancement()
     {
         var timer = Countdown(); Start(timer);
-        Assert.IsFalse(Advance(timer, 7f));
+        Assert.IsFalse(Advance(timer, 9f));
         Assert.IsFalse(Advance(timer, 100f, authority: false));
         Assert.IsFalse(Advance(timer, 1f));
-        Assert.IsFalse(Advance(timer, 6f));
+        Assert.IsFalse(Advance(timer, 8f));
         Assert.IsTrue(Advance(timer, 1f));
         Start(timer);
         timer.GetType().GetMethod("Cancel").Invoke(timer, null);

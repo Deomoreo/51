@@ -23,7 +23,7 @@ namespace Project51.UI51.EditorTools
     /// dentro contenitori con scala <see cref="Unit"/>, cosi' nel codice restano i numeri del mockup.
     /// Il vecchio aspetto resta in scena spento. Idempotente: rieseguirlo riusa i nodi per nome.
     /// </summary>
-    public static class UI51TableBuilder
+    public static partial class UI51TableBuilder
     {
         const string ScenePath = "Assets/Scenes/GameScene.unity";
         const string Tag = "[UI51 Fase 5]";
@@ -74,6 +74,8 @@ namespace Project51.UI51.EditorTools
             BuildOptions(settings);
             BuildLeave(settings);
             BuildSorteggio(banners);
+            BuildQuickProfile(banners, seatLocal, seatTop, seatLeft, seatRight, bar.parent);
+            BuildResults(banners);
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (EditorSceneManager.SaveScene(scene, ScenePath)) Debug.Log($"{Tag} Scena salvata: {ScenePath}");
@@ -770,6 +772,16 @@ namespace Project51.UI51.EditorTools
             UI51Build.Solid(card, Color.white, 7f, 0f, default, false, new UI51Shadow(0f, 3f, 8f, UI51Tokens.BlackA(0.45f)));
             UI51Build.GetOrAdd<CanvasGroup>(card);
             var face = UI51Build.Image(UI51Build.Stretch(UI51Build.Child(card, "Face")), null, Color.white, false, false);
+            // Matta trasformata (carte accusate, nostra aggiunta): bordo d'oro, anello che pulsa verso fuori, cartellino "MATTA".
+            // Spento: PlayerBannerManager lo accende sulla matta dopo che si e' girata.
+            var matta = UI51Build.Stretch(UI51Build.Child(card, "Matta"));
+            UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(matta, "Frame"), -2f, -2f, -2f, -2f), Color.clear, 9f, 2.5f, UI51Tokens.Gold);
+            UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(matta, "Pulse"), -2f, -2f, -2f, -2f), Color.clear, 9f, 2f, UI51Tokens.GoldLight);
+            var tag = UI51Build.Place(UI51Build.Child(matta, "Tag"), new Vector2(0.5f, 1f), new Vector2(58f, 18f), new Vector2(0f, 9f));
+            UI51Build.Solid(tag, UI51Tokens.Gold, 9f, 1f, UI51Tokens.GoldLight, false, new UI51Shadow(0f, 2f, 4f, UI51Tokens.BlackA(0.4f)));
+            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tag, "Text")), "MATTA", FontFace.CinzelBold, 10f,
+                UI51Tokens.OnGold, TextAlignmentOptions.Center));
+            matta.gameObject.SetActive(false);
             var chips = UI51Build.Place(UI51Build.Child(content, "Chips"), new Vector2(0.5f, 1f), new Vector2(0f, 28f), new Vector2(0f, -243.6f));
             UI51Build.Row(chips, 10f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             UI51Build.Fit(chips, true, false);
@@ -1100,6 +1112,208 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "LeaveBody", body);
             });
             dialog.gameObject.SetActive(false); // UI51Build.Child la riaccende: si vede solo da Abbandona
+        }
+
+        // --- Profilo rapido (01/10)
+
+        /// <summary>
+        /// Mockup Partita/Partita4 "profilo" e PartitaMioProfilo: GameCanvas/UI51QuickProfile (velo .25 che chiude, scheda 300 r22
+        /// col banner del giocatore sotto un'ombra scura, intestazione 64, statistiche, medaglie, pulsanti o barra XP). Aree di
+        /// tocco UI51ProfileHit come PRIMO figlio di ogni Banner_*/UI51Banner: dove si sovrappongono alle scope vince il visore.
+        /// La mia e' 130x50 a sinistra (avatar e nome, mockup), e GameSocialV2 la spegne mentre la scelta emoticon e' aperta.
+        /// </summary>
+        static void BuildQuickProfile(PlayerBannerManager manager, Transform seatLocal, Transform seatTop, Transform seatLeft,
+            Transform seatRight, Transform canvas)
+        {
+            var avatarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("AvatarFrame"));
+            var closeIcon = UI51Build.Sprite("Common", "ic_close_cream");
+            var social = UnityEngine.Object.FindObjectOfType<GameSocialV2>(true);
+            var medalNames = new[] { "medal_trophy", "medal_sun", "medal_club", "medal_sword" };
+            var medalSprites = new Sprite[medalNames.Length];
+            for (int i = 0; i < medalNames.Length; i++) medalSprites[i] = UI51Build.Sprite("Common", medalNames[i]);
+            var seats = new[] { seatLocal, seatLeft, seatTop, seatRight };
+            if (avatarPrefab == null || closeIcon == null || social == null || System.Array.IndexOf(medalSprites, null) >= 0 ||
+                System.Array.Exists(seats, t => t.Find("UI51Banner") == null))
+            {
+                Debug.LogError($"{Tag} Manca un pezzo del profilo rapido (prefab AvatarFrame, ic_close_cream, medal_*, GameSocialV2, " +
+                               "Banner_*/UI51Banner). Non costruito.");
+                return;
+            }
+
+            GameObject ownHit = null;
+            for (int slot = 0; slot < seats.Length; slot++)
+            {
+                var holder = (RectTransform)seats[slot].Find("UI51Banner");
+                var hitRt = UI51Build.Child(holder, "UI51ProfileHit");
+                hitRt.SetAsFirstSibling();
+                if (slot == 0) Box(hitRt, 0f, 0f, 130f, 50f);
+                else UI51Build.Stretch(hitRt);
+                var hit = UI51Build.Image(hitRt, null, Color.clear, true, false);
+                hit.canvasRenderer.cullTransparentMesh = false; // trasparente ma deve prendere i tocchi
+                var button = UI51Build.Button(hit, hit);
+                var press = UI51Build.GetOrAdd<UI51Press>(hit);
+                UI51Build.Wire(press, so => UI51Build.Float(so, "m_Scale", 1f));
+                for (int i = button.onClick.GetPersistentEventCount() - 1; i >= 0; i--)
+                    UnityEventTools.RemovePersistentListener(button.onClick, i);
+                UnityEventTools.AddIntPersistentListener(button.onClick, manager.OpenProfile, slot);
+                EditorUtility.SetDirty(button);
+                if (slot == 0) ownHit = hitRt.gameObject;
+            }
+
+            var root = UI51Build.Stretch(UI51Build.Child(canvas, "UI51QuickProfile"));
+            root.SetAsLastSibling();
+            UI51Build.GetOrAdd<CanvasGroup>(root); // dissolvenza d'apertura
+            // Il nome "Backdrop" tiene lontane pressione e vibrazione di UIV2MotionInstaller.
+            var backdrop = UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(root, "Backdrop")), UI51Tokens.Rgba(3, 8, 18, 0.25f), 0f, 0f,
+                default, true);
+            Listen(UI51Build.Button(backdrop, backdrop), manager.CloseProfile);
+
+            // Bordo alto della scheda: QuickProfileCard lo mette a (422 - top del mockup) dal centro dello schermo, per posto.
+            var content = UI51Build.Place(UI51Build.Child(root, "Content"), new Vector2(0.5f, 0.5f), new Vector2(300f, 0f),
+                new Vector2(0f, 122f * Unit));
+            content.pivot = new Vector2(0.5f, 1f);
+            content.localScale = new Vector3(Unit, Unit, 1f);
+            var card = UI51Build.Place(UI51Build.Child(content, "Card"), new Vector2(0.5f, 1f), new Vector2(300f, 0f), Vector2.zero);
+            card.pivot = new Vector2(0.5f, 0.5f); // pop dal centro; la scheda cresce verso il basso dal bordo alto (Fit + pivot del Content)
+            UI51Build.Shape(card, UI51Shape.Linear((UI51Tokens.Rgba(14, 28, 52, 0.98f), 0f), (UI51Tokens.Rgba(7, 14, 28, 0.99f), 1f)), 180f,
+                UI51Tokens.Radii(22f), 1f, UI51Tokens.GoldA(0.5f), true, new UI51Shadow(0f, 20f, 44f, UI51Tokens.BlackA(0.6f)));
+            UI51MetaBuilder.Stack(card, 0f, UI51Build.Pad(16, 16, 16, 16));
+            UI51Build.Fit(card, false, true);
+            var bannerRt = UI51Build.Stretch(UI51Build.Child(card, "Banner"), 1f, 1f, 1f, 1f);
+            UI51Build.Layout(bannerRt, -1f, -1f, -1f, -1f, true);
+            var banner = UI51Build.Solid(bannerRt, Color.white, 21f);
+            var shade = UI51Build.Stretch(UI51Build.Child(card, "Shade"), 1f, 1f, 1f, 1f);
+            UI51Build.Layout(shade, -1f, -1f, -1f, -1f, true);
+            UI51Build.Shape(shade, UI51Shape.Linear((UI51Tokens.Rgba(6, 13, 27, 0.05f), 0f), (UI51Tokens.Rgba(6, 13, 27, 0.35f), 0.45f),
+                (UI51Tokens.Rgba(6, 13, 27, 0.62f), 1f)), 180f, UI51Tokens.Radii(21f), 0f, Color.clear);
+
+            // Intestazione 64: avatar 62 (anello 3), poi a 74 nome, livello + titolo, squadra; X 28 in alto a destra.
+            var header = UI51Build.Child(card, "Header");
+            UI51Build.Layout(header, -1f, 64f);
+            var avatar = Avatar(header, avatarPrefab, 62f, 3f, new Vector2(31f - 134f, 0f));
+            var name = UI51Build.Text(Box(UI51Build.Child(header, "Name"), 74f, 0f, 160f, 22f), "Giocatore", FontFace.CinzelBold, 16f,
+                UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft);
+            name.enableWordWrapping = false; // puntini in fondo (riga alta 22 >= 16 x 1,37)
+            var pill = Box(UI51Build.Child(header, "LevelPill"), 74f, 24f, 22f, 22f);
+            UI51Build.Shape(pill, UI51Shape.Linear((UI51Tokens.GoldLight, 0f), (UI51Tokens.GoldDark, 1f)), 180f, UI51Tokens.Radii(11f), 0f, Color.clear);
+            var level = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(pill, "Value")), "1", FontFace.CinzelBold, 10f,
+                UI51Tokens.OnGold, TextAlignmentOptions.Center));
+            var title = UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Title"), 102f, 24f, 130f, 22f), "Principiante",
+                FontFace.NunitoBold, 12f, UI51Tokens.Gold, TextAlignmentOptions.MidlineLeft));
+            var team = UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Team"), 74f, 47f, 160f, 16f), "Avversario",
+                FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f), TextAlignmentOptions.MidlineLeft));
+            var x = UI51Build.Solid(Box(UI51Build.Child(header, "Close"), 240f, 0f, 28f, 28f), UI51Tokens.WhiteA(0.06f), 14f, 0f, default, true);
+            UI51Build.Image(UI51Build.Center(UI51Build.Child(x.transform, "Icon"), 10f, 10f), closeIcon, Color.white);
+            Listen(UI51Build.Button(x, x), manager.CloseProfile);
+
+            // Statistiche: 3 riquadri bianco .04 r12, valore Cinzel 16 e etichetta 9, 14 sotto l'intestazione.
+            var stats = UI51Build.Child(card, "Stats");
+            UI51Build.Row(stats, 6f, UI51Build.Pad(14, 0, 0, 0), TextAnchor.UpperLeft, true, true).childForceExpandWidth = true;
+            UI51Build.Layout(stats, -1f, 66f);
+            var values = new TextMeshProUGUI[3];
+            string[] labels = { "Partite", "Vittorie", "Scope" };
+            for (int i = 0; i < 3; i++)
+            {
+                var tile = UI51Build.Child(stats, "Tile" + i);
+                UI51Build.Layout(tile, -1f, 52f, 1f);
+                UI51Build.Solid(tile, UI51Tokens.WhiteA(0.04f), 12f);
+                values[i] = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Value"), 0f, 22f, 0f, 8f), "0",
+                    FontFace.CinzelBold, 16f, UI51Tokens.Cream, TextAlignmentOptions.Center));
+                UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Label"), 0f, 8f, 0f, 32f), labels[i],
+                    FontFace.NunitoBold, 9f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center));
+            }
+
+            // Medaglie: fino a 4 da 34, passo 10, 12 sotto le statistiche.
+            var medals = UI51Build.Child(card, "Medals");
+            UI51Build.Row(medals, 10f, UI51Build.Pad(12, 0, 0, 0), TextAnchor.UpperCenter, false, false);
+            UI51Build.Layout(medals, -1f, 46f);
+            var medalIcons = new GameObject[medalSprites.Length];
+            for (int i = 0; i < medalSprites.Length; i++)
+                medalIcons[i] = UI51Build.Image(UI51Build.Size(UI51Build.Child(medals, "Medal" + i), 34f, 34f), medalSprites[i], Color.white).gameObject;
+
+            // Altri giocatori con account: Aggiungi amico (oro) / Richiesta inviata, Silenzia emoticon; sotto Segnala in rosso.
+            var actions = UI51Build.Child(card, "Actions");
+            UI51MetaBuilder.Stack(actions, 0f, UI51Build.Pad(14, 0, 0, 0));
+            var row = UI51Build.Child(actions, "Row");
+            UI51Build.Row(row, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandWidth = true;
+            UI51Build.Layout(row, -1f, 38f);
+            var add = UI51Build.Child(row, "Add");
+            UI51PrefabBuilder.GoldBody(add.gameObject, 131f, 38f, 12f, FontFace.NunitoExtraBold, 12f, 0f, "Aggiungi amico");
+            UI51Build.Layout(add, -1f, 38f, 1f);
+            var added = UI51Build.Child(row, "Added");
+            UI51Build.Solid(added, Color.clear, 12f, 1f, UI51Tokens.GoldA(0.5f));
+            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(added, "Label")), "Richiesta inviata",
+                FontFace.NunitoExtraBold, 12f, UI51Tokens.Gold, TextAlignmentOptions.Center));
+            UI51Build.Layout(added, -1f, 38f, 1f);
+            var mute = UI51Build.Child(row, "Mute");
+            UI51PrefabBuilder.ButtonBody(mute.gameObject, 131f, 38f, UI51Shape.Solid(UI51Tokens.WhiteA(0.04f)), UI51Tokens.Radii(12f), 1f,
+                UI51Tokens.CreamA(0.3f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, "Silenzia emoticon");
+            UI51Build.Layout(mute, -1f, 38f, 1f);
+            UI51MetaBuilder.Gap(actions, "Gap", 8f);
+            var report = UI51Build.Child(actions, "Report");
+            UI51PrefabBuilder.ButtonBody(report.gameObject, 268f, 34f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
+                FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.DangerText, "Segnala giocatore");
+            UI51Build.Layout(report, -1f, 34f);
+
+            // Io: "Livello N" e "x / y XP", barra 7, nota (PartitaMioProfilo).
+            var self = UI51Build.Child(card, "Self");
+            UI51MetaBuilder.Stack(self, 0f, UI51Build.Pad(14, 0, 0, 0));
+            var head = UI51Build.Child(self, "Head");
+            UI51Build.Layout(head, -1f, 15f);
+            var xpLevel = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Level")), "Livello 1",
+                FontFace.NunitoExtraBold, 11f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
+            var xpText = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Xp")), "0 / 100 XP",
+                FontFace.NunitoBold, 11f, UI51Tokens.CreamA(0.65f), TextAlignmentOptions.MidlineRight));
+            UI51MetaBuilder.Gap(self, "Gap1", 6f);
+            var bar = UI51Build.Child(self, "Bar");
+            UI51Build.Layout(bar, -1f, 7f);
+            UI51Build.Solid(bar, UI51Tokens.WhiteA(0.12f), 3.5f);
+            var fill = UI51Build.Child(bar, "Fill");
+            fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(0.62f, 1f); fill.pivot = new Vector2(0f, 0.5f);
+            fill.offsetMin = fill.offsetMax = Vector2.zero;
+            UI51Build.Shape(fill, UI51Shape.Linear((UI51Tokens.GoldDark, 0f), (UI51Tokens.GoldLight, 1f)), 90f, UI51Tokens.Radii(3.5f), 0f, Color.clear);
+            UI51MetaBuilder.Gap(self, "Gap2", 10f);
+            var note = UI51Build.Child(self, "Note");
+            UI51Build.Layout(note, -1f, 15f);
+            UI51AccessBuilder.NoWrap(UI51Build.Text(note, "Banner, avatar e cornice si cambiano dal Profilo", FontFace.NunitoRegular, 11f,
+                UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
+
+            var view = UI51Build.GetOrAdd<QuickProfileCard>(root);
+            UI51Build.Wire(view, so =>
+            {
+                UI51Build.Ref(so, "content", content);
+                UI51Build.Ref(so, "card", card);
+                UI51Build.Ref(so, "banner", banner);
+                UI51Build.Ref(so, "avatar", avatar);
+                UI51Build.Ref(so, "nameText", name);
+                UI51Build.Ref(so, "levelText", level);
+                UI51Build.Ref(so, "titleText", title);
+                UI51Build.Ref(so, "teamText", team);
+                UI51Build.Ref(so, "levelPill", pill.gameObject);
+                UI51Build.Ref(so, "stats", stats.gameObject);
+                UI51Build.Ref(so, "gamesText", values[0]);
+                UI51Build.Ref(so, "winsText", values[1]);
+                UI51Build.Ref(so, "scopeText", values[2]);
+                UI51Build.Ref(so, "medals", medals.gameObject);
+                var list = so.FindProperty("medalIcons");
+                list.arraySize = medalIcons.Length;
+                for (int i = 0; i < medalIcons.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = medalIcons[i];
+                UI51Build.Ref(so, "actions", actions.gameObject);
+                UI51Build.Ref(so, "addButton", add.GetComponent<Button>());
+                UI51Build.Ref(so, "muteButton", mute.GetComponent<Button>());
+                UI51Build.Ref(so, "reportButton", report.GetComponent<Button>());
+                UI51Build.Ref(so, "addedLabel", added.gameObject);
+                UI51Build.Ref(so, "muteLabel", mute.Find("Label").GetComponent<TextMeshProUGUI>());
+                UI51Build.Ref(so, "reportLabel", report.Find("Label").GetComponent<TextMeshProUGUI>());
+                UI51Build.Ref(so, "self", self.gameObject);
+                UI51Build.Ref(so, "xpLevel", xpLevel);
+                UI51Build.Ref(so, "xpText", xpText);
+                UI51Build.Ref(so, "xpFill", fill);
+            });
+            UI51Build.Wire(manager, so => UI51Build.Ref(so, "profileCard", view));
+            UI51Build.Wire(social, so => UI51Build.Ref(so, "ProfileHit", ownHit));
+            added.gameObject.SetActive(false);
+            root.gameObject.SetActive(false); // UI51Build.Child la riaccende: si vede solo al tocco su un banner
         }
 
         // --- S10: sorteggio

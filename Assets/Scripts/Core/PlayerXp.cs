@@ -38,5 +38,16 @@ namespace Project51.Core
             int xp = (won ? 40 : 20) + Math.Min(20, 2 * Math.Max(0, scope) + 5 * Math.Max(0, accusi));
             return training ? xp / 2 : xp;
         }
+
+        /// <summary>Titolo del profilo rapido (scelta utente 01/10): 1-4, 5-9, 10-14, 15-24, 25 e oltre.</summary>
+        public static string Title(int level) =>
+            level >= 25 ? "Gran Maestro" : level >= 15 ? "Maestro" : level >= 10 ? "Esperto" : level >= 5 ? "Apprendista" : "Principiante";
+
+        /// <summary>
+        /// Medaglie del profilo rapido (scelta utente 01/10), un bit per icona: 1 trofeo 10 vittorie, 2 sole 100 partite,
+        /// 4 bastoni 100 scope, 8 spade livello 10. Calcolate dalle statistiche pubblicate, quindi uguali per tutti.
+        /// </summary>
+        public static int Medals(int games, int wins, int scope, int level) =>
+            (wins >= 10 ? 1 : 0) | (games >= 100 ? 2 : 0) | (scope >= 100 ? 4 : 0) | (level >= 10 ? 8 : 0);
     }
 }

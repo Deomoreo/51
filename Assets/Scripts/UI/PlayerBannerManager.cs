@@ -1,4 +1,5 @@
 using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 using Project51.Core;
 using Project51.Unity;
@@ -36,12 +37,15 @@ namespace Project51.Unity.UI
         [SerializeField] private UnityEngine.UI.Image scopeFace;
         [Tooltip("Aree di tocco sulle scope, stessi indici di banners (vuoto dove il posto non ne ha).")]
         [SerializeField] private UnityEngine.UI.Button[] scopeHits = new UnityEngine.UI.Button[0];
+        [Tooltip("Profilo rapido (UI51TableBuilder.BuildQuickProfile): si apre toccando un banner.")]
+        [SerializeField] private QuickProfileCard profileCard;
 
         private readonly System.Collections.Generic.List<UnityEngine.UI.Image> scopeFaces = new System.Collections.Generic.List<UnityEngine.UI.Image>();
         private Vector2 scopeRest;
         private int scopeSlot = -1;
         private int scopeShown;
         private bool scopeAccused; // il visore mostra le carte accusate (in mano) invece delle scope
+        private int mattaFlipped = -1; // carta del visore che mostra gia' la matta trasformata
         private bool accusoWas;
 
         private readonly Sprite[] ui51Avatars = new Sprite[4];
@@ -77,6 +81,7 @@ namespace Project51.Unity.UI
             // sotto al velo), non al cambio di turno. Solo sul fronte: aprirlo durante la finestra resta possibile.
             bool accuso = turnController != null && turnController.IsAccusoWindowOpen;
             if (scopeSlot >= 0 && (state == null || state.RoundEnded || accuso && !accusoWas)) CloseScope();
+            if (profileCard != null && profileCard.IsOpen && (state == null || state.RoundEnded || accuso && !accusoWas)) profileCard.Hide();
             accusoWas = accuso;
             if (state == null) return;
 
@@ -98,9 +103,13 @@ namespace Project51.Unity.UI
                 if (ui51 != null)
                 {
                     RefreshUI51(ui51, relative, p, player);
-                    // Senza scope il tocco non fa nulla: niente click ne' vibrazione.
+                    // Senza scope il tocco non fa nulla: niente click ne' vibrazione, e passa al profilo rapido sotto.
                     if (relative < scopeHits.Length && scopeHits[relative] != null)
-                        scopeHits[relative].interactable = player.ScopaCards != null && player.ScopaCards.Count > 0;
+                    {
+                        bool hasScope = player.ScopaCards != null && player.ScopaCards.Count > 0;
+                        scopeHits[relative].interactable = hasScope;
+                        if (scopeHits[relative].targetGraphic != null) scopeHits[relative].targetGraphic.raycastTarget = hasScope;
+                    }
                     if (relative == scopeSlot) ShowScope(relative, p, player);
                     continue;
                 }
@@ -188,9 +197,70 @@ namespace Project51.Unity.UI
             // Il vassoio della presa (ordine 550) coprirebbe il visore: si annulla, la carta si puo' scegliere di nuovo.
             var capture = FindObjectOfType<MoveSelectionUI>();
             if (capture != null && capture.IsVisible) capture.Cancel();
+            if (profileCard != null) profileCard.Hide();
             scopeSlot = slot;
             scopeAccused = accused;
             Refresh();
+        }
+
+        /// <summary>
+        /// Tocco sul banner del posto relativo slot: profilo rapido. Per me i dati del profilo cloud; per un altro giocatore
+        /// quello che pubblica (AuthBootstrapper.LookProps); bot, ospiti e versioni vecchie: solo nome, ritratto e aspetto.
+        /// </summary>
+        public void OpenProfile(int slot)
+        {
+            var state = turnController != null ? turnController.GameState : null;
+            if (state == null || profileCard == null || state.RoundEnded) return;
+            int local = GameModeService.Current.LocalPlayerIndex, n = state.NumPlayers, p = -1;
+            for (int i = 0; i < n; i++) if (ResolveRelativeSlot(i, local, n) == slot) p = i;
+            if (p < 0) return;
+            bool partner = state.TeamMode && p != local && MatchScore.EntryOf(state, p) == MatchScore.EntryOf(state, local);
+            var view = new QuickProfileCard.View
+            {
+                Name = GetDisplayName(p),
+                Avatar = SeatAvatar(p),
+                Self = slot == 0,
+                Team = slot == 0 ? "Tu" : partner ? PartnerLabel : "Avversario",
+                Top = ProfileTop(slot, n),
+            };
+            if (!LookOf(slot, p, partner, out view.Frame, out view.Style, out view.Level)) return;
+            var auth = Project51.Auth.AuthBootstrapper.Instance;
+            if (slot == 0)
+            {
+                if (auth != null && auth.HasRealProfile)
+                {
+                    view.Stats = true;
+                    view.Games = auth.Profile.TotalGames;
+                    view.Wins = auth.Profile.Wins;
+                    view.Scope = auth.Profile.TotalScope;
+                    view.Xp = auth.Profile.XP;
+                }
+            }
+            else
+            {
+                var owner = GameModeService.Current.IsHumanPlayer(p) ? GameSocialV2.PlayerAt(p) : null;
+                if (owner != null)
+                {
+                    view.Stats = ProfileCosmetics.ReadStats(owner.CustomProperties, out view.Games, out view.Wins, out view.Scope, out view.PlayFabId);
+                    // Aggiungi amico / Segnala partono dal mio account: da ospite niente pulsanti.
+                    if (auth == null || auth.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin) view.PlayFabId = null;
+                }
+            }
+
+            accusoWas = turnController.IsAccusoWindowOpen; // come il visore: si chiude solo sul prossimo fronte dell'accuso
+            CloseScope();
+            var capture = FindObjectOfType<MoveSelectionUI>();
+            if (capture != null && capture.IsVisible) capture.Cancel();
+            profileCard.Show(view);
+        }
+
+        /// <summary>Bordo alto della scheda nel mockup: io 300, in alto 140 (1v1) o 150 (a 4), ai lati 220.</summary>
+        public static float ProfileTop(int slot, int numPlayers) => slot == 0 ? 300f : slot == 2 ? numPlayers == 2 ? 140f : 150f : 220f;
+
+        /// <summary>Tocco sul velo o sulla X del profilo rapido.</summary>
+        public void CloseProfile()
+        {
+            if (profileCard != null) profileCard.Hide();
         }
 
         /// <summary>Tocco sul velo del visore, o chiusura automatica da Refresh.</summary>
@@ -215,6 +285,8 @@ namespace Project51.Unity.UI
             chipA = "Accuso";
             chipB = "+" + points + (points == 1 ? " punto" : " punti");
         }
+
+        private const float AccusedStep = 96f + 8f; // carta del visore larga 96, 8 di stacco
 
         /// <summary>Ventaglio del mockup fino a 6 carte (passo 40, 9 gradi, 6 in giu'); oltre, stessa sagoma delle 6.</summary>
         public static void FanPose(int count, out float step, out float degrees, out float drop)
@@ -257,17 +329,24 @@ namespace Project51.Unity.UI
             }
             bool opening = !scopeViewer.activeSelf;
             scopeViewer.SetActive(true);
+            int matta = -1;
+            Sprite mattaSprite = scopeAccused ? MattaTarget(player.Hand, out matta) : null;
+            if (opening || n != scopeShown) mattaFlipped = -1;
             for (int i = 0; i < scopeFaces.Count; i++)
             {
-                if (i < n) scopeFaces[i].sprite = cards[i];
+                if (i < n) scopeFaces[i].sprite = i == mattaFlipped ? mattaSprite : cards[i];
                 var card = scopeFaces[i].transform.parent.gameObject;
                 if (card.activeSelf != i < n) card.SetActive(i < n);
+                var look = card.transform.Find("Matta");
+                if (look != null && look.gameObject.activeSelf != (i == mattaFlipped)) look.gameObject.SetActive(i == mattaFlipped);
             }
             if (!opening && n == scopeShown) return;
 
             scopeShown = n;
             float step, degrees, drop;
             FanPose(n, out step, out degrees, out drop);
+            // Accusate: in fila senza coprirsi, servono a leggere le carte (utente 01/10). Al massimo 3: 3 x 104 sta nei 330 del ventaglio.
+            if (scopeAccused) { step = AccusedStep; degrees = 0f; drop = 0f; }
             var fan = new System.Collections.Generic.List<RectTransform>(n);
             for (int i = 0; i < n; i++)
             {
@@ -276,10 +355,47 @@ namespace Project51.Unity.UI
                 rt.anchoredPosition = scopeRest + new Vector2(step * (i - (n - 1) * 0.5f), 0f);
                 rt.localRotation = Quaternion.identity;
                 rt.localScale = Vector3.one;
+                rt.SetAsLastSibling(); // ordine naturale: la matta trasformata era passata davanti
                 fan.Add(rt);
             }
             if (opening) Project51.UI51.UIAnim.FadeIn((RectTransform)scopeViewer.transform, 0.2f);
             Project51.UI51.UIAnim.Fan(fan, 0.06f, degrees, drop);
+            if (mattaSprite != null && matta < n) FlipMatta(matta, mattaSprite, 0.45f + 0.06f * (n - 1));
+        }
+
+        /// <summary>Faccia che la matta prende per l'accuso (stessa regola del tavolo: solo con le 3 carte), null se resta un 7.</summary>
+        private Sprite MattaTarget(System.Collections.Generic.List<Card> hand, out int index)
+        {
+            index = hand != null ? hand.FindIndex(c => c.IsMatta) : -1;
+            int rank = AccusiChecker.MattaValueForAccuso(hand);
+            return index >= 0 && rank > 0 && cardViewManager != null ? cardViewManager.GetSpriteForCard(new Card(hand[index].Suit, rank)) : null;
+        }
+
+        /// <summary>
+        /// Visore delle accusate: finito il ventaglio la matta (7 di coppe) si gira e diventa la carta che vale, poi bordo d'oro
+        /// che pulsa e cartellino "MATTA". Chiudere il visore uccide il giro: la faccia si raddrizza alla prossima apertura.
+        /// </summary>
+        private void FlipMatta(int i, Sprite target, float delay)
+        {
+            var face = (RectTransform)scopeFaces[i].transform;
+            Project51.UI51.UIAnim.Stop(face);
+            face.localRotation = Quaternion.identity;
+            var half = new Project51.UI51.UIKeyframes(0.16f, Project51.UI51.UIEase.EaseIn).Track(Project51.UI51.AnimProp.RotationY, 0f, 0f, 1f, 90f);
+            half.Play(face, delay).OnComplete(() =>
+            {
+                mattaFlipped = i;
+                scopeFaces[i].sprite = target;
+                face.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                Project51.UI51.UIAnim.Flip(face, 0f);
+                face.parent.SetAsLastSibling(); // davanti alle altre: bordo e cartellino interi
+                var look = face.parent.Find("Matta");
+                if (look == null) return;
+                look.gameObject.SetActive(true);
+                var tag = look.Find("Tag") as RectTransform;
+                if (tag != null) Project51.UI51.UIAnim.Pop(tag, 0.4f, 1.12f, 0.3f, 0.1f);
+                var pulse = look.Find("Pulse");
+                if (pulse != null) Project51.UI51.UIAnim.Pulse(pulse.GetComponent<Project51.UI51.UI51Shape>(), 8f);
+            });
         }
 
         /// <summary>Ritratto del giocatore p, lo stesso del suo banner (ruota del sorteggio).</summary>
@@ -322,28 +438,7 @@ namespace Project51.Unity.UI
         /// </summary>
         private void ApplyLook(Project51.UI51.PlayerBanner banner, int slot, int p, bool partner)
         {
-            int frame, style, level;
-            if (slot == 0)
-            {
-                var auth = Project51.Auth.AuthBootstrapper.Instance;
-                bool real = auth != null && auth.HasRealProfile;
-                frame = ProfileCosmetics.FrameIndex(real ? auth.Profile.FrameId : null);
-                style = ProfileCosmetics.BannerIndex(real ? auth.Profile.BannerId : null);
-                // Come Home: registrato col profilo cloud non arrivato = livello dai progressi locali.
-                var local = Project51.Auth.PlayerProgressLocal.Instance;
-                bool registered = auth != null && auth.PlayFabAuth != null && auth.PlayFabAuth.HasRealLogin;
-                level = real ? PlayerXp.LevelOf(auth.Profile.XP) : registered && local != null ? local.Level : 1;
-            }
-            else
-            {
-                bool human = GameModeService.Current.IsHumanPlayer(p);
-                var owner = human ? GameSocialV2.PlayerAt(p) : null;
-                if (human && owner == null) return; // roster non ancora fissato o rientro in corso: resta l'aspetto di prima
-                if (owner == null || !ProfileCosmetics.ReadLook(owner.CustomProperties, out frame, out style, out level))
-                {
-                    frame = partner ? 1 : 3; style = 0; level = -1;
-                }
-            }
+            if (!LookOf(slot, p, partner, out int frame, out int style, out int level)) return;
 
             int look = frame + 10 * style + 100 * level + (partner ? 1000000 : 0);
             if (look == ui51Looks[slot]) return;
@@ -360,6 +455,35 @@ namespace Project51.Unity.UI
             float widen = partner ? PartnerWiden : 0f;
             pill.offsetMax = new Vector2(2f * widen, pill.offsetMax.y);
             holder.anchoredPosition = new Vector2(-widen * holder.localScale.x, holder.anchoredPosition.y);
+        }
+
+        /// <summary>Cornice, banner e livello del posto (vedi ApplyLook); false se il roster non e' ancora fissato.</summary>
+        private bool LookOf(int slot, int p, bool partner, out int frame, out int style, out int level)
+        {
+            if (slot == 0)
+            {
+                var auth = Project51.Auth.AuthBootstrapper.Instance;
+                bool real = auth != null && auth.HasRealProfile;
+                frame = ProfileCosmetics.FrameIndex(real ? auth.Profile.FrameId : null);
+                style = ProfileCosmetics.BannerIndex(real ? auth.Profile.BannerId : null);
+                // Come Home: registrato col profilo cloud non arrivato = livello dai progressi locali.
+                var local = Project51.Auth.PlayerProgressLocal.Instance;
+                bool registered = auth != null && auth.PlayFabAuth != null && auth.PlayFabAuth.HasRealLogin;
+                level = real ? PlayerXp.LevelOf(auth.Profile.XP) : registered && local != null ? local.Level : 1;
+            }
+            else
+            {
+                bool human = GameModeService.Current.IsHumanPlayer(p);
+                var owner = human ? GameSocialV2.PlayerAt(p) : null;
+                frame = partner ? 1 : 3; style = 0; level = -1;
+                if (human && owner == null) return false; // roster non ancora fissato o rientro in corso: resta l'aspetto di prima
+                if (owner == null || !ProfileCosmetics.ReadLook(owner.CustomProperties, out frame, out style, out level))
+                {
+                    frame = partner ? 1 : 3; style = 0; level = -1;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Riga sotto al nome del compagno a coppie, al posto del livello (mockup Partita4).</summary>
@@ -399,6 +523,8 @@ namespace Project51.Unity.UI
                 .Where(s => s != null)
                 .ToList();
         }
+
+        internal Sprite MatchCardBack() => GetMatchCardBack();
 
         private Sprite GetMatchCardBack()
         {

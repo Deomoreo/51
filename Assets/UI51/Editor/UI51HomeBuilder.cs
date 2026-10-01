@@ -237,7 +237,7 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Cerchio 44 con icona + etichetta sotto (larghezza 56), pallino rosso spento.</summary>
-        static UIV2QuickActionButton QuickAction(RectTransform parent, string name, string icon, float iconSize, string label, float x, float y)
+        internal static UIV2QuickActionButton QuickAction(RectTransform parent, string name, string icon, float iconSize, string label, float x, float y)
         {
             var rt = UI51Build.Place(UI51Build.Child(parent, name), new Vector2(0f, 1f), new Vector2(56f, 62f), new Vector2(x, -y));
             var circle = UI51Build.Place(UI51Build.Child(rt, "Circle"), new Vector2(0.5f, 1f), new Vector2(44f, 44f), Vector2.zero);

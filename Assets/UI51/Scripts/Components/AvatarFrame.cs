@@ -66,6 +66,12 @@ namespace Project51.UI51
             m_Ring.color = Color.white;
         }
 
+        /// <summary>Tinta del ritratto (fine partita: lo sconfitto spento, il mockup usa grayscale e brightness).</summary>
+        public void SetTint(Color color)
+        {
+            if (m_Avatar != null) m_Avatar.color = color;
+        }
+
         /// <summary>Anello in tinta unita (es. crema .18 sotto il timer).</summary>
         public void SetRing(Color color)
         {

@@ -299,6 +299,10 @@ namespace Project51.UI51.EditorTools
             var nameRt = UI51Build.Size(UI51Build.Child(content, "Name"), 58f, 14f);
             var name = UI51Build.Text(nameRt, "Sara", FontFace.NunitoExtraBold, 10f, UI51Tokens.Cream, TextAlignmentOptions.Center);
             name.enableWordWrapping = false;
+            // Nomi lunghi (utente 01/10): prima scende fino a 8 (circa 12 lettere), poi i puntini; il nome intero e' nel profilo rapido.
+            name.enableAutoSizing = true;
+            name.fontSizeMin = 8f;
+            name.fontSizeMax = 10f;
 
             var (chip, back, count) = CaptureChip(content, 16f, 4, 5, 3f, 8f, 12f, 10f, "4");
             WireBanner(banner, pulse, bg, avatar, name, null, chip.gameObject, back, count);

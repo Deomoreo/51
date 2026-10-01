@@ -446,6 +446,56 @@ namespace Project51.Tests
             foreach (var slot in slots) s += slot.gameObject.activeSelf ? "1" : "0";
             return s + " " + (more.gameObject.activeSelf ? label.text : "-");
         }
+
+        [Test]
+        public void QuickProfileTitleFollowsTheUsersLevelBands()
+        {
+            var expected = new Dictionary<int, string>
+            {
+                { 1, "Principiante" }, { 4, "Principiante" }, { 5, "Apprendista" }, { 9, "Apprendista" }, { 10, "Esperto" },
+                { 14, "Esperto" }, { 15, "Maestro" }, { 24, "Maestro" }, { 25, "Gran Maestro" }, { 100, "Gran Maestro" },
+            };
+            foreach (var kv in expected) Assert.AreEqual(kv.Value, PlayerXp.Title(kv.Key), "livello " + kv.Key);
+        }
+
+        [Test]
+        public void QuickProfileMedalsFollowTheUsersThresholds()
+        {
+            Assert.AreEqual(0, PlayerXp.Medals(99, 9, 99, 9));
+            Assert.AreEqual(1, PlayerXp.Medals(10, 10, 0, 1));
+            Assert.AreEqual(2, PlayerXp.Medals(100, 0, 0, 1));
+            Assert.AreEqual(4, PlayerXp.Medals(0, 0, 100, 1));
+            Assert.AreEqual(8, PlayerXp.Medals(0, 0, 0, 10));
+            Assert.AreEqual(15, PlayerXp.Medals(500, 200, 300, 30));
+        }
+
+        [Test]
+        public void QuickProfileStatsTravelThroughPhotonPropsAndStayInRange()
+        {
+            System.Collections.IDictionary props = AuthBootstrapper.LookProps("smeraldo", "porpora", PlayerXp.TotalForLevel(12), 148, 86, 312, "ABCDEF0123456789");
+            Assert.IsTrue(ProfileCosmetics.ReadLook(props, out int frame, out int style, out int level));
+            Assert.AreEqual(2, frame); Assert.AreEqual(2, style); Assert.AreEqual(12, level);
+            Assert.IsTrue(ProfileCosmetics.ReadStats(props, out int games, out int wins, out int scope, out string id));
+            Assert.AreEqual(148, games); Assert.AreEqual(86, wins); Assert.AreEqual(312, scope); Assert.AreEqual("ABCDEF0123456789", id);
+            Assert.AreEqual("58%", ProfileCosmetics.WinRate(wins, games));
+            Assert.AreEqual("-", ProfileCosmetics.WinRate(0, 0));
+
+            // Ospite: tutte le chiavi a null (Photon le toglie), niente statistiche ne' id.
+            var guest = AuthBootstrapper.LookProps(null, null, 0, 5, 5, 5, "ID");
+            foreach (System.Collections.DictionaryEntry e in guest) Assert.IsNull(e.Value, e.Key.ToString());
+            Assert.IsFalse(ProfileCosmetics.ReadStats(guest, out _, out _, out _, out id));
+            Assert.IsNull(id);
+
+            // Scritte da un altro client: tipi sbagliati e valori fuori misura non passano.
+            var bad = new System.Collections.Hashtable
+            {
+                { ProfileService.LookGamesKey, -3 }, { ProfileService.LookWinsKey, 99 }, { ProfileService.LookScopeKey, "tanti" },
+                { ProfileService.LookIdKey, new string('x', 40) },
+            };
+            Assert.IsTrue(ProfileCosmetics.ReadStats(bad, out games, out wins, out scope, out id));
+            Assert.AreEqual(0, games); Assert.AreEqual(0, wins); Assert.AreEqual(0, scope); Assert.IsNull(id);
+            Assert.IsFalse(ProfileCosmetics.ReadStats(null, out _, out _, out _, out id));
+        }
     }
 }
 #endif

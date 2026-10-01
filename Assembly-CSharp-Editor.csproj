@@ -64,12 +64,14 @@
     <Compile Include="Assets\Tests\Editor\Rules51ValidMovesTests.cs" />
     <Compile Include="Assets\Editor\LobbyPrefabBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51RestoredTests.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51SocialBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Editor\TableTopBarBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2DesignBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51Build.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\InGameSettingsTests.cs" />
+    <Compile Include="Assets\Tests\Editor\UI51ResultsTests.cs" />
     <Compile Include="Assets\Editor\HomeScreenBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.ComingSoon.cs" />
     <Compile Include="Assets\Editor\TableActionButtonsBuilder.cs" />
@@ -141,6 +143,7 @@
     <Compile Include="Assets\Editor\EmoticonScreenExactBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51CoreTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerEdgeTests.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51ResultsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\NewsServiceTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.HomeAmbient.cs" />
     <Compile Include="Assets\Tests\Editor\K6FeedbackTests.cs" />

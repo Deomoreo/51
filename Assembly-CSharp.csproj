@@ -85,6 +85,7 @@
     <Compile Include="Assets\Scripts\UI\AccusoCardSlot.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ListRow.cs" />
     <Compile Include="Assets\Scripts\UI\PanelPremiController.cs" />
+    <Compile Include="Assets\Scripts\UI\QuickProfileCard.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UICollectionCard.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UIHeaderWidget.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Assets\UIV2\Scripts\Core\QuickSelectionPanels.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\SelectorOptionViewData.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerSlotUI.cs" />
+    <Compile Include="Assets\Scripts\UI\UI51ResultsView.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerData.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerBanner.cs" />
     <Compile Include="Assets\Scripts\UI\Kit\UICollectionGrid.cs" />
@@ -209,6 +211,7 @@
     <Compile Include="Assets\UI51\Scripts\Core\UI51Banners.cs" />
     <Compile Include="Assets\Scripts\UI\DeckPageController.cs" />
     <Compile Include="Assets\UI51\Scripts\Anim\UIAnim.cs" />
+    <Compile Include="Assets\Scripts\UI\UI51NewsView.cs" />
     <Compile Include="Assets\Scripts\UI\ScrollFadeIndicator.cs" />
     <Compile Include="Assets\Scripts\UI\GameLaunchController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2BottomNav.cs" />
@@ -252,6 +255,7 @@
     <Compile Include="Assets\UI51\Scripts\Core\UI51Tokens.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AnimatedModalV2.cs" />
     <Compile Include="Assets\Scripts\UI\MatchmakingStatusUI.cs" />
+    <Compile Include="Assets\Scripts\UI\UI51NewsItem.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\IUIV2Modal.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\PageSwipeSurface.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaUtil.cs" />

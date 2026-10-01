@@ -86,6 +86,7 @@
     <Compile Include="Assets\Scripts\Core\GameFeedback.cs" />
     <Compile Include="Assets\Scripts\Core\GameAudioPreferences.cs" />
     <Compile Include="Assets\Scripts\Core\Suit.cs" />
+    <Compile Include="Assets\Scripts\Core\ResultsSheet.cs" />
     <Compile Include="Assets\Scripts\Core\CirullaAI.cs" />
     <Compile Include="Assets\Scripts\Core\GamePresentation.cs" />
     <Compile Include="Assets\Scripts\Core\Rules51.cs" />

@@ -77,10 +77,9 @@ namespace Project51.Unity
         private const float TableRowGap = 12f; // tra le righe: due carte scelte una sopra l'altra (x1,12 e +4) non si toccano
         private const float AccusedHandShift = 6f * MockupUnit; // Partita4: mano scoperta 6 piu' fuori dal banner (ai lati a 74 invece di 68)
         private const float DuelRevealedCardHeight = 80f * MockupUnit, DuelRevealedStep = 60f * MockupUnit; // Partita: accusate 52x80 a passo 60
-        // Bordo #F3C969 delle carte accusate: spessore / larghezza della carta (Partita4 1,5 su 20; Partita 2 su 52, piu' l'alone).
-        private const float AccusedOutline = 1.5f / 20f, DuelAccusedOutline = 2f / 52f;
+        // Bordo #F3C969 delle carte accusate a 4 giocatori: spessore / larghezza della carta (Partita4 1,5 su 20). Nel 1v1 niente bordo (scelta utente 01/10).
+        private const float AccusedOutline = 1.5f / 20f;
         private static readonly Color AccusedGold = new Color32(0xF3, 0xC9, 0x69, 0xFF);
-        private static readonly Color AccusedGlowColor = new Color(0.95f, 0.79f, 0.41f, 0.6f);
         // 4 giocatori su schermi bassi (iPhone SE): sotto 150 di fascia la mano torna alta 272 come prima della Fase 6.
         private const float SmallHandMinBand = 150f, SmallHandScale = LocalHandCardDesignHeight / DuelHandCardHeight;
 
@@ -316,11 +315,10 @@ namespace Project51.Unity
                     }
 
                     cardView.SetRaiseOverride(-1f); // la vista puo' arrivare dal tavolo (resync, rivincita)
-                    // Scoperte da un accuso (mockup Partita, Partita4): bordo d'oro, nel 1v1 anche l'alone; al tocco il visore
+                    // Scoperte da un accuso: bordo d'oro solo a 4 giocatori (Partita4), nel 1v1 carte normali; al tocco il visore
                     // "Carte accusate da".
-                    bool duelHand = players.Count == 2;
-                    cardView.SetOutline(AccusedGold, hasAccuso ? duelHand ? DuelAccusedOutline : AccusedOutline : 0f);
-                    cardView.SetGlow(hasAccuso && duelHand, moveHintGlowSprite, AccusedGlowColor);
+                    cardView.SetOutline(AccusedGold, hasAccuso && players.Count != 2 ? AccusedOutline : 0f);
+                    cardView.SetGlow(false, null, default);
                     cardView.Tapped = hasAccuso ? new System.Action<CardView>(OnAccusedCardTapped) : null;
                     Vector3 position;
                     float baseRotation = 0f;

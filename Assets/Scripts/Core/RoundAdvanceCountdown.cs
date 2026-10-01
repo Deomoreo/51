@@ -5,7 +5,7 @@ namespace Project51.Core
     /// <summary>Only visible, unobscured reading time counts; promotion grants a fresh countdown.</summary>
     public sealed class RoundAdvanceCountdown
     {
-        public const float Duration = 8f;
+        public const float Duration = 10f; // "Si riparte da sola tra 10 secondi" (FineSmazzata, anche offline: scelta utente 01/10)
         public bool IsRunning { get; private set; }
         public float Remaining { get; private set; }
         private bool hadAuthority;

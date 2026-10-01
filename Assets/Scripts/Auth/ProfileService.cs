@@ -38,6 +38,8 @@ namespace Project51.Auth
         public const string DATA_TITLE_ID = "TitleId";
         // Aspetto come proprieta' del giocatore Photon: lo scrive AuthBootstrapper.PublishLook, lo legge ProfileCosmetics.ReadLook.
         public const string LookFrameKey = "fr", LookBannerKey = "bn", LookLevelKey = "lv";
+        // Profilo rapido al tavolo (01/10): partite, vittorie, scope totali e id PlayFab (per Aggiungi amico, Segnala, Silenzia).
+        public const string LookGamesKey = "gp", LookWinsKey = "gw", LookScopeKey = "sc", LookIdKey = "id";
         
         // Cache locale
         private Dictionary<string, string> _playerDataCache = new Dictionary<string, string>();
@@ -356,13 +358,16 @@ namespace Project51.Auth
         /// </summary>
         /// <param name="isWin">True se il giocatore ha vinto.</param>
         /// <param name="xpGained">XP guadagnato.</param>
-        public void RecordGameResult(bool isWin, int xpGained, Action onComplete = null)
+        /// <param name="scope">Scope fatte nella partita (totale del profilo rapido).</param>
+        public void RecordGameResult(bool isWin, int xpGained, int scope = 0, Action onComplete = null)
         {
+            scope = Math.Max(0, scope);
             var stats = new List<StatisticUpdate>
             {
                 new StatisticUpdate { StatisticName = STAT_TOTAL_GAMES, Value = TotalGames + 1 },
                 new StatisticUpdate { StatisticName = STAT_XP, Value = XP + xpGained }
             };
+            if (scope > 0) stats.Add(new StatisticUpdate { StatisticName = STAT_TOTAL_SCOPE, Value = TotalScope + scope });
             
             if (isWin)
             {
@@ -388,6 +393,7 @@ namespace Project51.Auth
                     _statisticsCache[STAT_TOTAL_GAMES] = TotalGames + 1;
                     _statisticsCache[STAT_XP] = XP + xpGained;
                     if (isWin) _statisticsCache[STAT_WINS] = Wins + 1;
+                    if (scope > 0) _statisticsCache[STAT_TOTAL_SCOPE] = TotalScope + scope;
                     if (newLevel != Level) _statisticsCache[STAT_LEVEL] = newLevel;
                     
                     Debug.Log($"[ProfileService] Game result recorded. Win: {isWin}, XP: +{xpGained}");

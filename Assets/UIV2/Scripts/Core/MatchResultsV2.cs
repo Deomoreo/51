@@ -55,8 +55,12 @@ namespace Project51.UIV2.Core
         /// <summary>Scoppio di luce sulla barra quando si sale di livello.</summary>
         public UIV2MoteField XpBurst;
 
+        [Header("UI51 Fase 7")]
+        [Tooltip("Grafica dei mockup FineSmazzata/FinePartita (UI51TableBuilder.BuildResults). Vuoto = vecchi pannelli.")]
+        public Project51.Unity.UI.UI51ResultsView View;
+
         private Action next, menu;
-        private bool finished, clicked;
+        private bool finished, clicked, wonMatch;
         private GameState shownState, celebratedState;
         private readonly RoundAdvanceCountdown autoAdvance = new RoundAdvanceCountdown();
         private InGameSettingsV2 settings;
@@ -64,7 +68,7 @@ namespace Project51.UIV2.Core
         private bool applicationPaused;
         // ponytail: guardia per riferimento; un resync che rimanda la stessa fine smazzata come nuovo oggetto la conterebbe due volte.
         private GameState countedState, recordedState;
-        private int matchScope, matchAccusi, xpFrom = -1, xpTo;
+        private int matchScope, matchAccusi, matchSettebelli, xpFrom = -1, xpTo;
         private bool guestXp;
         private Tween xpTween;
 
@@ -85,11 +89,12 @@ namespace Project51.UIV2.Core
 
         /// <summary>Nome di un concorrente: il giocatore, oppure a coppie i due compagni.</summary>
         public static string EntryName(GameState state, int entry) =>
-            string.Join(" + ", MatchScore.MembersOf(state, entry).Select(GameSocialV2.PlayerName));
+            string.Join(" e ", MatchScore.MembersOf(state, entry).Select(GameSocialV2.PlayerName));
 
         public void Show(GameState state, Action nextRound, Action mainMenu)
         {
             autoAdvance.Cancel();
+            captionSeconds = int.MinValue;
             shownState = state;
             next = nextRound;
             menu = mainMenu;
@@ -102,7 +107,8 @@ namespace Project51.UIV2.Core
             var order = Enumerable.Range(0, totals.Length).OrderByDescending(e => totals[e]).ToArray();
             var rows = finished ? MatchRows : RoundRows;
             CountLocalBonuses(state);
-            if (finished && recordedState != state) RecordMatch(order[0] == localEntry);
+            wonMatch = finished && order[0] == localEntry;
+            if (finished && recordedState != state) RecordMatch(wonMatch);
 
             for (int row = 0; row < rows.Length; row++)
             {
@@ -113,9 +119,17 @@ namespace Project51.UIV2.Core
                     MatchScore.IsCappotto(totals[entry]), winner: finished && row == 0);
             }
 
-            var breakdown = PunteggioManager.CalculateBreakdown(state);
-            if (finished) BindMatchEnd(state, breakdown, totals, order[0], localEntry);
-            else BindRoundEnd(state, breakdown);
+            if (View != null)
+            {
+                if (finished) View.BindMatch(state, localEntry, order[0], matchScope, matchAccusi, matchSettebelli);
+                else View.BindRound(state, target, localEntry);
+            }
+            else
+            {
+                var breakdown = PunteggioManager.CalculateBreakdown(state);
+                if (finished) BindMatchEnd(state, breakdown, totals, order[0], localEntry);
+                else BindRoundEnd(state, breakdown);
+            }
 
             RefreshContinue();
             (finished ? RoundPanel : MatchPanel).SetActive(false);
@@ -126,6 +140,7 @@ namespace Project51.UIV2.Core
         }
 
         private int showToken;
+        private int captionSeconds = int.MinValue; // ultimo conto scritto sotto PROSSIMA SMAZZATA
 
         /// <summary>La foto del tavolo va scattata prima che il pannello compaia, poi si mostra tutto insieme.</summary>
         private System.Collections.IEnumerator RevealAfterBlur(int token, int localEntry, int winner)
@@ -144,7 +159,8 @@ namespace Project51.UIV2.Core
             group.DOFade(1f, UIV2Motion.Enter).SetUpdate(true).SetLink(panel);
             foreach (var row in finished ? MatchRows : RoundRows)
                 if (row != null && row.gameObject.activeInHierarchy) row.AnimateScore();
-            if (finished) { PlayConfetti(); ShowXp(); }
+            if (View != null) View.Play(finished);
+            if (finished) { if (wonMatch || View == null) PlayConfetti(); ShowXp(); } // UI51: coriandoli solo per chi vince (mockup)
             if (finished && winner == localEntry && celebratedState != shownState)
             {
                 celebratedState = shownState;
@@ -161,11 +177,12 @@ namespace Project51.UIV2.Core
         {
             if (countedState == state) return;
             countedState = state;
-            if (state.RoundIndex <= 1) matchScope = matchAccusi = 0;
+            if (state.RoundIndex <= 1) matchScope = matchAccusi = matchSettebelli = 0;
             int local = GameModeService.Current.LocalPlayerIndex;
             if (local < 0 || local >= state.NumPlayers) return;
             matchScope += state.Players[local].ScopaCount;
             matchAccusi += state.Players[local].RoundAccusiCount;
+            if (state.Players[local].CapturedCards.Any(c => c.IsSetteBello)) matchSettebelli++;
         }
 
         /// <summary>E1: una registrazione per partita, sullo stesso progresso che mostra la Home (cloud se caricato, altrimenti locale).</summary>
@@ -183,7 +200,7 @@ namespace Project51.UIV2.Core
             xpFrom = cloudLoaded && !guest ? cloud.XP : local != null ? local.Exp : -1;
             xpTo = xpFrom + xp;
             if (local != null) local.RecordGameResult(won, xp);
-            if (cloudLoaded) cloud.RecordGameResult(won, xp);
+            if (cloudLoaded) cloud.RecordGameResult(won, xp, guest ? 0 : matchScope);
         }
 
         /// <summary>B5: uscire da una partita non ancora finita conta come sconfitta, senza XP.</summary>
@@ -201,6 +218,7 @@ namespace Project51.UIV2.Core
         private void ShowXp()
         {
             xpTween?.Kill();
+            if (View != null) { View.ShowXp(xpFrom, xpTo, guestXp); return; }
             if (XpRow == null) return;
             XpRow.SetActive(xpFrom >= 0);
             if (xpFrom < 0) return;
@@ -326,15 +344,22 @@ namespace Project51.UIV2.Core
         {
             if (GamePreferences.ReducedGraphics) StopConfetti();
             else if (finished && MatchPanel != null && MatchPanel.activeInHierarchy &&
-                     ConfettiRoot != null && !ConfettiRoot.gameObject.activeSelf) PlayConfetti();
+                     ConfettiRoot != null && !ConfettiRoot.gameObject.activeSelf && (wonMatch || View == null)) PlayConfetti();
         }
 
         // Solo l'host fa proseguire; se l'host esce, Photon passa il ruolo a un altro giocatore.
         private void RefreshContinue()
         {
             bool canAdvance = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
-            string label = canAdvance ? (finished ? "RIVINCITA" : autoAdvance.IsRunning
+            string label = canAdvance ? (finished ? "RIVINCITA" : View != null ? "PROSSIMA SMAZZATA" : autoAdvance.IsRunning
                 ? "CONTINUA · " + Mathf.CeilToInt(autoAdvance.Remaining) + "s" : "CONTINUA") : "ATTENDI L'HOST";
+            // UI51: il conto sta sotto il pulsante ("Si riparte da sola tra N secondi"), solo per chi fa proseguire.
+            int seconds = canAdvance && autoAdvance.IsRunning ? Mathf.CeilToInt(autoAdvance.Remaining) : -1;
+            if (View != null && !finished && seconds != captionSeconds)
+            {
+                captionSeconds = seconds;
+                View.SetRoundCaption(seconds >= 0 ? "Si riparte da sola tra " + seconds + " secondi" : null);
+            }
             var button = finished ? Rematch : RoundContinue;
             var text = finished ? RematchLabel : RoundContinueLabel;
             button.interactable = canAdvance;
