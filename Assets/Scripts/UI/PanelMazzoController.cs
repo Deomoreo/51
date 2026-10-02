@@ -10,7 +10,7 @@ namespace Project51.Unity
     /// Modalita: uno scale sul frame faceva risaltare troppo il bordo dorato). Aggiorna il
     /// ventaglio/didascalia in anteprima quando si seleziona una
     /// cella (live, senza aspettare conferma) e scrive sul ValueText del DeckSelector in
-    /// Home SOLO alla conferma "USA QUESTO" (vedi UI_SPEC_PanelMazzo.md §5).
+    /// Home SOLO alla conferma "USA QUESTO".
     ///
     /// Solo Mazzo, niente tab: Accuso/Emoticon vivono nella pagina CARTE dedicata
     /// (DeckPageController/DeckPageBuilder), NON in questo pannello modale - un tentativo

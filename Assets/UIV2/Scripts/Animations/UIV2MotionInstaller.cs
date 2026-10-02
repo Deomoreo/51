@@ -41,7 +41,7 @@ namespace Project51.UIV2.Animations
             if (button.GetComponent<Project51.UI51.UI51Press>() != null) return false; // UI51 ha la sua pressione
             string name = button.name.ToLowerInvariant();
             if (name.Contains("dimmer") || name.Contains("dimbackground") || name == "dim" || name.Contains("backdrop") || name.Contains("overlay")) return false;
-            if (button.GetComponent<DismissOnBackdrop>() != null || button.GetComponent("PrimaryButtonUI") != null) return false;
+            if (button.GetComponent<DismissOnBackdrop>() != null) return false;
             return true;
         }
 
