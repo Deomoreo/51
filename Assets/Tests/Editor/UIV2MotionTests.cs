@@ -197,8 +197,8 @@ namespace Project51.Tests
                 var dim = Child("Dim", panel.transform, typeof(UnityEngine.UI.Button));
                 bool clicked = false;
                 button.onClick.AddListener(() => clicked = true);
-                Assert.AreEqual(1, Project51.EditorTools.UIV2MotionBuilder.Apply(panel));
-                Assert.AreEqual(0, Project51.EditorTools.UIV2MotionBuilder.Apply(panel));
+                Assert.AreEqual(1, UIV2MotionInstaller.Apply(panel));
+                Assert.AreEqual(0, UIV2MotionInstaller.Apply(panel));
                 Assert.IsNull(dim.GetComponent<UIV2ButtonFeedback>());
                 button.onClick.Invoke();
                 Assert.IsTrue(clicked);

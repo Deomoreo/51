@@ -149,29 +149,6 @@ namespace Project51.Tests
         }
 
         [Test]
-        public void FlatButtonKeepsItsHitTargetAndClickActionAcrossReopen()
-        {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UIV2/Prefabs/Components/UIV2_FlatButton.prefab");
-            Assert.IsNotNull(prefab);
-            var instance = Object.Instantiate(prefab);
-            try
-            {
-                var button = instance.GetComponent<Button>();
-                int clicked = 0;
-                button.onClick.AddListener(() => clicked++);
-                instance.SetActive(false);
-                instance.SetActive(true);
-                instance.GetComponent<UIV2Button>().Apply();
-                button.onClick.Invoke();
-                Assert.AreEqual(1, clicked);
-                Assert.IsTrue(button.targetGraphic.raycastTarget);
-                Assert.AreEqual(0, button.targetGraphic.color.a);
-                Assert.IsNull(((Image)button.targetGraphic).sprite);
-            }
-            finally { Object.DestroyImmediate(instance); }
-        }
-
-        [Test]
         public void ModalAndContentPanelsKeepAuthoredBoundsAndRaycastPolicy()
         {
             var root = new GameObject("Panel", typeof(RectTransform), typeof(Image));

@@ -45,7 +45,7 @@ namespace Project51.UIV2.Components
 
         [SerializeField] private Color normalLabelColor = new Color32(148, 172, 202, 255);
         [SerializeField] private Color selectedLabelColor = new Color32(255, 224, 140, 255);
-        // 2.20: scritte ExtraBold con contorno e ombra (BottomNavPolishBuilder); vuoti = materiale del prefab.
+        // 2.20: scritte ExtraBold con contorno e ombra, assegnate nella scena; vuoti = materiale del prefab.
         [SerializeField] private Material normalLabelMaterial;
         [SerializeField] private Material selectedLabelMaterial;
 

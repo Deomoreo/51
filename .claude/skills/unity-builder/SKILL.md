@@ -9,9 +9,10 @@ Scene/prefab changes go through Editor builders run via Unity-MCP, never hand-ed
 on objects with live runtime scripts.
 
 ## Before writing or reusing a builder
-1. Search for an existing builder that already owns the target (`Assets/Editor/*Builder*.cs`,
+1. Search for an existing builder that already owns the target (`Assets/UI51/Editor/UI51*Builder.cs`,
+   menu Tools/UI51, shared helpers in `UI51Build.cs`; older ones in `Assets/Editor/*Builder*.cs`,
    graphify query). Extend it with a small additive, idempotent method instead of adding a new one.
-2. Check the template you copy from: many older Home builders (PanelMazzo/PanelModalita) do NOT force their scene.
+2. Check the template you copy from: it must force its scene (see below).
 
 ## Required shape
 - First real action: `EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single)` for a hardcoded scene path.
@@ -19,8 +20,6 @@ on objects with live runtime scripts.
 - If the scene is dirty, save it first (otherwise `SaveCurrentModifiedScenesIfUserWantsTo` pops a modal dialog).
 - Create-or-reuse children by name (idempotent: running twice = same result).
 - End with `EditorSceneManager.MarkSceneDirty` + `SaveScene`.
-- `HomeScreenBuilder.Build()` recreates HomeScreen.unity from scratch and wipes other tools' work.
-  Never re-run it to "add one thing".
 
 ## Gotchas
 - Gameplay/Core are separate asmdefs; `UI/` is not. Cross-reference via reflection (see `TrySendAccusoSync`), not `using`.
@@ -28,7 +27,7 @@ on objects with live runtime scripts.
   `SetActive(true)`, set, restore.
 - Don't `SetActive(false)` a root to hide one Image; `Set*`/`Bind` must null-guard optional overrides.
 - Size sprites from their visible alpha bbox; for 9-slice at non-native size use
-  `pixelsPerUnitMultiplier = nativeH / targetH` (helper `AddSlicedImage` in `UIV2FoundationBuilder.cs`).
+  `pixelsPerUnitMultiplier = nativeH / targetH` on the Image directly.
 - Source files may be non-UTF8: check for non-ASCII bytes before Edit/Write.
 
 ## Run and check

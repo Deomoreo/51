@@ -22,7 +22,7 @@ namespace Project51.Unity.UI
         [SerializeField] private Image avatarImage;
 
         [Header("Scope dietro il banner (Assets/UI_SPEC_Tavolo.md, sezione 4)")]
-        [Tooltip("Fino a 4 slot carta miniatura, gia' posizionati in ordine da TablePlayerBannersBuilder; qui vengono solo mostrati/nascosti e centrati in base al conteggio.")]
+        [Tooltip("Fino a 4 slot carta miniatura, gia' posizionati in ordine nella scena; qui vengono solo mostrati/nascosti e centrati in base al conteggio.")]
         [SerializeField] private Image[] scopeCardSlots = new Image[0];
         [SerializeField] private GameObject scopeBadge;
         [SerializeField] private TMP_Text scopeBadgeText;

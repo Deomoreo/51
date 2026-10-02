@@ -82,7 +82,7 @@ def emoticons(cols=4, rows=2, cell=448, out_cell=256):
     """Fogli 4x2 (8 fotogrammi) 1774x887 -> 1024x512, fotogrammi 256x256 (bolla 76px, banner 36px).
 
     Nei fogli le facce non sono centrate nelle celle (fino a ~30 px di deriva): come
-    Tools/UIV2/Build Animated Emoticons, ogni fotogramma si allinea al primo (correlazione delle
+    nel vecchio builder delle emoticon animate, ogni fotogramma si allinea al primo (correlazione delle
     maschere alfa) e usa solo i pixel della propria cella, cosi' l'animazione non trema.
     """
     for f in sorted(os.listdir(SRC)):

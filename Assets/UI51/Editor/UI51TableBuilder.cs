@@ -260,9 +260,7 @@ namespace Project51.UI51.EditorTools
         /// avversario a 82 dalla safe area in alto, come la barra in alto: sui telefoni lunghi l'area di design e' piu'
         /// bassa dello schermo. Le carte seguono i banner (CardViewManager: misure Duel* nel 1v1, i suoi campi nei 4 giocatori).
         /// Anche i 4 giocatori prendono questi posti per il proprio banner e quello in alto; i laterali restano (Fase 6).
-        /// Non rieseguire i vecchi builder del tavolo (UIV2FoundationBuilder Table, RoomTable, Emoticon Quick Bar e Animated
-        /// Emoticons, FrontendExpansionBuilder Game, TablePlayerBannersBuilder, TableActionButtonsBuilder, TableDesignAreaBuilder,
-        /// TableFeltBuilder, UIV2 Build Accuso Window): rimettono i posti, il tavolo, le emoticon e l'accuso di prima.
+        /// I vecchi builder del tavolo (UIV2 e Table*) sono stati rimossi in Fase 10: questo e' l'unico builder del layout.
         /// </summary>
         static void BuildLayout(UnityEngine.SceneManagement.Scene scene, Transform seatLocal, Transform seatTop, Transform seatLeft, Transform seatRight)
         {

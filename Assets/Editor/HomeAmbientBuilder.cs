@@ -15,8 +15,9 @@ namespace Project51.EditorTools
     /// Posizioni in pixel dell'artwork base a meta' risoluzione (941x1672; il PNG e' 1882x3344,
     /// stesse proporzioni), origine in alto a sinistra; movimenti in unita' canvas (riferimento 1080x1920).
     /// </summary>
-    public static partial class UIV2FoundationBuilder
+    public static class HomeAmbientBuilder
     {
+        private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         private const string HomeAmbientFolder = "Assets/UI/Sprites/DragonsHoard/sprites_unity/sprites_unity/BackgroundHome/";
         private const string FlameMaterialPath = "Assets/UIV2/Art/Shaders/UIV2FlameWobble.mat";
         private const float BaseWidth = 941f, BaseHeight = 1672f;
@@ -162,7 +163,7 @@ namespace Project51.EditorTools
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[UIV2FoundationBuilder] Sfondo Home animato ricostruito.");
+            Debug.Log("[HomeAmbientBuilder] Sfondo Home animato ricostruito.");
         }
 
         private static void OverlayImage(RectTransform frame, OverlayLayer layer)
@@ -249,6 +250,29 @@ namespace Project51.EditorTools
             importer.maxTextureSize = maxSize;
             importer.mipmapEnabled = mipmaps;
             importer.SaveAndReimport();
+        }
+
+        private static RectTransform CreateUIObject(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            var rect = (RectTransform)go.transform;
+            rect.SetParent(parent, false);
+            return rect;
+        }
+
+        private static RectTransform FindInScene(UnityEngine.SceneManagement.Scene scene, string path)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name != path.Substring(path.LastIndexOf('/') + 1)) continue;
+                    var full = t.name;
+                    for (var p = t.parent; p != null; p = p.parent) full = p.name + "/" + full;
+                    if (full.EndsWith(path)) return t as RectTransform;
+                }
+            }
+            throw new System.Exception($"{path} non trovato in {scene.name}");
         }
     }
 }
