@@ -52,6 +52,7 @@ namespace Project51.Unity.UI
         private readonly int[] ui51Looks = { int.MinValue, int.MinValue, int.MinValue, int.MinValue }; // per slot; livello -1 da' chiavi negative
 
         private TurnController turnController;
+        private GameSceneInitializer initializer;
         private CardViewManager cardViewManager;
         private Sprite matchCardBack;
 
@@ -242,6 +243,8 @@ namespace Project51.Unity.UI
                 if (owner != null)
                 {
                     view.Stats = ProfileCosmetics.ReadStats(owner.CustomProperties, out view.Games, out view.Wins, out view.Scope, out view.PlayFabId);
+                    // Un ospite si puo' silenziare e segnalare (2.55), non aggiungere ne' bloccare: il suo account dura una sessione.
+                    if (view.PlayFabId == null && (view.PlayFabId = ProfileCosmetics.GuestId(owner.CustomProperties)) != null) view.Guest = true;
                     // Aggiungi amico / Segnala partono dal mio account: da ospite niente pulsanti.
                     if (auth == null || auth.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin) view.PlayFabId = null;
                 }
@@ -407,6 +410,13 @@ namespace Project51.Unity.UI
             return slot >= 0 && slot < ui51Banners.Length ? ui51Banners[slot] : null;
         }
 
+        /// <summary>Banner UI51 del giocatore assoluto p (null se non pronto).</summary>
+        public Project51.UI51.PlayerBanner UI51BannerForPlayer(int p)
+        {
+            var state = turnController != null ? turnController.GameState : null;
+            return state != null ? UI51Banner(ResolveRelativeSlot(p, GameModeService.Current.LocalPlayerIndex, state.NumPlayers)) : null;
+        }
+
         /// <summary>
         /// Stessi dati del banner storico, senza punteggio (in UI51 sta nella pillola in alto) e
         /// senza mazzetto prese (in UI51 e' il numero dentro al banner).
@@ -421,12 +431,15 @@ namespace Project51.Unity.UI
                 ui51Avatars[slot] = avatar;
                 banner.avatar.SetAvatar(avatar);
             }
-            banner.SetTurn(p == turnController.CurrentPlayerIndex);
+            int local = GameModeService.Current.LocalPlayerIndex;
+            // Mockup MomentiPartita: anello blu quando tocca a un altro, oro al proprio turno.
+            banner.SetTurn(p == turnController.CurrentPlayerIndex, p != local);
+            if (initializer == null) initializer = FindObjectOfType<GameSceneInitializer>();
+            banner.SetOffline(initializer != null && initializer.IsDisconnected(p));
             banner.SetCaptures(turnController.GetDisplayedCapturedCount(p));
             banner.SetCardBack(GetMatchCardBack());
             banner.SetScope(GetScopeSprites(player));
             var state = turnController.GameState;
-            int local = GameModeService.Current.LocalPlayerIndex;
             ApplyLook(banner, slot, p, state.TeamMode && p != local && MatchScore.EntryOf(state, p) == MatchScore.EntryOf(state, local));
         }
 

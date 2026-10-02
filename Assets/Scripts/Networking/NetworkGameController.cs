@@ -2,6 +2,7 @@ using UnityEngine;
 using Photon.Pun;
 using Project51.Core;
 using Project51.Unity;
+using Project51.Unity.UI;
 using System.Collections.Generic;
 
 namespace Project51.Networking
@@ -210,6 +211,7 @@ namespace Project51.Networking
             // Subscribe to TurnController events
             turnController.OnLocalPlayerMoveRequested += SendMove;
             turnController.OnMoveExecuted += OnMoveApplied;
+            turnController.SeatInactive += SendSeatInactive;
 
             // If we're in multiplayer and we're the Master Client, we'll send the initial GameState
             // after TurnController.StartNewGame() is called
@@ -241,6 +243,10 @@ namespace Project51.Networking
         /// aggiornare il proprio stato locale in modo indipendente ma coerente con tutti gli altri
         /// (stessa foto stabile dei posti, vedi GameSceneInitializer._stableActorOrder).
         /// </summary>
+        // Rientro dopo il riavvio dell'app: i 60 s del posto tenuto partono dall'ultima pausa durante la partita.
+        private void OnApplicationPause(bool paused) => Project51.Auth.ModerationService.Paused(paused);
+        private void OnApplicationQuit() => Project51.Auth.ModerationService.Paused(true);
+
         public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
         {
             if (turnController == null || turnController.GameState == null)
@@ -267,10 +273,15 @@ namespace Project51.Networking
                 Debug.Log($"<color=orange>[NET] Player {otherPlayer.NickName} (seat {leftPlayerIndex}) left mid-match - converting to bot.</color>");
 
             gsi.MarkPlayerDisconnected(leftPlayerIndex);
+            // Uscita vera senza piu' avversari umani: vittoria per abbandono, niente avviso del bot.
+            var results = otherPlayer.IsInactive ? null : FindObjectOfType<Project51.UIV2.Core.MatchResultsV2>();
+            if (results != null && results.OpponentLeft(otherPlayer)) return;
+            if (gsi.IsRemovedForInactivity(leftPlayerIndex)) return; // avvisato gia' da RPC_SeatInactive
             // IsInactive: disconnessione (puo' rientrare entro PlayerTtl); altrimenti ha lasciato la partita.
-            GamePresentation.ShowConnectionNotice(otherPlayer.IsInactive
-                ? $"{otherPlayer.NickName} si è disconnesso: gioca un bot finché non rientra"
-                : $"{otherPlayer.NickName} ha lasciato la partita: gioca un bot", 4f);
+            // Mockup MomentoDisconnesso: avviso breve col suo avatar, l'icona resta sul banner finche' non rientra.
+            GamePresentation.ShowPlayerNotice(leftPlayerIndex, otherPlayer.IsInactive
+                ? $"{otherPlayer.NickName} si è disconnesso" : $"{otherPlayer.NickName} ha lasciato la partita",
+                otherPlayer.IsInactive ? "Gioca un bot finché non rientra" : "Al suo posto gioca un bot", true);
         }
 
         /// <summary>
@@ -283,55 +294,87 @@ namespace Project51.Networking
 
             var gsi = FindObjectOfType<GameSceneInitializer>();
             int seat = gsi != null ? gsi.GetPlayerIndexForActor(newPlayer.ActorNumber) : -1;
-            if (seat < 0) return;
+            if (seat < 0 || gsi.IsRemovedForInactivity(seat)) return; // tolto per inattivita': il posto resta al bot
 
             if (logNetworkMoves)
                 Debug.Log($"<color=green>[NET] Player {newPlayer.NickName} rejoined seat {seat}.</color>");
             gsi.MarkPlayerReconnected(seat);
-            GamePresentation.ShowConnectionNotice($"{newPlayer.NickName} è rientrato in partita", 3f);
+            GamePresentation.ShowPlayerNotice(seat, $"{newPlayer.NickName} è rientrato in partita", null, false);
         }
 
         #region Reconnection
 
         /// <summary>Tempo concesso per rientrare: deve coincidere con il PlayerTtl della stanza.</summary>
         public const float RejoinWindowSeconds = 60f;
+        /// <summary>Tentativi prima della card "Nessuna connessione" (mockup Connessione); RIPROVA ne concede altrettanti.</summary>
+        public const int MaxRejoinAttempts = 5;
 
         private Coroutine _reconnectCoroutine;
+        private float _seatDeadline;
 
         public override void OnDisconnected(Photon.Realtime.DisconnectCause cause)
         {
             // Uscita volontaria (menu) o partita non ancora iniziata: niente riconnessione.
-            if (cause == Photon.Realtime.DisconnectCause.DisconnectByClientLogic) return;
+            if (cause == Photon.Realtime.DisconnectCause.DisconnectByClientLogic || cause == Photon.Realtime.DisconnectCause.ApplicationQuit) return;
             if (turnController == null || turnController.GameState == null || !GameModeService.Current.IsMultiplayer) return;
+            turnController.SetConnected(false); // il tempo del turno si ferma finche' non si rientra
             if (_reconnectCoroutine != null) return;
 
             Debug.LogWarning($"[NET] Disconnected mid-match ({cause}): trying to rejoin for {RejoinWindowSeconds}s.");
+            _seatDeadline = Time.unscaledTime + RejoinWindowSeconds;
             _reconnectCoroutine = StartCoroutine(ReconnectAndRejoinLoop());
         }
 
+        /// <summary>
+        /// Overlay "Riconnessione…" con il tentativo e i secondi del posto (PlayerTtl). Dopo MaxRejoinAttempts falliti, se il posto
+        /// e' ancora tuo, "Nessuna connessione": RIPROVA rifa' i tentativi, Esci torna al menu. Scaduto il posto si torna al menu.
+        /// </summary>
         private System.Collections.IEnumerator ReconnectAndRejoinLoop()
         {
-            float deadline = Time.unscaledTime + RejoinWindowSeconds;
+            int attempt = 0;
             float nextAttempt = 0f;
-            while (Time.unscaledTime < deadline && !PhotonNetwork.InRoom)
+            while (Time.unscaledTime < _seatDeadline && !PhotonNetwork.InRoom)
             {
-                int secondsLeft = Mathf.CeilToInt(deadline - Time.unscaledTime);
-                GamePresentation.ShowConnectionNotice($"Connessione persa. Riconnessione in corso… {secondsLeft}s");
-                if (Time.unscaledTime >= nextAttempt && PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected)
+                bool idle = PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected;
+                if (idle && attempt >= MaxRejoinAttempts) break;
+                if (idle && Time.unscaledTime >= nextAttempt)
                 {
+                    attempt++;
                     nextAttempt = Time.unscaledTime + 3f;
                     PhotonNetwork.ReconnectAndRejoin();
                 }
+                UI51ConnectionOverlay.ShowReconnecting(Mathf.Max(1, attempt), MaxRejoinAttempts, Mathf.CeilToInt(_seatDeadline - Time.unscaledTime));
                 yield return new WaitForSecondsRealtime(0.25f);
             }
 
             _reconnectCoroutine = null;
             if (PhotonNetwork.InRoom) yield break; // OnJoinedRoom ha gia' gestito il rientro
 
+            if (Time.unscaledTime < _seatDeadline)
+            {
+                UI51ConnectionOverlay.ShowError(true, RetryRejoin, ExitAfterDisconnect);
+                while (_reconnectCoroutine == null && !PhotonNetwork.InRoom && Time.unscaledTime < _seatDeadline) yield return null;
+                if (_reconnectCoroutine != null || PhotonNetwork.InRoom) yield break;
+            }
+
+            UI51ConnectionOverlay.Hide();
             GamePresentation.ShowConnectionNotice("Impossibile rientrare nella partita. Ritorno al menu…");
             yield return new WaitForSecondsRealtime(2.5f);
             AppFlowManager.GoToMainMenu();
         }
+
+        private void RetryRejoin()
+        {
+            if (_reconnectCoroutine == null && !PhotonNetwork.InRoom) _reconnectCoroutine = StartCoroutine(ReconnectAndRejoinLoop());
+        }
+
+        private static void ExitAfterDisconnect()
+        {
+            UI51ConnectionOverlay.Hide();
+            AppFlowManager.GoToMainMenu();
+        }
+
+        private bool _checkOpponentsOnState; // rientro in app: il controllo degli abbandoni aspetta lo stato del master
 
         public override void OnJoinedRoom()
         {
@@ -344,16 +387,23 @@ namespace Project51.Networking
                 _reconnectCoroutine = null;
             }
             Debug.Log("<color=green>[NET] Rejoined the match room.</color>");
+            turnController.SetConnected(true);
+            UI51ConnectionOverlay.Hide();
             GamePresentation.ShowConnectionNotice("Sei di nuovo in partita!", 2.5f);
 
-            FindObjectOfType<GameSceneInitializer>()?.SyncSeatsWithRoom();
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            gsi?.SyncSeatsWithRoom();
+            // Tolto per inattivita' mentre eravamo fuori (RPC_SeatInactive non arriva a chi non c'e'): si esce come allora.
+            if (gsi != null && gsi.IsRemovedForInactivity(GameModeService.Current.LocalPlayerIndex)) { turnController.LeaveForInactivity(); return; }
             if (PhotonNetwork.IsMasterClient)
             {
                 // Tutti gli altri sono usciti: questo client e' l'autorita', riparte da dove era.
                 turnController.OnBecameMasterClient();
+                FindObjectOfType<Project51.UIV2.Core.MatchResultsV2>()?.CheckOpponentsAfterRejoin();
             }
             else
             {
+                _checkOpponentsOnState = true;
                 RequestResync();
             }
         }
@@ -392,7 +442,7 @@ namespace Project51.Networking
 
             // Rimanda lo stato corrente a tutti: un client potrebbe essere rimasto indietro
             // proprio nell'istante della migrazione (vecchio master disconnesso a meta' di un invio).
-            SendInitialGameState(turnController.GameState);
+            StartCoroutine(SendStateWhenSettled(null));
 
             // Se il turno corrente era di un bot rimasto fermo in attesa che il vecchio master lo
             // giocasse, nessun altro evento lo farebbe ripartire da solo (stesso motivo di
@@ -402,11 +452,15 @@ namespace Project51.Networking
 
         private void OnDestroy()
         {
+            // L'overlay vive tra le scene: non deve restare sopra la Home se si esce dal tavolo durante il rientro.
+            if (_reconnectCoroutine != null || UI51ConnectionOverlay.IsShown) UI51ConnectionOverlay.Hide();
+
             // Unsubscribe from events
             if (turnController != null)
             {
                 turnController.OnLocalPlayerMoveRequested -= SendMove;
                 turnController.OnMoveExecuted -= OnMoveApplied;
+                turnController.SeatInactive -= SendSeatInactive;
             }
 
             if (_requestInitialStateCoroutine != null)
@@ -425,9 +479,18 @@ namespace Project51.Networking
         {
             // Piccolo margine per dare tempo al proprio PhotonView di essere pronto.
             yield return new WaitForSeconds(0.3f);
+            float since = Time.unscaledTime;
 
             while (turnController != null && turnController.GameState == null)
             {
+                // Rientro dopo il riavvio dell'app: se nessuno manda lo stato (siamo rimasti soli, master muto) si torna in Home,
+                // dove l'abbandono conta come prima.
+                if (Project51.Auth.ModerationService.RejoinedAfterRestart && (PhotonNetwork.IsMasterClient || Time.unscaledTime - since > 20f))
+                {
+                    Project51.Auth.ModerationService.RejoinGivenUp();
+                    AppFlowManager.GoToMainMenu();
+                    yield break;
+                }
                 if (logNetworkMoves)
                     Debug.Log("<color=cyan>[NET] Requesting initial GameState from Master Client...</color>");
 
@@ -478,8 +541,27 @@ namespace Project51.Networking
             if (logNetworkMoves)
                 Debug.Log($"<color=cyan>[NET] Resending initial GameState to {(info.Sender != null ? info.Sender.NickName : "?")} on request</color>");
 
+            StartCoroutine(SendStateWhenSettled(info.Sender));
+        }
+
+        // Ultima mossa mandata da qui, finche' il server non la rimanda indietro (AllViaServer).
+        private int lastSentTurnId = -1;
+        private GameState lastSentState;
+
+        /// <summary>
+        /// Stato completo a chi lo chiede (null = a tutti gli altri) solo a tavolo fermo e senza una propria mossa ancora in viaggio:
+        /// altrimenti mancherebbe una mossa che il richiedente ha gia' ricevuto e scartato, e nessuno gliela rimanderebbe.
+        /// </summary>
+        private System.Collections.IEnumerator SendStateWhenSettled(Photon.Realtime.Player target)
+        {
+            float until = Time.unscaledTime + 5f;
+            while (Time.unscaledTime < until && turnController != null && turnController.GameState != null &&
+                   (turnController.IsBusy || lastSentState == turnController.GameState && TurnController.TurnId(turnController.GameState) <= lastSentTurnId))
+                yield return null;
+            if (!PhotonNetwork.IsMasterClient || turnController == null || turnController.GameState == null) yield break;
             string gameStateJson = SerializeGameState(turnController.GameState);
-            photonView.RPC(nameof(RPC_ReceiveInitialGameState), info.Sender, gameStateJson);
+            if (target != null) photonView.RPC(nameof(RPC_ReceiveInitialGameState), target, gameStateJson);
+            else photonView.RPC(nameof(RPC_ReceiveInitialGameState), RpcTarget.Others, gameStateJson);
         }
 
         #endregion
@@ -504,6 +586,9 @@ namespace Project51.Networking
                 return;
             }
 
+            // Moderazione: da qui la partita online e' "in corso" (chiudere l'app prima della fine conta come abbandono).
+            Project51.Auth.ModerationService.MatchInProgress();
+
             // Serialize move to JSON
             string moveJson = SerializeMove(move);
 
@@ -512,8 +597,12 @@ namespace Project51.Networking
                 Debug.Log($"<color=cyan>[NET] Sending move: {move}</color>");
             }
 
-            // Send to all clients (including self)
-            photonView.RPC(nameof(RPC_ExecuteMove), RpcTarget.All, moveJson);
+            // A tutti passando dal server, anche a se stessi: ogni telefono applica le mosse nello stesso ordine, cosi' di due mosse per
+            // lo stesso turno (chi gioca e l'arbitro allo scadere) vale ovunque la stessa, la prima (TurnController.TurnId).
+            int turnId = turnController != null && turnController.GameState != null ? TurnController.TurnId(turnController.GameState) : -1;
+            lastSentTurnId = turnId;
+            lastSentState = turnController != null ? turnController.GameState : null;
+            photonView.RPC(nameof(RPC_ExecuteMove), RpcTarget.AllViaServer, moveJson, turnId, move.Timeout);
         }
 
         #endregion
@@ -574,7 +663,7 @@ namespace Project51.Networking
         /// Esegue la mossa localmente per mantenere il GameState sincronizzato.
         /// </summary>
         [PunRPC]
-        private void RPC_ExecuteMove(string moveJson, PhotonMessageInfo info)
+        private void RPC_ExecuteMove(string moveJson, int turnId, bool timeout, PhotonMessageInfo info)
         {
             if (turnController == null)
             {
@@ -596,8 +685,59 @@ namespace Project51.Networking
                 Debug.Log($"<color=yellow>[NET] Received move from {senderName}: {move}</color>");
             }
 
+            // Una mossa vale solo dal telefono di quel posto, dal master (bot, posti scollegati) o dall'arbitro del turno allo scadere:
+            // un'app modificata non gioca per gli altri ne' per un posto tolto per inattivita'. Una carta non giocata da chi siede li'
+            // e' sempre un tempo scaduto.
+            move.TurnId = turnId;
+            move.Timeout = timeout;
+            var gsi = info.Sender != null ? FindObjectOfType<GameSceneInitializer>() : null;
+            if (gsi != null)
+            {
+                bool owner = gsi.GetPlayerIndexForActor(info.Sender.ActorNumber) == move.PlayerIndex && !GameModeService.Current.IsBotPlayer(move.PlayerIndex);
+                if (!owner && !info.Sender.IsMasterClient && info.Sender.ActorNumber != gsi.RefereeActorFor(move.PlayerIndex))
+                {
+                    Debug.LogWarning($"[NET] Move for seat {move.PlayerIndex} from {info.Sender.NickName} ignored: not their seat.");
+                    return;
+                }
+                if (!owner) move.Timeout = true;
+            }
+
             // Execute move locally with fromNetwork=true to prevent re-broadcasting
             turnController.ExecuteMove(move, fromNetwork: true);
+        }
+
+        /// <summary>Arbitro: un posto e' arrivato a 3 tempi scaduti di fila (TurnController.SeatInactive). Lo sanno tutti.</summary>
+        private void SendSeatInactive(int seat)
+        {
+            if (PhotonNetwork.InRoom) photonView.RPC(nameof(RPC_SeatInactive), RpcTarget.AllViaServer, seat);
+        }
+
+        /// <summary>
+        /// Posto tolto per inattivita' (scelta dell'utente 02/10): passa per sempre al bot e per la partita e' un abbandono, anche se
+        /// quel telefono resta nella stanza (vittoria per abbandono con le solite regole). Il suo telefono, se risponde, esce come con
+        /// Abbandona. Lo decide l'arbitro del posto (il master, o chi lo sostituisce quando il posto e' del master).
+        /// </summary>
+        [PunRPC]
+        private void RPC_SeatInactive(int seat, PhotonMessageInfo info)
+        {
+            if (info.Sender == null || turnController == null || turnController.GameState == null) return;
+            if (seat < 0 || seat >= turnController.GameState.NumPlayers) return;
+            var gsi = FindObjectOfType<GameSceneInitializer>();
+            if (gsi == null || !info.Sender.IsMasterClient && info.Sender.ActorNumber != gsi.RefereeActorFor(seat)) return;
+            if (GameModeService.Current.IsLocalPlayer(seat))
+            {
+                turnController.LeaveForInactivity();
+                return;
+            }
+            if (gsi.IsRemovedForInactivity(seat)) return;
+            string name = Project51.UIV2.Core.GameSocialV2.PlayerName(seat);
+            gsi.MarkPlayerInactive(seat, info.Sender.IsLocal);
+            int actor = -1;
+            foreach (var r in gsi.Roster()) if (r.seat == seat) actor = r.actor;
+            var player = PhotonNetwork.CurrentRoom != null ? PhotonNetwork.CurrentRoom.GetPlayer(actor) : null;
+            var results = FindObjectOfType<Project51.UIV2.Core.MatchResultsV2>();
+            if (player != null && results != null && results.OpponentLeft(player)) return; // vittoria per abbandono
+            GamePresentation.ShowPlayerNotice(seat, $"{name} è uscito: 3 turni senza giocare", "Al suo posto gioca un bot", true);
         }
 
         /// <summary>
@@ -632,6 +772,21 @@ namespace Project51.Networking
 
             turnController.SetNetworkGameState(gameState);
             Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
+            if (Project51.Auth.ModerationService.RejoinedAfterRestart)
+            {
+                // Di nuovo al tavolo dopo il riavvio: la partita torna di questa esecuzione e chi e' assente gioca col bot.
+                Project51.Auth.ModerationService.AdoptRejoinedMatch();
+                var seats = FindObjectOfType<GameSceneInitializer>();
+                seats?.SyncSeatsWithRoom();
+                if (seats != null && seats.IsRemovedForInactivity(GameModeService.Current.LocalPlayerIndex)) { turnController.LeaveForInactivity(); return; }
+                _checkOpponentsOnState = true;
+            }
+            // Rientro: stato completo anche per chi ha lasciato la partita mentre eravamo scollegati (vittoria per abbandono).
+            if (_checkOpponentsOnState)
+            {
+                _checkOpponentsOnState = false;
+                FindObjectOfType<Project51.UIV2.Core.MatchResultsV2>()?.CheckOpponentsAfterRejoin();
+            }
 
             // Non serve piu' richiedere lo stato: fermiamo eventuale retry in corso.
             if (_requestInitialStateCoroutine != null)

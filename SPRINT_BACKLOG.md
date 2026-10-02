@@ -9,7 +9,652 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 01/10, versione 2.37
+## ▶ PUNTO DI RIPRESA — 02/10, versione 2.63
+
+**Giro lungo sui mockup (01/10, "continuiamo coi mockup, non fermarti"):** si va avanti fase per fase; ogni versione qui sotto è una fase o un pezzo di fase. Le scelte che ho preso da solo sono elencate in ogni versione sotto "Scelte mie, da confermare".
+
+**Dove siamo (2.63):** Fase 15 (Progressione) fatta con le tue quattro scelte del 02/10: LivelloSu, Forziere + ForziereAperto, Trofei, Classifica (sotto, alla 2.63). Resta solo la Fase 10 (Pulizia): prima ti preparo la lista file per file e tu la confermi. Da fare tu per la Classifica: ricaricare `51.carica.js` e creare la classifica settimanale nel Game Manager (sotto).
+
+**2.63:** Fase 15, Progressione ("continuiamo coi mockup, non fermarti"; tue scelte del 02/10: LivelloSu solo cose vere, Forziere solo animazione, Classifica su PlayFab, Trofei dalle statistiche). Build pulito (0 errori); test EditMode 412 totali: 405 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Provata nel Simulator (iPhone 12). Costruita da **Tools/UI51/Build Fase 15 (Progressione)** (`UI51ProgressBuilder.cs`, scena MainMenu). Non committata.
+- ☑ **LivelloSu** (`UI51LevelUpView`): al ritorno in Home dopo una o più partite che fanno salire di livello (da `ProfileService.NoteLevelUp`, conta dal livello di partenza). Livello nuovo, titolo nuovo solo se cambia, sblocchi veri (oggi solo il banner Porpora al 10; la sezione sparisce se non c'è niente), barra verso il livello dopo. Niente monete. Provato 9→10 (Porpora, Apprendista → Esperto) e 13→14.
+- ☑ **Forziere + ForziereAperto** (`UI51ChestView`): anima il forziere che il server ha già aperto (premio giornaliero giorno 5 verde, giorno 7 viola, e posta). Chiuso che oscilla, "TOCCA PER APRIRE", poi monete e gemme vere. Canvas suo (750) sopra Premi e Posta.
+- ☑ **Trofei** (`Trophies` in Core, `UI51TrophiesView`, `UI51TrophySummary`): 15 trofei fissi calcolati dalle statistiche del server (partite, vittorie, scope, livello), nessun dato nuovo salvato. Sezione TROFEI nel Profilo (ultimi 4 ottenuti, 2 in corso, "N / 15 · Vedi tutti"), pagina con categorie, griglia a 3 e dettaglio dal basso.
+- ☑ **Classifica** (`LeaderboardService`, `UI51RankingView`): dal pulsante Classifica della Home. Schede Settimana / Amici / Sempre, podio, posizioni fino alla 50, la tua riga fissata in basso con quanto manca alla top 10. Gli ospiti vedono "Registrati per entrare in classifica". Nuova statistica `XPSettimana` scritta da `premioPartita` (51.js + test.js).
+- ☑ **Non fatti, per tua scelta (02/10):** `NuovoOggetto` (Porpora lo mostra già LivelloSu), `NuoviFrammenti` e le 3 carte di rarità del forziere (niente frammenti), premi per fascia della Classifica (resta competitiva e visiva).
+- ☑ **Scelte confermate da te (02/10):** Classifica sugli XP; carte del forziere che si girano da sole (sequenza rapida); "Ottenuto" al posto della data; categoria "Scope".
+- ☐ **Debiti tecnici (02/10):**
+  - Avatar degli altri in Classifica: oggi dall'id PlayFab (sempre lo stesso per lo stesso giocatore), solo segnaposto. Quando salveremo `SelectedAvatarId` di ogni giocatore, la Classifica deve usare quello.
+  - Trofei: se un giorno salviamo `UnlockedAt`, mostrare la data al posto di "Ottenuto".
+  - Builder: oggi rilanciare la Fase 4 (Profilo) cancella la sezione TROFEI, quindi l'ordine è **Fase 4 → poi Fase 15**. Da sistemare: la Fase 4 non deve distruggere quello che aggiunge la Fase 15.
+- **Da fare tu:**
+  1. `node Server/CloudScript/carica.js` e caricare `51.carica.js` (ora contiene XPSettimana).
+  2. ☑ PlayFab Game Manager → Leaderboards (Legacy): `XPSettimana` con azzeramento Weekly e aggregazione Last, controllato il 02/10 (Last è giusto: il server scrive già il totale della settimana). Va premuto Save.
+  3. Facoltativo: Client Profile Options → abilitare le statistiche, così le righe della Classifica mostrano il livello.
+- **ASSET MANCANTI DA CREARE:** nessuno (tutte le immagini dei mockup della Fase 15 ci sono; quelle non usate servono solo alle parti escluse).
+
+**Prima (2.62):** Photon e CloudScript chiusi per bene (le tue risposte sulla 2.61 e "risolvi tutto tu"): nomi segreti dei webhook, nessun webhook rifiuta più, la sospensione la ferma il telefono con uno stato fresco prima di ogni partita online, statistiche scritte solo dal server, Photon riautenticato dopo "Accedi". Da fare tu, in ordine: caricare `51.carica.js` (non più `51.js`) e subito dopo i nuovi nomi nel pannello Photon (sotto, alla 2.62); sostituiscono i passi del pannello Photon delle versioni 2.56-2.61. 02/10, fatto da te e verificato dall'Editor: revisione 13 del CloudScript attiva (quella nuova), PathCreate e PathClose funzionano, client anonimi rifiutati. Ancora da fare: spegnere "Allow client to post player statistics" su PlayFab (il telefono riesce ancora a scrivere le statistiche). PathJoin si verifica solo con due giocatori. Prossimo: la prova vera su due telefoni.
+
+**Prima:** alla 2.61 (solo server) tre controlli sulle monete della vittoria per abbandono (partita esistente, roster, una volta sola) e pulizia degli Shared Group orfani. Alla 2.60 le tue risposte sulla 2.59: id di partita generato dal server a ogni stanza (record con il roster), permesso di rientro legato alla partita, avversario dal record anche se esce mentre sei fuori (sotto; da fare tu: ricaricare 51.js e aggiungere PathJoin `RoomJoined` e PathClose `RoomClosed`). Alla 2.59 le tue due correzioni sulla 2.58: stato completo al rientro (le mosse in viaggio si rigiocano, abbandoni avvenuti mentre eri fuori) e permesso di rientro da sospeso che nasce all'ingresso (sotto; da fare tu: ricaricare 51.js). Alla 2.58 le tue risposte del 02/10 sulla 2.57: il conto dei turni fermi è del giocatore e resta se cambia il master, arbitro di riserva per il turno del master, numero di turno sulle mosse, chi è tolto per inattività perde per abbandono anche se resta nella stanza, rientro da sospeso solo nella propria stanza (sotto; da fare tu: ricaricare 51.js e aggiungere PathLeave). Alla 2.57 le tue risposte del 02/10 sulla 2.56: il master gioca la carta di chi è fermo dopo 30 + 10 s e al terzo turno fermo il posto passa al bot, rientro da sospeso solo nella propria partita, nomi dei bloccati ricordati (sotto). Alla 2.56 le tre cose rimandate che hai approvato il 02/10: controllo della sospensione sul server, tempo del turno con uscita per inattività, Giocatori bloccati. Alla 2.55 le tue risposte del 01/10 sulla moderazione. Alla 2.54: fatte le fasi 9, 13, 12, 14 (il timer del turno è arrivato alla 2.56) e la 11 (tranne Lingua e Notifiche, più avanti per tua scelta). Restano la Fase 15 (Progressione) e la Fase 10 (Pulizia), saltate come concordato, e i rimandati elencati versione per versione: ognuno aspetta il tuo sì o no. Tutto dalla 2.38 in poi è **non committato**.
+
+**2.62:** le tue risposte del 02/10 sulla 2.61 e "controlla bene tutta questa situazione con Photon e CloudScript, risolvi tutto tu". Build pulito (0 errori); test EditMode 409 totali: 402 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Tre revisioni del codice (workflow, ogni difetto verificato da un secondo agente che prova a smontarlo): tutti i difetti confermati corretti (sotto). Non committata.
+- ☑ **Webhook chiamabili dal telefono (controllato nel codice: prima lo erano):** ogni funzione del CloudScript si può chiamare da un telefono, anche quelle delle revisioni vecchie. Ora i webhook di Photon hanno nomi con un segreto (`RoomCreated_<segreto>`, `RoomJoined_<segreto>`) che sta solo in `Server/CloudScript/segreto.txt` e nel pannello Photon; le funzioni per il telefono rifiutano le chiamate fatte per conto di un altro giocatore o senza giocatore. Il repository è pubblico: `segreto.txt` e `51.carica.js` sono fuori da git. `node Server/CloudScript/carica.js` prepara il file da caricare e stampa i nomi per il pannello (`--nuovo` cambia il segreto).
+- ☑ **Nessun webhook rifiuta più:** un rifiuto mostra al telefono un errore che può contenere l'URL del webhook (chiave Photon e segreto). Restano tre percorsi: PathCreate, PathJoin, PathClose; PathBeforeJoin e PathLeave vuoti. Tolti il controllo all'ingresso e il permesso di rientro da sospeso, che non servono più.
+- ☑ **Sospensione:** la ferma il telefono, con uno stato fresco dal server prima di ogni partita online (partita veloce, crea stanza, entra con codice; al massimo una chiamata ogni 10 s). Un'app modificata entra lo stesso ma siede come gli altri (si può segnalare; se abbandona, chi vince è pagato) e per le partite online il server non le dà niente; allenamento e uscite contano come per tutti.
+- ☑ **Record della partita legato ad app, versione e regione di Photon:** lo stesso codice di stanza in un'altra app (AppId), versione o regione non tocca il record (niente posti, niente cancellazione). I nomi dei dati delle partite contengono un pezzo del segreto: le revisioni vecchie scrivono altrove.
+- ☑ **Statistiche solo dal server:** partite, vittorie, XP, livello e scope li scrive `premioPartita` (massimo 60 risultati al giorno); il telefono mostra quello che risponde il server. Uscita a metà = persa, senza XP né monete.
+- ☑ **Nomi nuovi per sospensioni, silenzio delle emoticon, segnalazioni e storico:** le revisioni vecchie scrivevano i nomi vecchi. Effetto: sospensioni e segnalazioni di prima ripartono da zero.
+- ☑ **Photon con l'account giusto dopo "Accedi":** Photon si scollega subito, senza credenziali né biglietto vecchi, e si ricollega con il token del nuovo account (il nostro sistema di riconnessione riprova finché resti dentro, attese crescenti fino a 30 s). "Accedi" aspetta se l'accesso da ospite dell'avvio è ancora in viaggio. Il rientro dopo un riavvio vale solo per lo stesso account.
+- Correzioni dalle revisioni (in breve):
+  - **(serio)** Un rifiuto per sospensione poteva mostrare l'URL del webhook: tolti tutti i rifiuti.
+  - **(serio)** Una stanza con lo stesso codice in un'altra versione o regione poteva iscrivere posti o cancellare il record di una partita vera (e da lì segnalazioni finte): record legato a versione e regione.
+  - **(serio)** Le revisioni vecchie dello script restano chiamabili: dati delle partite e della moderazione con nomi nuovi.
+  - **(serio)** Dopo "Accedi" Photon poteva restare (o tornare, con la riconnessione della Home) sull'account dell'avvio: ora no, provato dal vivo.
+  - Server: pulizia dei record orfani solo dopo 2 ore (mai una partita in corso); vittoria per abbandono contro un sospeso pagata; una segnalazione non si blocca se la notifica a uno fallisce; vittoria per abbandono non valida senza XP.
+  - Telefono: lo stato fresco della sospensione vale solo per l'account che l'ha letto; Annulla, una partenza nuova o l'allenamento scartano una creazione o un ingresso ancora in attesa del controllo; un solo controllo per stanza (prima due di fila, e una sospensione letta dal secondo lasciava la schermata bloccata); RIPROVA salta l'attesa tra un tentativo e l'altro; la riconnessione non taglia una connessione già partita con l'account giusto; il velo di caricamento si toglie anche se la Home non c'è più.
+- Provato dal vivo (Editor): cambio account (Photon torna sullo stesso PlayFabId con autenticazione Custom, il biglietto vecchio non rientra); riconnessione della Home senza credenziali; controllo fresco della sospensione (la prima volta chiede al server, una seconda entro 10 s parte subito); partenza annullata che non parte; RIPROVA che si ricollega in 1,2 s invece di aspettare 8 s. Non provato: i webhook veri su PlayFab/Photon (dopo il caricamento) e due telefoni.
+- Da fare tu, in ordine, quando nessuno sta giocando:
+  1. `node Server/CloudScript/carica.js`, poi su PlayFab Upload + Deploy di `Server/CloudScript/51.carica.js` (non più `51.js`).
+  2. Subito dopo, pannello Photon, Webhooks: PathCreate e PathJoin con i nomi stampati da carica.js, PathClose `RoomClosed`, PathBeforeJoin e PathLeave vuoti, BaseUrl senza graffe, HasErrorInfo spento.
+  3. Photon, Authentication: "Allow anonymous clients" spento.
+  4. PlayFab, impostazioni delle API: "Allow client to post player statistics" spento.
+  5. Facoltativo: una API Access Policy di PlayFab che nega ai client le API degli Shared Group.
+  6. Tieni `segreto.txt` al sicuro e non committarlo (è già escluso da git).
+- Limiti accettati: una vittoria normale la dichiara il telefono (tetto di monete e 60 risultati al giorno); l'abbandono lo dichiara il telefono; silenzio delle emoticon e blocco della sospensione li applica il telefono; due richieste nello stesso istante; le revisioni vecchie pagano anche un sospeso, dentro il tetto giornaliero; cosmetici e nome visibile scritti dal telefono.
+- Scelte confermate da te il 02/10 (tutte sì):
+  - I webhook non rifiutano mai: un sospeso con un'app modificata entra, ma online non guadagna niente. Limite accettato in modo esplicito: la sospensione non è un blocco multiplayer inviolabile (l'app normale la rispetta, il server nega premi e statistiche).
+  - Controllo fresco della sospensione al massimo una volta ogni 10 s.
+  - Record della partita legato ad app (AppId), versione e regione di Photon, più il codice della stanza e l'id di partita del server (AppId aggiunto dopo la tua risposta, con una prova).
+  - Nomi nuovi per i dati della moderazione: sospensioni e segnalazioni di prima ripartono da zero. Va bene ora che il gioco è in sviluppo; dopo la pubblicazione niente azzeramenti di questo tipo (servirà una migrazione).
+  - Al massimo 60 risultati contati per account e per giorno del server (ora italiana dall'orologio di PlayFab, mai quello del telefono): scritto anche nel codice.
+  - Dopo "Accedi" il nostro sistema di riconnessione (AuthBootstrapper, non Photon) riprova da solo, aspettando sempre di più tra un tentativo e l'altro (fino a 30 s), finché resti dentro. Photon offre solo `Reconnect`/`ReconnectAndRejoin`: tentativi e attese sono nostri.
+  - "Accedi" durante l'accesso da ospite dell'avvio: messaggio "Connessione al server in corso: riprova tra un attimo."; finito quell'accesso, il pulsante funziona di nuovo.
+- Rimandato (confermato da te il 02/10):
+  - **Vittorie normali verificate dal server e mosse validate dal server:** un solo lavoro, con il futuro server autorevole o i plugin, non due sistemi separati.
+  - **Segnale immediato al tocco:** solo dopo la prova vera su due telefoni (Wi-Fi↔Wi-Fi, poi Wi-Fi↔4G/5G), e solo se si sente il ritardo.
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.61:** le tue risposte del 02/10 sulla 2.60 (architettura invariata: tre controlli sulla ricompensa per abbandono e pulizia degli Shared Group orfani). Solo server (`51.js`) e prove; nessun file C# toccato. Build pulito (0 errori); test EditMode 409 totali: 402 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer): tre difetti seri e tre minori, corretti (sotto); due limiti accettati. Non committata.
+- ☑ **Monete per abbandono, tre controlli sul record della partita:** la partita deve esistere; chi chiede deve sedere nel roster; al posto indicato deve esserci un altro giocatore (che diventa l'avversario). Ogni partita paga una volta sola per giocatore (`pagato_<id>` nel record). Se un controllo fallisce: vittoria valida, 0 monete (`abbandonoNonValido`). I tetti di prima (3 al giorno, uno per avversario) restano.
+- ☑ **Pulizia degli Shared Group orfani:** chi crea una stanza tiene un indice delle ultime 20; i record più vecchi di 2 ore li cancella il server alla sua prossima stanza creata o al prossimo avvio dell'app (al massimo 5 per volta), solo se il record è ancora di quella partita (stesso id). RoomClosed chiamato da un telefono non cancella niente.
+- Correzioni dalla revisione:
+  - **(serio)** Un telefono poteva scrivere sé stesso al posto di un altro nel roster: ora un posto preso non cambia più e al tavolo si iscrivono al massimo 4.
+  - **(serio)** Un telefono poteva rifare il record di una partita viva (con un finto "stanza creata") cancellando il roster di tutti: un record con meno di 2 ore non si sostituisce più.
+  - **(serio)** Un telefono poteva creare da sé un gruppo con un roster inventato (le API Client di PlayFab lo permettono): ora vale solo un gruppo senza membri, cioè creato dal server.
+  - Indice oltre 20 stanze: le più vecchie ora vengono pulite invece di andare perse; una cancellazione fallita si riprova la volta dopo; alla creazione della stanza al massimo 2 pulizie (per non rallentare l'ingresso), all'avvio 5.
+  - Limiti accettati: un telefono modificato può ancora iscriversi a un posto libero di una stanza di cui conosce il codice (per chiuderlo serve un segnale che venga solo da Photon), e due richieste nello stesso istante possono pagare due volte (PlayFab non ha scritture condizionate). In ogni caso una vittoria normale (non per abbandono) il server non la controlla affatto: il tetto giornaliero resta il limite vero.
+- Da fare tu: ricaricare `Server/CloudScript/51.js`. Pannello Photon: PathCreate `RoomCreated`, PathBeforeJoin `RoomBeforeJoin`, PathJoin `RoomJoined` (ora indispensabile per le monete dell'abbandono), PathLeave `RoomLeft`, PathClose `RoomClosed`; BaseUrl senza graffe.
+- Scelte mie, da confermare:
+  - Il gruppo resta chiamato col codice ("stanza_<codice>"), ma ogni operazione controlla l'id della partita e un codice riusato ricrea il gruppo da zero: in pratica vale come chiave l'id. Chiamarlo con l'id vorrebbe dire far sapere l'id a ogni webhook, ma Photon passa solo il codice.
+  - Abbandono non valido: sul telefono resta "+0 monete" senza spiegazione.
+  - Pulizia solo quando il creatore torna (nuova stanza o avvio): chi non torna mai lascia al massimo le sue ultime 20 stanze.
+- Rimandato, da confermare uno per uno:
+  - **Mosse validate dal server:** serve Photon Enterprise o un server di gioco.
+  - **Segnale immediato al tocco:** dopo la prova vera su due telefoni (Wi-Fi↔Wi-Fi, poi Wi-Fi↔4G/5G).
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.60:** le tue risposte del 02/10 sulla 2.59. Build pulito (0 errori); test EditMode 409 totali: 402 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer): un difetto serio, uno medio e cinque minori, tutti corretti (sotto). Non committata.
+- ☑ **Id di partita generato dal server:** a ogni stanza creata (PathCreate) il server genera un id nuovo e tiene il record della partita in uno Shared Group di PlayFab "stanza_<codice>": id, codice, ora di creazione e chi siede a ogni numero Photon (PathJoin). Una stanza nuova con lo stesso codice ha un id nuovo e il roster vecchio sparisce. Quando Photon chiude la stanza (PathClose) il record si cancella.
+- ☑ **Permesso di rientro legato alla partita, non al codice:** scade a max(ingresso + 2 h, caduta + 70 s) e vale solo per quell'id: un codice riusato non fa entrare un sospeso, anche con RoomLeft guasto. Le stanze senza record (create prima di questo script) restano legate al codice, come prima.
+- ☑ **Avversario uscito mentre eri fuori:** per le monete l'id lo decide il server dal roster della partita, non il telefono; il telefono lo ricorda per gli XP (anche dopo un riavvio). "Sconosciuto" solo se manca il dato.
+- ☑ **Controllo all'ingresso anche su PathJoin:** PathJoin registra chi siede e dà il permesso se BeforeJoin non l'ha già dato. Rifiutare resta compito di PathCreate e PathBeforeJoin: per Photon gli altri webhook non fermano l'ingresso. Il primo giocatore della partita veloce passava già da PathCreate, controllato dalla 2.56.
+- Correzioni dalla revisione:
+  - **(serio)** Questi webhook li può chiamare anche un telefono modificato: poteva costruirsi da solo il permesso di rientro o toccare i dati degli altri. Ora una chiamata da telefono agisce solo su chi chiama, il permesso si allunga solo a chi siede in quella partita e un sospeso non si iscrive al roster da solo.
+  - Stanze senza record: il permesso torna legato al codice (prima un sospeso caduto lì non rientrava).
+  - La chiusura in ritardo di una stanza vecchia non cancella il record di quella nuova con lo stesso codice.
+  - Uscire da una stanza toglie solo il permesso di quella stanza.
+  - Creazione del record con una chiamata in meno.
+  - Telefono: gli id ricordati si aggiornano (codice riusato) e si salvano subito; nella rivincita l'avversario della partita prima non resta appeso.
+- Provato: prove del CloudScript (permesso per id di partita, codice riusato, roster, chiusura, chiamate da telefono, premio con l'id dal record). Non provato dal vivo: i webhook veri su PlayFab/Photon.
+- Da fare tu:
+  1. Caricare di nuovo `Server/CloudScript/51.js`.
+  2. Nel pannello Photon (Webhooks), oltre a quelli che hai: **PathJoin** = `RoomJoined` e **PathClose** = `RoomClosed`. PathClose è **necessario**: senza, ogni partita veloce lascia un record su PlayFab che non si può più cancellare. Restano PathCreate `RoomCreated`, PathBeforeJoin `RoomBeforeJoin`, PathLeave `RoomLeft`, e il BaseUrl senza graffe.
+- Scelte mie, da confermare:
+  - Il record della partita sta in uno Shared Group di PlayFab, uno per stanza aperta, cancellato alla chiusura.
+  - Una chiamata ai webhook da telefono agisce solo su chi chiama (non so ancora con certezza chi risulta chiamante quando chiama Photon; il controllo funziona in entrambi i casi).
+  - Il premio della vittoria per abbandono si fida del telefono per "ho vinto" e per quale stanza/posto indica (come prima): il limite di 3 al giorno resta la protezione.
+- Rimandato, da confermare uno per uno:
+  - **Mosse validate dal server:** i plugin Photon non ci sono sul Public Cloud (servono Enterprise Cloud o Photon Server in proprio): è una scelta di architettura da fare a parte.
+  - **Feedback immediato al tocco:** da provare con due telefoni veri (uno Wi-Fi, uno 4G/5G); se il ritardo si sente, la carta reagisce subito e la giocata si completa alla conferma.
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.59:** le tue risposte del 02/10 sulla 2.58 (le due correzioni: stato completo al rientro, permesso di rientro senza dipendere da RoomLeft). Build pulito (0 errori); test EditMode 409 totali: 402 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer): due difetti seri e sei minori, tutti corretti (sotto). Non committata.
+- ☑ **Stato completo al rientro, niente "si sistema alla mossa dopo":** lo stato che manda il master conteneva già tutto (mani, tavolo, prese, scope, accusi, punteggi della smazzata e della partita, mazziere, turno, regole; il numero di turno si ricava da lì); i posti (bot, scollegati, tolti per inattività, conto dei turni fermi) li legge dalla stanza. Il buco era la mossa in viaggio: ora ogni telefono ricorda le ultime mosse arrivate e, quando riceve lo stato, rigioca da solo quelle dal turno dello stato in poi. Vale per chi rientra e per ogni riallineamento.
+- ☑ **Abbandoni avvenuti mentre eri scollegato:** al rientro, se un avversario è uscito davvero o è stato tolto per inattività mentre eri fuori, vale la vittoria per abbandono come se fossi stato presente (prima giocavi contro il bot). Il suo id non si sa più: per il premio conta come "avversario sconosciuto" (resta il tetto di 3 al giorno).
+- ☑ **Permesso di rientro da sospeso senza dipendere da RoomLeft:** nasce già quando entri nella stanza (webhook di ingresso, che c'è già): vale solo per quella stanza, al massimo 2 ore, mai per crearne una. Se RoomLeft funziona lo porta ad almeno 70 s dalla caduta (mai più corto di quello dell'ingresso) e lo toglie se esci davvero.
+- Correzioni dalla revisione:
+  - **(serio)** Se arrivavano due stati di fila (succede quasi sempre al rientro) mentre una mossa era in animazione, la stessa mossa poteva entrare due volte e rovinare il tavolo. Ora un'animazione partita sullo stato vecchio non applica più la sua mossa: la rigioca lo stato nuovo, una volta sola.
+  - **(serio)** Una mossa arrivata nell'istante subito dopo lo stato poteva ancora perdersi. Ora le mosse ricordate entrano subito, prima di quelle in arrivo.
+  - Il controllo degli abbandoni parte solo a un rientro vero e mai a partita finita (prima poteva dare una vittoria per abbandono finta nella rivincita contro i bot).
+  - Chi è stato tolto lui stesso per inattività mentre era fuori, rientrando esce come allora e non può vincere per abbandono.
+  - Una mossa rigiocata non conta due volte nei turni fermi.
+  - Per lo stesso turno si ricordano tutte le mosse arrivate, non solo la prima: una mossa sbagliata non nasconde quella giusta.
+  - Le mosse di una partita finita non restano in memoria nella rivincita.
+  - CloudScript: una seconda caduta nella stessa partita non dipende più da RoomLeft.
+- Provato dal vivo (partita resa "client online" per finta in Editor): stato del master rimasto indietro rispetto a una mossa già arrivata, la mossa viene rigiocata da sola (turno 163 → 164); mossa arrivata "in anticipo" e scartata, poi arriva lo stato: rigiocata appena arriva lo stato (165 → 166); dopo le correzioni, due stati arrivati durante l'animazione della mossa: applicata una volta sola (164 → 165, 40 carte in tutto).
+- Non provato dal vivo: vittoria per abbandono al rientro (serve una stanza vera), il permesso di rientro sul server vero.
+- Da fare tu: caricare di nuovo `Server/CloudScript/51.js` (sostituisce quello della 2.58). Il pannello Photon resta com'è: PathCreate `RoomCreated`, PathBeforeJoin `RoomBeforeJoin`, PathLeave `RoomLeft` (consigliato, non più indispensabile), e il BaseUrl senza graffe.
+- Scelte mie, da confermare:
+  - Il permesso dall'ingresso dura 2 ore (la tua soglia); con RoomLeft funzionante scende a 70 s dalla caduta.
+  - Al rientro, per il premio della vittoria per abbandono l'avversario uscito mentre eri fuori conta come sconosciuto.
+  - Feedback al tocco: oggi la carta parte quando la mossa torna dal server; un segnale immediato al tocco lo valuto sui telefoni veri, in Editor il ritardo non si vede.
+- Rimandato, da confermare uno per uno:
+  - **Mosse validate dal server (plugin Photon o game server):** oggi il server inoltra e ordina, non controlla.
+  - **Da verificare sul server vero:** che il webhook di ingresso scatti anche per la partita veloce (ingresso in una stanza a caso). Se non scatta, chi entra così non riceve il permesso, e da sempre il controllo della sospensione non lo ferma.
+  - **Codice privato riusato entro 2 ore con RoomLeft guasto:** un sospeso potrebbe entrare in una stanza nuova con lo stesso codice della sua partita. Serve un id di partita che il server veda (con un plugin Photon).
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.58:** le tue risposte del 02/10 sulla 2.57. Build pulito (0 errori); test EditMode 409 totali: 402 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer): un difetto serio e quattro minori, corretti (sotto). Non committata.
+- ☑ **Il conto dei turni fermi è del giocatore:** sta nella stanza, non sul telefono del master. Se il master cambia, il nuovo lo eredita (Francesco a 2/3 resta a 2/3). Lo aggiorna chi fa da arbitro di quel turno: +1 per ogni carta scelta allo scadere (dal suo telefono o forzata), 0 quando gioca da sé.
+- ☑ **Arbitro di riserva per il turno del master:** quando tocca al master, a 40 s la carta la gioca un altro giocatore presente (quello con l'ActorNumber più basso dopo il master). Vale anche per i turni dei bot, che gioca il master: se il master è in secondo piano, il tavolo non si ferma comunque.
+- ☑ **Numero di turno:** ogni mossa porta il numero del turno e passa dal server, così arriva a tutti nello stesso ordine. Per lo stesso turno vale solo la prima; quelle arrivate dopo si scartano senza chiedere lo stato al master. Se il master torna a 40,1 s e gioca mentre l'arbitro ne gioca una per lui, ne entra una sola, uguale per tutti.
+  - Effetto: la propria carta parte quando torna dal server, un attimo dopo il tocco (il tempo di andata e ritorno).
+- ☑ **Tolto per inattività = abbandono della partita, anche se resta nella stanza:** si applicano le regole di sempre: dopo almeno una smazzata finita vince subito chi resta; nella prima smazzata il bot la finisce e poi vince chi resta; premio con i limiti di sempre (3 al giorno, 1 per avversario). Un'app modificata non evita più la sconfitta restando collegata. Il posto resta del bot anche se rientra.
+- ☑ **Il master non registra abbandoni degli altri:** decide solo cosa succede al tavolo (il posto passa al bot, la vittoria per abbandono). Per le sospensioni conta solo quello che il telefono di chi esce ha visto da sé (sotto).
+- ☑ **Rientro da sospeso solo nella propria partita:** il permesso nasce solo quando Photon segnala che sei caduto da quella stanza e ti tiene il posto (webhook nuovo "PathLeave"), vale solo per quella stanza e per 70 s dalla caduta (il posto ne dura 60), molto meno delle 2 ore. Una stanza nuova con lo stesso codice non vale: lì non hai un posto. Se esci davvero il permesso sparisce.
+- Correzioni dalla revisione:
+  - **(serio)** Un master modificato poteva farti uscire per inattività "finta" e farti contare l'abbandono nelle sospensioni. Ora il tuo telefono conta per le sospensioni solo i tempi scaduti che ha visto davvero (la carta l'ha scelta lui allo scadere, o per lui erano passati almeno 30 s, secondo piano compreso). Se l'uscita arriva senza tre tempi così, perdi la partita ma non conta come abbandono.
+  - Se il master cambia mentre una mossa è ancora in viaggio, lo stato mandato a chi rientra aspetta che la mossa sia arrivata (massimo 5 s), così nessuno riparte da uno stato vecchio.
+  - Se il master è stato tolto per inattività, i turni dei bot li gioca l'arbitro di riserva subito, non dopo 40 s.
+  - Il segno "tolto per inattività" è salvato posto per posto nella stanza (due uscite insieme non si cancellano a vicenda).
+  - Finestra del rientro da sospeso ridotta a 70 s (era 2 minuti).
+  - Fuori dalla revisione: chiudendo l'app durante una partita online partiva un tentativo di riconnessione (in Editor lasciava un oggetto "Connection" dopo lo stop). Ora la chiusura dell'app non lo avvia, in partita e in Home.
+- Provato dal vivo (partita resa "online" per finta in Editor, questo telefono = master e arbitro): avversario fermo giocato a 40 s; tuo tempo scaduto contato (1), azzerato quando giochi tu; conto dell'avversario 1, 2, al terzo il posto tolto; una mossa con un numero di turno già passato scartata senza resync; una carta forzata per te prima dei 30 s conta per il tavolo (2/3) ma non per le sospensioni (resta 1).
+- Non provato dal vivo: il giro vero a più telefoni (arbitro di riserva, cambio di master col conto che resta, vittoria per abbandono di chi resta nella stanza), il webhook PathLeave.
+- Da fare tu:
+  1. Caricare di nuovo `Server/CloudScript/51.js` (sostituisce quello della 2.57), prima di toccare Photon.
+  2. Nel pannello Photon, Webhooks: aggiungere **PathLeave** = `RoomLeft` (gli altri restano: PathCreate `RoomCreated`, PathBeforeJoin `RoomBeforeJoin`, PathJoin vuoto). Senza PathLeave il gioco funziona lo stesso, ma un sospeso caduto non riesce a rientrare.
+- Scelte mie, da confermare:
+  - L'uscita per inattività conta per le sospensioni solo se il tuo telefono ha visto da sé i tre tempi scaduti; altrimenti è solo una partita persa.
+  - Il permesso di rientro da sospeso dura 70 s dalla caduta, solo per quella stanza.
+  - L'arbitro di riserva gioca anche i turni dei bot se il master è fermo (subito se il master è stato tolto).
+  - Tutte le mosse passano dal server, con il piccolo ritardo sulla propria carta.
+  - Se cadi dalla rete prima che Photon se ne accorga, un tuo turno può finire forzato e contare 1 al tavolo (non per le sospensioni).
+- Rimandato, da confermare uno per uno:
+  - **Uscite per inattività contate dal server:** quando avremo un controllo del tempo lato server (un plugin Photon o un server di gioco), anche quelle di un'app modificata entreranno nel conto delle sospensioni.
+  - **Un'app modificata che diventa master** può ancora decidere cose al tavolo (è l'autorità della partita): si chiude solo con un server autorevole.
+  - **Mossa in viaggio durante un rientro:** una mossa di un terzo telefono ancora in volo può mancare nello stato mandato a chi rientra; si sistema da sola alla mossa dopo (resync).
+  - **Se il webhook RoomLeft non risponde**, un sospeso caduto non può rientrare nella sua partita (il webhook lascia passare tutto il resto).
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.57:** le tue risposte del 02/10 sulla 2.56. Build pulito (0 errori); test EditMode 408 totali: 401 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer): nessun difetto bloccante, i tre punti utili corretti (sotto). Non committata.
+- ☑ **Il master gioca la carta di chi è fermo:** 30 s per giocare, dopo i 30 s il telefono di chi gioca sceglie la carta con l'IA; se quel telefono non manda niente (secondo piano, app bloccata o modificata), dopo altri 10 s la carta la gioca il master. Nessuno può più tenere fermo il tavolo.
+- ☑ **3 turni di fila giocati dal master = fuori:** il posto passa al bot per il resto della partita (anche se quel telefono rientra) e gli altri vedono "Marco è uscito: 3 turni senza giocare / Al suo posto gioca un bot". Se il suo telefono risponde esce come con Abbandona e l'abbandono si conta come sempre.
+  - Anche le carte giocate dal master contano tra i "tempi scaduti" sul telefono di chi era fermo: se torna attivo, al terzo esce.
+- ☑ **Mosse solo dal proprio telefono:** una carta vale solo se arriva dal telefono di quel posto o dal master (bot, posti scollegati, carta allo scadere). Un'app modificata non può giocare per gli altri né per un posto tolto per inattività.
+- ☑ **La rete che cade non dà tempo infinito:** appena Photon si accorge che sei scollegato, al tuo posto gioca il bot (come prima); se Photon ci mette qualche secondo, dopo 40 s gioca comunque il master. Il tuo tempo riparte da 30 solo al turno dopo il rientro.
+- ☑ **Sospensione e rientro (lato server):** il CloudScript ricorda l'ultima stanza in cui sei entrato; da sospeso puoi rientrare solo in quella, mai crearne o entrare in una nuova. Funziona anche se Photon chiede il permesso pure per il rientro (non è documentato).
+- ☑ **Nomi dei giocatori bloccati:** il telefono ricorda l'ultimo nome visto (quando blocchi dal profilo, e ogni volta che PlayFab lo manda); "Giocatore" solo se non l'ha mai visto.
+- ☑ Tempo fisso a 30 s per tutti i turni (niente turni "difficili"), come hai deciso.
+- Revisione del codice, corretti:
+  - Il permesso di rientro da sospeso non scadeva mai: con i codici corti delle stanze private si poteva entrare in una stanza nuova con lo stesso codice. Ora vale 2 ore.
+  - Una carta vecchia (arrivata dopo quella del master) azzerava il conto dei turni fermi: ora lo azzera solo una carta valida giocata davvero dal giocatore.
+  - Un telefono scollegato nel momento in cui un posto veniva tolto non lo sapeva e lo ridava al giocatore al rientro: ora il posto tolto è scritto anche nella stanza.
+- Provato dal vivo (partita resa "online" per finta in Editor, questo telefono = master): turno dell'avversario fermo giocato dal master a 40 s (due volte), al terzo il posto tolto senza mossa doppia; la carta del master non azzera il conto, quella giocata da sé sì; sul telefono del fermo le carte del master contano e l'uscita scatta una volta sola.
+- Non provato dal vivo: il giro vero a due telefoni (mossa del master, posto tolto, controllo del mittente), il rientro da sospeso su Photon.
+- Da fare tu: caricare di nuovo `Server/CloudScript/51.js` (sostituisce quello della 2.56; il resto dei passi della 2.56 non cambia).
+- Scelte mie, da confermare:
+  - Durante i 10 s di tolleranza gli altri vedono "0s" sul banner di chi è fermo.
+  - Il conto dei turni giocati dal master riparte da zero se il master cambia (esce chi faceva da master).
+  - Chi viene tolto per inattività resta al bot anche se rientra nella stanza; non ha senso ridargli il posto nella stessa partita.
+  - Il testo per gli altri: "Marco è uscito: 3 turni senza giocare", sotto "Al suo posto gioca un bot".
+- Rimandato, da confermare uno per uno:
+  - **Abbandono contato dal server per un'app modificata:** oggi l'abbandono lo registra il telefono di chi esce; un'app modificata può non farlo. Farlo registrare al master vuol dire fidarsi del master (anche lui potrebbe essere modificato). Lo vuoi, e con quale controllo?
+  - **Vittoria per abbandono contro un'app modificata che resta nella stanza:** il suo posto passa al bot ma lui non "esce", quindi la vittoria per abbandono non scatta; si finisce la partita contro il bot.
+  - **Tempo del master stesso:** il turno del master lo controlla solo il suo telefono. Se il master va in secondo piano il tavolo aspetta finché Photon non lo scollega (circa 60 s), poi un altro diventa master e il bot gioca. Per farlo controllare dagli altri serve una regola nuova (chi gioca al posto del master?). Lo vuoi?
+- ASSET MANCANTI DA CREARE: nessuno.
+
+**2.56:** le tre cose rimandate che hai approvato il 02/10, nel tuo ordine (1 controllo della sospensione sul server, 2 tempo del turno e inattività, 3 giocatori bloccati). Build pulito (0 errori); test EditMode 408 totali: 401 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Revisione del codice (agente deep-reviewer) sulle parti online: i punti veri sono corretti (vedi sotto). Non committata.
+- ☑ **Controllo della sospensione sul server:** quando si crea una stanza online o si prova a entrarci, Photon chiede al nostro CloudScript se il giocatore è sospeso; se sì rifiuta (errore 32752), anche con un'app modificata che salta il controllo del telefono. Il telefono allora rilegge lo stato: se è sospeso apre la Sospensione, altrimenti "Il gioco online non è disponibile in questo momento. Riprova tra poco.". Se il CloudScript ha un errore lascia passare (un guasto non deve bloccare tutti).
+- ☑ **Ora del server per gli ospiti:** le sanzioni degli ospiti (salvate sul dispositivo) usano l'ora del server quando c'è. Cambiare l'ora del telefono non le accorcia più; cancellare i dati dell'app sì, come avevi accettato.
+- ☑ **Tempo del turno online: 30 secondi.**
+  - Solo online: l'allenamento coi bot resta senza tempo.
+  - Il tempo si ferma durante animazioni, distribuzione e finestra degli accusi, e mentre la rete è caduta.
+  - Come nel mockup MomentiPartita e nella SPEC, il timer si vede solo negli ultimi 5 secondi. Se tocca a un altro, il bordo e l'anello del suo banner diventano rossi e compare la pillola "5s Marco" (sotto il banner in alto, sopra quelli laterali). Se tocca a te, il tuo banner diventa rosso e sopra le tue carte compare "5 Gioca adesso, o la carta verrà scelta per te".
+  - Allo scadere la carta la sceglie l'IA e parte come una mossa normale.
+- ☑ **3 tempi scaduti di fila = abbandono:**
+  - All'ultimo turno utile la pillola dice "Gioca adesso, o uscirai dalla partita".
+  - Al terzo tempo scaduto si esce come con Abbandona: il posto passa a un bot e conta come abbandono, con le stesse regole della 2.55 (compresa la vittoria per abbandono degli altri). Compare "Sei uscito dalla partita: 3 turni senza giocare".
+  - Una carta giocata a mano azzera il conto; una partita nuova (anche la rivincita) riparte da zero.
+- ☑ **Giocatori bloccati:** Impostazioni > PRIVACY E SOCIALE > Giocatori bloccati, solo con un account (gli ospiti non bloccano).
+  - Pagina semplice: una riga di spiegazione, poi l'elenco col nome e "Sblocca" ("Hai sbloccato Marco_93"), oppure "Nessun giocatore bloccato".
+  - Le Impostazioni ora scorrono: con la sezione nuova l'account non ci stava più sull'iPhone.
+- ☑ Anche: una sola mossa per turno. Un doppio tocco veloce poteva mandarne due e costringere tutti a ricaricare lo stato della partita.
+- Revisione del codice, corretti:
+  - Il blocco sul server all'ingresso non avrebbe funzionato: il webhook "PathJoin" di Photon è solo un avviso. Rifiutare si può solo con "PathBeforeJoin" (verificato sulla documentazione Photon).
+  - Una carta toccata mentre la rete era caduta poteva bloccare il turno per sempre dopo il rientro.
+  - Il tempo correva anche con la rete caduta: si poteva uscire "per inattività" per colpa della connessione.
+  - Il conto dei tempi scaduti restava nella rivincita.
+  - Con l'app in secondo piano il tempo si fermava invece di continuare.
+  - Un rifiuto arrivato in ritardo poteva chiudere una ricerca appena ripartita.
+  - Da sospeso comparivano due messaggi insieme (la Sospensione e "Gioco online sospeso."): ora solo la Sospensione.
+  - "Sblocca" toglieva la riga anche quando il salvataggio non partiva.
+- Provato dal vivo su iPhone 12 e SE (partita resa "online" per finta in Editor):
+  - pillola del tuo turno e dell'avversario, con le misure del mockup (alte 30 e 26, 12 sotto il banner);
+  - anello rosso, carta scelta allo scadere, mossa a mano che azzera il conto, scritta dell'ultimo turno, uscita al terzo, avviso;
+  - tempo fermo con la rete caduta, ripartito da 30 al rientro;
+  - Impostazioni che scorrono con PRIVACY E SOCIALE, pagina Giocatori bloccati vuota e piena;
+  - rifiuto del server come ospite: messaggio "non disponibile" e, con una sospensione finta, la pagina Sospensione.
+- Non provato dal vivo:
+  - il giro vero a due telefoni (tempo e uscita veri, rifiuto vero di Photon);
+  - i nomi veri nella pagina dei bloccati e Sblocca su un account vero (in Editor entro solo come ospite).
+- Da fare tu, in quest'ordine:
+  1. PlayFab: caricare di nuovo `Server/CloudScript/51.js`: Automation → CloudScript → Revisions (Legacy) → Upload new revision → Deploy. Va fatto **prima** di Photon.
+  2. PlayFab Game Manager → Add-ons → Photon: generare la "secret key" se non c'è.
+  3. Pannello Photon (la tua app Realtime) → Webhooks:
+     - BaseUrl `https://{TitleId}.playfablogic.com/webhook/1/prod/{secret key}`
+     - PathCreate `RoomCreated`
+     - PathBeforeJoin `RoomBeforeJoin`
+     - PathJoin vuoto
+  4. Pannello Photon → Authentication: controllare che gli accessi anonimi siano spenti, così Photon conosce sempre l'account PlayFab di chi entra.
+  5. Prova subito con un account normale: deve creare stanze ed entrarci come prima. PlayFab non elenca "BeforeJoin" tra i suoi webhook (passa il nome del percorso al CloudScript, ma non è verificato): se nessuno entra più nelle stanze, togli PathBeforeJoin e dimmelo.
+  6. Prova con un account di prova sospeso (Internal Data `Sanzioni`, per esempio `{"volte":1,"fine":"2026-12-31T00:00:00Z","motivo":"abbandoni"}`): la ricerca deve fermarsi con la Sospensione. Con un account normale si deve giocare come prima.
+  7. Se nessuno riesce più a creare stanze: togli PathCreate e PathBeforeJoin dal pannello Photon e il gioco torna come prima. Photon rifiuta la creazione anche quando PlayFab non risponde, per questo il CloudScript va caricato prima.
+- Scelte mie, da confermare:
+  - Il timer si vede solo negli ultimi 5 secondi (come dice la SPEC); prima c'è solo l'anello di sempre (blu per gli altri, oro per te).
+  - La carta allo scadere la sceglie l'IA della partita, non una carta a caso.
+  - All'ultimo tempo prima dell'uscita la pillola cambia in "Gioca adesso, o uscirai dalla partita".
+  - Il tempo continua con l'app in secondo piano: chi torna a tempo scaduto gioca subito la carta scelta, e conta come tempo scaduto.
+  - Se la rete cade il tempo si ferma; al rientro riparte da 30 secondi.
+  - Il tempo lo fa rispettare solo il telefono di chi gioca, così non partono mai due mosse. Un telefono Android in secondo piano tiene il posto fino a 60 s, poi gioca il bot: in quel caso gli altri vedono "0s" e aspettano.
+  - Il controllo sul server non dovrebbe bloccare il rientro nella propria partita dopo una caduta di rete: PathBeforeJoin scatta solo per un giocatore nuovo al tavolo. Non è verificato su Photon; se lo bloccasse, chi viene sospeso a metà partita e perde la rete non rientra.
+  - Le Impostazioni ora scorrono. La sezione si chiama "PRIVACY E SOCIALE" e sta prima di ACCOUNT.
+  - I nomi nella pagina dei bloccati si chiedono a PlayFab a ogni apertura (la lista salva solo gli id); se non arrivano resta "Giocatore".
+- Rimandato, da confermare uno per uno:
+  - **Tempo controllato anche dal master:** per un telefono rimasto in secondo piano (fino a 60 s) o un'app modificata che non gioca, il master potrebbe giocare la carta al posto suo dopo 30 + 10 s. Serve un controllo in più per non avere due mosse. Lo faccio?
+  - **Tempo più lungo per i turni difficili (35-40 s):** avevi detto "puoi poi salire"; per ora sono 30 per tutti. Lo vuoi, e con che regola (per esempio quando ci sono più prese possibili)?
+- ASSET MANCANTI DA CREARE: nessuno (pillole, anelli e pagina fatti con forme e testi esistenti).
+
+**2.55:** le tue risposte del 01/10 sulla moderazione: le 6 idee (tutte sì) e le correzioni alle mie scelte. Build pulito (0 errori); test EditMode 406 totali: 399 ok, 0 falliti, 7 saltati (Explicit); prove del CloudScript tutte passate. Due revisioni del codice (agente deep-reviewer) sulle parti online, i punti trovati sono corretti (vedi sotto). Non committata.
+- ☑ **Motivo della segnalazione:** "Segnala giocatore" nel profilo rapido apre "Perché lo segnali?" con **Emoticon offensive**, **Nome offensivo**, **Gioco scorretto** e Annulla. Emoticon → emoticon spente (24 ore, poi 3 giorni, poi 7); nome e gioco → sospensione del gioco online. I due conti sono separati.
+- ☑ **Soglia segnalazioni:** 5 account diversi, da almeno 3 partite diverse, negli ultimi 7 giorni (così un gruppo di amici nella stessa partita non basta).
+- ☑ **Durate:** sospensione 24 ore → 3 giorni → 3 giorni → 7 giorni (poi 7); dopo 30 giorni senza sanzioni si riparte da 24 ore. Il server tiene comunque uno storico completo che non si azzera mai (`StoricoSanzioni`).
+- ☑ **Ospiti:** abbandoni e sanzioni contati sul dispositivo (stesse regole: 5 abbandoni in 7 giorni, stesse durate), e le sanzioni prese nella loro sessione restano sul dispositivo. Ora gli ospiti si possono anche segnalare (pubblicano l'id della sessione). Emoticon spente e blocco del gioco online valgono anche per loro.
+- ☑ **RIVINCITA:** chi è sospeso finisce la partita in corso ma non ne inizia un'altra. A fine partita il server viene ricontrollato; l'host sospeso vede solo **Torna alla Home** (sparisce RIVINCITA, niente due pulsanti uguali); un altro giocatore sospeso esce quando la rivincita parte, prima di qualsiasi mossa, quindi non conta come abbandono.
+- ☑ **Blocca giocatore** (nel profilo rapido, accanto a Segnala): emoticon spente, niente inviti né messaggi da lui, tolto dagli amici. "Sblocca giocatore" per tornare indietro. Salvato sul tuo account PlayFab (`Bloccati`).
+- ☑ **Regole di comportamento:** la sezione 3 dei Termini ora si chiama "Regole di comportamento (fair play)" e ha un paragrafo nuovo su abbandoni, inattività, segnalazioni e sanzioni (anche automatiche, anche per gli ospiti sul dispositivo). Dalla Sospensione i Termini si aprono direttamente lì. Corretto anche lo scorrimento alla prima apertura, che finiva 61 punti più giù.
+- ☑ **Tempo che manca:** "1g 23h 59m", sotto un'ora "42:18".
+- ☑ **Esiti delle segnalazioni:** tutti quelli non letti in una finestra sola ("Hai 3 aggiornamenti…"): una riga per esito, fino a 3, poi "E altre N.".
+- ☑ **Cambia password:** testo neutro "Se g•••••@mail.com è l'email di un account 51, il link è in arrivo."
+- ☑ **Vittoria per abbandono:** se gli avversari umani escono davvero dalla partita (con ESCI, oppure posto scaduto dopo 60 s), chi resta vince subito. Schermata VITTORIA con "L'AVVERSARIO HA ABBANDONATO" (o "GLI AVVERSARI HANNO ABBANDONATO"), vittoria, XP e monete come una partita vinta, poi **Torna alla Home** (niente rivincita). Protezioni:
+  - serve almeno una smazzata finita: prima resta il bot, e alla fine della smazzata si vince;
+  - monete e XP per abbandono al massimo 3 volte al giorno e una sola volta per avversario; oltre, la vittoria conta ma senza monete ("Niente monete: abbandoni già premiati oggi");
+  - a chi esce l'abbandono conta come sempre;
+  - una rivincita contro il bot, dopo che l'altro è uscito a fine partita, non vale.
+- ☑ **Rientro dopo la chiusura dell'app:** chi ha un account e chiude l'app durante una partita online torna al tavolo se la riapre entro 60 s dall'ultima uscita ("Riconnessione…" coi tentativi), e l'abbandono non conta. Se non fa in tempo, se la stanza non c'è più o se nessuno ha più lo stato della partita, va in Home e l'abbandono conta come prima. I posti al tavolo ora restano giusti anche se intanto qualcuno è uscito: l'ordine dei posti è salvato nella stanza.
+- Revisione del codice, corretti:
+  - un errore grave che avevo introdotto: la schermata di fine partita normale restava vuota (trovato prima di consegnare);
+  - una vittoria per abbandono possibile in una rivincita contro il bot;
+  - una mossa vincente ancora in volo scartata dall'abbandono;
+  - il tavolo che poteva restare a metà animazione;
+  - l'XP per abbandono senza limiti;
+  - l'avversario sbagliato nel conteggio;
+  - (seconda revisione, sul rientro) se dopo il rientro lo stato della partita non arrivava, lo stato "rientro in corso" restava acceso e poteva rimandare in Home dalla partita online successiva;
+  - (seconda revisione) l'ordine dei posti salvato nella stanza ora lo legge solo chi entra, l'host lo ricalcola sempre.
+- Provato dal vivo su iPhone 12 e SE:
+  - profilo rapido con motivi e Blocca, anche nella versione ospite;
+  - avviso delle emoticon spente;
+  - finestra con più esiti;
+  - conto alla rovescia;
+  - Termini aperti sulla sezione 3, anche alla prima apertura;
+  - schermata di vittoria per abbandono: didascalia su una riga, solo Torna alla Home, riga delle monete;
+  - fine partita normale.
+- Non provato dal vivo: il giro vero online a due telefoni (abbandono vero, rientro vero dopo la chiusura, segnalazioni vere sul server). Il rientro funziona solo con un account vero, e in Editor posso entrare solo come ospite. Da provare tu con due account di prova.
+- Da fare tu su PlayFab (Game Manager):
+  - Caricare di nuovo `Server/CloudScript/51.js`: Automation → CloudScript → Revisions (Legacy) → Upload new revision → Deploy.
+  - Facoltativo: Title Data `Moderazione` con le chiavi nuove, per esempio `{"segnalazioni":5,"partite":3,"abbandoni":5,"giorni":7,"ore":[24,72,72,168],"silenzio":[24,72,168],"azzeramento":30}`.
+  - Facoltativo: Title Data `Economia` → `partita.abbandoni`, cioè quante vittorie per abbandono premiare al giorno (oggi 3).
+  - Spegnere le emoticon a mano: Internal Data del giocatore, chiave `Silenzi`, stesso formato di `Sanzioni`.
+- Da fare tu: rileggere il paragrafo nuovo nei Termini (sezione 3) e, se i Termini sono anche sul sito, aggiornare la copia web.
+- Scelte mie, da confermare:
+  - Il rientro dopo la chiusura vale solo per chi ha un account: l'ospite ha un'identità nuova a ogni avvio e Photon non lo riconosce. Si può fare anche per l'ospite tenendo la stessa identità se riapre entro 60 s, ma cambia la regola "ospite nuovo a ogni avvio": decidi tu.
+  - I 60 s del rientro partono dall'ultima volta che l'app è andata in secondo piano; se l'app si è chiusa da sola senza passarci (crash) si prova comunque.
+  - Vittoria per abbandono solo dopo almeno una smazzata finita; prima resta il bot e, a fine smazzata, vince chi è rimasto.
+  - Tetti per abbandono: 3 al giorno e uno per avversario, per monete e XP.
+  - Le sanzioni degli ospiti stanno sul dispositivo: cancellando i dati dell'app o cambiando l'ora del telefono si azzerano.
+  - Gli ospiti non possono bloccare né aggiungere amici (non hanno un account dove salvarlo).
+  - Le richieste d'amicizia non esistono ancora (oggi "Aggiungi amico" aggiunge e basta): il blocco toglie dagli amici e ferma inviti e messaggi.
+  - Motivi: "nome" e "gioco" contano insieme (sospensione), "emoticon" a parte (emoticon spente).
+- Rimandato, da confermare uno per uno:
+  - **Inattività (3 turni saltati di fila = abbandono):** serve prima il timer del turno, che oggi non esiste (Fase 14, rimandato). Lo faccio? E quanti secondi per turno?
+  - **Controllo della sospensione anche sul server alla partenza della ricerca** (hai detto "poi").
+  - **Elenco dei giocatori bloccati** fuori dal tavolo, per sbloccare qualcuno che non incontri più: è una schermata nuova, aspetto il tuo sì.
+- ASSET MANCANTI DA CREARE: nessuno (motivi e Blocca fatti con forme e testi esistenti).
+
+**2.54:** Fase 11 chiusa con le tue scelte del 01/10: **Cambia password**, **segnalazioni e abbandoni contati sul server**, **Sospensione** ed **Esito segnalazione**. Build pulito (0 errori); test EditMode 399 totali: 392 ok, 0 falliti, 7 saltati (Explicit), 15 nuovi in `ModerationViewTests`; prove del CloudScript (`node Server/CloudScript/test.js`) tutte passate. Non committata.
+- ☑ **Cambia password** (scelta A): riga nuova nelle Impostazioni, sezione Account, tra Email ed Esci (solo con un account vero). Un tocco manda subito il link all'email dell'account e apre "Controlla la posta" con "Il link è in arrivo a g•••••@mail.com." e **CHIUDI** (al posto di TORNA AL LOGIN). Stessa pagina e stessa chiamata della Password dimenticata, ora con un suo Canvas a 2100 così sta sopra alle Impostazioni.
+- ☑ **Segnalazioni sul server:** "Segnala giocatore" del profilo rapido ora chiama il CloudScript `segnala` (prima `ReportPlayer` di PlayFab, che scrive solo un evento e non conta niente). Il server tiene i segnalatori diversi degli ultimi 7 giorni: alla 5ª persona diversa sospende per 24 ore (la volta dopo 3 giorni), azzera le segnalazioni e lascia un esito a ognuno dei segnalatori.
+- ☑ **Abbandoni contati** (solo chi ha fatto il login, mai contro i soli bot): conta l'uscita con ESCI da una partita online non finita con almeno un'altra persona nella stanza, e la chiusura dell'app durante una partita così (contata al primo arrivo in Home di quell'account, anche se intanto è entrato un altro). 5 abbandoni in 7 giorni = stessa sospensione (24 ore, poi 3 giorni). La connessione persa non conta.
+- ☑ **Avviso, senza conto alla rovescia:** nella finestra Abbandona, solo quando l'uscita conterebbe, si aggiunge una frase: "Chi abbandona spesso le partite online viene sospeso per un po’." Niente "ti restano N abbandoni".
+- ☑ **Sospensione** (mockup `Sospensione`): blocca solo il gioco online (partita veloce, crea e entra in stanza privata); toccando GIOCA online si apre la pagina. Scudo rosso, "Account sospeso", motivo, tempo che manca (si aggiorna da solo e chiude la pagina allo scadere), **GIOCA CONTRO I BOT** (apre Modalità sulla scheda Allenamento) e **Regole di comportamento**. All'arrivo in Home compare da sola una volta per sospensione.
+- ☑ **Esito segnalazione** (mockup `SegnalazioneEsito`): all'arrivo in Home, se una persona che hai segnalato è stata sospesa: scudo d'oro, "Grazie per la segnalazione!", riquadro "Segnalazione del 28 settembre · partita 1 vs 1. Per privacy non mostriamo il nome." e **PREGO!**. Una volta sola.
+- Revisione del codice (agente deep-reviewer) con 7 punti, corretti 6:
+  - il segno "partita in corso" ora vale per esecuzione dell'app, non per "prima Home": entrare come ospite o con un altro account dopo aver chiuso l'app a metà non lo cancella più;
+  - se l'altra persona esce e restano solo bot, il segno si toglie alla mossa successiva (prima la chiusura dell'app contava lo stesso);
+  - creare o entrare in una stanza privata dalle vecchie strade (popup del codice) ora è bloccato anche lì;
+  - dopo il 5° abbandono la Home aspetta la risposta del server, così la Sospensione compare subito;
+  - la pagina Sospensione si riapre per ogni nuova data di fine, anche per le sanzioni scritte o allungate a mano;
+  - il 7° (due segnalazioni nello stesso istante possono perderne una, mai una sanzione doppia) l'ho lasciato con una nota nel codice.
+- Menu: stesso **Tools/UI51/Build Fase 11 (Account)**. Scudi disegnati dal tracciato del mockup (`Tools/ui51/shields.py` → `shield_alert.png`, `shield_check.png`).
+- Provato dal vivo su iPhone 12 e SE: Sospensione (misure come il mockup: pannello a 410, pulsante a 707 contro 704), GIOCA CONTRO I BOT, i due blocchi online (la ricerca non parte, nessuna stanza), Esito segnalazione, riga Cambia password e stato "inviata" sopra alle Impostazioni, avviso nella finestra Abbandona (4 righe, nessun taglio). Sospensione ed esito messi in scena a mano.
+- Non provato: il giro vero col server (il CloudScript nuovo va caricato, vedi sotto), l'invio vero del link di Cambia password (andrebbe a un indirizzo reale) e l'accesso col nome utente della 2.53. Da provare tu con account di prova.
+- Da fare tu su PlayFab (Game Manager):
+  - Caricare `Server/CloudScript/51.js`: Automation → CloudScript → Revisions (Legacy) → Upload new revision → Deploy. Senza questo, Segnala dà errore e niente viene contato.
+  - Facoltativo: Content → Title Data, chiave `Moderazione`, per cambiare soglie e durate senza aggiornare l'app, per esempio `{"segnalazioni":6,"abbandoni":5,"giorni":7,"ore":[24,72]}`.
+  - Sospendere a mano: Players → (giocatore) → Internal Data, chiave `Sanzioni`, per esempio `{"volte":2,"fine":"2026-10-05T18:00:00Z","motivo":"Linguaggio offensivo"}`. La pagina si apre da sola alla prossima Home; `volte` serve solo a far durare di più la sospensione automatica successiva.
+- Scelte mie, da confermare:
+  - Soglia segnalazioni **5** (tu hai detto 5 o 6): si cambia da Title Data senza aggiornare l'app.
+  - Soglia abbandoni **5 in 7 giorni** (il numero non l'avevi detto).
+  - Dalla terza sospensione in poi resta 3 giorni; le volte non si azzerano mai (vedi idee).
+  - Possono segnalare solo i giocatori con un account (gli ospiti non vedono il pulsante, il server li rifiuta comunque); ogni giocatore conta una volta sola anche se segnala più volte.
+  - Gli ospiti non vengono mai sospesi (non hanno il pulsante Segnala addosso e i loro abbandoni non contano).
+  - Se l'altra persona esce prima di te e restano solo bot, la tua uscita non conta.
+  - La RIVINCITA resta nella stessa stanza e non controlla la sospensione (una sospensione arriva solo in Home).
+  - Il blocco è nell'app, non un "ban" di PlayFab: il ban di PlayFab blocca tutto (anche l'allenamento, il profilo e i premi), contro la tua scelta di lasciar giocare contro i bot. Limite: un'app modificata potrebbe aggirarlo.
+  - Sospensione: ho aggiunto il pulsante indietro in alto (nel mockup non c'è e la pagina sarebbe stata un vicolo cieco).
+  - "Regole di comportamento" apre i Termini di servizio (non c'è una pagina di regole a parte).
+  - Motivi mostrati: "Abbandoni ripetuti", "Segnalazioni dei giocatori", oppure il testo scritto a mano in Game Manager; testo sotto il titolo diverso per motivo.
+  - Tempo che manca nel formato "1g 23:59:59" (sotto un giorno "23:59:59").
+  - Se arrivano più esiti prima che tu apra l'app, ne vedi uno solo (l'ultimo).
+  - Cambia password manda il link al primo tocco, senza chiedere conferma (scelta A).
+- Rimandato, da confermare uno per uno:
+  - **Bloccare la chat per comportamenti scorretti:** oggi non c'è nessuna chat scritta (al tavolo solo emoticon; Photon Chat serve solo per gli inviti). Si fa quando arriva la chat (J3).
+  - **Aggiungere gli abbandoni ripetuti ai Termini di servizio**, sezione sul comportamento: il testo legale lo scrivi tu.
+  - **Lingua** e **Notifiche** (righe L1 e L2): più avanti, come hai detto.
+- Idee mie, aspettano il tuo sì (una per riga):
+  - **Motivo della segnalazione:** Segnala chiede il perché (emoticon offensive, nome offensivo, gioco scorretto). Per le emoticon la pena è il silenzio delle emoticon per 24 ore, non la sospensione: è il "blocco della chat" che si può fare oggi.
+  - **Rientro dopo la chiusura dell'app:** riaprendo entro 60 s si torna al tavolo (la stanza tiene il posto già 60 s) e non conta come abbandono.
+  - **Compenso a chi resta:** se l'avversario abbandona, chi resta prende comunque la vittoria piena o un piccolo premio.
+  - **Blocca giocatore:** oltre a silenziare, niente più inviti e richieste d'amicizia da lui.
+  - **Le volte si azzerano:** dopo 30 giorni senza sanzioni si riparte da 24 ore.
+  - **Inattività:** quando ci sarà il timer del turno (Fase 14, rimandato), troppi turni saltati di fila contano come abbandono.
+- ASSET MANCANTI DA CREARE: nessuno (scudi disegnati dal tracciato SVG del mockup; ic_warn_cream e Bagliore_morbido già nell'inventario).
+
+**2.53:** risposte tue sulla Fase 11 (01/10) e **accesso col nome utente**. Build pulito (0 errori); test EditMode 384 totali: 377 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Accesso con email o nome utente:** la casella dell'Accesso diceva già "Email o nome utente" ma accettava solo l'email. Ora senza "@" entra col nome utente scelto alla registrazione (PlayFab `LoginWithPlayFab`), con "@" con l'email come prima; errore "Nome utente o password non corretti". Una sola modifica in `PlayFabAuthService.LoginWithEmail`, che usano tutti.
+- Non provato dal vivo: l'accesso vero col nome utente (serve un account reale, da provare tu).
+- Le tue risposte:
+  - **SceltaNome:** niente schermata. La registrazione chiede sia l'email sia il nome utente (era già così) e si accede con l'uno o con l'altro (fatto qui sopra).
+  - **Lingua:** per ora resta "Italiano"; altre lingue più avanti (riga L1).
+  - **Notifiche:** per ora nascoste; arriveranno più avanti (riga L2).
+  - **CambiaPassword**, **SegnalazioneEsito** e **Sospensione:** ti ho spiegato come si possono fare, aspetto la tua scelta.
+
+**2.52:** Fase 11, la parte fattibile: **Password dimenticata** (`PasswordDimenticata` + `PasswordInviata`). Menu nuovo **Tools/UI51/Build Fase 11 (Account)** (`Assets/UI51/Editor/UI51AccountBuilder.cs`), vista `UI51RecoveryView` in `MainMenu` subito sopra all'Accesso. Build pulito (0 errori); test EditMode 384 totali: 377 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Password dimenticata:** il link dell'Accesso ora apre la pagina del mockup (prima scriveva solo una riga sotto al modulo): indietro, cerchio col lucchetto, "Password dimenticata?", testo, campo email (già riempito se nell'Accesso c'era un'email) e **INVIA IL LINK**. Dopo l'invio: busta, "Controlla la posta", riquadro con la spunta verde, **TORNA AL LOGIN** e "Puoi reinviarla tra 30s" che diventa **Non è arrivata? Reinvia**. Email vuota o sbagliata: avviso rosso sotto. La chiamata a PlayFab è la stessa di prima, spostata nella pagina.
+- Provato dal vivo su iPhone 12 e SE: apertura dal link con e senza email già scritta, avviso con email vuota, stato "inviata" e reinvio dopo 30 s. Misure: cerchio a 96-180 e pulsante che finisce a 458, come il mockup.
+- Non provato: l'invio vero dell'email (manderebbe una mail a un indirizzo reale: lo stato "inviata" l'ho messo in scena). Da provare tu con un account di prova.
+- Scelte mie, da confermare:
+  - Il riquadro dice **"Se g•••••@mail.com è l'email di un account 51, il link è in arrivo."** al posto di "Email inviata a g•••••@mail.com. Il link scade tra 30 minuti.": la risposta resta uguale che l'account esista o no (come prima, per non far scoprire chi gioca qui) e PlayFab non documenta una scadenza fissa del link.
+  - La spunta verde è disegnata col tracciato del mockup (l'icona ic_check_cream ha già un suo cerchio).
+- Rimandato, da confermare uno per uno:
+  - **SceltaNome** (avatar e nome dopo la registrazione): la nostra Registrazione chiede già il nome utente e lo usa come nome al tavolo, quindi sarebbe un doppione. Da decidere: farla al posto del campo, solo quando il nome è già preso, oppure lasciarla.
+  - **CambiaPassword:** resta nascosta (decisione 2.30, aspetta il modello di email di recupero su PlayFab).
+  - **Lingua:** resta la riga "Italiano" (decisione 2.30, una sola lingua).
+  - **Notifiche:** resta nascosta (decisione 2.30, l'app non manda notifiche).
+  - **SegnalazioneEsito** e **Sospensione:** servono segnalazioni e sanzioni sul server (vedi ❓).
+- ASSET MANCANTI DA CREARE: nessuno (ic_lock_cream, ic_mail, ic_nav_back_cream, home_bg_base già nell'inventario).
+
+**2.51:** Fase 12, seconda parte: **Benvenuto** e **partita guidata** (`Benvenuto`, `TutorialPartita` coi passi 2/3/5, `TutorialSalta`, `TutorialFine`), "Rifai il tutorial" acceso in Regole. Stesso menu **Tools/UI51/Build Fase 12 (Regole e tutorial)**: ora costruisce anche il Benvenuto in `MainMenu` e la guida in `GameScene` (viste nuove `UI51WelcomeView`, `UI51TutorialView`). Build pulito (0 errori); test EditMode 384 totali: 377 ok, 0 falliti, 7 saltati (Explicit), col test nuovo sulla distribuzione del tutorial. Non committata.
+- ☑ **Benvenuto:** al primo ingresso in Home (da ospite o con l'accesso) compare una volta: logo col bagliore, "Benvenuto al tavolo!", "Conosci già la Cirulla?", **No, insegnami** (bordo d'oro, dorso Giada, "Una partita guidata di 3 minuti") e **Sì, voglio giocare** (resta in Home), nota "Il tutorial e le regole sono sempre nelle Impostazioni".
+- ☑ **Partita guidata:** allenamento 1 contro 1 col bot facile, con una **distribuzione fissata**: mazziere il bot, tu di mano con Asso di denari, 7 e 2 di bastoni; in tavolo Asso di bastoni, Re di coppe, 4 di spade e 3 di coppe; nessun accuso e niente 15/30. Finita la distribuzione (e i 5 secondi dell'accuso) arriva Nonna Rosa coi 6 passi del mockup: velo scuro con il **buco sulle carte vere** (la tua mano, tavolo e mano, il tavolo, il bottone ACCUSA, il punteggio) e l'anello d'oro che pulsa, il **dito** che tocca l'Asso di bastoni e il 7, i pallini e **Salta** in alto, il fumetto con Indietro e AVANTI (FINE all'ultimo). Il fumetto si mette sopra o sotto al buco da solo.
+- ☑ **Salta:** "Saltare il tutorial?" con CONTINUA IL TUTORIAL e **Salta e vai alla Home**. **Fine:** "TUTORIAL COMPLETATO · Sei pronto per il tavolo!", **GIOCA LA PRIMA PARTITA** (si gioca questa stessa partita, a carte già spiegate) e **Leggi tutte le regole** (torna in Home e apre Regole).
+- ☑ **Rifai il tutorial** in Regole riparte da capo. Dopo la distribuzione del tutorial le smazzate tornano casuali.
+- Provato dal vivo su iPhone 12 (Benvenuto al primo ingresso, No insegnami, i 6 passi, Salta e Continua, fine, GIOCA LA PRIMA PARTITA col tavolo che torna giocabile) e SE (tutto il giro, più Leggi tutte le regole, Rifai il tutorial, Salta e vai alla Home). Misure del Benvenuto: le scelte a 498 e 586 come il mockup; larghe quanto la Safe dell'iPhone 12 (431 meno i margini), come le altre schermate.
+- Non provato: il Benvenuto dopo un accesso vero (provato da ospite), su telefono vero.
+- Scelte mie, da confermare:
+  - **La guida sta sopra a una partita vera** e le carte non si giocano mentre parla Nonna Rosa (il velo prende i tocchi); alla fine **GIOCA LA PRIMA PARTITA continua questa partita** invece di tornare in Home come il link del mockup.
+  - **Distribuzione fissata da un seme** (cercato apposta) invece di carte scelte a mano: il test nuovo controlla che resti quella.
+  - **Bot facile** nella partita guidata.
+  - Passo 1: **"basta toccarla"** al posto di "tocca una carta per sceglierla, toccala di nuovo per giocarla": da noi la carta parte al primo tocco.
+  - Passo 5: "A ogni distribuzione questo bottone si accende: se hai un accuso, premilo entro 5 secondi" al posto di "Quando puoi, compare questo bottone": il bottone c'è sempre e si accende a ogni distribuzione (per non rivelare chi ha l'accuso).
+  - La guida parte **dopo i 5 secondi dell'accuso**, non appena posate le carte.
+  - **Niente premi:** tolti il "+200" del Benvenuto, i riquadri "+200" e "Dorso Smeraldo" della fine e la frase "Il premio di benvenuto resta disponibile finché non lo completi" (il server non li dà ancora).
+  - Il **Benvenuto compare una volta per telefono**, anche a chi gioca già (dopo l'aggiornamento lo vede una volta).
+  - Buco e fumetto **calcolati sulle carte e sui bottoni veri** (margini 12-16) invece delle posizioni fisse del mockup; lo spazio fra fumetto e buco è 24.
+  - **Il dito** è disegnato in PNG dallo stesso tracciato del mockup (`Tools/ui51/tutorial_finger.py` → `Assets/UI51/Art/Common/tutorial_finger.png`).
+  - AVANTI e FINE larghi uguali (104). L'alone dell'anello si allarga di 8 e svanisce; con la grafica ridotta niente alone e dito fermo.
+- Rimandato, da confermare uno per uno:
+  - Premio del tutorial (+200 monete e dorso Smeraldo) dato dal server, con i riquadri della fine e il "+200" del Benvenuto.
+  - Ricordare che il tutorial è stato completato (serve solo quando c'è il premio).
+  - Ingresso "Partita guidata" anche da Modalità → Allenamento.
+- ASSET MANCANTI DA CREARE: nessuno (logo_51, Bagliore_morbido, back_giada, ic_nav_back_cream, home_bg_base, av_8 già nell'inventario; il dito ricavato dal mockup).
+
+**2.50:** Fase 12, prima parte: pagina **Regole** (`Regole`, `RegoleAccusi`, `RegolePunteggio`) e riga **"Regole e tutorial"** nelle Impostazioni (sezione Generale, sotto Lingua). Menu nuovo **Tools/UI51/Build Fase 12 (Regole e tutorial)** (`Assets/UI51/Editor/UI51RulesBuilder.cs`), vista `UI51RulesView` in `MainMenu` subito sopra alle Impostazioni; la riga la costruisce **Tools/UI51/Build Fase 4** (rieseguito). Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Regole:** indietro, "Regole", cinque schede (Prese · Scopa · Accusi · Punteggio · Formati) che scorrono di lato se non ci stanno. Prese, Scopa e Accusi hanno riquadri con titolo, testo ed **esempio a carte** sul panno verde (carta giocata col filo d'oro, freccia, carte prese, scritta oro a destra), con le **carte del mazzo scelto** dal giocatore. Punteggio e Formati hanno la tabella. In fondo il consiglio col bordo tratteggiato.
+- ☑ **Testi controllati sul codice delle regole** (uno per uno): precedenza della carta uguale, 15, asso piglia tutto, scopa, ultima giocata, 5 secondi per l'accuso, Cirulla e Decino (Decino vince sulla Cirulla), 15/30 del mazziere, soglie 6 e 21 (a 4 basta la maggioranza), primiera, grande, piccola, 6 e 3 mani, cappotto, tre assi, pareggio. Tutti tornano.
+- Provato dal vivo su iPhone 12 (tutte e cinque le schede dalla riga delle Impostazioni) e SE (Impostazioni da ospite: la riga nuova sta e il piè di pagina non si sovrappone; scheda Accusi).
+- Scelte mie, da confermare:
+  - **Decino con tre carte nell'esempio** (coppia di 6 più il 7 di coppe): il mockup ne mostra solo due ma la scritta dice "coppia di 6 + matta".
+  - **Panno verde a gradiente orizzontale** al posto del radiale del mockup (la forma UI non ha il radiale): chiaro al centro, scuro ai lati.
+  - Cambiando scheda il contenuto **compare senza salire di 6 px** (la salita lo lascerebbe fuori posto dentro allo scorrimento).
+  - "Rifai il tutorial" era spento nella 2.50; acceso nella 2.51.
+- ASSET MANCANTI DA CREARE: nessuno (ic_nav_back_cream, carte dei mazzi, sfondo già nell'inventario).
+
+**2.49:** Fase 14, seconda parte: spareggio (`MomentoSpareggio`) e vittorie immediate (`Cappotto`, `TreAssi`). Stesso menu **Tools/UI51/Build Fase 5 (Tavolo 1v1)** (passi nuovi `BuildTie` e `BuildInstant` in `UI51ResultsBuilder.cs`), dentro alla vista dei risultati `UI51ResultsView`. Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit), col controllo nuovo "TRE ASSI" nella pillola. Non committata.
+- ☑ **Spareggio:** se a fine smazzata due o più sono in testa a pari punti sopra al traguardo, 1,2 s dopo i risultati compare la finestra "SPAREGGIO · Parità a 53!" con gli avatar dei primi (i tuoi in oro, gli altri in blu, le coppie accavallate) col "=" in mezzo e i punti, "Avete superato 51 a pari punti: si gioca un'altra smazzata. Vince chi resta in testa da solo." e il pulsante d'oro **SMAZZATA DI SPAREGGIO** (fa partire la smazzata come PROSSIMA SMAZZATA; per chi non è l'host chiude solo la finestra). Un tocco fuori la chiude.
+- ☑ **Cappotto vinto:** al posto di nastro e sfida, schermata "PARTITA 1 VS 1 · VITTORIA IMMEDIATA", **CAPPOTTO!** grande con l'ombra marrone, "Hai preso tutti e 10 i denari" (a coppie "Tutti e 10 i denari presi da Tu e Giulia"), il tuo avatar grande (a coppie i due accavallati) con l'alone, bagliore che scoppia, raggi, **pioggia di monete** (le 28 del mockup, coi loro tempi). Sotto: ricompense (XP e monete vere), RIVINCITA e Torna alla Home.
+- ☑ **Tre assi vinti:** stessa schermata con "VITTORIA IMMEDIATA", **TRE ASSI!**, "Hai ricevuto tre assi in mano: la partita è tua" (a coppie, se li ha il compagno: "Giulia ha ricevuto tre assi in mano: la partita è vostra") e i **tre assi veri** della mano che cadono ruotati al loro posto.
+- ☑ **Chi perde** vede la solita SCONFITTA, ma col punteggio scritto "TRE ASSI" invece di "CAPPOTTO" quando la partita l'hanno chiusa i tre assi.
+- ☑ **Pillola del punteggio:** "TRE ASSI" (a quattro "3 ASSI") invece di "CAPPOTTO", e non lo scrive più mentre le carte volano: compare insieme al cartello TRE ASSI!, a carte posate (prima si leggeva durante la distribuzione).
+- Provato dal vivo su iPhone 12 (tre assi veri da una distribuzione fissata: pillola "0" durante il volo e "TRE ASSI" a carte posate, cartello, schermata coi tre assi della mano; spareggio 1v1 a 53 e cappotto 1v1 messi in scena) e SE (cappotto 2v2 e spareggio 2v2 messi in scena). Misure: finestra dello spareggio larga 342 e alta 326, come il mockup (342 per circa 327).
+- Non provato: uno spareggio e un cappotto arrivati giocando (messi in scena coi punteggi), lo spareggio online con l'host e un ospite (servono due telefoni).
+- Scelte mie, da confermare:
+  - **Schermata Cappotto / Tre assi solo per chi vince**; chi perde ha la SCONFITTA normale con "CAPPOTTO" o "TRE ASSI" al posto dei punti.
+  - **Ricompense vere** (XP e monete del server) al posto di "RICOMPENSE SPECIALI +300 monete, +250 XP, Trofeo Cappotto" del mockup: premi speciali e trofei non esistono ancora (Trofei è la Fase 15).
+  - **Niente coriandoli** sulla vittoria immediata: piovono già le monete. Con la grafica ridotta niente pioggia.
+  - **Spareggio sopra ai risultati della smazzata**, 1,2 s dopo; il conto alla rovescia "Si riparte da sola" continua sotto (chi non tocca nulla riparte comunque, anche online).
+  - **"3 ASSI"** nella pillola a quattro giocatori (come "CAPP." per il cappotto).
+  - I tre assi sono **centrati**: nel mockup sono 9 punti più a destra.
+  - **Testo dello spareggio quando tu non sei fra i primi** (a quattro): "Marco e Luca hanno superato 51 a pari punti…" invece di "Avete superato".
+- Rimandato, da confermare uno per uno:
+  - **Premi speciali del cappotto e dei tre assi** (+300 monete, +250 XP, trofeo): servono una regola dei premi e la CloudScript; da decidere insieme ai Trofei (Fase 15).
+- ASSET MANCANTI DA CREARE: nessuno (ic_coin, Bagliore_morbido, rays_conic e le carte del mazzo già nell'inventario; medal_sun del trofeo non usato finché non c'è il trofeo).
+
+**2.48:** Fase 14, prima parte: momenti al tavolo (`MomentiPartita`: `MomentoTurno4`, `MomentoDisconnesso`, `MomentoScopa`, `MomentoDistribuzione`, `MomentoUltima`). Menu **Tools/UI51/Build Fase 5 (Tavolo 1v1)** (passo nuovo in `Assets/UI51/Editor/UI51MomentsBuilder.cs`), vista nuova `UI51TableMoments` in `GameCanvas/UI51Moments`. Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Turno degli altri:** bordo e anello che pulsa **blu** sul banner di chi gioca (1,4 s come nel mockup); il tuo turno resta oro.
+- ☑ **MANO 3 DI 6:** a ogni distribuzione (anche la prima), finito il volo delle carte, chip "MANO n DI 6" (a 4: "DI 3") 100 sotto al banner in alto; compare, resta 2,5 s e svanisce. All'ultima distribuzione al suo posto **"ULTIMA MANO · MAZZO FINITO"** col bordo rosso.
+- ☑ **SCOPA!:** velo scuro, bagliore che scoppia, "SCOPA!" grande che entra ruotando e si posa (con l'ombra dura marrone), "Tu · +1" (o il nome), otto scintille dal centro; poi svanisce (2,2 s). Insieme a suono, scintille e scia di luce che c'erano già.
+- ☑ **Giocatore disconnesso:** avviso breve sotto al banner in alto col suo avatar spento, "Marco si è disconnesso" / "Gioca un bot finché non rientra" (bordo rosso); sul suo banner velo scuro e tondo rosso col Wi-Fi barrato finché non rientra (sui banner laterali a 4 il tondo sta sull'angolo dell'avatar). "Marco è rientrato in partita" e "Sei di nuovo in partita!" usano lo stesso avviso col bordo oro. Il vecchio avviso di connessione del tavolo è spento.
+- Provato dal vivo su iPhone 12 (1v1: MANO 1 DI 6 alla distribuzione vera; SCOPA!, disconnesso e ultima mano lanciati a mano) e SE (4 giocatori: MANO 1 DI 3 vera, disconnesso con due banner laterali, SCOPA! di un bot). Misure: chip alta 30 e avviso alto 46 come il mockup.
+- Non provato: una scopa vera in partita (il momento parte dallo stesso punto del suono della scopa), una disconnessione vera (servono due telefoni).
+- Scelte mie, da confermare:
+  - **Testo del disconnesso:** il mockup dice "Tra 30s lo sostituisce un bot", ma da noi il bot entra subito e il giocatore può rientrare entro 60 s; ho scritto **"Gioca un bot finché non rientra"** (e "Al suo posto gioca un bot" se ha lasciato la partita).
+  - **Ritratto del disconnesso spento**, non in bianco e nero (la UI non desatura senza un materiale in più).
+  - **SCOPA! senza le due carte che spazzano** del mockup: la presa vera vola già nel mazzetto in quel momento, due carte disegnate in più si sovrapporrebbero.
+  - **ULTIMA MANO al posto di "MANO 6 DI 6"** (non tutte e due).
+  - Posizioni: chip e avvisi **sotto al banner in alto** (100 e 18 come nel mockup), non a una y fissa: così restano giusti su SE e a 4 giocatori.
+- Rimandato, da confermare uno per uno:
+  - **Timer del turno** (`MomentoTurno` negli ultimi 5 s, `MomentoTempo` "Gioca adesso, o la carta verrà scelta per te"): il gioco oggi non ha un tempo per turno né una carta scelta da sola. Serve una regola nuova da decidere: quanti secondi, cosa succede allo scadere (carta giocata dal bot?), anche contro i bot o solo online.
+- ASSET MANCANTI DA CREARE: nessuno (Bagliore_morbido già nell'inventario; Wi-Fi barrato e scintille disegnati).
+
+**2.47:** Fase 13, terza parte e fine: scheda **Stanza privata** del pannello Modalità (mockup v3) ed errori d'ingresso (`StanzaErrore`, `StanzaPiena`, `StanzaIniziata`). Stesso menu **Tools/UI51/Build Fase 13 (Dalla Home al tavolo)** (ricostruisce anche la scheda; `UI51HomeBuilder` ora la chiede a lui), vista nuova `UI51RoomErrorView`. Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Scheda Stanza privata:** riquadro "Crea una stanza" (cerchio col link, "Ricevi un codice da condividere con gli amici", formati 1 VS 1 / 2 VS 2 / 1 VS 3, CREA STANZA d'oro), "OPPURE", riquadro "Entra con un codice" (campo "ES. A7K2Q" con Incolla dentro, ENTRA). La scheda non ha CONFERMA: prende anche il suo spazio. Il codice si scrive solo in maiuscole e cifre, massimo 5 (anche incollato: "zz-9qx7" diventa "ZZ9QX").
+- ☑ **CREA STANZA** crea subito la stanza nel formato scelto e porta alla sala d'attesa; **ENTRA** entra subito ("Ingresso nella stanza…", poi la sala).
+- ☑ **Ingresso rifiutato:** finestra sopra la scheda Stanza privata (riaperta col codice ancora scritto): "Codice non valido" (RIPROVA), "Stanza piena" (lucchetto, HO CAPITO), "Partita già iniziata" (carte, HO CAPITO); bordo rosso, icona nel cerchio, "Gioca online invece" sotto. La sceglie il codice di Photon (stanza inesistente, piena, chiusa).
+- ☑ **Annulla dalla ricerca o dalla sala** riporta alla scheda Stanza privata (prima tornava su Online o Allenamento, quello che era scelto).
+- Fase 13 completa (☑ nell'elenco delle fasi).
+- Provato dal vivo su iPhone 12 (codice corto: il campo trema e non parte nulla; codice inesistente vero su Photon: "Codice non valido"; RIPROVA lascia il codice; Piena e Iniziata mostrate a mano; "Gioca online invece" apre la ricerca 1v1; CREA STANZA in 2v2 crea una stanza vera da 4) e SE (la scheda sta tutta, ENTRA e il riquadro in basso visibili senza scorrere).
+- Non provato: "Stanza piena" e "Partita già iniziata" da una stanza vera (servono due telefoni).
+- Scelte mie, da confermare:
+  - **CREA STANZA crea subito** nel formato della scheda (prima si apriva un pannello per scegliere il formato: ora la scelta è nella scheda).
+  - **ENTRA con meno di 5 caratteri:** il campo trema e non parte nulla (il mockup non lo dice).
+  - Gli errori che non dipendono dal codice (rete, tempo scaduto) restano nella schermata di ricerca con "Connessione non riuscita", come per la creazione; la finestra rossa solo per codice sbagliato, stanza piena, partita iniziata.
+  - **"Gioca online invece"** parte con una partita veloce nel formato della scheda Stanza privata; annullando quella ricerca si torna alla scheda Stanza privata.
+  - Sotto la finestra: velo scuro senza sfocatura (come le altre finestre UI51).
+  - I vecchi pannelli Crea e Entra restano nascosti nella scena (pulizia nella Fase 10).
+- Rimandato, da confermare uno per uno:
+  - **INVITA dalla pagina Amici apre ancora il vecchio pannello "Crea stanza"** (disegno UIV2): la pagina Amici sta sopra la Home e il pannello Modalità si aprirebbe sotto. Da decidere dove si sceglie il formato quando inviti da Amici (pannello Modalità che si apre sopra Amici, o stanza creata subito nell'ultimo formato usato).
+- ASSET MANCANTI DA CREARE: nessuno (ic_link_cream, ic_paste_cream, ic_warn_cream, ic_lock_cream, ic_cards_cream già nell'inventario).
+
+**2.46:** Fase 13, seconda parte: sala privata (`SalaPrivata`, `SalaPrivataOspite`). Stesso menu **Tools/UI51/Build Fase 13 (Dalla Home al tavolo)**, vista `UI51PrivateRoomView` (una per l'host e una per l'ospite, come i due pannelli di prima). Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Sala:** sfondo sfocato, indietro, "Stanza privata" con "2 VS 2 · hai creato tu la stanza" (o "sei entrato con il codice"); pannello CODICE DELLA STANZA a tessere, Copia (diventa "Copiato!" per 1,5 s) e Condividi; "AL TAVOLO n / N"; posti a griglia: avatar, nome, HOST o BOT in alto a destra, anello oro per la tua squadra e blu per gli altri; posti vuoti tratteggiati col "+".
+- ☑ **Bot:** come prima, li mette solo l'host: tocca un posto vuoto ("Tocca per un bot") per aggiungerlo, tocca il bot per toglierlo.
+- ☑ **INVITA AMICI ONLINE:** gli amici online (Photon Chat) con INVITA, che manda il codice di questa stanza (l'invito arriva col banner della 2.43); dopo "Invitato…", e "Entrato ✓" quando l'amico è nella stanza. Senza amici online: "Nessun amico online: condividi il codice".
+- ☑ **Fondo:** host: "IN ATTESA DI N GIOCATORI" finché ci sono posti vuoti, poi AVVIA PARTITA d'oro (con pop). Ospite: "Aspettiamo che Giulia avvii la partita" col pallino che pulsa.
+- ☑ **Uscire dalla stanza?** dall'indietro: RESTA / Esci (Esci fa quello che faceva ESCI prima).
+- Tolti da `RoomFlowV2` i campi della vecchia sala (righe, celle del codice, scritte); il vecchio disegno resta nascosto nei pannelli (Fase 10).
+- Provato dal vivo su iPhone 12 (stanza 2v2 vera da host: vuota, coi bot, pronta, finestra d'uscita, Esci che chiude; ospite e 1v1 con dati finti; amici finti online) e SE (stanza 2v2 vera, bot aggiunto toccando il posto): posizioni come il mockup (pannello del codice a 84, AL TAVOLO a 286, posti a 308, amici a 524 o 422, fondo a 28, finestra a 292 contro 290).
+- Non provato: un secondo telefono che entra davvero (ospite vero, "Entrato ✓" vero, passaggio dell'host), INVITA verso un amico vero.
+- Scelte mie, da confermare:
+  - **Codice da 5 caratteri** (il mockup ne disegna 6): è il codice che usiamo già.
+  - Testo d'uscita dell'host: il mockup dice "uscendo la stanza viene chiusa e gli altri tornano alla Home", ma da noi la stanza passa a un altro giocatore; ho scritto **"Sei l'host: uscendo, la stanza passa a un altro giocatore. Se sei solo, si chiude."**
+  - Posto vuoto per l'host: **"Tocca per un bot"** al posto di "Posto libero" (l'ospite vede "Posto libero"); il bot porta l'etichetta **BOT** dove l'host ha HOST.
+  - Anello: **oro per la tua squadra, blu per gli altri** (il mockup alterna oro e blu per posto); nel 2v2 la prima riga è la tua squadra.
+  - Amici mostrati: **al massimo 3 righe con 4 posti, 5 con 2** (quelle che stanno sopra il pulsante); se gli online sono di più, gli altri dalla pagina Amici.
+  - Copia: il pulsante dice **"Copiato!"** come nel mockup, niente toast (correggo quanto scritto nella 2.44). Condividi, dove il telefono non ha la condivisione, copia l'invito e lo dice col toast.
+  - Gli amici anche nella sala dell'ospite (come nel mockup): l'invito manda lo stesso codice.
+- ASSET MANCANTI DA CREARE: nessuno (home_bg_blur, ic_nav_back_cream, ic_copy_cream, ic_share_cream, avatar già nell'inventario; "+", tratteggi e spunta disegnati).
+
+**2.45:** Fase 13, prima parte: ricerca della partita (`Matchmaking`, `Matchmaking2v2`, `MatchmakingTrovato`). Menu **Tools/UI51/Build Fase 13 (Dalla Home al tavolo)** (`Assets/UI51/Editor/UI51MatchBuilder.cs`) in `MainMenu.unity`, viste `UI51MatchmakingView` + `UI51SeatCard` (la tessera del posto servirà anche alla sala privata). Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Ricerca:** "PARTITA 1 VS 1 · ONLINE" (o 2 VS 2, TUTTI CONTRO TUTTI), "Cerco giocatori…", "Tempo di attesa 0:05"; anello d'oro che gira sul bagliore e i cinque dorsi del mazzo scelto che ondeggiano. Posti: il tuo (avatar, "Tu", livello o "Ospite") e quelli vuoti tratteggiati, col "?" che pulsa e "In ricerca…". 1v1 una riga; 2v2 "LA TUA SQUADRA" (oro) e "AVVERSARI" (blu); tutti contro tutti due righe. Chi entra prende il primo posto libero (nel 2v2 nella squadra giusta). In fondo "Se non arriva nessuno, tra N s si gioca coi bot" e "Annulla ricerca".
+- ☑ **Trovata:** "Partita trovata!", "Il mazziere viene sorteggiato al tavolo", anello spento, i posti rimasti vuoti diventano "Bot N · Computer", pillola d'oro AL TAVOLO al posto di Annulla mentre si carica il tavolo.
+- ☑ **Stanza privata** (creazione e ingresso): stessa schermata con la sola testata ("STANZA PRIVATA", "Creazione stanza…", "Ingresso nella stanza…"); i posti li mostra la sala d'attesa. Errore di creazione: "Connessione non riuscita" col messaggio.
+- ☑ **Test della ruota del mazziere resi indipendenti:** uscendo dal Play l'Editor non ricarica il codice, quindi dopo una partita online provata in Editor la ruota restava "online" e 8 test di `K7FlowTests` fallivano. Ora ogni test riparte offline. Nel gioco vero non succedeva (tornando al menu si azzera già).
+- Provato dal vivo su iPhone 12 (1v1 e 2v2, ricerca e trovata coi bot) e SE (2v2, ricerca e trovata): posizioni misurate uguali al mockup (testata a 44, posti a 400, fondo a 30, lati a 20).
+- Non provato: due telefoni veri che si trovano (l'altro giocatore che entra nel posto); tutti contro tutti dal vivo (stesso codice delle due righe del 2v2).
+- Scelte mie, da confermare:
+  - **AL TAVOLO senza conto alla rovescia e non toccabile:** il mockup ha "AL TAVOLO · 3" cliccabile, ma da noi il tavolo si carica da solo appena la stanza è piena; un conto finto direbbe una cosa non vera.
+  - Testo d'attesa: il mockup dice "Tempo stimato circa 20 secondi"; io mostro **i secondi veri all'arrivo dei bot** ("tra 26 s si gioca coi bot"). Il testo del mockup resta solo quando quel tempo non si sa.
+  - I bot si chiamano **"Bot 2/3/4", sotto "Computer"** (come al tavolo).
+  - Ritratti: **il tuo è il tuo avatar**; gli altri hanno il ritratto del loro posto (come al tavolo), perché l'avatar scelto da ognuno non passa in rete. Sotto il nome "Liv. N" se il giocatore ha pubblicato il suo aspetto, altrimenti "Ospite".
+  - Stanza privata durante creazione o ingresso: **solo la testata**, senza posti.
+  - Stanza privata che parte: titolo **"Si parte!"** (il mockup ha solo la partita veloce).
+- ASSET MANCANTI DA CREARE: nessuno (home_bg_base, Bagliore_morbido, dorsi del mazzo, avatar_1/av_2/av_4/av_5 già nell'inventario; anello, tratteggi e "?" disegnati).
+
+**2.44:** Fase 9 (`Toast`, `Connessione` + `Conn*`, `Aggiornamento`, `Manutenzione`). Build pulito (0 errori); test EditMode 383 totali: 376 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Toast:** pillola in basso (a 96 dal fondo), sale, resta e svanisce in 2,8 s; tre tipi (spunta verde, moneta, "!" rossa). Un solo componente per tutta l'app, vale in Home e al tavolo. Usato in Amici: nome copiato, "X aggiunto agli amici", "Sei tu!", errori (prima la riga "Il tuo: ..." cambiava per 2,5 s).
+- ☑ **Riconnessione in partita:** se cade la rete al tavolo, card "Riconnessione…" con anello che gira, Wi-Fi che pulsa, tentativo N di 5 e "Il tuo posto al tavolo resta tuo per Ns" (i 60 s del rientro). Dopo 5 tentativi (uno ogni 3 s almeno) card "Nessuna connessione" con RIPROVA (altri 5 tentativi finché il posto c'è) e "Esci dalla partita". Finito il posto, come prima: avviso e ritorno al menu.
+- ☑ **Riconnessione in Home:** se Photon cade dopo l'ingresso, si riprova in silenzio per 3 s, poi la stessa card senza il riquadro del posto; dopo 5 tentativi "Nessuna connessione" con RIPROVA e "Continua offline".
+- ☑ **Aggiornamento obbligatorio e Manutenzione:** schermate a tutto schermo del mockup. Si comandano da PlayFab Game Manager → Content → Title Data, senza build:
+  - `Aggiornamento` = `{"minima":"2.50","novita":["Banner animati per il tuo profilo","..."],"link":"https://..."}`: chi ha una versione più vecchia di `minima` vede solo AGGIORNA ORA (fino a 3 novità). `link` facoltativo: senza, su Android apre la scheda Play Store dell'app; su iOS serve il link (non abbiamo ancora l'id dell'App Store).
+  - `Manutenzione` = `{"fine":"2026-10-02T04:00:00Z"}` (ora UTC): fino a quell'ora si vede il conto alla rovescia ("42:18", da un'ora in su "1:42:18") con "Fine prevista alle 6:00" in ora locale. RIPROVA ricontrolla, a zero ricontrolla da sola; "Leggi le novità" apre Notizie e la schermata torna quando Notizie si chiude. Per riaprire: togliere la chiave o lasciare un'ora passata.
+  - Si controlla quando l'accesso è pronto e a ogni ritorno in Home. Se PlayFab non risponde si gioca (meglio un controllo saltato che un'app bloccata per un errore di rete).
+- ☑ **Corretto in `UIKeyframes` (tutte le animazioni UI51):** un'animazione senza spostamenti (pop, dissolvenze) riscriveva comunque la posizione ogni fotogramma; su un elemento appena acceso dentro un layout la bloccava su quella di prima del layout (la card "Nessuna connessione" usciva mezza fuori a sinistra). Ora la posizione si tocca solo se l'animazione la muove.
+- Provato dal vivo su iPhone 12 (e Aggiornamento/Manutenzione anche su SE): toast nei tre tipi; card riconnessione (in partita e Home) a 241 dall'alto e 29 dai lati contro 240/28; card errore a 220; Aggiornamento e Manutenzione con tutti i blocchi misurati uguali al mockup (testi da 310 e 150, pannelli da 470, pulsanti a 30 dal fondo, lati 24); giro Notizie andata e ritorno; RIPROVA con il vero Title Data (chiavi assenti: la schermata sparisce). Test nuovi in `ServiceGateTests` (4).
+- Non provato: rete che cade davvero (in partita e in Home, serve un telefono o staccare il Wi-Fi a mano), AGGIORNA ORA su Android, i dati veri su Title Data (le chiavi non sono state create).
+- Scelte mie, da confermare:
+  - Errore di connessione in Home: il mockup dice "Torna alla schermata iniziale", io ho messo **"Continua offline"** (l'allenamento coi bot funziona senza rete e il gioco online si ricollega da solo quando serve).
+  - Riconnessione in partita: **5 tentativi** dentro i 60 s del posto, poi la card d'errore; RIPROVA ne fa altri 5 finché il posto c'è.
+  - In Home la card compare solo **dopo 3 s** di caduta (i cali brevi, tipo il rientro dall'app in pausa, si risolvono senza mostrare niente).
+  - Velo dietro le card **.65 senza sfocatura** (il mockup ha .55 con sfocatura; gli altri pannelli fanno già così).
+  - I secondi del posto sono in **Nunito grassetto oro**, non in Cinzel (TMP non cambia font dentro la stessa riga senza un asset in più).
+  - "Sei di nuovo in partita!" e gli altri avvisi brevi del tavolo restano quelli di oggi fino alla Fase 14 (`MomentiPartita`).
+  - Il **Toast in Posta non c'è**: RISCATTA dice già sul pulsante cosa è arrivato, un toast lo ripeterebbe. La copia del codice stanza passa al toast con la Fase 13 (`SalaPrivata`).
+  - **Aggiornamento e Manutenzione bloccano tutta l'app**, anche l'allenamento offline, come nel mockup (nessuna uscita). Se preferisci lasciare l'allenamento durante la manutenzione, si aggiunge un'uscita.
+  - Se ci sono sia aggiornamento sia manutenzione, **vince l'aggiornamento** (si può aggiornare intanto).
+  - Versioni confrontate come numeri decimali (come le numeriamo: 2.5 = 2.50, più nuova di 2.43).
+  - Il ✦ delle novità non c'è in nessun font del progetto: è disegnato (stellina a 4 punte), uguale a vista.
+- ASSET MANCANTI DA CREARE: nessuno (home_bg_base, logo_51, Bagliore_morbido, ic_settings_cream, ic_coin già nell'inventario UI51; Wi-Fi, spunta e ✦ disegnati a tratti come l'SVG del mockup).
+
+**2.43:** Fase 8 completata (`AmiciVuoto`, `PostaVuota`, `InvitoRicevuto`). Build pulito (0 errori); test EditMode 379 totali: 372 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Amici senza amici:** due cerchi (tratteggiato con la persona, oro col +), "Il tavolo è più bello in compagnia", testo e pulsante "Condividi il tuo nome" (apre la condivisione del telefono; dove non c'è, copia il nome e lo dice).
+- ☑ **Posta vuota:** busta sul bagliore, "Nessun messaggio", "Qui arrivano regali degli amici, premi delle stagioni e avvisi del Team 51.", TORNA A GIOCARE (chiude la Posta).
+- ☑ **Invito ricevuto:** al posto del dialog della 2.39, il banner in alto del mockup: avatar, "Giulia ti invita a giocare", "Stanza privata · 2 vs 2", secondi rimasti e barra d'oro che si accorcia, Rifiuta / ACCETTA. Scende dall'alto, sparisce da solo dopo 20 s. Un secondo invito prende il posto del primo.
+- Provato dal vivo su iPhone 12 (amici e posta vuoti, invito finto): posizioni misurate uguali al mockup (disegno a 270, titolo a 390, testo a 424, pulsante a 477 contro 479); il banner sparisce a 20 s e con Rifiuta. ACCETTA non provato (serve un invito vero a due telefoni).
+- Scelte mie, da confermare:
+  - "Condividi il tuo ID" del mockup è diventato "Condividi il tuo **nome**": l'ID corto #51-... non esiste ancora (arriva col server), e oggi gli amici si aggiungono per nome. Anche il testo dice "Condividi il tuo nome".
+  - **20 s contro 2 minuti (il ❓ qui sotto):** non si contraddicono. 20 s è quanto resta il banner per accettare (mockup). 2 minuti resta il limite tecnico per scartare inviti vecchi arrivati in ritardo. Quindi il ❓ si chiude così, se ti va bene.
+  - Il mockup dice anche "2 posti liberi": tolto, perché il telefono di chi riceve non lo sa (si saprebbe solo al momento dell'invio e poi cambia).
+- ASSET MANCANTI DA CREARE: nessuno (ic_person_cream, ic_share_cream, ic_mail, Bagliore_morbido, av_2 già nell'inventario UI51; il cerchio tratteggiato è disegnato a trattini).
+
+**2.42:** si vede perché si perde coi Tre assi. Build pulito (0 errori); test EditMode 379 totali: 372 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Momento dei Tre assi:** prima dei risultati compare il cartello "TRE ASSI!" (lo stesso del 15/30 del mazziere) con chi li ha ricevuti e chi vince ("Bot 2 ha ricevuto tre assi: vince la partita", nel 2v2 "...: la partita è vostra" / "vince la sua coppia"). Le tre carte si girano a faccia in su col bordo oro, anche nella mano del giocatore. Suono e vibrazione dell'accuso. Dopo circa 3,5 s, i risultati.
+- ☑ **Tre assi in una distribuzione successiva** (2ª-6ª nel 1v1, 2ª-3ª a 4): prima si vede l'animazione delle carte nuove, poi il cartello, poi i risultati.
+- Provato dal vivo nel 1v1: tre assi a me alla prima distribuzione, al Bot alla prima e al Bot alla seconda.
+- Non provato: tavolo a 4 (cartello sopra le carte girate dei giocatori laterali) e due telefoni in rete.
+- Resta per la Fase 14 (schermata `TreAssi`), d'accordo il 01/10: risultati e pillola del punteggio scrivono "CAPPOTTO"; la pillola lo mostra già durante la distribuzione.
+
+**2.41:** regole dell'handoff v2/v3 (SPEC §10 punti 1-4, §11 punto 5), con il tuo via del 01/10. Build pulito (0 errori); test EditMode 378 totali: 371 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Carta uguale obbligatoria:** se in tavola c'è la carta dello stesso valore si prende quella; niente somme né 15 (`Rules51.GetValidMoves`).
+- ☑ **1v3, maggioranza semplice:** punto Carte e punto Denari a chi ne ha di più, senza le soglie 21 e 6 (che restano in 1v1 e 2v2). Pari merito: nessun punto (`PunteggioManager`).
+- ☑ **Asso piglia tutto:** il codice lo faceva già (scopa solo se il tavolo resta vuoto). Aggiunti i test.
+- ☑ **15/30 del mazziere:** contava già come accuso (1 o 2 punti). Ora il cartello dice "ACCUSO 15 · +1" / "ACCUSO 30 · +2" (con gli accusi spenti solo "ACCUSO 15"), con suono e vibrazione dell'accuso. Provato dal vivo.
+- ☑ **Tre assi:** chi li riceve vince subito la partita, in tutte le modalità; nel 2v2 vince la coppia. Si controlla a ogni distribuzione, prima degli accusi e del 15/30 del mazziere: niente finestra Accuso, nessun accuso accettato. La matta non vale come asso. Vale anche in rete: i client vedono la distribuzione e poi la fine. Provato dal vivo nel 1v1, alla prima mano: arrivano le carte e poi subito VITTORIA.
+- Test nuovi in `RulesDecisionsTests` (9). Aggiornato `MatchScoreTests`: nel 1v3 il posto 0 ora prende carte e denari (6 punti invece di 4).
+- Rimandati: i tre assi non si vedevano e mancava l'animazione della distribuzione successiva (fatti nella 2.42); "CAPPOTTO" su risultati e pillola (Fase 14).
+- Prossimo: scegliere la fase da cui ripartire (vedi l'elenco qui sotto).
+
+**2.40:** avatar della Home. Non committata.
+- ☑ **Avatar non più stirato:** gli sprite avatar non sono quadrati (avatar_1 354x428) e venivano schiacciati nel cerchio. Ora si ritagliano come negli altri avatar UI51 (`AvatarFrame.FitPortrait`), sia l'avatar di riserva sia quello scelto nel profilo. Provato dal vivo.
+- ☑ **Tocco sull'avatar → pagina Profilo** (account e ospite), come la voce Profilo della barra in basso. Provato dal vivo da ospite.
+- Prossimo: riprendere le fasi (vedi i rimandati qui sotto).
+
+**Handoff v2/v3 (01/10):** una sola cartella, `Design/51_handoff/51_handoff/` (contenuto della v3, più `ic_shop.png` della v1). Le copie `51_handoff_unity_v2/v3` sono nel Cestino. Nuove schermate (SPEC §10-§11) assegnate alle fasi, ognuna parte col tuo via. La Pulizia resta Fase 10 perché molte note dicono già "si toglie nella Fase 10".
+- ☑ **Fase 8, completamento:** `AmiciVuoto`, `PostaVuota` (stati vuoti), `InvitoRicevuto` (prende il posto del "X ti invita" della 2.39). Fatto nella 2.43.
+- ☑ **Fase 9, Connessione e avvisi:** `Conn*` (già previsti), `Toast` (avvisi brevi, un solo componente per partita, amici e posta), `Aggiornamento`, `Manutenzione`. Fatto nella 2.44.
+- ☐ **Fase 10, Pulizia:** invariata.
+- ☑ **Fase 11, Account:** (Password dimenticata 2.52; accesso col nome utente 2.53 al posto di SceltaNome; CambiaPassword, SegnalazioneEsito e Sospensione 2.54; Lingua e Notifiche più avanti, righe L1 e L2) `SceltaNome`, `PasswordDimenticata` + `PasswordInviata`, `CambiaPassword`, `Lingua`, `Notifiche`, `SegnalazioneEsito`, `Sospensione`.
+- ☑ **Fase 12, Primo avvio, tutorial e regole (§10):** (Regole e riga nelle Impostazioni 2.50, Benvenuto e partita guidata 2.51; premio del tutorial rimandato) `Benvenuto`, `TutorialPartita` + `Tutorial2/3/5` + `TutorialSalta` + `TutorialFine`, `Regole` + `RegoleAccusi` + `RegolePunteggio`, riga "Regole e tutorial" in `Impostazioni`.
+- ☑ **Fase 13, Dalla Home al tavolo** (ricerca 2.45, sala privata 2.46, scheda Stanza privata ed errori 2.47): `Matchmaking` + `Matchmaking2v2` + `MatchmakingTrovato`, `SalaPrivata` + `SalaPrivataOspite`, `StanzaErrore` + `StanzaPiena` + `StanzaIniziata`.
+- ◐ **Fase 14, Momenti di partita e vittorie immediate** (momenti al tavolo 2.48, spareggio, cappotto e tre assi 2.49; manca solo il timer del turno, rimandato): `MomentiPartita` (`MomentoTurno4`, `MomentoTempo`, `MomentoDisconnesso`, `MomentoScopa`, `MomentoDistribuzione`, `MomentoUltima`, `MomentoSpareggio`), `Cappotto` + `TreAssi`.
+- ☑ **Fase 15, Progressione (2.63; NuovoOggetto e NuoviFrammenti non fatti, vedi 2.63):** `LivelloSu`, `Forziere` + `ForziereAperto`, `NuovoOggetto` + `NuoviFrammenti`, `Classifica`, `Trofei`.
+- ❓ **Da decidere prima delle fasi:**
+  - Il forziere a 3 carte con frammenti contraddice la scelta del 01/10 (forzieri aperti subito dal server, niente inventario, frammenti "idea futura").
+  - Sistemi che ancora non esistono: classifica, trofei, notifiche push, lingue (oggi solo italiano). Segnalazioni e sospensioni fatte nella 2.54.
+  - L'invito ricevuto dura 20 s nel mockup, 2 minuti nel codice.
+  - Il premio del tutorial (+200 monete, dorso Smeraldo) va dato dal server.
+
+## Versione 2.39
+
+**2.39:** Fase 8, pagine Premi e Amici, e giro del server (le tue scelte del 01/10). Build pulito (0 errori); test EditMode 369 totali: 362 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ **Dove sta la Posta:** dati in sola lettura del giocatore, chiave `Posta` (confermato).
+- ☑ **Messaggi per tutti (scelta mia):** gli avvisi senza regali (Manutenzione) vanno nelle **Notizie**. I messaggi con regali (Benvenuto, risarcimenti) li scrivi una volta in Title Data `PostaGlobale` (stesso formato della `Posta`, con `id` obbligatorio). Il server li copia nella Posta di ogni giocatore al primo accesso dopo, una volta sola.
+- ☑ **Premi (mockup `Premi` e `PremiRiscattato`):**
+  - In alto: serie di accessi, "Il premio scade tra" / "Prossimo premio tra" col conto alla rovescia.
+  - Giorni 1-6: oggi in oro con la pillola, i giorni passati con la spunta. Il giorno 7 è la scheda grande col forziere viola.
+  - Pulsanti: RISCATTA IL PREMIO DI OGGI / TORNA A GIOCARE.
+  - Riscatto: bagliore e premio che sale. Pallino rosso sul pulsante della Home se il premio di oggi è ancora da prendere.
+  - Il giorno cambia a mezzanotte italiana. Saltando un giorno si riparte dal giorno 1.
+  - Provato dal vivo su iPhone 12 e SE.
+- ☑ **Amici:**
+  - Pulsante nuovo nella colonna della Home: Amici, Posta, Notizie.
+  - Due schede: Amici e Richieste (vuota per ora).
+  - Ogni riga: online, in partita o "Visto 2 ore fa"; livello; pulsante Invita.
+  - Aggiungi per nome (tua scelta: l'ID corto arriva col server). L'amicizia per ora è a senso unico.
+  - Invita: apre un tavolo privato e manda l'invito vero con **Photon Chat**. All'amico compare "X ti invita" con ENTRA / No grazie; l'invito vale 2 minuti.
+  - Provato dal vivo su iPhone 12 con amici finti. Online e inviti si provano solo con due telefoni e l'app Chat configurata (vedi sotto).
+- ☑ **Giro del server (CloudScript, `Server/CloudScript/51.js`):**
+  - RISCATTA e Raccogli tutto della Posta danno davvero monete, gemme e forzieri.
+  - I premi di Premi li decide il server.
+  - Forzieri aperti subito: verde 150-300 monete + 3-8 gemme, viola 400-800 + 10-25.
+  - Monete di fine partita: vittoria 40, sconfitta 20, metà contro i bot, tetto 400 al giorno, niente agli ospiti. Si vedono nel riquadro RICOMPENSE sotto gli XP ("+40 monete", oppure "Tetto di monete di oggi raggiunto").
+  - Le cifre si cambiano senza nuova versione in Title Data `Economia`. Unica eccezione: la tabella dei giorni 1-6 mostrata dal telefono va aggiornata anche a mano in `UI51RewardsView.Week`.
+  - Prove del server: `node Server/CloudScript/test.js` (tutte passate).
+- ☑ **Corretto durante la prova:** le statistiche di fine partita finivano sopra il riquadro RICOMPENSE (ora più alto per le monete). L'animazione d'entrata si teneva la posizione vecchia.
+- **Da fare da te su PlayFab e Photon (finché non lo fai, Premi e Posta dicono "non disponibile" e gli amici risultano offline):**
+  1. Game Manager → Automation → CloudScript → Revisions (Legacy): carica `Server/CloudScript/51.js` e pubblicalo (Deploy).
+  2. Economy → Currencies: valute `CO` (monete) e `GE` (gemme), se non ci sono già.
+  3. Title settings → Client Profile Options: spunta Statistics e Last Login time (servono per livello e "Visto ..." degli amici).
+  4. Facoltativo: Title Data `PostaGlobale` (per esempio il Benvenuto) ed `Economia` (per cambiare le cifre).
+  5. Dashboard Photon: crea un'app **Chat** con Custom Authentication PlayFab come quella di PUN. Metti il suo AppId in PhotonServerSettings → App Id Chat, e aggiungilo nell'add-on Photon di PlayFab.
+- ASSET MANCANTI DA CREARE: nessuno.
+- **Rimandati, ognuno col tuo via:**
+  - Richieste di amicizia vere (servono al server).
+  - ID corto #51-xxxxx.
+  - Prova a due telefoni di online e inviti.
+  - Bordo tratteggiato della nota di Premi (UI51Shape non lo fa).
+  - Festa del giorno 7: mostra solo le monete, non le gemme.
+  - Togliere le vecchie `PanelAmiciController` e `PanelPremiController` (Fase 10).
+
+## Versione 2.38
+
+**2.38:** Fase 8, pagina Posta (tua scelta del 01/10: Posta come prossima schermata, solo grafica). Prima ho committato in locale 2.35-2.37 (`6654de8`, senza push, `docs/art/` fuori). Build pulito (0 errori); test EditMode 366 totali: 359 ok, 0 falliti, 7 saltati (Explicit). Non committata.
+- ☑ Pulsante Posta della Home: ora si tocca (prima era spento tra le "azioni da fare") e il numero rosso conta i messaggi non letti. L'ospite non lo vede, come prima.
+- ☑ Pagina Posta (mockup `Posta`): indietro, titolo con "N messaggi non letti" / "Tutto letto", Raccogli tutto (solo con 2 o più messaggi da riscattare), elenco con tessera colorata per tipo (team, stagione, amico, avviso, torneo), pallino rosso, titolo, quando, anteprima, pillole degli allegati (+monete, +gemme, Forziere), "Scade tra N giorni", "Riscattato" con la spunta. In fondo "I messaggi vengono eliminati dopo 30 giorni". Senza messaggi: "Nessun messaggio per ora."
+- ☑ Messaggio aperto dal basso (mockup `PostaMessaggio`): tessera, titolo, "mittente · quando", testo, ALLEGATI con i riquadri, e un pulsante: RISCATTA (oro), RISCATTATO (verde) o Chiudi (senza allegati). Aprirlo lo segna letto.
+- ☑ RISCATTA e Raccogli tutto per 2 secondi dicono "Presto in arrivo" (tua scelta: i premi li darà il server nel giro dedicato).
+- ☑ Da dove arrivano i messaggi (scelta mia, da confermare): dati del giocatore **in sola lettura** su PlayFab, chiave `Posta` (Game Manager → Players → il giocatore → Player Data → Read Only). Il telefono li legge e basta, quindi nessuno può regalarsi monete; domani il CloudScript scriverà lì e darà i premi. Formato: un elenco JSON, per esempio
+  `[{"id":"benvenuto","tipo":"team","titolo":"Benvenuto a 51!","testo":"Grazie per esserti unito al tavolo!","data":"2026-10-01","allegati":[{"tipo":"monete","quantita":200},{"tipo":"gemme","quantita":10}]}]`
+  Campi facoltativi: `da` (senza: Team 51), `scade` (data), `riscattato` (true/false); allegati `monete`, `gemme`, `forziere`. "Letto" resta sul telefono. Spariscono i messaggi più vecchi di 30 giorni e quelli scaduti non riscattati.
+- ☑ Provato dal vivo su iPhone 12 e SE con i 5 messaggi del mockup (finti, su PlayFab oggi non ce ne sono): elenco, i tre tipi di messaggio aperto, RISCATTA → PRESTO IN ARRIVO, numero sul pulsante. Corretto durante la prova: titoli non scritti, righe di testo allargate su tutta l'altezza, la ✓ che Nunito e Cinzel non hanno (ora è una spunta disegnata), titolo un po' alto rispetto all'ora.
+- Costruita da **Tools/UI51/Build Fase 8 (Notizie, Posta)** (`UI51SocialBuilder.cs`), vista `UI51MailView` + `UI51MailItem`, servizio `MailService`, test `MailServiceTests`. La vecchia `PanelPostaController` (vecchia HUD) resta: si toglie nella Fase 10.
+- ASSET MANCANTI DA CREARE: nessuno (ic_mail, chest_purple, av_2, ic_warn_cream, medal_trophy, ic_coin, ic_gem già nell'inventario UI51).
+- Da decidere, ognuno col tuo via:
+  - Va bene leggere la Posta dai dati in sola lettura del giocatore (chiave `Posta`), o preferisci un altro posto?
+  - Messaggi per tutti (Benvenuto, Manutenzione): oggi vanno scritti giocatore per giocatore; nel giro del server il CloudScript li manderà a tutti. In alternativa usi le Notizie.
+  - Fase 8, prossima schermata: Premi (solo grafica) oppure Amici.
+  - Giro del server (CloudScript): RISCATTA, Raccogli tutto, premi di Premi e di fine partita.
+
+## Versione 2.37
 
 **2.37:** chiusi i due mockup rimasti della Fase 5 e iniziata la Fase 8 con la pagina Notizie (tue scelte del 01/10: prima Notizie; Posta e Premi solo grafica, il server in un giro dedicato). Build pulito (0 errori); test EditMode 361 totali: 354 ok, 0 falliti, 7 saltati (Explicit). Non committata (2.35, 2.36 e 2.37 insieme).
 - ☑ `PartitaTavoloPieno` (8 carte in tavola) e `PartitaBanner` (banner animato aurora): già fatti dalla Fase 5, provati dal vivo su iPhone 12. 8 carte su 2 righe da 4, larghe 60 con 10 di spazio come nel mockup; il mio banner aurora si muove.
@@ -677,6 +1322,8 @@ Precisazioni sulle voci già esistenti:
 | H11 | Opzioni spostate dal Profilo alla colonna della Home, sotto Posta | ☑ 1.88 |
 | H12 | Pannello account per chi ha un login vero (prima il vecchio "Logout / Back" senza grafica V2) | ☑ 1.89 "Il tuo account": nome, nome utente, email (da PlayFab), ID giocatore, ESCI DALL'ACCOUNT → schermata iniziale |
 | H7 | `Impostazioni → Account → Elimina account` in app, con doppia conferma | ☑ 1.86 lato app (`AccountDeletionService` → `POST {BackendBaseUrl}/api/delete-account`, `Authorization: Bearer <SessionTicket>`). Finché H6 non c'è e `BackendBaseUrl` è vuoto mostra "non ancora disponibile", mai un falso successo. 1.87: la voce compare solo dopo l'ingresso e solo con login vero (email), non per gli ospiti; prima dell'ingresso nelle Opzioni non c'è nessuna riga Account |
+| L1 | Altre lingue oltre all'italiano (riga Lingua delle Impostazioni, mockup `Lingua`). Decisione tua 01/10: più avanti | ⏸ |
+| L2 | Notifiche push (riga Notifiche delle Impostazioni, mockup `Notifiche`). Decisione tua 01/10: più avanti | ⏸ |
 
 ---
 

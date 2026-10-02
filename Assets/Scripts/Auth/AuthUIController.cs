@@ -484,6 +484,13 @@ namespace Project51.Auth
         private void OnLoginClicked()
         {
             if (_isProcessing) return;
+            // Accesso da ospite dell'avvio ancora in viaggio: la sua risposta arriverebbe dopo e sostituirebbe questo account.
+            var boot = Project51.Auth.AuthBootstrapper.Instance;
+            if (boot != null && (boot.CurrentState == AuthState.Initializing || boot.CurrentState == AuthState.LoggingInPlayFab))
+            {
+                SetStatusText(loginStatusText, "Connessione al server in corso: riprova tra un attimo.", true);
+                return;
+            }
             
             string email = loginEmailInput != null ? (loginEmailInput.text ?? string.Empty).Trim() : string.Empty;
             string password = loginPasswordInput != null ? (loginPasswordInput.text ?? string.Empty) : string.Empty;
@@ -509,6 +516,7 @@ namespace Project51.Auth
                     PlayerProgressLocal.Instance?.ClaimPendingExp();
 
                     bs.PlayFabAuth?.MarkHasLoggedIn();
+                    bs.RebindPhoton();
 
                     _isProcessing = false;
                     SetLoading(false);

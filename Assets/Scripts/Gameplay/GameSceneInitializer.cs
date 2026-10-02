@@ -27,6 +27,17 @@ namespace Project51.Unity
         private MatchConfig _config;
 
         /// <summary>
+        /// Partita guidata (UI51 Fase 12): la prossima partita di allenamento parte da una distribuzione nota
+        /// (TutorialSeed: mazziere il bot; tu di mano con Asso di denari, 7 e 2 di bastoni; in tavolo Asso di bastoni,
+        /// Re di coppe, 4 di spade e 3 di coppe; nessun accuso, niente 15/30). La mette UI51TutorialView.Launch e la consuma StartGame.
+        /// </summary>
+        public static bool Tutorial { get; set; }
+        public const int TutorialSeed = 759353;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetTutorial() => Tutorial = false;
+
+        /// <summary>
         /// Latest loaded match config for the active game scene.
         /// Useful for gameplay systems that need rules tweaks.
         /// </summary>
@@ -114,15 +125,30 @@ namespace Project51.Unity
         /// provider (nuova mano, resync).
         /// </summary>
         private readonly HashSet<int> _disconnectedPlayerIndices = new HashSet<int>();
+        // Posti tolti dal master per inattivita' (NetworkGameController.RPC_SeatInactive): restano al bot anche se quel telefono rientra.
+        private readonly HashSet<int> _inactiveSeats = new HashSet<int>();
+
+        private const string RosterKey = "roster";
+        private const string InactiveKey = "inattivo";
 
         private void LockStableActorRosterIfNeeded()
         {
             if (_stableActorOrder != null) return; // fissata una volta sola, mai risovrascritta
             if (!PhotonNetwork.InRoom) return;
 
+            // Rientro dopo il riavvio dell'app: chi nel frattempo e' uscito non e' piu' nella lista e i posti scalerebbero.
+            // Vale l'ordine fissato dal master all'inizio, salvato nella stanza (il master lo ricalcola sempre e lo riscrive).
+            var room = PhotonNetwork.CurrentRoom;
+            if (!PhotonNetwork.IsMasterClient && room.CustomProperties.TryGetValue(RosterKey, out object saved) && saved is int[] actors && actors.Length > 0)
+            {
+                _stableActorOrder = actors.ToList();
+                return;
+            }
             var players = new List<Photon.Realtime.Player>(PhotonNetwork.PlayerList);
             players.Sort((a, b) => a.ActorNumber.CompareTo(b.ActorNumber));
             _stableActorOrder = players.Select(p => p.ActorNumber).ToList();
+            if (PhotonNetwork.IsMasterClient)
+                room.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { RosterKey, _stableActorOrder.ToArray() } });
         }
 
         /// <summary>
@@ -137,6 +163,10 @@ namespace Project51.Unity
             return SeatLayout.SeatForJoinOrder(_config.Format, joinIndex);
         }
 
+        /// <summary>Posti dei giocatori reali di inizio partita con il loro ActorNumber (vittoria per abbandono, MatchResultsV2).</summary>
+        public IEnumerable<(int seat, int actor)> Roster() =>
+            (_stableActorOrder ?? new List<int>()).Select((actor, join) => (SeatLayout.SeatForJoinOrder(_config.Format, join), actor));
+
         /// <summary>
         /// Dopo il NOSTRO rientro in stanza: mentre eravamo scollegati possono essere usciti o
         /// rientrati altri giocatori senza che ricevessimo gli eventi. Riallinea i posti bot con chi
@@ -145,14 +175,94 @@ namespace Project51.Unity
         public void SyncSeatsWithRoom()
         {
             if (_stableActorOrder == null || !PhotonNetwork.InRoom) return;
+            for (int seat = 0; seat < 4; seat++) // tolti mentre eravamo scollegati
+                if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(InactiveKey + seat, out object removed) && removed is bool yes && yes)
+                    _inactiveSeats.Add(seat);
             for (int join = 0; join < _stableActorOrder.Count; join++)
             {
                 int seat = SeatLayout.SeatForJoinOrder(_config.Format, join);
                 var player = PhotonNetwork.CurrentRoom.GetPlayer(_stableActorOrder[join]);
-                if (player != null && !player.IsInactive) _disconnectedPlayerIndices.Remove(seat);
+                if (player != null && !player.IsInactive && !_inactiveSeats.Contains(seat)) _disconnectedPlayerIndices.Remove(seat);
                 else _disconnectedPlayerIndices.Add(seat);
             }
             RefreshMultiplayerGameModeProvider();
+        }
+
+        /// <summary>Posto ceduto a un bot per una disconnessione a partita avviata (icona sul banner).</summary>
+        public bool IsDisconnected(int playerIndex) => _disconnectedPlayerIndices.Contains(playerIndex);
+
+        public bool IsRemovedForInactivity(int playerIndex) => _inactiveSeats.Contains(playerIndex);
+
+        /// <summary>3 tempi scaduti di fila: il posto passa al bot per il resto della partita (anche se quel telefono rientra).</summary>
+        public void MarkPlayerInactive(int playerIndex, bool persist)
+        {
+            if (playerIndex < 0 || !_inactiveSeats.Add(playerIndex)) return;
+            // Nella stanza per chi era scollegato quando e' successo (SyncSeatsWithRoom al rientro, anche dopo un riavvio).
+            if (persist && PhotonNetwork.InRoom) // una chiave per posto: due arbitri non si sovrascrivono
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { InactiveKey + playerIndex, true } });
+            MarkPlayerDisconnected(playerIndex);
+        }
+
+        /// <summary>
+        /// Arbitro del turno di questo posto (scelta dell'utente 02/10): il master; ma se il posto lo gioca il master stesso (il suo, o un
+        /// bot) e' il giocatore presente con l'ActorNumber piu' basso dopo di lui, cosi' anche un master fermo non blocca il tavolo.
+        /// Senza altri giocatori presenti resta il master. -1 fuori stanza.
+        /// </summary>
+        public int RefereeActorFor(int seat)
+        {
+            var room = PhotonNetwork.CurrentRoom;
+            if (room == null) return -1;
+            int master = room.MasterClientId;
+            bool playedByMaster = GameModeService.Current.IsBotPlayer(seat) || GetPlayerIndexForActor(master) == seat;
+            if (!playedByMaster || _stableActorOrder == null) return master;
+            int referee = int.MaxValue;
+            for (int join = 0; join < _stableActorOrder.Count; join++)
+            {
+                int actor = _stableActorOrder[join];
+                var player = room.GetPlayer(actor);
+                if (actor == master || player == null || player.IsInactive || _inactiveSeats.Contains(SeatLayout.SeatForJoinOrder(_config.Format, join))) continue;
+                referee = Mathf.Min(referee, actor);
+            }
+            return referee == int.MaxValue ? master : referee;
+        }
+
+        /// <summary>Il posto del master e' stato tolto per inattivita' ma il suo telefono e' ancora nella stanza (e resta master).</summary>
+        public bool MasterRemoved => PhotonNetwork.InRoom && _inactiveSeats.Contains(GetPlayerIndexForActor(PhotonNetwork.CurrentRoom.MasterClientId));
+
+        /// <summary>Questo telefono fa da arbitro per il posto (fuori stanza, nelle prove in Editor: il master).</summary>
+        public bool IsLocalReferee(int seat) =>
+            PhotonNetwork.InRoom ? RefereeActorFor(seat) == PhotonNetwork.LocalPlayer.ActorNumber : GameModeService.Current.IsMasterClient;
+
+        // Tempi scaduti di fila per posto: nella stanza ("fermi" + posto, un solo arbitro scrive ogni posto), cosi' restano se cambia
+        // il master. La copia locale serve fuori stanza (prove in Editor).
+        // ponytail: si legge la stanza, che si aggiorna un attimo dopo la scrittura; due tempi scaduti dello stesso posto sono a turni di distanza.
+        private const string StrikesKey = "fermi";
+        private readonly int[] _strikes = new int[4];
+
+        public int Strikes(int seat)
+        {
+            if (seat < 0 || seat >= _strikes.Length) return 0;
+            var room = PhotonNetwork.CurrentRoom;
+            return room != null && room.CustomProperties.TryGetValue(StrikesKey + seat, out object saved) && saved is int n ? n : _strikes[seat];
+        }
+
+        public void SetStrikes(int seat, int value)
+        {
+            if (seat < 0 || seat >= _strikes.Length) return;
+            _strikes[seat] = value;
+            if (PhotonNetwork.InRoom)
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { StrikesKey + seat, value } });
+        }
+
+        /// <summary>Partita nuova: tutti a zero (nella stanza lo scrive il master).</summary>
+        public void ClearStrikes()
+        {
+            for (int seat = 0; seat < _strikes.Length; seat++)
+            {
+                _strikes[seat] = 0;
+                if (PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(StrikesKey + seat))
+                    PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { StrikesKey + seat, 0 } });
+            }
         }
 
         /// <summary>
@@ -162,7 +272,7 @@ namespace Project51.Unity
         /// </summary>
         public void MarkPlayerReconnected(int playerIndex)
         {
-            if (!_disconnectedPlayerIndices.Remove(playerIndex)) return;
+            if (_inactiveSeats.Contains(playerIndex) || !_disconnectedPlayerIndices.Remove(playerIndex)) return;
 
             Debug.Log($"[GameSceneInitializer] Player at seat {playerIndex} rejoined: bot released.");
 
@@ -357,7 +467,11 @@ namespace Project51.Unity
 
             // In multiplayer e' TurnController.StartNewGame a inviare lo stato agli altri client
             // (prima veniva inviato una seconda volta anche da qui).
+            bool tutorial = Tutorial && IsTrainingMode;
+            Tutorial = false;
+            if (tutorial) Rules51.Reseed(TutorialSeed);
             turnController.StartNewGame();
+            if (tutorial) Rules51.Reseed(System.Environment.TickCount); // le smazzate dopo tornano casuali
         }
 
         private void EnsureResponsiveCamera()

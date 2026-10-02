@@ -62,6 +62,13 @@ namespace Project51.UIV2.Data
             return has;
         }
 
+        /// <summary>PlayFab ID della sessione di un ospite (AuthBootstrapper.LookProps), null per gli account e i valori strani.</summary>
+        public static string GuestId(System.Collections.IDictionary props)
+        {
+            string id = props?[Project51.Auth.ProfileService.LookGuestIdKey] as string;
+            return id != null && id.Length > 0 && id.Length <= 32 ? id : null;
+        }
+
         /// <summary>Vittorie in percentuale intera ("58%"); senza partite "-" (il trattino lungo puo' mancare nell'atlante del font).</summary>
         public static string WinRate(int wins, int games) =>
             games <= 0 ? "-" : (int)Math.Round(100.0 * Math.Max(0, Math.Min(wins, games)) / games) + "%";

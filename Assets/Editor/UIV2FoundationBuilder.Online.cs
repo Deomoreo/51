@@ -160,13 +160,13 @@ namespace Project51.EditorTools
             ring.Thickness = 9f;
             ring.raycastTarget = false;
             MockSprite(design, "CardBack", LoadSprite(IconsPath, "card_back_green"), 504f, 519f, 72f, 102f, false);
-            flow.SearchStatus = MockText(design, "Status", "Ricerca giocatori…", 90f, 720f, 900f, 56f, 36f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
-            flow.SearchDetail = MockText(design, "Detail", "", 90f, 778f, 900f, 40f, 23f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
-            flow.SearchCount = SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 862f, 880f);
+            MockText(design, "Status", "Ricerca giocatori…", 90f, 720f, 900f, 56f, 36f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            MockText(design, "Detail", "", 90f, 778f, 900f, 40f, 23f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
+            SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 862f, 880f);
 
-            flow.SearchRows = new LobbySlotRowV2[4];
+            // Fase 13: la ricerca e' UI51MatchmakingView (UI51MatchBuilder la costruisce sopra questo pannello).
             for (int i = 0; i < 4; i++)
-                flow.SearchRows[i] = LobbyRow(design, "Player" + i, 88f, 922f + i * 128f, 904f, 108f, false);
+                LobbyRow(design, "Player" + i, 88f, 922f + i * 128f, 904f, 108f, false);
 
             var track = MockRect(design, "Progress", 88f, 1457f, 904f, 26f);
             AddRoundedPanel(track, "panel_fill_r24", 48f, 13f, OnTrack, 0f, OnTrack, out _, out _);
@@ -180,22 +180,22 @@ namespace Project51.EditorTools
             fillImage.pixelsPerUnitMultiplier = 48f / 13f;
             fillImage.color = OnProgressGold;
             fillImage.raycastTarget = false;
-            flow.SearchProgressFill = fill;
 
             closes.Add(MockButton(design, "Cancel", "btn_gray_small", 225f, 1596f, 630f, 54f, "ANNULLA", 30f, NavyOutlineMaterial()));
         }
 
         private static void BuildLobbyHostPanel(RoomFlowV2 flow, Transform root, List<Button> closes)
         {
+            // Fase 13: la sala e' UI51PrivateRoomView (UI51MatchBuilder la costruisce sopra questo pannello).
             var design = OnlinePanel(root, "LobbyHost", out var panel);
             flow.LobbyHostPanel = panel;
             closes.Add(ModalFrame(design, 200f, 1740f, "STANZA PRIVATA"));
             MockText(design, "Hint", "Condividi il codice con i tuoi amici", 90f, 330f, 900f, 40f, 26f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
-            flow.HostCells = CodeCells(design, "Cells", 232f, 388f, 112f, 136f, 126f, 64f);
+            CodeCells(design, "Cells", 232f, 388f, 112f, 136f, 126f, 64f);
 
-            flow.HostCopy = MockButton(design, "Copy", "btn_teal", 275f, 564f, 530f, 72f, "", 0f, null);
-            ButtonIconLabel(flow.HostCopy, "ic_copy", 22f, 16f, 40f, "COPIA CODICE", 72f, 28f);
-            flow.HostFeedback = MockText(design, "Feedback", "", 90f, 640f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
+            var hostCopy = MockButton(design, "Copy", "btn_teal", 275f, 564f, 530f, 72f, "", 0f, null);
+            ButtonIconLabel(hostCopy, "ic_copy", 22f, 16f, 40f, "COPIA CODICE", 72f, 28f);
+            MockText(design, "Feedback", "", 90f, 640f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
 
             SectionHeader(design, "InviteHeader", "INVITA", 100f, 696f, 880f);
             string[] labels = { "Condividi", "Link", "Amici" };
@@ -205,17 +205,15 @@ namespace Project51.EditorTools
                 var button = MockButton(design, "Invite" + labels[i], "btn_blue_mid", 90f + i * 306.5f, 755f, 285f, 110f, "", 0f, null);
                 MockSprite(button.transform, "Icon", NewIcon(icons[i]), 118.5f, 14f, 48f, 48f, false);
                 MockText(button.transform, "Label", labels[i], 0f, 70f, 285f, 32f, 21f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
-                if (i == 0) flow.ShareButton = button;
-                else button.interactable = false; // link di invito e lista amici: nessun servizio dietro
+                button.interactable = i == 0; // link di invito e lista amici: nessun servizio dietro
             }
 
-            flow.HostCount = SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 926f, 880f);
-            flow.HostRows = new LobbySlotRowV2[4];
+            SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 926f, 880f);
             for (int i = 0; i < 4; i++)
-                flow.HostRows[i] = LobbyRow(design, "Player" + i, 88f, 980f + i * 120f, 904f, 104f, true);
+                LobbyRow(design, "Player" + i, 88f, 980f + i * 120f, 904f, 104f, true);
 
-            flow.HostHint = MockText(design, "HostHint", "Solo l'host può aggiungere bot o avviare", 90f, 1512f, 900f, 36f, 21f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
-            flow.StartGameButton = MockButton(design, "Start", "btn_gold_long", 196f, 1568f, 688f, 88f, "AVVIA PARTITA", 40f, BrownOutlineMaterial());
+            MockText(design, "HostHint", "Solo l'host può aggiungere bot o avviare", 90f, 1512f, 900f, 36f, 21f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
+            MockButton(design, "Start", "btn_gold_long", 196f, 1568f, 688f, 88f, "AVVIA PARTITA", 40f, BrownOutlineMaterial());
             closes.Add(MockButton(design, "Leave", "btn_gray_small", 344f, 1680f, 391f, 40f, "ESCI", 22f, NavyOutlineMaterial()));
         }
 
@@ -224,22 +222,21 @@ namespace Project51.EditorTools
             var design = OnlinePanel(root, "LobbyGuest", out var panel);
             flow.LobbyGuestPanel = panel;
             closes.Add(ModalFrame(design, 300f, 1620f, "SALA D'ATTESA"));
-            flow.GuestSubtitle = MockText(design, "Subtitle", "Stanza di", 90f, 426f, 900f, 46f, 29f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
-            flow.GuestCells = CodeCells(design, "Cells", 287f, 495f, 92f, 110f, 104f, 56f);
+            MockText(design, "Subtitle", "Stanza di", 90f, 426f, 900f, 46f, 29f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
+            CodeCells(design, "Cells", 287f, 495f, 92f, 110f, 104f, 56f);
 
-            flow.GuestCopy = MockButton(design, "Copy", "btn_blue_long", 305f, 643f, 470f, 64f, "", 0f, null);
-            ButtonIconLabel(flow.GuestCopy, "ic_copy", 22f, 12f, 38f, "COPIA CODICE", 70f, 26f);
-            flow.GuestFeedback = MockText(design, "Feedback", "", 90f, 710f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
+            var guestCopy = MockButton(design, "Copy", "btn_blue_long", 305f, 643f, 470f, 64f, "", 0f, null);
+            ButtonIconLabel(guestCopy, "ic_copy", 22f, 12f, 38f, "COPIA CODICE", 70f, 26f);
+            MockText(design, "Feedback", "", 90f, 710f, 900f, 34f, 20f, FontStyles.Normal, OnSoftText, TextAlignmentOptions.Center);
 
-            flow.GuestCount = SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 764f, 880f);
-            flow.GuestRows = new LobbySlotRowV2[4];
+            SectionHeader(design, "PlayersHeader", "GIOCATORI 4/4", 100f, 764f, 880f);
             for (int i = 0; i < 4; i++)
-                flow.GuestRows[i] = LobbyRow(design, "Player" + i, 88f, 817f + i * 120f, 904f, 104f, false);
+                LobbyRow(design, "Player" + i, 88f, 817f + i * 120f, 904f, 104f, false);
 
             var ring = MockRect(design, "Spinner", 494f, 1351f, 92f, 92f).gameObject.AddComponent<RingArcGraphic>();
             ring.Thickness = 9f;
             ring.raycastTarget = false;
-            flow.GuestStatus = MockText(design, "Status", "In attesa che l'host avvii la partita…", 90f, 1468f, 900f, 40f, 27f, FontStyles.Bold, OnSoftText, TextAlignmentOptions.Center);
+            MockText(design, "Status", "In attesa che l'host avvii la partita…", 90f, 1468f, 900f, 40f, 27f, FontStyles.Bold, OnSoftText, TextAlignmentOptions.Center);
             closes.Add(MockButton(design, "Leave", "btn_gray_small", 296f, 1512f, 489f, 56f, "ESCI DALLA STANZA", 24f, NavyOutlineMaterial()));
         }
 

@@ -32,6 +32,7 @@ namespace Project51.UIV2.Core
 
         private static readonly Regex Heading = new Regex(@"^##\s*(?:(\d+)\.\s*)?(.+)$");
         private readonly List<GameObject> spawned = new List<GameObject>();
+        private readonly Dictionary<string, RectTransform> byNumber = new Dictionary<string, RectTransform>();
         private string currentUrl;
 
         private void Awake()
@@ -42,6 +43,15 @@ namespace Project51.UIV2.Core
 
         public void ShowTerms() => Show("Termini di servizio", Terms, AppConfig.Terms);
         public void ShowPrivacy() => Show("Privacy Policy", Privacy, AppConfig.Privacy);
+
+        /// <summary>Termini aperti direttamente su una sezione ("3" = Regole di comportamento, dalla Sospensione).</summary>
+        public void ShowTerms(string section)
+        {
+            ShowTerms();
+            if (byNumber.TryGetValue(section, out var target) && target != null)
+                // Dopo l'apertura del pannello: prima le sezioni appena create non hanno ancora l'altezza finale.
+                DOVirtual.DelayedCall(0.4f, () => ScrollTo(target), true).SetLink(target.gameObject);
+        }
 
         private void Show(string title, TextAsset document, string url)
         {
@@ -91,6 +101,7 @@ namespace Project51.UIV2.Core
         {
             foreach (var go in spawned) if (go != null) Destroy(go);
             spawned.Clear();
+            byNumber.Clear();
             var sections = ParseSections(raw, out string updated, out string intro);
             if (Subtitle != null) Subtitle.text = updated;
             if (Body != null) { Body.text = intro; Body.gameObject.SetActive(intro.Length > 0); }
@@ -99,6 +110,7 @@ namespace Project51.UIV2.Core
                 var section = Spawn(SectionTemplate);
                 SetText(section, "Heading", string.IsNullOrEmpty(s.Number) ? s.Title : $"<color=#F3C969>{s.Number}.</color> {s.Title}");
                 SetText(section, "Text", s.Body);
+                byNumber[s.Number] = section;
                 if (IndexRowTemplate == null) continue;
                 var row = Spawn(IndexRowTemplate);
                 SetText(row, "Num", s.Number);
@@ -127,14 +139,19 @@ namespace Project51.UIV2.Core
         private void ScrollTo(RectTransform section)
         {
             if (Scroll == null || Scroll.content == null) return;
-            Canvas.ForceUpdateCanvases();
             var content = Scroll.content;
-            float top = -content.InverseTransformPoint(section.TransformPoint(new Vector3(0, section.rect.yMax))).y;
             var viewport = Scroll.viewport != null ? Scroll.viewport : (RectTransform)Scroll.transform;
-            float max = Mathf.Max(0, content.rect.height - viewport.rect.height);
             Scroll.StopMovement();
             content.DOKill();
-            content.DOAnchorPosY(Mathf.Clamp(top, 0, max), .35f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(content.gameObject);
+            float from = content.anchoredPosition.y;
+            // Bersaglio ricalcolato a ogni passo: alla prima apertura il frame lungo di Fill consuma il ritardo e le sezioni si assestano mentre scorre.
+            DOVirtual.Float(0f, 1f, .35f, k =>
+                {
+                    float top = -content.InverseTransformPoint(section.TransformPoint(new Vector3(0, section.rect.yMax))).y;
+                    float max = Mathf.Max(0, content.rect.height - viewport.rect.height);
+                    content.anchoredPosition = new Vector2(content.anchoredPosition.x, Mathf.LerpUnclamped(from, Mathf.Clamp(top, 0, max), k));
+                })
+                .SetEase(Ease.OutCubic).SetUpdate(true).SetTarget(content).SetLink(content.gameObject);
         }
 
         private void OpenCurrentUrl() { if (!string.IsNullOrEmpty(currentUrl)) Application.OpenURL(currentUrl); }

@@ -36,10 +36,13 @@ namespace Project51.Auth
         public const string DATA_BANNER_ID = "BannerId";
         public const string DATA_FRAME_ID = "FrameId";
         public const string DATA_TITLE_ID = "TitleId";
+        public const string DATA_BLOCKED = "Bloccati"; // PlayFab ID bloccati, separati da "|" (BlockList)
         // Aspetto come proprieta' del giocatore Photon: lo scrive AuthBootstrapper.PublishLook, lo legge ProfileCosmetics.ReadLook.
         public const string LookFrameKey = "fr", LookBannerKey = "bn", LookLevelKey = "lv";
         // Profilo rapido al tavolo (01/10): partite, vittorie, scope totali e id PlayFab (per Aggiungi amico, Segnala, Silenzia).
         public const string LookGamesKey = "gp", LookWinsKey = "gw", LookScopeKey = "sc", LookIdKey = "id";
+        /// <summary>PlayFab ID di questa sessione d'ospite: per segnalarlo (le sanzioni degli ospiti restano sul loro dispositivo).</summary>
+        public const string LookGuestIdKey = "og";
         
         // Cache locale
         private Dictionary<string, string> _playerDataCache = new Dictionary<string, string>();
@@ -60,6 +63,7 @@ namespace Project51.Auth
         public string BannerId => GetPlayerData(DATA_BANNER_ID, "notte");
         public string FrameId => GetPlayerData(DATA_FRAME_ID, "oro");
         public string TitleId => GetPlayerData(DATA_TITLE_ID, "");
+        public string Blocked => GetPlayerData(DATA_BLOCKED, "");
         public void SetTitle(string id) => SetPlayerData(DATA_TITLE_ID, id);
         
         // Eventi
@@ -354,61 +358,33 @@ namespace Project51.Auth
         }
         
         /// <summary>
-        /// Registra una partita completata.
+        /// Salita di livello dalle partite giocate dall'ultimo ritorno in Home (0 = nessuna): la mostra LivelloSu (UI51 Fase 15).
+        /// Piu' partite di fila (rivincita) allargano l'intervallo; prima che le statistiche siano caricate non si sa da dove si parte.
         /// </summary>
-        /// <param name="isWin">True se il giocatore ha vinto.</param>
-        /// <param name="xpGained">XP guadagnato.</param>
-        /// <param name="scope">Scope fatte nella partita (totale del profilo rapido).</param>
-        public void RecordGameResult(bool isWin, int xpGained, int scope = 0, Action onComplete = null)
+        public static int LevelUpFrom, LevelUpTo;
+
+        public static void NoteLevelUp(int before, int after)
         {
-            scope = Math.Max(0, scope);
-            var stats = new List<StatisticUpdate>
-            {
-                new StatisticUpdate { StatisticName = STAT_TOTAL_GAMES, Value = TotalGames + 1 },
-                new StatisticUpdate { StatisticName = STAT_XP, Value = XP + xpGained }
-            };
-            if (scope > 0) stats.Add(new StatisticUpdate { StatisticName = STAT_TOTAL_SCOPE, Value = TotalScope + scope });
-            
-            if (isWin)
-            {
-                stats.Add(new StatisticUpdate { StatisticName = STAT_WINS, Value = Wins + 1 });
-            }
-            
-            // Calcola nuovo livello basato su XP
-            int newLevel = CalculateLevelFromXP(XP + xpGained);
-            if (newLevel != Level)
-            {
-                stats.Add(new StatisticUpdate { StatisticName = STAT_LEVEL, Value = newLevel });
-            }
-            
-            var request = new UpdatePlayerStatisticsRequest
-            {
-                Statistics = stats
-            };
-            
-            PlayFabClientAPI.UpdatePlayerStatistics(request,
-                result =>
-                {
-                    // Aggiorna cache locale
-                    _statisticsCache[STAT_TOTAL_GAMES] = TotalGames + 1;
-                    _statisticsCache[STAT_XP] = XP + xpGained;
-                    if (isWin) _statisticsCache[STAT_WINS] = Wins + 1;
-                    if (scope > 0) _statisticsCache[STAT_TOTAL_SCOPE] = TotalScope + scope;
-                    if (newLevel != Level) _statisticsCache[STAT_LEVEL] = newLevel;
-                    
-                    Debug.Log($"[ProfileService] Game result recorded. Win: {isWin}, XP: +{xpGained}");
-                    OnProfileUpdated?.Invoke();
-                    onComplete?.Invoke();
-                },
-                error =>
-                {
-                    Debug.LogWarning($"[ProfileService] Failed to record game result: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
-                    onComplete?.Invoke();
-                }
-            );
+            if (before <= 0 || after <= before) return;
+            if (LevelUpTo <= 0) LevelUpFrom = before;
+            LevelUpTo = after;
         }
-        
+
+        /// <summary>
+        /// Statistiche dopo una partita: le scrive solo il server (premioPartita, 2.62), qui si aggiorna la copia locale.
+        /// </summary>
+        public void ApplyServerStats(ServerReward r)
+        {
+            if (r == null || !r.statistiche) return;
+            NoteLevelUp(_statisticsCache.TryGetValue(STAT_LEVEL, out int before) ? before : 0, r.livello);
+            _statisticsCache[STAT_TOTAL_GAMES] = r.partite;
+            _statisticsCache[STAT_WINS] = r.vittorie;
+            _statisticsCache[STAT_XP] = r.esperienza;
+            _statisticsCache[STAT_TOTAL_SCOPE] = r.scopeTotali;
+            _statisticsCache[STAT_LEVEL] = r.livello;
+            OnProfileUpdated?.Invoke();
+        }
+
         #region Private Methods
         
         private void LoadDisplayName(Action onSuccess, Action onError)
@@ -475,7 +451,7 @@ namespace Project51.Auth
         {
             var request = new GetUserDataRequest
             {
-                Keys = new List<string> { DATA_AVATAR_ID, DATA_SELECTED_DECK, DATA_BANNER_ID, DATA_FRAME_ID, DATA_TITLE_ID }
+                Keys = new List<string> { DATA_AVATAR_ID, DATA_SELECTED_DECK, DATA_BANNER_ID, DATA_FRAME_ID, DATA_TITLE_ID, DATA_BLOCKED }
             };
             
             PlayFabClientAPI.GetUserData(request,

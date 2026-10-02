@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Ricerca giocatori</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .sheet{background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .h1{margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.15;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;font-family:'Cinzel',serif;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .ghost-btn{border:1px solid rgba(243,201,105,0.5);background:transparent;color:#F3C969;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .ghost-btn:hover{background:rgba(243,201,105,0.08);}
+  .input{width:100%;height:50px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;}
+  .input::placeholder{color:rgba(245,233,208,0.45);}
+  .input:focus{outline:none;border-color:#F3C969;background:rgba(255,255,255,0.1);}
+  .card{border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes pop{0%{transform:scale(0.8);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+  @keyframes up{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .sheet-up{animation:up .3s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .4s ease-out both;}
+  @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.6)}50%{box-shadow:0 0 0 9px rgba(243,201,105,0)}}
+  .pulse{animation:pulseRing 1.6s ease-in-out infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes rays{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .rays{animation:rays 18s linear infinite;}
+  @keyframes burst{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0}35%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.15);opacity:0.65}}
+  .burst{animation:burst 1s ease-out both;}
+  @keyframes wave{0%,100%{transform:translateY(8px) rotate(0)}25%{transform:translateY(-10px) rotate(-4deg)}50%{transform:translateY(-14px) rotate(0)}75%{transform:translateY(-6px) rotate(4deg)}}
+  .wave{animation:wave 1.4s ease-in-out infinite;}
+
+</style>
+</helmet>
+<div class="bg-photo" style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,9,20,0.55),rgba(4,9,20,0.35) 30%,rgba(4,9,20,0.8) 70%,rgba(3,7,16,0.97));"></div>
+  <div style="position:absolute;top:44px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <span class="cap" style="letter-spacing:3px;">{{modeLabel}}</span>
+    <h1 class="h1" style="font-size:24px;">{{title}}</h1>
+    <span style="font-size:13px;color:rgba(245,233,208,0.65);">{{sub}}</span>
+  </div>
+  <!-- searching animation -->
+  <div style="position:absolute;top:170px;left:0;width:390px;height:200px;">
+    <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:330px;height:330px;transform:translate(-50%,-50%);opacity:0.55;pointer-events:none;">
+    <svg width="190" height="190" viewBox="0 0 190 190" aria-hidden="true" style="position:absolute;left:100px;top:5px;animation:spin 2.4s linear infinite;opacity:{{spinOp}};"><circle cx="95" cy="95" r="88" fill="none" stroke="rgba(243,201,105,0.15)" stroke-width="3"></circle><path d="M95 7 A88 88 0 0 1 183 95" fill="none" stroke="#F3C969" stroke-width="3" stroke-linecap="round"></path></svg>
+    <div style="position:absolute;left:0;right:0;top:66px;display:flex;justify-content:center;gap:8px;">
+      <img src="../assets/back_giada.png" alt="" class="wave" style="width:38px;height:57px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.00s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:38px;height:57px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.12s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:38px;height:57px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.24s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:38px;height:57px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.36s;"><img src="../assets/back_giada.png" alt="" class="wave" style="width:38px;height:57px;border-radius:5px;box-shadow:0 6px 12px rgba(0,0,0,0.5);animation-delay:0.48s;">
+    </div>
+  </div>
+  <!-- seats -->
+  <div style="position:absolute;top:400px;left:20px;right:20px;display:flex;flex-direction:column;gap:12px;">
+    <sc-for list="{{teams}}" as="tm" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-if value="{{tm.hasLabel}}" hint-placeholder-val="{{false}}"><span class="cap" style="font-size:9px;color:{{tm.col}};">{{tm.label}}</span></sc-if>
+        <div style="display:flex;gap:10px;">
+          <sc-for list="{{tm.seats}}" as="s" hint-placeholder-count="2">
+            <sc-if value="{{s.full}}" hint-placeholder-val="{{true}}">
+              <div class="panel pop" style="flex:1;height:70px;display:flex;align-items:center;gap:10px;padding:0 12px;border-color:{{s.border}};">
+                <div style="width:44px;height:44px;border-radius:50%;padding:2px;box-sizing:border-box;background:{{s.ring}};flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="{{s.img}}" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div>
+                <div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-size:13px;font-weight:800;color:#F5E9D0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{s.name}}</span><span style="font-size:11px;color:rgba(245,233,208,0.55);">Liv. {{s.level}}</span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{s.empty}}" hint-placeholder-val="{{false}}">
+              <div style="flex:1;height:70px;box-sizing:border-box;border-radius:16px;border:1.5px dashed rgba(243,201,105,0.35);background:rgba(6,13,27,0.55);display:flex;align-items:center;gap:10px;padding:0 12px;">
+                <div class="pulse" style="width:44px;height:44px;border-radius:22px;border:1.5px dashed rgba(243,201,105,0.5);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:rgba(243,201,105,0.7);flex:none;">?</div>
+                <span style="font-size:12px;color:rgba(245,233,208,0.5);">In ricerca…</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:20px;right:20px;bottom:30px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <span style="font-size:12px;color:rgba(245,233,208,0.6);">{{waitText}}</span>
+    <sc-if value="{{searching}}" hint-placeholder-val="{{true}}"><a href="Home.dc.html" class="ghost-btn" style="width:100%;height:50px;border-radius:14px;font-size:14px;">Annulla ricerca</a></sc-if>
+    <sc-if value="{{found}}" hint-placeholder-val="{{false}}"><a href="{{nextHref}}" class="gold-btn pop" style="width:100%;height:54px;border-radius:16px;font-size:15px;">AL TAVOLO · {{count}}</a></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modo":{"editor":"enum","options":["1v1","2v2","1v3"],"default":"1v1"},"stato":{"editor":"enum","options":["cerca","trovato"],"default":"cerca"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { t: 0, filled: props.stato === 'trovato' ? 9 : 0, count: 3 };
+    this._a = setInterval(() => {
+      const t = this.state.t + 1;
+      const filled = this.state.filled >= 9 ? 9 : (t % 3 === 0 ? this.state.filled + 1 : this.state.filled);
+      this.setState({ t: t, filled: filled, count: filled >= 9 ? Math.max(0, this.state.count - (t % 1 === 0 ? 1 : 0)) : 3 });
+    }, 1000);
+  }
+  renderVals() {
+    const mode = this.props.modo ?? '1v1';
+    const GOLD = 'conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A)', BLUE = 'conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8)';
+    const others = [ { name: 'Marco_93', level: 18, img: '../assets/av_4.png' }, { name: 'Giulia', level: 15, img: '../assets/av_2.png' }, { name: 'Tore_NA', level: 9, img: '../assets/av_5.png' } ];
+    const need = mode === '1v1' ? 1 : 3;
+    const f = Math.min(this.state.filled, need);
+    const found = f >= need;
+    const seat = (p, ring, border) => p ? { full: true, empty: false, name: p.name, level: String(p.level), img: p.img, ring: ring, border: border } : { full: false, empty: true };
+    const me = { name: 'Tu', level: 12, img: '../assets/avatar_1.png' };
+    let teams;
+    if (mode === '2v2') teams = [ { hasLabel: true, label: 'LA TUA SQUADRA', col: '#F3C969', seats: [ seat(me, GOLD, 'rgba(243,201,105,0.6)'), seat(f >= 2 ? others[1] : null, GOLD, 'rgba(243,201,105,0.6)') ] }, { hasLabel: true, label: 'AVVERSARI', col: '#9DB8F5', seats: [ seat(f >= 1 ? others[0] : null, BLUE, 'rgba(79,128,232,0.5)'), seat(f >= 3 ? others[2] : null, BLUE, 'rgba(79,128,232,0.5)') ] } ];
+    else if (mode === '1v3') teams = [ { hasLabel: false, label: '', col: '', seats: [ seat(me, GOLD, 'rgba(243,201,105,0.6)'), seat(f >= 1 ? others[0] : null, BLUE, 'rgba(79,128,232,0.5)') ] }, { hasLabel: false, label: '', col: '', seats: [ seat(f >= 2 ? others[1] : null, BLUE, 'rgba(79,128,232,0.5)'), seat(f >= 3 ? others[2] : null, BLUE, 'rgba(79,128,232,0.5)') ] } ];
+    else teams = [ { hasLabel: false, label: '', col: '', seats: [ seat(me, GOLD, 'rgba(243,201,105,0.6)'), seat(f >= 1 ? others[0] : null, BLUE, 'rgba(79,128,232,0.5)') ] } ];
+    const t = this.state.t, mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, '0');
+    return {
+      modeLabel: (mode === '2v2' ? 'PARTITA 2 VS 2' : (mode === '1v3' ? 'TUTTI CONTRO TUTTI' : 'PARTITA 1 VS 1')) + ' · ONLINE',
+      title: found ? 'Partita trovata!' : 'Cerco giocatori…', sub: found ? 'Il mazziere viene sorteggiato al tavolo' : 'Tempo di attesa ' + mm + ':' + ss,
+      spinOp: found ? '0' : '1', teams: teams, searching: !found, found: found,
+      waitText: found ? 'Si parte da soli tra qualche secondo' : 'Tempo stimato circa 20 secondi',
+      count: String(this.state.count), nextHref: mode === '1v1' ? 'Sorteggio.dc.html' : 'Sorteggio4.dc.html'
+    };
+  }
+}
+</script>
+</body>
+</html>

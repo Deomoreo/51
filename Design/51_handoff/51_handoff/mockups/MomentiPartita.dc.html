@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Momenti di partita</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .sheet{background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .h1{margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.15;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;font-family:'Cinzel',serif;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .ghost-btn{border:1px solid rgba(243,201,105,0.5);background:transparent;color:#F3C969;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .ghost-btn:hover{background:rgba(243,201,105,0.08);}
+  .input{width:100%;height:50px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;}
+  .input::placeholder{color:rgba(245,233,208,0.45);}
+  .input:focus{outline:none;border-color:#F3C969;background:rgba(255,255,255,0.1);}
+  .card{border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes pop{0%{transform:scale(0.8);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+  @keyframes up{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .sheet-up{animation:up .3s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .4s ease-out both;}
+  @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.6)}50%{box-shadow:0 0 0 9px rgba(243,201,105,0)}}
+  .pulse{animation:pulseRing 1.6s ease-in-out infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes rays{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .rays{animation:rays 18s linear infinite;}
+  @keyframes burst{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0}35%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.15);opacity:0.65}}
+  .burst{animation:burst 1s ease-out both;}
+  @keyframes wave{0%,100%{transform:translateY(8px) rotate(0)}25%{transform:translateY(-10px) rotate(-4deg)}50%{transform:translateY(-14px) rotate(0)}75%{transform:translateY(-6px) rotate(4deg)}}
+  .wave{animation:wave 1.4s ease-in-out infinite;}
+  @keyframes ringT{0%,100%{box-shadow:0 0 0 0 rgba(79,128,232,0.7)}50%{box-shadow:0 0 0 8px rgba(79,128,232,0)}}
+  .ring-opp{animation:ringT 1.4s ease-in-out infinite;}
+  @keyframes ringR{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,0.8)}50%{box-shadow:0 0 0 9px rgba(229,72,77,0)}}
+  .ring-red{animation:ringR .8s ease-in-out infinite;}
+  /* brief notices: appear, stay a moment, fade (looped here only to preview) */
+  @keyframes notice{0%{opacity:0;transform:translateY(-10px)}7%{opacity:1;transform:translateY(0)}55%{opacity:1;transform:translateY(0)}66%{opacity:0;transform:translateY(-6px)}100%{opacity:0;transform:translateY(-6px)}}
+  .notice{animation:notice 6s ease-in-out infinite;}
+  @keyframes chip{0%{opacity:0;transform:scale(0.85)}6%{opacity:1;transform:scale(1.04)}9%{transform:scale(1)}42%{opacity:1}52%{opacity:0}100%{opacity:0}}
+  .chip{animation:chip 5s ease-out infinite;}
+  @keyframes bar{from{width:100%}to{width:0%}}
+  .shrink{animation:bar 30s linear both;}
+  @keyframes scopaTxt{0%{transform:scale(2.4) rotate(-8deg);opacity:0}45%{transform:scale(0.92) rotate(2deg);opacity:1}60%{transform:scale(1.05)}100%{transform:scale(1) rotate(0)}}
+  .scopa-txt{animation:scopaTxt .6s cubic-bezier(.3,.7,.3,1) both;}
+  @keyframes sweep{0%{transform:translateX(-160px) rotate(-30deg);opacity:0}30%{opacity:1}100%{transform:translateX(160px) rotate(25deg);opacity:0}}
+  .sweep{animation:sweep .9s .1s ease-in-out both;}
+  @keyframes spark{0%{transform:translate(0,0) scale(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}}
+  .spark{position:absolute;width:8px;height:8px;border-radius:4px;background:#FCE29A;animation:spark .9s .25s ease-out both;}
+  @keyframes dealLoop{0%{transform:translate(0,0) rotate(-8deg) scale(0.8);opacity:1}11%{transform:translate(var(--tx),var(--ty)) rotate(0) scale(1);opacity:0.9}13%{opacity:0}100%{opacity:0}}
+  .deal{position:absolute;left:35px;top:67px;width:34px;height:50px;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,0.5);opacity:0;animation:dealLoop 5s ease-in infinite;}
+
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <sc-if value="{{four}}" hint-placeholder-val="{{false}}"><div style="position:absolute;inset:0;"><dc-import name="Partita4" hint-size="390px,844px"></dc-import></div></sc-if>
+  <sc-if value="{{two}}" hint-placeholder-val="{{true}}"><div style="position:absolute;inset:0;"><dc-import name="Partita" hint-size="390px,844px"></dc-import></div></sc-if>
+
+  <!-- opponent's turn: the ring is always there; the timer appears only in the last seconds -->
+  <sc-if value="{{isTurno}}" hint-placeholder-val="{{true}}">
+    <div class="ring-opp" style="position:absolute;left:{{rx}};top:{{ry}};width:{{rw}};height:{{rh}};border-radius:{{rr}};border:2px solid {{ringCol}};z-index:30;pointer-events:none;"></div>
+    <sc-if value="{{lowTime}}" hint-placeholder-val="{{false}}">
+      <div class="pop" style="position:absolute;left:{{px}};top:{{py}};z-index:30;pointer-events:none;"><span style="height:26px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:13px;background:rgba(6,13,27,0.9);border:1px solid rgba(229,72,77,0.7);font-size:11px;font-weight:800;color:#F08A8D;white-space:nowrap;"><span style="font-family:'Cinzel',serif;font-size:13px;color:#fff;">{{secs}}</span>{{who}}</span></div>
+    </sc-if>
+  </sc-if>
+
+  <!-- my time is running out -->
+  <sc-if value="{{isTempo}}" hint-placeholder-val="{{false}}">
+    <div class="ring-red" style="position:absolute;left:58px;top:774px;width:190px;height:54px;border-radius:27px;border:2px solid #E5484D;z-index:30;pointer-events:none;"></div>
+    <div class="pop" style="position:absolute;left:0;width:390px;top:552px;display:flex;justify-content:center;z-index:30;pointer-events:none;"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:15px;background:rgba(229,72,77,0.18);border:1px solid rgba(229,72,77,0.7);font-size:12px;font-weight:800;color:#F08A8D;"><span style="font-family:'Cinzel',serif;font-size:15px;color:#fff;">{{secs5}}</span>Gioca adesso, o la carta verrà scelta per te</span></div>
+  </sc-if>
+
+  <!-- opponent disconnected: the banner keeps the icon, the notice is brief -->
+  <sc-if value="{{isDisc}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;left:135px;top:82px;width:120px;height:50px;border-radius:25px;background:rgba(3,7,16,0.6);z-index:30;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;box-sizing:border-box;"><span style="width:22px;height:22px;border-radius:11px;background:#E5484D;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8 Q12 0 22 8 M6 13 Q12 8 18 13 M3 3 L21 21" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"></path></svg></span></div>
+    <div class="notice" role="status" style="position:absolute;left:0;width:390px;top:150px;display:flex;justify-content:center;z-index:31;pointer-events:none;">
+      <div style="display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 16px 0 8px;border-radius:23px;background:rgba(6,13,27,0.95);border:1px solid rgba(229,72,77,0.55);box-shadow:0 10px 24px rgba(0,0,0,0.5);"><div style="width:32px;height:32px;border-radius:50%;padding:2px;box-sizing:border-box;background:rgba(245,233,208,0.3);flex:none;filter:grayscale(0.8);"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="../assets/av_4.png" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div><div style="display:flex;flex-direction:column;gap:1px;"><span style="font-size:12px;font-weight:800;color:#F5E9D0;">Marco_93 si è disconnesso</span><span style="font-size:10px;color:rgba(245,233,208,0.6);">Tra 30s lo sostituisce un bot</span></div></div>
+    </div>
+  </sc-if>
+
+  <!-- SCOPA! -->
+  <sc-if value="{{isScopa}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;left:0;top:250px;width:390px;height:320px;z-index:30;pointer-events:none;">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(3,8,18,0.7),rgba(3,8,18,0) 70%);"></div>
+      <img src="../assets/Bagliore_morbido.png" alt="" class="burst" style="position:absolute;left:50%;top:46%;width:320px;height:320px;">
+      <div class="sweep" style="position:absolute;left:150px;top:120px;display:flex;gap:4px;"><img src="../assets/card_3_spade.png" alt="" class="card" style="width:40px;height:62px;"><img src="../assets/c_4c.png" alt="" class="card" style="width:40px;height:62px;"></div>
+    </div>
+    <span class="spark" style="z-index:31;left:193px;top:396px;--dx:-110px;--dy:-60px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:110px;--dy:-60px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:-90px;--dy:50px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:90px;--dy:50px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:0px;--dy:-100px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:-140px;--dy:0px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:140px;--dy:0px;"></span><span class="spark" style="z-index:31;left:193px;top:396px;--dx:0px;--dy:90px;"></span>
+    <div class="scopa-txt" style="position:absolute;left:0;width:390px;top:358px;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:32;pointer-events:none;">
+      <span style="font-family:'Cinzel',serif;font-size:44px;font-weight:700;letter-spacing:4px;color:#FCE29A;text-shadow:0 4px 0 #6B4418,0 10px 24px rgba(0,0,0,0.7);">SCOPA!</span>
+      <span style="font-size:14px;font-weight:800;color:#F5E9D0;text-shadow:0 2px 6px rgba(0,0,0,0.8);">Tu · <span style="color:#FCE29A;">+1</span></span>
+    </div>
+  </sc-if>
+
+  <!-- new hand: cards fly from the deck, then a brief notice -->
+  <sc-if value="{{isDeal}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;inset:0;z-index:30;pointer-events:none;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:118px;--ty:540px;animation-delay:0.00s;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:100px;--ty:60px;animation-delay:0.12s;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:217px;--ty:540px;animation-delay:0.24s;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:160px;--ty:60px;animation-delay:0.36s;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:316px;--ty:540px;animation-delay:0.48s;"><img src="../assets/back_giada.png" alt="" class="deal" style="--tx:220px;--ty:60px;animation-delay:0.60s;"></div>
+    <div class="chip" style="position:absolute;left:0;width:390px;top:232px;display:flex;justify-content:center;z-index:31;pointer-events:none;animation-delay:.7s;opacity:0;"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:15px;background:rgba(6,13,27,0.92);border:1px solid rgba(243,201,105,0.55);box-shadow:0 8px 18px rgba(0,0,0,0.45);font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#F3C969;">MANO 3 DI 6</span></div>
+  </sc-if>
+  <sc-if value="{{isLast}}" hint-placeholder-val="{{false}}">
+    <div class="chip" style="position:absolute;left:0;width:390px;top:232px;display:flex;justify-content:center;z-index:31;pointer-events:none;animation-delay:.7s;opacity:0;"><span style="height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:15px;background:rgba(6,13,27,0.92);border:1px solid rgba(229,72,77,0.6);box-shadow:0 8px 18px rgba(0,0,0,0.45);font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#F08A8D;">ULTIMA MANO · MAZZO FINITO</span></div>
+  </sc-if>
+
+  <!-- tie above 51 -->
+  <sc-if value="{{isTie}}" hint-placeholder-val="{{false}}">
+    <div class="scrim" style="z-index:40;"></div>
+    <div style="position:absolute;inset:0;z-index:41;display:flex;align-items:center;justify-content:center;padding:0 24px;box-sizing:border-box;pointer-events:none;">
+    <div class="sheet pop" role="alertdialog" aria-labelledby="tie" style="width:100%;box-sizing:border-box;border-radius:22px;padding:22px 20px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;pointer-events:auto;">
+      <span class="cap" style="letter-spacing:3px;">SPAREGGIO</span>
+      <h2 id="tie" style="margin:6px 0 0;font-family:'Cinzel',serif;font-size:22px;color:#F5E9D0;">Parità a 53!</h2>
+      <div style="display:flex;align-items:center;gap:18px;margin:16px 0 4px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:62px;height:62px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#FCE29A,#C4922F,#FFF1C4,#8A5A12,#FCE29A);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="../assets/avatar_1.png" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#FCE29A;">53</span></div>
+        <span style="font-family:'Cinzel',serif;font-size:16px;color:rgba(245,233,208,0.5);">=</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="width:62px;height:62px;border-radius:50%;padding:2px;box-sizing:border-box;background:conic-gradient(from 20deg,#4F80E8,#F3C969,#1B3A7A,#FCE29A,#4F80E8);flex:none;"><div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#0B1D3A;"><img src="../assets/av_4.png" alt="" style="width:132%;margin:-4% 0 0 -16%;display:block;"></div></div><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#FCE29A;">53</span></div>
+      </div>
+      <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:rgba(245,233,208,0.7);">Avete superato 51 a pari punti: si gioca un’altra smazzata. Vince chi resta in testa da solo.</p>
+      <a href="Partita.dc.html" class="gold-btn" style="margin-top:16px;width:100%;height:50px;border-radius:14px;font-size:14px;">SMAZZATA DI SPAREGGIO</a>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"momento":{"editor":"enum","options":["turno","turno4","tempo","disconnesso","scopa","distribuzione","ultima","spareggio"],"default":"turno"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { t: 0 }; this._t = setInterval(() => this.setState({ t: this.state.t + 1 }), 1000); }
+  renderVals() {
+    const m = this.props.momento ?? 'turno';
+    const t = this.state.t;
+    const four = m === 'turno4';
+    const s15 = 15 - (t % 16), s5 = Math.max(0, 5 - (t % 6));
+    // 1v1: Marco's horizontal banner at the top. 2v2/1v3: Tore's vertical banner on the right
+    const R = four ? { rx: '300px', ry: '246px', rw: '72px', rh: '108px', rr: '22px', px: '256px', py: '214px', who: 'Tore' } : { rx: '133px', ry: '80px', rw: '124px', rh: '54px', rr: '27px', px: '152px', py: '146px', who: 'Marco' };
+    return {
+      four: four, two: !four,
+      isTurno: m === 'turno' || four, isTempo: m === 'tempo', isDisc: m === 'disconnesso', isScopa: m === 'scopa', isDeal: m === 'distribuzione', isLast: m === 'ultima', isTie: m === 'spareggio',
+      ...R, ringCol: s15 <= 5 ? '#E5484D' : '#4F80E8', lowTime: s15 <= 5, secs: String(s15) + 's', secs5: String(s5)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -119,7 +119,8 @@ namespace Project51.UIV2.Core
             Progress.fillAmount = 1;
             yield return BarFull();
             var ready = entranceReady; entranceReady = null; operation = null;
-            ready?.Invoke(); Hide();
+            // Rientro in partita finito prima (Photon ha gia' caricato il tavolo): ready puo' trovare la Home distrutta, il velo va tolto.
+            try { ready?.Invoke(); } finally { Hide(); }
         }
         private IEnumerator PreloadDeck()
         {

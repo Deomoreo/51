@@ -85,10 +85,11 @@ namespace Project51.Core
                 entries[e] = entry;
             }
 
-            // Maggioranze: il punto va solo a un vincitore unico (a pari merito nessuno),
-            // con le soglie minime di 6 denari e 21 carte.
-            AwardUniqueMaximum(entries, x => x.DenariCount, 6, x => x.WonDenari = true);
-            AwardUniqueMaximum(entries, x => x.CardCount, 21, x => x.WonCards = true);
+            // Maggioranze: il punto va solo a un vincitore unico (a pari merito nessuno), con le soglie
+            // minime di 6 denari e 21 carte in 1v1 e 2v2. Nel 1v3 basta la maggioranza (SPEC 10.2).
+            bool oneVsThree = state.NumPlayers == 4 && !state.TeamMode;
+            AwardUniqueMaximum(entries, x => x.DenariCount, oneVsThree ? 0 : 6, x => x.WonDenari = true);
+            AwardUniqueMaximum(entries, x => x.CardCount, oneVsThree ? 0 : 21, x => x.WonCards = true);
             AwardUniqueMaximum(entries, x => x.PrimieraScore, 0, x => x.WonPrimiera = true);
             return entries;
         }

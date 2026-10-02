@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Apertura forziere</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .sheet{background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .h1{margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.15;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;font-family:'Cinzel',serif;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .ghost-btn{border:1px solid rgba(243,201,105,0.5);background:transparent;color:#F3C969;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .ghost-btn:hover{background:rgba(243,201,105,0.08);}
+  .input{width:100%;height:50px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;}
+  .input::placeholder{color:rgba(245,233,208,0.45);}
+  .input:focus{outline:none;border-color:#F3C969;background:rgba(255,255,255,0.1);}
+  .card{border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes pop{0%{transform:scale(0.8);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+  @keyframes up{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .sheet-up{animation:up .3s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .4s ease-out both;}
+  @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.6)}50%{box-shadow:0 0 0 9px rgba(243,201,105,0)}}
+  .pulse{animation:pulseRing 1.6s ease-in-out infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes rays{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .rays{animation:rays 18s linear infinite;}
+  @keyframes burst{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0}35%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.15);opacity:0.65}}
+  .burst{animation:burst 1s ease-out both;}
+  @keyframes wave{0%,100%{transform:translateY(8px) rotate(0)}25%{transform:translateY(-10px) rotate(-4deg)}50%{transform:translateY(-14px) rotate(0)}75%{transform:translateY(-6px) rotate(4deg)}}
+  .wave{animation:wave 1.4s ease-in-out infinite;}
+  @keyframes shk{0%,100%{transform:rotate(0)}10%{transform:rotate(-4deg)}20%{transform:rotate(4deg)}30%{transform:rotate(-3deg)}40%{transform:rotate(3deg)}50%{transform:rotate(0)}}
+  .shake{animation:shk 1.6s ease-in-out infinite;transform-origin:50% 90%;}
+  @keyframes flipIn{0%{transform:rotateY(90deg) scale(0.9);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+  .flipin{animation:flipIn .4s ease-out both;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#07101f;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;filter:blur(14px) brightness(0.28);"></div>
+  <div style="position:absolute;top:50px;left:0;width:390px;display:flex;flex-direction:column;align-items:center;gap:4px;"><span class="cap" style="letter-spacing:3px;">FORZIERE VIOLA</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#F5E9D0;">{{title}}</span><span style="font-size:12px;color:rgba(245,233,208,0.6);">{{sub}}</span></div>
+
+  <sc-if value="{{closed}}" hint-placeholder-val="{{true}}">
+    <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:390px;width:380px;height:380px;transform:translate(-50%,-50%);opacity:0.55;">
+    <button type="button" onClick="{{open}}" aria-label="Apri il forziere" class="shake" style="position:absolute;left:85px;top:290px;width:220px;border:0;padding:0;background:none;cursor:pointer;"><img src="../assets/chest_purple.png" alt="" style="width:220px;height:auto;filter:drop-shadow(0 16px 24px rgba(0,0,0,0.6));"></button>
+    <span class="pulse" style="position:absolute;left:0;width:390px;top:530px;text-align:center;font-family:'Cinzel',serif;font-size:13px;font-weight:700;letter-spacing:2px;color:#FCE29A;">TOCCA PER APRIRE</span>
+  </sc-if>
+
+  <sc-if value="{{opened}}" hint-placeholder-val="{{false}}">
+    <img src="../assets/Bagliore_morbido.png" alt="" class="burst" style="position:absolute;left:50%;top:300px;width:460px;height:460px;">
+    <img src="../assets/chest_purple.png" alt="" style="position:absolute;left:135px;top:160px;width:120px;height:auto;opacity:0.85;filter:drop-shadow(0 10px 18px rgba(0,0,0,0.6));">
+    <div style="position:absolute;top:290px;left:20px;right:20px;display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px;">
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="3">
+        <sc-if value="{{it.shown}}" hint-placeholder-val="{{true}}">
+          <div class="panel flipin" style="height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;box-sizing:border-box;border-color:{{it.border}};box-shadow:0 0 18px {{it.glow}};">
+            <span style="font-size:9px;font-weight:800;letter-spacing:1px;color:{{it.rarCol}};">{{it.rarity}}</span>
+            <img src="{{it.img}}" alt="" style="width:{{it.iw}};height:auto;max-height:80px;border-radius:{{it.ir}};">
+            <span style="font-size:12px;font-weight:800;color:#F5E9D0;text-align:center;line-height:1.2;">{{it.name}}</span>
+            <sc-if value="{{it.hasBar}}" hint-placeholder-val="{{false}}"><div style="width:100%;display:flex;flex-direction:column;gap:3px;"><div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:{{it.pct}};height:100%;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div><span style="font-size:10px;font-weight:700;color:rgba(245,233,208,0.6);text-align:center;">{{it.barText}}</span></div></sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{it.hidden}}" hint-placeholder-val="{{false}}">
+          <button type="button" onClick="{{reveal}}" aria-label="Scopri" style="height:190px;border-radius:16px;border:1px solid rgba(167,139,250,0.6);background:linear-gradient(160deg,#2B1B55,#140D30);cursor:pointer;display:flex;align-items:center;justify-content:center;"><img src="../assets/back_giada.png" alt="" style="width:60px;height:auto;border-radius:6px;opacity:0.9;"></button>
+        </sc-if>
+      </sc-for>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:28px;display:flex;flex-direction:column;gap:10px;">
+      <sc-if value="{{allShown}}" hint-placeholder-val="{{false}}"><a href="Collezione.dc.html" class="gold-btn pop" style="height:54px;border-radius:16px;font-size:15px;">RACCOGLI</a></sc-if>
+      <sc-if value="{{someHidden}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{revealAll}}" class="ghost-btn" style="height:50px;border-radius:14px;font-size:14px;">Scopri tutto</button></sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"aperto":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { open: props.aperto === true, shown: props.aperto === true ? 3 : 0 }; }
+  renderVals() {
+    const items = [
+      { rarity: 'COMUNE', rarCol: 'rgba(245,233,208,0.6)', border: 'rgba(243,201,105,0.3)', glow: 'rgba(0,0,0,0)', img: '../assets/ic_coin.png', iw: '54px', ir: '0', name: '+150 monete', hasBar: false },
+      { rarity: 'RARA', rarCol: '#9DB8F5', border: 'rgba(79,128,232,0.7)', glow: 'rgba(79,128,232,0.4)', img: '../assets/back_giada.png', iw: '48px', ir: '5px', name: '+12 frammenti Dorso Rubino', hasBar: true, pct: '76%', barText: '38 / 50' },
+      { rarity: 'EPICA', rarCol: '#C4B5FD', border: 'rgba(167,139,250,0.8)', glow: 'rgba(167,139,250,0.5)', img: '../assets/emo_pensieroso_1.png', iw: '58px', ir: '0', name: 'Emoticon Pensieroso', hasBar: false }
+    ];
+    const n = this.state.shown;
+    return {
+      closed: !this.state.open, opened: this.state.open,
+      title: this.state.open ? (n >= 3 ? 'Ecco cosa hai trovato!' : 'Scopri le ricompense') : 'Hai un forziere da aprire',
+      sub: this.state.open ? n + ' di 3 scoperte' : '3 ricompense, almeno una rara',
+      open: () => this.setState({ open: true }),
+      items: items.map((it, i) => ({ ...it, shown: i < n, hidden: i >= n })),
+      reveal: () => this.setState({ shown: Math.min(3, n + 1) }), revealAll: () => this.setState({ shown: 3 }),
+      allShown: n >= 3, someHidden: n < 3
+    };
+  }
+}
+</script>
+</body>
+</html>

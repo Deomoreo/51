@@ -36,12 +36,16 @@ namespace Project51.UIV2.Components
         [SerializeField] private GameObject accountGroup;
         [SerializeField] private GameObject guestGroup;
         [SerializeField] private Button registerButton;
+        [SerializeField] private Button[] avatarButtons; // avatar account e ospite: aprono la pagina Profilo
 
         public event Action OnRegisterPressed;
+        public event Action OnProfilePressed;
 
         private void Awake()
         {
             if (registerButton != null) registerButton.onClick.AddListener(() => OnRegisterPressed?.Invoke());
+            if (avatarButtons != null)
+                foreach (var b in avatarButtons) if (b != null) b.onClick.AddListener(() => OnProfilePressed?.Invoke());
         }
 
         public void SetGuest(bool guest)
@@ -61,6 +65,9 @@ namespace Project51.UIV2.Components
             {
                 portraitImage.sprite = player.Avatar;
                 portraitImage.enabled = player.Avatar != null;
+                // Sprite avatar non quadrati: ritaglio nel cerchio invece di stirarli.
+                var circle = portraitImage.rectTransform.parent as RectTransform;
+                if (player.Avatar != null && circle != null) Project51.UI51.AvatarFrame.FitPortrait(portraitImage, circle.rect.width);
             }
             if (nameLabel != null) nameLabel.text = player.DisplayName;
             if (levelCaption != null) levelCaption.text = "Livello " + player.Level;

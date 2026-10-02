@@ -6,6 +6,7 @@ using Project51.Core;
 using Project51.Networking;
 using Project51.UIV2.Components;
 using Project51.Unity;
+using Project51.Unity.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +16,7 @@ namespace Project51.UIV2.Core
 {
     /// <summary>
     /// Flusso online V2: crea stanza, entra con codice, ricerca partita, sala d'attesa (host e ospite).
-    /// Mockup: screen_3_entra_codice, screen_1_ricerca_partita, 03_crea_stanza_con_bot, 04_lobby_non_host.
+    /// Mockup: screen_3_entra_codice, 03_crea_stanza_con_bot; ricerca = UI51 Matchmaking, sala = UI51 SalaPrivata (Fase 13).
     /// La logica di rete resta in MatchmakingManager / GameLaunchController.
     /// </summary>
     public sealed class RoomFlowV2 : MonoBehaviour
@@ -45,33 +46,20 @@ namespace Project51.UIV2.Core
         public Button Paste;
         public Button Join;
 
-        [Header("Ricerca partita")]
-        public TMP_Text SearchStatus;
-        public TMP_Text SearchDetail;
-        public TMP_Text SearchCount;
-        public LobbySlotRowV2[] SearchRows;
-        public RectTransform SearchProgressFill;
+        [Header("Ricerca partita (UI51 Matchmaking)")]
+        public UI51MatchmakingView SearchView;
 
-        [Header("Sala d'attesa - host")]
-        public CodeCellsV2 HostCells;
-        public Button HostCopy;
-        public TMP_Text HostFeedback;
-        public Button ShareButton;
-        public TMP_Text HostCount;
-        public LobbySlotRowV2[] HostRows;
-        public TMP_Text HostHint;
-        public Button StartGameButton;
+        [Header("Sala d'attesa (UI51 SalaPrivata)")]
+        public UI51PrivateRoomView HostView;
+        public UI51PrivateRoomView GuestView;
 
-        [Header("Sala d'attesa - ospite")]
-        public TMP_Text GuestSubtitle;
-        public CodeCellsV2 GuestCells;
-        public Button GuestCopy;
-        public TMP_Text GuestFeedback;
-        public TMP_Text GuestCount;
-        public LobbySlotRowV2[] GuestRows;
-        public TMP_Text GuestStatus;
+        [Header("Ingresso fallito (UI51 StanzaErrore)")]
+        public UI51RoomErrorView RoomError;
 
         public bool IsOpen => Panels.Any(p => p != null && p.activeSelf);
+
+        /// <summary>Formato della stanza da creare (scheda Stanza privata della Home); vale anche per "Gioca online invece".</summary>
+        public GameFormat Format { get => format; set => format = value; }
 
         /// <summary>
         /// Dove tornare annullando. Chi apre il flusso lo imposta (il pannello Modalita' si
@@ -85,7 +73,8 @@ namespace Project51.UIV2.Core
         private const float ConnectTimeoutSeconds = 45f;
 
         private MatchmakingManager manager;
-        private GameFormat format = GameFormat.FourPlayers;
+        private GameFormat format = GameFormat.OneVsOne;
+        private short joinFailure; // codice di Photon dell'ultimo ingresso fallito (0 = nessuno)
         private bool joining;
         private bool busy;
         private float started;
@@ -102,20 +91,24 @@ namespace Project51.UIV2.Core
             Create.onClick.AddListener(CreateRoom);
             Join.onClick.AddListener(JoinRoom);
             Paste.onClick.AddListener(() => CodeInput.text = NormalizeCode(GUIUtility.systemCopyBuffer));
-            HostCopy.onClick.AddListener(() => CopyCode(HostFeedback));
-            GuestCopy.onClick.AddListener(() => CopyCode(GuestFeedback));
-            ShareButton.onClick.AddListener(ShareCode);
-            StartGameButton.onClick.AddListener(StartMatch);
+            foreach (var view in new[] { HostView, GuestView })
+            {
+                var v = view;
+                v.Copy.onClick.AddListener(() => CopyCode(v));
+                v.Share.onClick.AddListener(ShareCode);
+            }
+            HostView.StartButton.onClick.AddListener(StartMatch);
             foreach (var button in CloseButtons) button.onClick.AddListener(Cancel);
+            RoomError.Alt.onClick.AddListener(PlayOnline);
             for (int i = 0; i < Formats.Length; i++)
             {
                 int index = i;
                 Formats[i].onClick.AddListener(() => SelectFormat(index));
             }
-            for (int i = 0; i < HostRows.Length; i++)
+            for (int i = 0; i < HostView.Seats.Length; i++)
             {
                 int index = i;
-                HostRows[i].BotButton.onClick.AddListener(() => ToggleBot(index));
+                HostView.Seats[i].Button.onClick.AddListener(() => ToggleBot(index));
             }
             CodeInput.onValueChanged.AddListener(EditCode);
             CodeInput.onSubmit.AddListener(_ => JoinRoom());
@@ -146,6 +139,33 @@ namespace Project51.UIV2.Core
             CodeInput.ActivateInputField();
         }
 
+        /// <summary>
+        /// Entra subito con questo codice (scheda Stanza privata della Home, invito di un amico): si passa dritti a "Ingresso nella
+        /// stanza…"; se Photon rifiuta, la finestra StanzaErrore.
+        /// </summary>
+        public void JoinCode(string code)
+        {
+            joining = true;
+            busy = false;
+            CodeInput.text = NormalizeCode(code);
+            JoinRoom();
+        }
+
+        /// <summary>CREA STANZA della scheda Stanza privata: crea subito nel Format scelto li'.</summary>
+        public void CreateNow()
+        {
+            joining = false;
+            busy = false;
+            CreateRoom();
+        }
+
+        /// <summary>Formato scelto in Crea stanza, per l'invito agli amici ("1 vs 1", "2 vs 2", "1 vs 3").</summary>
+        public static string FormatName(GameFormat f)
+        {
+            int i = System.Array.IndexOf(FormatOrder, f);
+            return i >= 0 ? FormatNames[i] : "";
+        }
+
         private void SelectFormat(int index)
         {
             format = FormatOrder[index];
@@ -173,16 +193,16 @@ namespace Project51.UIV2.Core
 
         private void CreateRoom()
         {
-            if (busy) return;
+            if (busy || Suspended()) return;
             busy = true;
             joining = false;
             started = Time.unscaledTime;
-            Launcher.CreatePrivateRoom(Config());
+            Launcher.CreatePrivateRoom(Config(), Unblock); // stato fresco della sospensione prima di creare
         }
 
         private void JoinRoom()
         {
-            if (busy) return;
+            if (busy || Suspended()) return;
             string code = NormalizeCode(CodeInput.text);
             if (!IsValidCode(code))
             {
@@ -191,8 +211,26 @@ namespace Project51.UIV2.Core
             }
             busy = true;
             joining = true;
+            joinFailure = 0;
             started = Time.unscaledTime;
-            Launcher.JoinPrivateRoom(code, Config());
+            Launcher.JoinPrivateRoom(code, Config(), Unblock); // stato fresco della sospensione prima di entrare
+        }
+
+        // Sospensione letta dal server mentre si partiva: la schermata Sospensione e' aperta, qui si torna liberi (niente ritorno a Modalita').
+        private void Unblock()
+        {
+            if (this == null) return;
+            busy = false;
+            joining = false;
+            ReturnOnCancel = null;
+        }
+
+        /// <summary>Moderazione: gioco online sospeso -> la schermata Sospensione al posto della stanza (e niente ritorno a Modalita').</summary>
+        private bool Suspended()
+        {
+            if (!UI51SuspensionView.BlocksOnline()) return false;
+            ReturnOnCancel = null;
+            return true;
         }
 
         private void EditCode(string value)
@@ -215,6 +253,7 @@ namespace Project51.UIV2.Core
             if (manager != null || MatchmakingManager.Instance == null) return;
             manager = MatchmakingManager.Instance;
             manager.OnStateChanged += State;
+            manager.OnJoinFailed += code => joinFailure = code;
             manager.OnError += Error;
             manager.OnRoomCreated += Created;
             manager.OnRoomJoined += Joined;
@@ -225,21 +264,18 @@ namespace Project51.UIV2.Core
             if (state == MatchmakingState.Idle) { busy = false; return; }
             if (state == MatchmakingState.InWaitingRoom) { Joined(); return; }
             if (state == MatchmakingState.Connecting) { started = Time.unscaledTime; busy = true; }
+            searchState = state;
             Show(SearchPanel);
-            SearchStatus.text = state == MatchmakingState.Starting ? "Partita trovata!"
-                : state == MatchmakingState.CreatingRoom ? "Creazione stanza…"
-                : state == MatchmakingState.JoiningRoom ? "Ingresso nella stanza…"
-                : state == MatchmakingState.Connecting ? "Connessione…"
-                : "Ricerca giocatori…";
+            RefreshSearch();
         }
+
+        private MatchmakingState searchState;
 
         private void Created(string code) => Joined();
 
         private void Joined()
         {
             busy = false;
-            HostFeedback.text = "";
-            GuestFeedback.text = "";
             ShowLobby();
             RefreshPlayers();
         }
@@ -247,25 +283,42 @@ namespace Project51.UIV2.Core
         // Host e ospite hanno layout diversi; se l'host esce, Photon passa il ruolo a un ospite.
         private void ShowLobby() => Show(PhotonNetwork.IsMasterClient ? LobbyHostPanel : LobbyGuestPanel);
 
+        /// <summary>Codice rifiutato da Photon: StanzaErrore; il resto (rete, tempo scaduto) nella ricerca, come per la creazione.</summary>
         public void Error(string error)
         {
             busy = false;
-            if (joining)
+            if (joining && joinFailure != 0)
             {
-                Show(JoinPanel);
-                ShowJoinError(error);
-                Join.interactable = IsValidCode(CodeInput.text);
+                ShowRoomError(joinFailure);
+                joinFailure = 0;
+                return;
             }
-            else
-            {
-                Show(SearchPanel);
-                SearchStatus.text = "Connessione non riuscita";
-                SearchDetail.text = error;
-            }
+            Show(SearchPanel);
+            SearchView.SetStatus(ModeLabel(manager != null ? manager.CurrentConfig : null), "Connessione non riuscita", error, "", false);
+            SearchView.SetSeats(false, 0, null, null);
+        }
+
+        // Mockup StanzaErrore: sotto si riapre Modalita' sulla scheda Stanza privata (il codice e' ancora scritto, RIPROVA lo lascia
+        // correggere); "Gioca online invece" parte con una partita veloce nel formato della scheda.
+        private void ShowRoomError(short code)
+        {
+            HideAll();
+            var back = ReturnOnCancel;
+            ReturnOnCancel = null;
+            back?.Invoke();
+            RoomError.Show(UI51RoomErrorView.ForCode(code));
+        }
+
+        private void PlayOnline()
+        {
+            var config = Config();
+            config.Intent = MatchIntent.QuickMatch;
+            Launcher.Launch(config);
         }
 
         public void Cancel()
         {
+            if (Launcher != null) Launcher.CancelPendingLaunch(); // creazione o ingresso ancora in attesa del controllo della sospensione
             if (manager != null && (busy || PhotonNetwork.InRoom)) manager.Cancel();
             busy = false;
             HideAll();
@@ -299,16 +352,16 @@ namespace Project51.UIV2.Core
 
         private string RoomCode => PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : "";
 
-        private void CopyCode(TMP_Text feedback)
+        private void CopyCode(UI51PrivateRoomView view)
         {
             GUIUtility.systemCopyBuffer = RoomCode;
-            feedback.text = "Codice copiato!";
+            view.ShowCopied();
         }
 
         private void ShareCode()
         {
             string text = "Gioca a 51 con me! Apri il gioco, tocca \"Entra in stanza\" e inserisci il codice " + RoomCode;
-            if (!NativeShare.ShareText(text)) HostFeedback.text = "Invito copiato: incollalo in chat ai tuoi amici";
+            if (!NativeShare.ShareText(text)) UI51Toast.Show("Invito copiato: incollalo in chat ai tuoi amici", UI51Toast.Kind.Success);
         }
 
         private int BotMask
@@ -344,7 +397,7 @@ namespace Project51.UIV2.Core
             // La partita parte davvero: uscendo dal tavolo si torna alla Home, non al pannello
             // Modalita' di mezz'ora prima.
             ReturnOnCancel = null;
-            StartGameButton.interactable = false;
+            HostView.StartButton.interactable = false;
             manager.StartGame();
         }
 
@@ -352,107 +405,126 @@ namespace Project51.UIV2.Core
             PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("format", out var value)
                 ? (GameFormat)(int)value : GameFormat.FourPlayers;
 
-        // A coppie i primi due entrati sono compagni (SeatLayout): la riga i e' l'ordine di ingresso.
-        private static string TeamLabel(GameFormat roomFormat, int joinIndex) =>
-            roomFormat != GameFormat.TwoVsTwo ? ""
-                : SeatLayout.SeatForJoinOrder(GameFormat.TwoVsTwo, joinIndex) % 2 == 0 ? " · SQUADRA A" : " · SQUADRA B";
+        // A coppie i primi due entrati sono compagni (SeatLayout): il posto i della griglia e' l'ordine di ingresso.
+        private static bool SameTeam(GameFormat roomFormat, int joinIndex, int me) =>
+            roomFormat == GameFormat.TwoVsTwo
+                ? SeatLayout.SeatForJoinOrder(roomFormat, joinIndex) % 2 == SeatLayout.SeatForJoinOrder(roomFormat, me) % 2
+                : joinIndex == me;
 
-        // 2.22: finche' Photon non ha la stanza niente dati del builder (KKKKK, "Stanza di").
-        private void ShowLobbyLoading()
-        {
-            HostCells.SetCode("");
-            GuestCells.SetCode("");
-            GuestSubtitle.text = "Sala d'attesa";
-            HostCount.text = GuestCount.text = "";
-            HostHint.text = GuestStatus.text = "Collegamento alla stanza…";
-            StartGameButton.interactable = false;
-            foreach (var row in HostRows) row.ShowEmpty("In attesa…", canAddBot: false);
-            foreach (var row in GuestRows) row.ShowEmpty("In attesa…", canAddBot: false);
-        }
+        private static string RoomModeLabel(GameFormat f) =>
+            f == GameFormat.TwoVsTwo ? "2 VS 2" : f == GameFormat.FourPlayers ? "TUTTI CONTRO TUTTI" : "1 VS 1";
 
+        /// <summary>
+        /// Mockup SalaPrivata: posti in ordine di ingresso (io "Tu", HOST, bot), anello oro per la mia squadra e blu per gli altri,
+        /// AVVIA PARTITA quando tutti i posti sono presi (giocatori o bot). Ogni 0,2 s mentre la sala e' aperta.
+        /// </summary>
         public void RefreshPlayers()
         {
-            if (!PhotonNetwork.InRoom) { ShowLobbyLoading(); return; }
+            // 2.22: finche' Photon non ha la stanza niente dati del builder (codice e posti vuoti).
+            if (!PhotonNetwork.InRoom)
+            {
+                var config = manager != null ? manager.CurrentConfig : null;
+                var f = config != null ? config.Format : GameFormat.OneVsOne;
+                foreach (var v in new[] { HostView, GuestView })
+                    v.Bind(RoomModeLabel(f), "", null, config != null ? config.PlayerCount : 2, false, "", FormatName(f), new string[0]);
+                return;
+            }
             if (PhotonNetwork.IsMasterClient != LobbyHostPanel.activeSelf) ShowLobby();
 
             var room = PhotonNetwork.CurrentRoom;
             var players = PhotonNetwork.PlayerList.OrderBy(p => p.ActorNumber).ToArray();
             var roomFormat = RoomFormat;
-            bool host = PhotonNetwork.IsMasterClient;
-            var rows = host ? HostRows : GuestRows;
-            int occupied = 0;
-
-            for (int i = 0; i < rows.Length; i++)
+            var view = PhotonNetwork.IsMasterClient ? HostView : GuestView;
+            int me = System.Array.FindIndex(players, p => p.IsLocal);
+            var seats = new UI51SeatCard.Info[room.MaxPlayers];
+            for (int i = 0; i < seats.Length; i++)
             {
-                if (i >= room.MaxPlayers) { rows[i].Hide(); continue; }
-                string team = TeamLabel(roomFormat, i);
+                bool ally = SameTeam(roomFormat, i, me);
                 if (i < players.Length)
-                {
-                    occupied++;
-                    var player = players[i];
-                    string name = player.IsLocal && !host ? "Tu" : player.NickName;
-                    rows[i].ShowPlayer(name, (player.IsMasterClient ? "HOST" : "PRONTO") + team,
-                        player.IsMasterClient ? LobbySlotRowV2.HostColor : LobbySlotRowV2.ReadyColor);
-                }
+                    seats[i] = new UI51SeatCard.Info
+                    {
+                        Name = players[i].IsLocal ? "Tu" : string.IsNullOrEmpty(players[i].NickName) ? "Giocatore" : players[i].NickName,
+                        Tag = players[i].IsMasterClient ? "HOST" : null,
+                        Portrait = players[i].IsLocal && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar : view.Portrait(i),
+                        Ally = ally,
+                    };
                 else if ((BotMask & (1 << i)) != 0)
-                {
-                    occupied++;
-                    rows[i].ShowPlayer("Bot " + (i + 1), "BOT" + team, LobbySlotRowV2.BotColor, isBot: true, canRemoveBot: host);
-                }
-                else
-                {
-                    rows[i].ShowEmpty(host ? "Slot libero" : "In attesa…", canAddBot: host);
-                }
+                    seats[i] = new UI51SeatCard.Info { Name = "Bot " + (i + 1), Tag = "BOT", Portrait = view.Portrait(i), Ally = ally };
             }
-
-            string count = "GIOCATORI " + occupied + "/" + room.MaxPlayers;
-            if (host)
-            {
-                HostCells.SetCode(room.Name);
-                HostCount.text = count;
-                bool ready = CanStart();
-                StartGameButton.interactable = ready;
-                HostHint.text = ready ? "Tavolo pronto: puoi avviare la partita" : "Solo l'host può aggiungere bot o avviare";
-            }
-            else
-            {
-                var hostPlayer = players.FirstOrDefault(p => p.IsMasterClient);
-                GuestSubtitle.text = !string.IsNullOrEmpty(hostPlayer?.NickName) ? "Stanza di " + hostPlayer.NickName : "Sala d'attesa";
-                GuestCells.SetCode(room.Name);
-                GuestCount.text = count;
-                GuestStatus.text = "In attesa che l'host avvii la partita…";
-            }
+            var hostPlayer = players.FirstOrDefault(p => p.IsMasterClient);
+            view.Bind(RoomModeLabel(roomFormat), room.Name, seats, room.MaxPlayers, CanStart(), hostPlayer?.NickName, FormatName(roomFormat),
+                players.Select(p => p.NickName).ToList());
         }
 
+        private static string ModeLabel(MatchConfig config)
+        {
+            if (config != null && config.Intent == MatchIntent.PrivateRoom) return "STANZA PRIVATA";
+            var f = config != null ? config.Format : GameFormat.OneVsOne;
+            return (f == GameFormat.TwoVsTwo ? "PARTITA 2 VS 2" : f == GameFormat.FourPlayers ? "TUTTI CONTRO TUTTI" : "PARTITA 1 VS 1") + " · ONLINE";
+        }
+
+        /// <summary>
+        /// Mockup Matchmaking: testata col tempo, posti e fondo. Partita veloce: io e chi e' entrato (in ordine di ingresso), a
+        /// coppie per squadra nel 2v2 (SeatLayout); trovata, i posti rimasti vuoti sono i bot del riempimento. Stanza privata:
+        /// solo la testata (i posti li mostra la sala d'attesa).
+        /// </summary>
         private void RefreshSearch()
         {
-            int seconds = (int)(Time.unscaledTime - started);
-            var players = PhotonNetwork.InRoom ? PhotonNetwork.PlayerList.OrderBy(p => p.ActorNumber).ToArray() : new Photon.Realtime.Player[0];
             var config = manager != null ? manager.CurrentConfig : null;
-            int max = config != null ? config.PlayerCount : 4;
-            int formatIndex = config != null ? System.Array.IndexOf(FormatOrder, config.Format) : -1;
-
+            bool quick = config == null || config.Intent == MatchIntent.QuickMatch;
+            bool found = searchState == MatchmakingState.Starting;
+            int seconds = (int)(Time.unscaledTime - started);
             float botsIn = manager != null ? manager.QuickMatchSecondsLeft : -1f;
-            SearchDetail.text = (formatIndex >= 0 ? "Modalità: " + FormatNames[formatIndex] + "  ·  " : "")
-                + "tempo " + (seconds / 60).ToString("00") + ":" + (seconds % 60).ToString("00")
-                + (botsIn >= 0f ? "  ·  bot tra " + Mathf.CeilToInt(botsIn) + "s" : "");
-            SearchCount.text = "GIOCATORI " + players.Length + "/" + max;
 
-            for (int i = 0; i < SearchRows.Length; i++)
+            string title = found ? (quick ? "Partita trovata!" : "Si parte!")
+                : searchState == MatchmakingState.CreatingRoom ? "Creazione stanza…"
+                : searchState == MatchmakingState.JoiningRoom ? "Ingresso nella stanza…"
+                : searchState == MatchmakingState.Connecting ? "Connessione…"
+                : "Cerco giocatori…";
+            string sub = found ? "Il mazziere viene sorteggiato al tavolo"
+                : quick ? "Tempo di attesa " + seconds / 60 + ":" + (seconds % 60).ToString("00") : "";
+            string wait = found ? "Si parte da soli tra qualche secondo"
+                : !quick ? ""
+                : botsIn >= 0f ? "Se non arriva nessuno, tra " + Mathf.CeilToInt(botsIn) + " s si gioca coi bot"
+                : "Tempo stimato circa 20 secondi";
+            SearchView.SetStatus(ModeLabel(config), title, sub, wait, found);
+            if (!quick) { SearchView.SetSeats(false, 0, null, null); return; }
+
+            var f = config != null ? config.Format : GameFormat.OneVsOne;
+            int max = config != null ? config.PlayerCount : 2;
+            var players = PhotonNetwork.InRoom ? PhotonNetwork.PlayerList.OrderBy(p => p.ActorNumber).ToArray() : new Photon.Realtime.Player[0];
+            int me = System.Array.FindIndex(players, p => p.IsLocal);
+            if (me < 0) { players = new[] { PhotonNetwork.LocalPlayer }; me = 0; }
+
+            // Posto i della ricerca (righe da due): 0 sono io; nel 2v2 1 = compagno, 2-3 avversari.
+            var seats = new UI51SeatCard.Info[4];
+            int myTeam = f == GameFormat.TwoVsTwo ? SeatLayout.SeatForJoinOrder(f, me) % 2 : 0;
+            int ally = 1, foe = f == GameFormat.TwoVsTwo ? 2 : 1;
+            for (int slot = 0; slot < max; slot++)
             {
-                if (i >= max) { SearchRows[i].Hide(); continue; }
-                if (i < players.Length)
-                    SearchRows[i].ShowPlayer(players[i].IsLocal ? "Tu" : players[i].NickName,
-                        players[i].IsMasterClient ? "HOST" : "PRONTO",
-                        players[i].IsMasterClient ? LobbySlotRowV2.HostColor : LobbySlotRowV2.ReadyColor);
-                else
-                    SearchRows[i].ShowEmpty("In attesa…", canAddBot: false);
+                bool bot = slot >= players.Length;
+                if (bot && !found) continue;
+                bool mine = f == GameFormat.TwoVsTwo ? SeatLayout.SeatForJoinOrder(f, slot) % 2 == myTeam : slot == me;
+                int index = slot == me ? 0 : mine ? ally++ : foe++;
+                if (index >= seats.Length) continue;
+                seats[index] = bot ? SeatInfo("Bot " + (slot + 1), "Computer", slot, mine)
+                    : SeatInfo(players[slot].IsLocal ? "Tu" : players[slot].NickName, LookDetail(players[slot]), slot, mine, players[slot].IsLocal);
             }
-
-            // Barra: avanzamento verso il riempimento con bot della partita veloce.
-            float progress = botsIn >= 0f ? 1f - botsIn / MatchmakingManager.QuickMatchBotFillSeconds : 0f;
-            SearchProgressFill.anchorMax = new Vector2(Mathf.Clamp01(progress), 1f);
+            bool twoRows = f != GameFormat.OneVsOne;
+            SearchView.SetSeats(true, twoRows ? 2 : 1, f == GameFormat.TwoVsTwo ? new[] { "LA TUA SQUADRA", "AVVERSARI" } : null, seats);
         }
+
+        private UI51SeatCard.Info SeatInfo(string name, string detail, int slot, bool ally, bool local = false) => new UI51SeatCard.Info
+        {
+            Name = string.IsNullOrEmpty(name) ? "Giocatore" : name,
+            Detail = detail,
+            Portrait = local && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar : SearchView.Portrait(slot),
+            Ally = ally,
+        };
+
+        // Livello dall'aspetto pubblicato in rete (ProfileCosmetics.ReadLook); senza (ospite): "Ospite".
+        private static string LookDetail(Photon.Realtime.Player player) =>
+            Project51.UIV2.Data.ProfileCosmetics.ReadLook(player.CustomProperties, out _, out _, out int level) ? "Liv. " + level : "Ospite";
 
         private void Update()
         {

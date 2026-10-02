@@ -66,6 +66,8 @@ namespace Project51.Unity.UI
             }
 
             if (state == null) return;
+            // Tre assi: il punteggio cambia appena distribuito; resta com'era finche' le carte volano, poi lo svela TRE ASSI!.
+            if (turnController.IsDealInProgress && state.RoundEnded && RoundManager.TreAssiHolder(state) >= 0) return;
             int rivals = ScorePill(state, GameModeService.Current.LocalPlayerIndex, GameSocialV2.PlayerName,
                 out string me, out string mine, labels, scores);
             Set(myLabel, me);
@@ -120,21 +122,22 @@ namespace Project51.Unity.UI
             int mine = MatchScore.EntryOf(state, localPlayer);
             int rivals = totals.Length - 1;
             bool narrow = rivals > 1;
+            bool treAssi = state.RoundEnded && RoundManager.TreAssiHolder(state) >= 0;
 
             myLabel = state.TeamMode ? "NOI" : "TU";
-            myScore = Score(totals[mine], narrow);
+            myScore = Score(totals[mine], narrow, treAssi);
             for (int i = 1; i < totals.Length; i++)
             {
                 int entry = (mine + i) % totals.Length; // posto relativo i: 1 sinistra, 2 alto, 3 destra
                 rivalLabels[i - 1] = state.TeamMode ? "LORO" : ShortName(nameOf(entry), narrow ? ShortNameLength : MaxNameLength);
-                rivalScores[i - 1] = Score(totals[entry], narrow);
+                rivalScores[i - 1] = Score(totals[entry], narrow, treAssi);
             }
             return rivals;
         }
 
-        // Il cappotto chiude la partita: resta scritto per un attimo, prima dei risultati.
-        private static string Score(int total, bool narrow) =>
-            MatchScore.IsCappotto(total) ? narrow ? "CAPP." : "CAPPOTTO" : total.ToString();
+        // Cappotto e tre assi chiudono la partita: resta scritto per un attimo, prima dei risultati.
+        private static string Score(int total, bool narrow, bool treAssi) =>
+            !MatchScore.IsCappotto(total) ? total.ToString() : treAssi ? narrow ? "3 ASSI" : "TRE ASSI" : narrow ? "CAPP." : "CAPPOTTO";
 
         private static string ShortName(string name, int length)
         {

@@ -20,6 +20,14 @@ namespace Project51.UIV2.Core
         [Tooltip("Pulsante Novita' in alto e la pagina che apre (Tools/UIV2/Build News Screen).")]
         public Button NewsButton;
         public NewsScreenV2 News;
+        [Tooltip("UI51 Fase 12: Benvenuto al primo ingresso e Regole al ritorno da \"Leggi tutte le regole\" del tutorial.")]
+        public Project51.Unity.UI.UI51WelcomeView Welcome;
+        public Project51.Unity.UI.UI51RulesView Rules;
+        [Tooltip("UI51 Fase 11, moderazione: Esito segnalazione e Gioco online sospeso all'arrivo in Home (solo account veri).")]
+        public Project51.Unity.UI.UI51ReportOutcomeView ReportOutcome;
+        public Project51.Unity.UI.UI51SuspensionView Suspension;
+        [Tooltip("UI51 Fase 15: LivelloSu al ritorno in Home dopo partite che hanno fatto salire di livello.")]
+        public Project51.Unity.UI.UI51LevelUpView LevelUp;
         private bool entered;
 
         /// <summary>Vero dopo che si e' entrati in Home: la schermata iniziale non tornera' piu'.</summary>
@@ -59,8 +67,22 @@ namespace Project51.UIV2.Core
         }
         private void CompleteEntrance()
         {
+            if (this == null) return; // rientro al tavolo finito prima: MainMenu non c'e' piu'
             entered = true; AuthUI.HideAuthUI(); SettingsCanvas.sortingOrder = 20;
             View.alpha = 0; View.blocksRaycasts = false; View.interactable = false;
+            if (Project51.Unity.UI.UI51TutorialView.OpenRulesOnReturn && Rules != null)
+            {
+                Project51.Unity.UI.UI51TutorialView.OpenRulesOnReturn = false;
+                Rules.Open();
+            }
+            else if (Welcome != null && Project51.Unity.UI.UI51WelcomeView.Pending) Welcome.Open();
+            else if (LevelUp != null && Project51.Unity.UI.UI51LevelUpView.Pending) LevelUp.Open();
+            ModerationService.Refresh((outcome, showSuspension) =>
+            {
+                if (this == null) return;
+                if (outcome != null && ReportOutcome != null) ReportOutcome.Open(outcome);
+                else if (showSuspension && Suspension != null) Suspension.Open();
+            });
         }
         private void OnDestroy()
         {

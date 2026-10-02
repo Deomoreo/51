@@ -70,6 +70,10 @@ namespace Project51.Tests
             var s = new GameState(2) { MatchTotals = new[] { 30, 20 } };
             s.Players[1].TotalScore = MatchScore.CappottoScore;
             Assert.AreEqual("TU 30 | 1-NOME MOLTO CAPPOTTO", Pill(s, 0));
+            // Stesso punteggio simbolico per i tre assi ancora in mano a smazzata chiusa.
+            s.Players[1].Hand.AddRange(new[] { new Card(Suit.Denari, 1), new Card(Suit.Spade, 1), new Card(Suit.Coppe, 1) });
+            s.RoundEnded = true;
+            Assert.AreEqual("TU 30 | 1-NOME MOLTO TRE ASSI", Pill(s, 0));
         }
 
         [Test]
@@ -485,6 +489,12 @@ namespace Project51.Tests
             foreach (System.Collections.DictionaryEntry e in guest) Assert.IsNull(e.Value, e.Key.ToString());
             Assert.IsFalse(ProfileCosmetics.ReadStats(guest, out _, out _, out _, out id));
             Assert.IsNull(id);
+            // 2.55: l'ospite pubblica solo l'ID della sessione (per le segnalazioni), mai come account.
+            var reportable = AuthBootstrapper.LookProps(null, null, 0, 0, 0, 0, null, "GUESTSESSION");
+            Assert.AreEqual("GUESTSESSION", ProfileCosmetics.GuestId(reportable));
+            Assert.IsFalse(ProfileCosmetics.ReadStats(reportable, out _, out _, out _, out id));
+            Assert.IsNull(id);
+            Assert.IsNull(ProfileCosmetics.GuestId(props), "un account non e' un ospite");
 
             // Scritte da un altro client: tipi sbagliati e valori fuori misura non passano.
             var bad = new System.Collections.Hashtable

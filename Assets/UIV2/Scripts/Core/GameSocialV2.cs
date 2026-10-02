@@ -70,7 +70,7 @@ namespace Project51.UIV2.Core
         }
         public void Open()
         {
-            if(turns==null||turns.GameState==null||turns.GameState.RoundEnded)return;
+            if(turns==null||turns.GameState==null||turns.GameState.RoundEnded||Muted())return;
             if(QuickBar!=null){if(quickOpen)HideQuickBar();else ShowQuickBar();return;}
             // Solo le emoticon equipaggiate (max 3), su una riga e nell'ordine scelto in Collezione.
             var equipped=CollectionCosmeticsV2.Equipped.Where(i=>i>=0&&i<EmoticonButtons.Length).ToArray();
@@ -85,10 +85,19 @@ namespace Project51.UIV2.Core
         }
         public void Send(int index)
         {
-            if(!CollectionCosmeticsV2.Equipped.Contains(index)||Time.unscaledTime-lastSent<1.5f)return;
+            if(!CollectionCosmeticsV2.Equipped.Contains(index)||Time.unscaledTime-lastSent<1.5f||Muted())return;
             lastSent=Time.unscaledTime;EmoticonPanel.SetActive(false);HideQuickBar();
             if(GameModeService.Current.IsMultiplayer)NetworkGameController.Instance?.SendEmoticon(index);
             else ShowEmoticon(GameModeService.Current.LocalPlayerIndex,index);
+        }
+        // Emoticon spente per le segnalazioni (ModerationService): online non partono, l'avviso dice per quanto.
+        private bool Muted()
+        {
+            if(!GameModeService.Current.IsMultiplayer||!Project51.Auth.ModerationService.IsMuted)return false;
+            EmoticonPanel.SetActive(false);HideQuickBar();
+            Project51.Unity.UI.UI51Toast.Show("Emoticon spente per le segnalazioni: ancora "+
+                Project51.Unity.UI.UI51SuspensionView.Countdown(Project51.Auth.ModerationService.MuteSecondsLeft),Project51.Unity.UI.UI51Toast.Kind.Error);
+            return true;
         }
         private void ShowQuickBar()
         {

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Project51.Unity
 {
     /// <summary>
-    /// Esito dell'accuso del mazziere (Dealer15/Dealer30): cartello "SCOPA DA 30!" con bagliore, che
+    /// Esito dell'accuso del mazziere (Dealer15/Dealer30): cartello "ACCUSO 30 · +2" con bagliore, che
     /// entra a scatto sopra al tavolo e sparisce mentre le carte volano nel mazzetto del mazziere.
     /// Le carte vere restano visibili sotto (vedi TurnController.PlayDealerAccusoRevealIfAny).
     /// Grafica costruita da Tools/UIV2/Build Dealer Accuso Reveal.

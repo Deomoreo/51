@@ -80,6 +80,9 @@ namespace Project51.Unity
         // Bordo #F3C969 delle carte accusate a 4 giocatori: spessore / larghezza della carta (Partita4 1,5 su 20). Nel 1v1 niente bordo (scelta utente 01/10).
         private const float AccusedOutline = 1.5f / 20f;
         private static readonly Color AccusedGold = new Color32(0xF3, 0xC9, 0x69, 0xFF);
+
+        /// <summary>Tre assi: giocatore la cui mano si vede scoperta col bordo d'oro, -1 nessuno (lo imposta TurnController).</summary>
+        public int RevealedHandPlayer { get; set; } = -1;
         // 4 giocatori su schermi bassi (iPhone SE): sotto 150 di fascia la mano torna alta 272 come prima della Fase 6.
         private const float SmallHandMinBand = 150f, SmallHandScale = LocalHandCardDesignHeight / DuelHandCardHeight;
 
@@ -254,7 +257,7 @@ namespace Project51.Unity
 
         /// <summary>
         /// Renders non-local players' hands around the table (face-down by default).
-        /// Dealer 15/30 accuso (1-2 points) does NOT reveal cards; Cirulla/Decino do.
+        /// Dealer 15/30 accuso (1-2 points) does NOT reveal cards; Cirulla/Decino and Tre assi do.
         /// </summary>
         private void RenderAIHandsDynamic(List<PlayerState> players, int localIndex)
         {
@@ -263,7 +266,9 @@ namespace Project51.Unity
                 if (p == localIndex) continue;
                 var hand = players[p].Hand;
 
-                bool hasAccuso = players[p].AccusiPoints > 0;
+                bool accused = players[p].AccusiPoints > 0;
+                bool treAssi = p == RevealedHandPlayer;
+                bool hasAccuso = accused || treAssi; // mano scoperta
                 bool faceUp = hasAccuso;
 
                 for (int i = 0; i < hand.Count; i++)
@@ -317,9 +322,10 @@ namespace Project51.Unity
                     cardView.SetRaiseOverride(-1f); // la vista puo' arrivare dal tavolo (resync, rivincita)
                     // Scoperte da un accuso: bordo d'oro solo a 4 giocatori (Partita4), nel 1v1 carte normali; al tocco il visore
                     // "Carte accusate da".
-                    cardView.SetOutline(AccusedGold, hasAccuso && players.Count != 2 ? AccusedOutline : 0f);
+                    // I Tre assi hanno il bordo anche nel 1v1 (mockup TreAssi).
+                    cardView.SetOutline(AccusedGold, treAssi || (accused && players.Count != 2) ? AccusedOutline : 0f);
                     cardView.SetGlow(false, null, default);
-                    cardView.Tapped = hasAccuso ? new System.Action<CardView>(OnAccusedCardTapped) : null;
+                    cardView.Tapped = accused ? new System.Action<CardView>(OnAccusedCardTapped) : null;
                     Vector3 position;
                     float baseRotation = 0f;
 
@@ -356,7 +362,7 @@ namespace Project51.Unity
                         cardView.SetPosition(position);
                         cardView.SetBaseSortingOrder(20 + i);
                         cardView.IsClickable = false;
-                        cardView.EnableHover = hasAccuso;
+                        cardView.EnableHover = accused;
                         continue;
                     }
 
@@ -418,7 +424,7 @@ namespace Project51.Unity
                     }
 
                     cardView.IsClickable = false;
-                    cardView.EnableHover = hasAccuso;
+                    cardView.EnableHover = accused;
                 }
 
                 if (hasAccuso)
@@ -1185,7 +1191,7 @@ namespace Project51.Unity
             // Render local human player's hand at bottom UI using their actual hand
             if (state.Players.Count > localIndex)
             {
-                RenderHumanHand(state.Players[localIndex].Hand);
+                RenderHumanHand(state.Players[localIndex].Hand, RevealedHandPlayer == localIndex);
             }
 
             // Render other players' hands (face-down)
@@ -1555,7 +1561,7 @@ namespace Project51.Unity
         /// <summary>
         /// Renders the human player's hand with fan layout.
         /// </summary>
-        private void RenderHumanHand(List<Card> handCards)
+        private void RenderHumanHand(List<Card> handCards, bool treAssi)
         {
             // Empty hand is normal when waiting for network GameState or between deals
             if (handCards == null || handCards.Count == 0)
@@ -1606,7 +1612,9 @@ namespace Project51.Unity
 
                 cardView.SetBaseSortingOrder(CenterFirstSortingOrder(40, handCards.Count, i));
                 cardView.SetRaiseOverride(-1f); // la vista puo' arrivare dal tavolo (smazzata precedente)
-                cardView.SetOutline(default, 0f); // o dalla mano accusata di un altro (rivincita, resync)
+                // Bordo d'oro solo per i miei Tre assi; altrimenti lo toglie a una vista arrivata dal tavolo
+                // o dalla mano accusata di un altro (rivincita, resync).
+                cardView.SetOutline(AccusedGold, treAssi ? AccusedOutline : 0f);
                 cardView.Tapped = null;
 
                 if (TryGetBannerHandCenter(0, out var handCenter, out _))

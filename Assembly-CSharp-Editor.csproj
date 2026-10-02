@@ -68,6 +68,7 @@
     <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Editor\TableTopBarBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2DesignBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51ProgressBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51Build.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\InGameSettingsTests.cs" />
@@ -79,10 +80,13 @@
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Dealer.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Online.cs" />
     <Compile Include="Assets\Editor\UIV2ReducedGraphicsBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\UI51ProgressTests.cs" />
     <Compile Include="Assets\Editor\EmoticonKitBuilder.cs" />
     <Compile Include="Assets\Editor\ProfiloBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\ProfileV2BindingTests.cs" />
+    <Compile Include="Assets\Tests\Editor\MailServiceTests.cs" />
     <Compile Include="Assets\Editor\ImpostazioniBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51RulesBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Accuso.cs" />
     <Compile Include="Assets\Editor\DragonsHoardThemeApplier.cs" />
     <Compile Include="Assets\Editor\GoldButtonLabelStyle.cs" />
@@ -102,6 +106,7 @@
     <Compile Include="Assets\UI51\Editor\UI51PrefabBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAccusiCombinationsTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.EmoticonQuickBar.cs" />
+    <Compile Include="Assets\Tests\Editor\FriendsChatTests.cs" />
     <Compile Include="Assets\Tests\Editor\AceAndCaptureRulesTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Legal.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Glows.cs" />
@@ -134,6 +139,7 @@
     <Compile Include="Assets\Editor\IconFaceCentering.cs" />
     <Compile Include="Assets\Tests\Editor\CardDeckTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51GalleryBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51AccountBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51IntegrationTests.cs" />
     <Compile Include="Assets\Editor\GameCanvasResolutionFixer.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.HomeQuickActions.cs" />
@@ -141,12 +147,14 @@
     <Compile Include="Assets\Tests\Editor\K4CardShaderTests.cs" />
     <Compile Include="Assets\Editor\QuickModeRowsCalibration.cs" />
     <Compile Include="Assets\Editor\EmoticonScreenExactBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51MomentsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51CoreTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerEdgeTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51ResultsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\NewsServiceTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.HomeAmbient.cs" />
     <Compile Include="Assets\Tests\Editor\K6FeedbackTests.cs" />
+    <Compile Include="Assets\Tests\Editor\RulesDecisionsTests.cs" />
     <Compile Include="Assets\Editor\FrontendExpansionBuilder.cs" />
     <Compile Include="Assets\Editor\AmiciBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\TurnControllerResolveAIDifficultyTests.cs" />
@@ -158,7 +166,9 @@
     <Compile Include="Assets\Editor\BackdropDismissBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\PunteggioManagerTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51TableBuilder.cs" />
+    <Compile Include="Assets\Tests\Editor\ModerationViewTests.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiCheckerTests.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51SystemBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Shop.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.Collection.cs" />
     <Compile Include="Assets\Editor\PanelTitlesCalibration.cs" />
@@ -167,6 +177,7 @@
     <Compile Include="Assets\Tests\Editor\PlayerSelectionTests.cs" />
     <Compile Include="Assets\Editor\FrontendExpansionBuilder.Game.cs" />
     <Compile Include="Assets\Tests\Editor\I5ReducedGraphicsTests.cs" />
+    <Compile Include="Assets\Tests\Editor\ServiceGateTests.cs" />
     <Compile Include="Assets\Tests\Editor\MatchScoreTests.cs" />
     <Compile Include="Assets\Tests\Editor\UIV2MotionTests.cs" />
     <Compile Include="Assets\Editor\FrontendFlowBuilder.cs" />
@@ -177,6 +188,7 @@
     <Compile Include="Assets\Tests\Editor\K4BlurTests.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.RoomTable.cs" />
     <Compile Include="Assets\UI51\Editor\UI51ImportBuilder.cs" />
+    <Compile Include="Assets\UI51\Editor\UI51MatchBuilder.cs" />
     <Compile Include="Assets\Editor\UIV2FoundationBuilder.DealerReveal.cs" />
     <Compile Include="Assets\Editor\StartScreenAuthButtonsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\K7FlowTests.cs" />

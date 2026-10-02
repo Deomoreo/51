@@ -71,6 +71,7 @@
     <Compile Include="Assets\Scripts\Core\AccusiChecker.cs" />
     <Compile Include="Assets\Scripts\Core\CardDeckDefinition.cs" />
     <Compile Include="Assets\Scripts\Core\Card.cs" />
+    <Compile Include="Assets\Scripts\Core\Trophies.cs" />
     <Compile Include="Assets\Scripts\Core\AppLoading.cs" />
     <Compile Include="Assets\Scripts\Core\SeatLayout.cs" />
     <Compile Include="Assets\Scripts\Core\MatchScore.cs" />

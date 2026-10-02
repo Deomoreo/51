@@ -40,12 +40,13 @@ namespace Project51.Tests
         }
 
         [Test]
-        public void FreeForAllScoringIsUnchangedForTheSameCaptures()
+        public void FreeForAllScoresEachPlayerWithSimpleMajorities()
         {
             var solo = DealtFourPlayers(teamMode: false);
             Assert.AreEqual(4, PunteggioManager.CalculateBreakdown(solo).Length);
-            // Nessuno raggiunge 6 denari o 21 carte; piccola con il 4 = 4, Grande = 5, settebello = 1.
-            CollectionAssert.AreEqual(new[] { 4, 5, 1, 0 }, PunteggioManager.CalculateSmazzataScores(solo));
+            // Nel 1v3 niente soglie: il posto 0 prende carte (14) e denari (4) + piccola con il 4 = 6;
+            // Grande = 5, settebello = 1.
+            CollectionAssert.AreEqual(new[] { 6, 5, 1, 0 }, PunteggioManager.CalculateSmazzataScores(solo));
         }
 
         [Test]

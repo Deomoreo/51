@@ -49,6 +49,8 @@ namespace Project51.UIV2.Core
         public TMP_Text LeaveBody;
 
         public const string LeaveLost = "La partita verrà contata come persa.";
+        /// <summary>Avviso di moderazione (scelta dell'utente 01/10: si dice e basta, senza contare quanti ne mancano).</summary>
+        public const string AbandonWarning = "Chi abbandona spesso le partite online viene sospeso per un po’.";
 
         private const float ConfirmSeconds = 3f;
         private const string AbandonTitleText = "Abbandona partita";
@@ -189,6 +191,7 @@ namespace Project51.UIV2.Core
             }
             LeaveBody.text = LeaveMessage(mode.LocalPlayerIndex, players, teams, mode.IsMultiplayer,
                 p => mode.IsHumanPlayer(p) || GameSocialV2.PlayerAt(p) != null, NameOf);
+            if (Project51.Auth.ModerationService.AbandonCounts) LeaveBody.text += " " + AbandonWarning;
             GameAudio.PlayUi(SoundId.PopupOpen);
             LeaveDialog.SetActive(true);
             LayoutRebuilder.ForceRebuildLayoutImmediate(LeaveCard);

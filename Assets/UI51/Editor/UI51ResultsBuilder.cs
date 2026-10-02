@@ -48,6 +48,7 @@ namespace Project51.UI51.EditorTools
 
             var view = UI51Build.GetOrAdd<UI51ResultsView>(results);
             var roundRoot = BuildRoundEnd(results, view, bg, avatarPrefab, icons);
+            BuildTie(results, view, roundRoot, avatarPrefab);
             var matchRoot = BuildMatchEnd(results, view, bg, avatarPrefab, ribbonGold, ribbonGray, crown, raysSprite, glow);
             UI51Build.Wire(view, so =>
             {
@@ -236,6 +237,7 @@ namespace Project51.UI51.EditorTools
             for (int i = 0; i < 18; i++)
                 UI51Build.Solid(UI51Build.Place(UI51Build.Child(confetti, "Piece" + i), new Vector2(0f, 1f), new Vector2(8f, 12f),
                     new Vector2((i * 53) % 380 + 4f, 20f)), UI51Tokens.Hex(ConfettiColors[i % ConfettiColors.Length]), 2f);
+            BuildInstant(view, safe, confetti, avatarPrefab, glow);
 
             // Titolo (top 44): modo, nastro 260x84 con VITTORIA/SCONFITTA a 19. Pivot al centro per il pop.
             var title = UI51Build.Place(UI51Build.Child(safe, "Title"), new Vector2(0.5f, 1f), new Vector2(260f, 100f), new Vector2(0f, -94f));
@@ -307,7 +309,7 @@ namespace Project51.UI51.EditorTools
                     new Vector2(70f, 52f), Vector2.zero), "0", FontFace.CinzelBold, 18f, UI51Tokens.Cream, TextAlignmentOptions.MidlineRight));
             }
 
-            // Ricompense (top 372, 392 con la classifica): per ora solo XP (monete e forziere da fare: posto in UI51RewardsExtra).
+            // Ricompense (top 372, 392 con la classifica): XP e, per chi ha un account, le monete date dal server (UI51RewardsExtra).
             var rewards = UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Rewards"), 20f, 20f, 372f, 77f);
             UI51Build.Shape(rewards, UI51Shape.Linear((PanelTop, 0f), (PanelBottom, 1f)), 180f, UI51Tokens.Radii(18f), 1f, UI51Tokens.GoldA(0.35f));
             UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(rewards, "Caption"), 16f, 16f, 15f, 15f), "RICOMPENSE",
@@ -325,7 +327,12 @@ namespace Project51.UI51.EditorTools
             UI51Build.Shape(xpFill, UI51Shape.Linear((UI51Tokens.GoldDark, 0f), (UI51Tokens.GoldLight, 1f)), 90f, UI51Tokens.Radii(4f), 0f, Color.clear);
             var xpText = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Place(UI51Build.Child(xpRow, "Text"), new Vector2(1f, 0.5f),
                 new Vector2(62f, 18f), Vector2.zero), "0/100", FontFace.NunitoBold, 11f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.MidlineRight));
-            UI51AccessBuilder.TopBand(UI51Build.Child(rewards, "UI51RewardsExtra"), 16f, 16f, 72f, 38f).gameObject.SetActive(false);
+            var coinsRow = UI51AccessBuilder.TopBand(UI51Build.Child(rewards, "UI51RewardsExtra"), 16f, 16f, 72f, 18f);
+            UI51Build.Image(UI51Build.Place(UI51Build.Child(coinsRow, "Icon"), new Vector2(0f, 0.5f), new Vector2(18f, 18f), Vector2.zero),
+                UI51Build.Sprite("Common", "ic_coin"), Color.white);
+            var coinsLabel = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(coinsRow, "Label"), 26f, 0f, 0f, 0f), "+40 monete",
+                FontFace.CinzelBold, 13f, UI51Tokens.GoldLight, TextAlignmentOptions.MidlineLeft));
+            coinsRow.gameObject.SetActive(false);
 
             // Statistiche: 3 riquadri (Scope, Accusi, Settebelli), passo 8; la y la mette UI51ResultsView sotto alle ricompense.
             var stats = UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Stats"), 20f, 20f, 463f, 60f);
@@ -384,6 +391,8 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "rewards", rewards);
                 UI51Build.Ref(so, "levelText", levelText);
                 UI51Build.Ref(so, "xpGain", xpGain);
+                UI51Build.Ref(so, "coinsRow", coinsRow.gameObject);
+                UI51Build.Ref(so, "coinsLabel", coinsLabel);
                 UI51Build.Ref(so, "xpText", xpText);
                 UI51Build.Ref(so, "xpTrack", xpTrack);
                 UI51Build.Ref(so, "xpFill", xpFill);
@@ -400,6 +409,194 @@ namespace Project51.UI51.EditorTools
             });
             confetti.gameObject.SetActive(false);
             return root;
+        }
+
+        /// <summary>
+        /// Spareggio (mockup MomentiPartita) sopra al fine smazzata: velo .55, scheda 342 col bordo oro .5, padding 22 20 20:
+        /// SPAREGGIO, "Parità a N!" 22, avatar 62 dei primi con "=" e punti 24, testo 13, pulsante d'oro 50.
+        /// </summary>
+        static void BuildTie(MatchResultsV2 results, UI51ResultsView view, RectTransform roundRoot, GameObject avatarPrefab)
+        {
+            var root = UI51Build.Stretch(UI51Build.Child(roundRoot, "Tie"));
+            root.SetAsLastSibling();
+            root.gameObject.SetActive(true); // TMP su oggetti spenti lancia eccezioni
+            var scrim = UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(root, "Scrim")), UI51Tokens.Rgba(3, 7, 16, 0.55f), 0f, 0f, default, true);
+            var scrimButton = UI51Build.Button(scrim, scrim);
+            var safe = UI51Build.Child(root, "Safe");
+            var fit = UI51Build.GetOrAdd<DesignCanvasFit>(safe);
+            fit.Reference = UI51Tokens.ReferenceResolution;
+            fit.Fill = true;
+            safe.anchorMin = safe.anchorMax = safe.pivot = new Vector2(0.5f, 0.5f);
+            safe.anchoredPosition = Vector2.zero;
+            safe.sizeDelta = UI51Tokens.ReferenceResolution;
+
+            var card = UI51Build.Place(UI51Build.Child(safe, "Card"), new Vector2(0.5f, 0.5f), new Vector2(342f, 344f), Vector2.zero);
+            UI51Build.Shape(card, UI51Tokens.DialogFill(), 180f, UI51Tokens.Radii(22f), 1f, UI51Tokens.GoldA(0.5f), true, UI51Tokens.ShadowDialog);
+            UI51MetaBuilder.Stack(card, 0f, UI51Build.Pad(23, 21, 21, 21)); // 22 20 20 + 1 di bordo
+            UI51Build.Fit(card, false, true);
+            TextLine(card, "Cap", "SPAREGGIO", FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, 14f, 3f);
+            UI51MetaBuilder.Gap(card, "Gap1", 6f);
+            var title = TextLine(card, "Title", "Parità a 53!", FontFace.CinzelBold, 22f, UI51Tokens.Cream, 30f, 0f);
+            UI51MetaBuilder.Gap(card, "Gap2", 16f);
+
+            // Fila centrata, passo 18: lati larghi quanto gli avatar (UI51ResultsView), "=" in mezzo all'altezza della colonna.
+            var row = UI51Build.Child(card, "Row");
+            UI51Build.Layout(row, -1f, 100f);
+            var rowGroup = UI51Build.Row(row, 18f, null, TextAnchor.MiddleCenter, true, false);
+            var sides = new RectTransform[4];
+            var avatars = new AvatarFrame[8];
+            var scores = new TextMeshProUGUI[4];
+            var equals = new GameObject[3];
+            for (int j = 0; j < 4; j++)
+            {
+                var side = sides[j] = UI51Build.Size(UI51Build.Child(row, "Side" + j), 62f, 100f);
+                UI51Build.Layout(side, 62f, 100f);
+                avatars[j * 2] = AvatarAt(side, avatarPrefab, "AvatarA", 62f, 2f);
+                avatars[j * 2 + 1] = AvatarAt(side, avatarPrefab, "AvatarB", 62f, 2f);
+                scores[j] = UI51AccessBuilder.NoWrap(UI51Build.Text(TopAt(UI51Build.Child(side, "Score"), 120f, 32f, 68f), "53",
+                    FontFace.CinzelBold, 24f, UI51Tokens.GoldLight, TextAlignmentOptions.Top));
+                if (j == 3) continue;
+                var eq = UI51Build.Size(UI51Build.Child(row, "Equals" + j), 12f, 100f);
+                UI51Build.Layout(eq, 12f, 100f);
+                UI51AccessBuilder.NoWrap(UI51Build.Text(eq, "=", FontFace.CinzelSemiBold, 16f, UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
+                equals[j] = eq.gameObject;
+            }
+
+            UI51MetaBuilder.Gap(card, "Gap3", 12.9f); // 4 + 8 del mockup + mezza interlinea
+            var text = UI51Build.Text(UI51Build.Child(card, "Text"),
+                "Avete superato 51 a pari punti: si gioca un’altra smazzata. Vince chi resta in testa da solo.",
+                FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center);
+            UI51MetaBuilder.Wrap(text, 13.6f); // line-height 1.5
+            UI51MetaBuilder.Gap(card, "Gap4", 16.9f);
+            var go = UI51Build.Child(card, "Go");
+            UI51PrefabBuilder.GoldBody(go.gameObject, 300f, 50f, 14f, FontFace.CinzelBold, 14f, 2f, "SMAZZATA DI SPAREGGIO");
+            UI51Build.Layout(go, -1f, 50f);
+
+            UI51Build.Wire(view, so =>
+            {
+                UI51Build.Ref(so, "tie", root);
+                UI51Build.Ref(so, "tieCard", card);
+                UI51Build.Ref(so, "tieTitle", title);
+                UI51Build.Ref(so, "tieText", text);
+                UI51Build.Ref(so, "tieRow", rowGroup);
+                UI51AccessBuilder.SetArray(so, "tieSides", sides);
+                UI51AccessBuilder.SetArray(so, "tieAvatars", avatars);
+                UI51AccessBuilder.SetArray(so, "tieScores", scores);
+                UI51AccessBuilder.SetArray(so, "tieEquals", equals);
+                UI51Build.Ref(so, "tieGo", go.GetComponent<Button>());
+                UI51Build.Ref(so, "tieScrim", scrimButton);
+                UI51Build.Ref(so, "roundNext", results.RoundContinue);
+            });
+            root.gameObject.SetActive(false);
+        }
+
+        // Pioggia di monete del mockup Cappotto: left, larghezza, durata, ritardo, gradi di rotazione.
+        static readonly float[,] CoinDrops =
+        {
+            { 155, 28, 3.11f, 0.17f, -360 }, { 177, 22, 4.04f, 0.75f, -360 }, { 212, 40, 2.53f, 0.32f, 360 }, { 20, 22, 4.11f, 2.21f, -360 },
+            { 285, 40, 2.49f, 0.77f, -180 }, { 138, 40, 2.66f, 0.41f, 180 }, { 276, 28, 2.59f, 2.00f, -180 }, { 180, 22, 3.39f, 0.22f, -360 },
+            { 306, 28, 3.29f, 1.86f, 180 }, { 228, 40, 3.05f, 0.87f, -180 }, { 347, 28, 2.55f, 1.05f, 360 }, { 165, 40, 2.92f, 3.43f, -360 },
+            { 252, 40, 2.70f, 1.20f, 360 }, { 205, 22, 4.13f, 0.27f, 180 }, { 164, 34, 3.47f, 2.03f, 360 }, { 25, 22, 4.10f, 1.66f, -360 },
+            { 21, 34, 3.56f, 3.48f, 360 }, { 135, 40, 4.00f, 1.21f, 360 }, { 171, 28, 3.50f, 1.73f, -180 }, { 137, 28, 3.73f, 1.39f, 360 },
+            { 31, 28, 3.21f, 1.92f, -180 }, { 210, 34, 3.67f, 3.45f, 360 }, { 108, 28, 2.55f, 0.53f, -180 }, { -4, 40, 3.90f, 0.64f, 180 },
+            { -8, 28, 3.15f, 1.29f, 180 }, { 54, 22, 3.22f, 3.05f, 360 }, { 193, 40, 3.11f, 1.69f, 360 }, { 21, 28, 2.52f, 0.73f, -180 },
+        };
+
+        /// <summary>
+        /// Vittoria immediata (mockup Cappotto / TreAssi) nell'area sicura del fine partita, subito sopra ai coriandoli:
+        /// bagliore 420 a (195, 300), monete, testa a 110 (titolo 44 con l'ombra piena #6B4418 a 4), avatar 92 a 262 o tre assi 72x112 a 250.
+        /// </summary>
+        static void BuildInstant(UI51ResultsView view, RectTransform safe, RectTransform after, GameObject avatarPrefab, Sprite glow)
+        {
+            var root = UI51Build.Stretch(UI51Build.Child(safe, "Instant"));
+            root.SetSiblingIndex(after.GetSiblingIndex() + 1);
+            root.gameObject.SetActive(true);
+            var burst = UI51Build.Image(UI51AccessBuilder.CenterAt(UI51Build.Child(root, "Burst"), 195f, 300f, 420f, 420f), glow, Color.white, false, false)
+                .rectTransform;
+
+            var rain = UI51Build.Stretch(UI51Build.Child(root, "Coins"));
+            var coinSprite = UI51Build.Sprite("Common", "ic_coin");
+            int n = CoinDrops.GetLength(0);
+            var coins = new RectTransform[n];
+            var times = new Vector3[n];
+            for (int i = 0; i < n; i++)
+            {
+                float left = CoinDrops[i, 0], w = CoinDrops[i, 1];
+                var c = coins[i] = UI51Build.Place(UI51Build.Child(rain, "Coin" + i), new Vector2(0.5f, 1f), new Vector2(w, w), Vector2.zero);
+                c.pivot = new Vector2(0.5f, 0.5f);
+                c.anchoredPosition = new Vector2(left + w * 0.5f - 195f, -w * 0.5f);
+                UI51Build.Image(c, coinSprite, Color.white);
+                UI51Build.GetOrAdd<CanvasGroup>(c).alpha = 0f; // a riposo non si vede: compare all'8% della caduta
+                times[i] = new Vector3(CoinDrops[i, 2], CoinDrops[i, 3], CoinDrops[i, 4]);
+            }
+
+            // Testa (top 110, gap 4): VITTORIA IMMEDIATA 10, titolo 44, riga 14 a capo entro 30 dai lati. Pivot al centro per il pop.
+            var head = UI51Build.Place(UI51Build.Child(root, "Head"), new Vector2(0.5f, 1f), new Vector2(390f, 126f), Vector2.zero);
+            head.pivot = new Vector2(0.5f, 0.5f);
+            head.anchoredPosition = new Vector2(0f, -(110f + 63f));
+            var cap = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(head, "Cap"), 0f, 0f, 0f, 14f),
+                "VITTORIA IMMEDIATA", FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, TextAlignmentOptions.Center, 3f));
+            var shade = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(head, "Shade"), -20f, -20f, 22f, 59f),
+                "CAPPOTTO!", FontFace.CinzelBold, 44f, UI51Tokens.Hex("#6B4418"), TextAlignmentOptions.Center, 3f));
+            var title = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(head, "Title"), -20f, -20f, 18f, 59f),
+                "CAPPOTTO!", FontFace.CinzelBold, 44f, UI51Tokens.GoldLight, TextAlignmentOptions.Center, 3f));
+            var sub = UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(head, "Sub"), 30f, 30f, 81f, 40f), "Hai preso tutti e 10 i denari",
+                FontFace.NunitoBold, 14f, UI51Tokens.Cream, TextAlignmentOptions.Top);
+            sub.enableWordWrapping = true;
+
+            // Cappotto: avatar 92 col bordo d'oro e l'alone (a coppie accavallati di 14).
+            var duo = UI51AccessBuilder.TopBand(UI51Build.Child(root, "Duo"), 0f, 0f, 262f, 92f);
+            var halo = UI51Build.Image(UI51Build.Place(UI51Build.Child(duo, "Glow"), new Vector2(0.5f, 1f), new Vector2(152f, 152f), new Vector2(0f, -46f)),
+                glow, UI51Tokens.GoldA(0.6f), false, false).rectTransform;
+            halo.pivot = new Vector2(0.5f, 0.5f);
+            var avatars = new[] { AvatarAt(duo, avatarPrefab, "AvatarA", 92f, 2f), AvatarAt(duo, avatarPrefab, "AvatarB", 92f, 2f) };
+
+            // Tre assi: carte 72x112 r7 col filo d'oro di 2, ruotate -14 / 0 / 14 (centrate: nel mockup sono 9 piu' a destra).
+            var aces = UI51AccessBuilder.TopBand(UI51Build.Child(root, "Aces"), 0f, 0f, 250f, 150f);
+            var aceCards = new RectTransform[3];
+            var aceImages = new Image[3];
+            float[] aceX = { -48f, 0f, 48f }, aceTop = { 22f, 10f, 22f }, aceAngle = { -14f, 0f, 14f };
+            for (int i = 0; i < 3; i++)
+            {
+                var card = aceCards[i] = UI51Build.Place(UI51Build.Child(aces, "Ace" + i), new Vector2(0.5f, 1f), new Vector2(76f, 116f), Vector2.zero);
+                card.pivot = new Vector2(0.5f, 0.5f);
+                card.anchoredPosition = new Vector2(aceX[i], -(aceTop[i] + 56f));
+                card.localEulerAngles = new Vector3(0f, 0f, -aceAngle[i]);
+                UI51Build.Solid(card, UI51Tokens.Gold, 9f, 0f, default, false, new UI51Shadow(0f, 10f, 22f, UI51Tokens.BlackA(0.6f)));
+                UI51Build.GetOrAdd<CanvasGroup>(card);
+                aceImages[i] = UI51Build.Image(UI51Build.Center(UI51Build.Child(card, "Face"), 72f, 112f), null, Color.white, false, false);
+            }
+
+            UI51Build.Wire(view, so =>
+            {
+                UI51Build.Ref(so, "instant", root);
+                UI51Build.Ref(so, "instantBurst", burst);
+                UI51Build.Ref(so, "instantHead", head);
+                UI51Build.Ref(so, "instantDuo", duo);
+                UI51Build.Ref(so, "instantGlow", halo);
+                UI51Build.Ref(so, "instantAces", aces);
+                UI51Build.Ref(so, "coinRain", rain);
+                UI51Build.Ref(so, "instantCap", cap);
+                UI51Build.Ref(so, "instantTitle", title);
+                UI51Build.Ref(so, "instantShade", shade);
+                UI51Build.Ref(so, "instantSub", sub);
+                UI51AccessBuilder.SetArray(so, "instantAvatars", avatars);
+                UI51AccessBuilder.SetArray(so, "aceCards", aceCards);
+                UI51AccessBuilder.SetArray(so, "aceImages", aceImages);
+                UI51AccessBuilder.SetArray(so, "coins", coins);
+                var p = so.FindProperty("coinTimes");
+                p.arraySize = n;
+                for (int i = 0; i < n; i++) p.GetArrayElementAtIndex(i).vector3Value = times[i];
+            });
+            root.gameObject.SetActive(false);
+        }
+
+        /// <summary>Testo su una riga alto h dentro un layout (rect almeno font x 1.37 per l'Ellipsis).</summary>
+        static TextMeshProUGUI TextLine(RectTransform parent, string name, string text, FontFace face, float size, Color color, float h, float spacing)
+        {
+            var t = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(parent, name), text, face, size, color, TextAlignmentOptions.Center, spacing));
+            UI51Build.Layout(t, -1f, h);
+            return t;
         }
 
         /// <summary>Cella di una colonna di punti: centrata in verticale nella riga, la x la mette UI51ResultsView.</summary>

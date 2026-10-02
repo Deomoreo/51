@@ -64,7 +64,7 @@ namespace Project51.UIV2.Core
             home.OnDeckPressed += OpenDecks;
             home.OnSettingsPressed += OpenSettings;
             CardDecks.SelectionChanged += RefreshDecks;
-            if (topBar != null) topBar.OnRegisterPressed += OpenRegistration;
+            if (topBar != null) { topBar.OnRegisterPressed += OpenRegistration; topBar.OnProfilePressed += OpenProfile; }
             if (profile != null)
             {
                 profile.OnSettingsPressed += OpenSettings;
@@ -102,9 +102,7 @@ namespace Project51.UIV2.Core
             home.SetPendingActionsInteractable(false);
             home.SetDeckInteractable(collection != null);
             RefreshDecks();
-            home.SetRewardsBadge(0);
-            home.SetRankingBadge(0);
-            home.SetMailBadge(0);
+            home.SetRankingBadge(0); // Premi e Posta: il pallino lo mettono UI51RewardsView e UI51MailView
             auth = AuthBootstrapper.Instance;
             if (authUI != null)
             {
@@ -148,6 +146,12 @@ namespace Project51.UIV2.Core
             if (authUI == null) return;
             authUI.ShowAuthUI();
             authUI.ShowRegisterPanel();
+        }
+
+        // Avatar della testata: stessa pagina della voce "Profilo" della barra in basso (ultima voce).
+        private void OpenProfile()
+        {
+            if (profile != null && !pager.IsMoving) Navigate(3);
         }
 
         private void OpenLogin()
@@ -306,6 +310,9 @@ namespace Project51.UIV2.Core
             });
         }
 
+        /// <summary>Avatar scelto nel profilo (null per l'ospite o profilo non caricato): lo usano i posti della ricerca partita.</summary>
+        public static Sprite LocalAvatar { get; private set; }
+
         private void RefreshProfile()
         {
             if (topBar == null) return;
@@ -321,6 +328,7 @@ namespace Project51.UIV2.Core
             int maxXp = PlayerXp.XpToNext(level);
             bool cosmetics = !isGuest && cloudLoaded && profileEditor != null;
             Sprite avatar = cosmetics ? profileEditor.AvatarFor(cloud.AvatarId) : null;
+            LocalAvatar = avatar;
             if (profile != null)
             {
                 profile.Bind(new ProfileViewData
@@ -361,7 +369,7 @@ namespace Project51.UIV2.Core
         {
             if (home != null) { home.OnPlayPressed -= Play; home.OnModePressed -= OpenModes; home.OnDeckPressed -= OpenDecks; home.OnSettingsPressed -= OpenSettings; }
             CardDecks.SelectionChanged -= RefreshDecks;
-            if (topBar != null) topBar.OnRegisterPressed -= OpenRegistration;
+            if (topBar != null) { topBar.OnRegisterPressed -= OpenRegistration; topBar.OnProfilePressed -= OpenProfile; }
             if (profile != null)
             {
                 profile.OnSettingsPressed -= OpenSettings;

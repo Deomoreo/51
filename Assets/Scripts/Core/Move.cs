@@ -13,6 +13,11 @@ namespace Project51.Core
 
         public List<Card> CapturedCards { get; }
 
+        // Solo online, fuori da Equals: turno a cui la mossa si riferisce (TurnController.TurnId; -1 = non controllato) e mossa scelta
+        // allo scadere del tempo (dal telefono di chi gioca, o forzata da chi fa da arbitro).
+        public int TurnId { get; set; } = -1;
+        public bool Timeout { get; set; }
+
         public Move(int playerIndex, Card playedCard, MoveType type, List<Card> capturedCards = null)
         {
             PlayerIndex = playerIndex;

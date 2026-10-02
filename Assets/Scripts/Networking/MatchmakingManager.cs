@@ -28,6 +28,8 @@ namespace Project51.Networking
         // Eventi
         public event Action<MatchmakingState> OnStateChanged;
         public event Action<string> OnError;
+        /// <summary>Ingresso in stanza fallito: il codice di Photon (32758 non esiste, 32765 piena, 32764 chiusa o iniziata).</summary>
+        public event Action<short> OnJoinFailed;
         public event Action OnMatchFound;
         public event Action<string> OnRoomCreated; // passa il codice stanza
         public event Action OnRoomJoined;
@@ -156,12 +158,23 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.ConnectUsingSettings();
+                Connect();
             }
             else if (PhotonNetwork.IsConnectedAndReady)
             {
                 JoinOrCreateRandomRoom();
             }
+        }
+
+        /// <summary>
+        /// Collegamento per una ricerca o una stanza. Senza credenziali (AuthBootstrapper.RebindPhoton sta prendendo il token del nuovo
+        /// account) non ci si collega da soli, se no Photon entrerebbe senza account: si collega AuthBootstrapper e la richiesta riparte
+        /// da OnConnectedToMaster (stato Connecting).
+        /// </summary>
+        private static void Connect()
+        {
+            if (PhotonNetwork.AuthValues != null) PhotonNetwork.ConnectUsingSettings();
+            else Project51.Auth.AuthBootstrapper.Instance?.ReconnectPhotonNow();
         }
 
         /// <summary>
@@ -185,7 +198,7 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.ConnectUsingSettings();
+                Connect();
             }
             else if (PhotonNetwork.IsConnectedAndReady)
             {
@@ -214,7 +227,7 @@ namespace Project51.Networking
 
             if (!PhotonNetwork.IsConnected)
             {
-                PhotonNetwork.ConnectUsingSettings();
+                Connect();
             }
             else if (PhotonNetwork.IsConnectedAndReady)
             {
@@ -382,6 +395,7 @@ namespace Project51.Networking
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
             if (CurrentConfig == null) return;
+            if (RefusedByServer(returnCode)) return;
             Debug.Log($"[Matchmaking] Join random failed: {message}. Creating new room...");
             
             // Nessuna stanza disponibile, creane una
@@ -477,13 +491,30 @@ namespace Project51.Networking
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
+            if (CurrentConfig == null) return; // rientro dopo il riavvio dell'app (HomeConnectionWatcher): non e' un codice sbagliato
+            if (RefusedByServer(returnCode)) return;
             Debug.LogWarning($"[Matchmaking] Join room failed: {message}");
             SetState(MatchmakingState.Idle);
+            OnJoinFailed?.Invoke(returnCode); // prima di OnError: chi ascolta sa perche' (32758 codice, 32765 piena, 32764 chiusa)
             OnError?.Invoke(returnCode == 32765 ? "La stanza è piena. Chiedi un altro codice." : returnCode == 32764 ? "La partita è già iniziata o la stanza è chiusa." : "Codice non valido o stanza non più disponibile.");
+        }
+
+        /// <summary>
+        /// Rifiuto del server (errore 32752: webhook Photon RoomCreated/RoomBeforeJoin nel CloudScript, gioco online sospeso): la ricerca si
+        /// ferma, niente nuova stanza, e si mostra la Sospensione se e' quella (UI51SuspensionView.ServerRefused).
+        /// </summary>
+        private bool RefusedByServer(short returnCode)
+        {
+            if (returnCode != ErrorCode.PluginReportedError) return false;
+            SetState(MatchmakingState.Idle);
+            // Risposta in ritardo dopo che si e' gia' ripartiti (nuova ricerca): non chiude la ricerca nuova.
+            Project51.Unity.UI.UI51SuspensionView.ServerRefused(text => { if (State == MatchmakingState.Idle) OnError?.Invoke(text); });
+            return true;
         }
 
         public override void OnCreateRoomFailed(short returnCode, string message)
         {
+            if (RefusedByServer(returnCode)) return;
             Debug.LogError($"[Matchmaking] Create room failed: {message}");
             SetState(MatchmakingState.Idle);
             OnError?.Invoke($"Impossibile creare la stanza: {message}");

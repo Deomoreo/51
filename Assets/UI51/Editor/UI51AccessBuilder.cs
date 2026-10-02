@@ -401,21 +401,7 @@ namespace Project51.UI51.EditorTools
             TopBand(cards, 0f, 0f, 530f, 80f);
             var oldRow = cards.GetComponent<HorizontalLayoutGroup>();   // lasciato dalle build precedenti
             if (oldRow != null) UnityEngine.Object.DestroyImmediate(oldRow);
-            var back =UI51Build.Sprite("Cards", "back_giada");
-            var cardRts = new RectTransform[5];
-            for (int i = 0; i < 5; i++)
-            {
-                var c = cardRts[i] = UI51Build.Child(cards, "Card" + i);
-                UI51Build.Size(c, 40f, 60f);
-                c.anchorMin = c.anchorMax = c.pivot = new Vector2(0.5f, 0.5f);
-                c.anchoredPosition = new Vector2((i - 2) * 50f, 0f);
-                UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(c, "Shadow")), UI51Tokens.Navy, 5f, 0f, default, false,
-                    new UI51Shadow(0f, 6f, 12f, UI51Tokens.BlackA(0.5f)));
-                var face = UI51Build.Stretch(UI51Build.Child(c, "Face"));
-                UI51Build.Solid(face, Color.white, 5f);
-                UI51Build.GetOrAdd<Mask>(face).showMaskGraphic = false;
-                UI51Build.Image(UI51Build.Stretch(UI51Build.Child(face, "Art")), back, Color.white, false, false);
-            }
+            var cardRts = WaveBacks(cards, 40f, 60f, 50f);
 
             // Avanzamento: left/right 40, top 640, gap 10
             var progress = UI51Build.Child(safe, "Progress");
@@ -634,6 +620,30 @@ namespace Project51.UI51.EditorTools
             safe.anchoredPosition = Vector2.zero;
             safe.sizeDelta = UI51Tokens.ReferenceResolution;
             return safe;
+        }
+
+        /// <summary>
+        /// Cinque dorsi (back_giada) in fila, centrati, raggio 5 e ombra 0 6 12 .5, passo step: le carte di UIAnim.LoadingWave.
+        /// Posizioni fisse, niente LayoutGroup (l'onda cattura la posizione di riposo).
+        /// </summary>
+        internal static RectTransform[] WaveBacks(RectTransform parent, float w, float h, float step)
+        {
+            var back = UI51Build.Sprite("Cards", "back_giada");
+            var cards = new RectTransform[5];
+            for (int i = 0; i < cards.Length; i++)
+            {
+                var c = cards[i] = UI51Build.Child(parent, "Card" + i);
+                UI51Build.Size(c, w, h);
+                c.anchorMin = c.anchorMax = c.pivot = new Vector2(0.5f, 0.5f);
+                c.anchoredPosition = new Vector2((i - 2) * step, 0f);
+                UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(c, "Shadow")), UI51Tokens.Navy, 5f, 0f, default, false,
+                    new UI51Shadow(0f, 6f, 12f, UI51Tokens.BlackA(0.5f)));
+                var face = UI51Build.Stretch(UI51Build.Child(c, "Face"));
+                UI51Build.Solid(face, Color.white, 5f);
+                UI51Build.GetOrAdd<Mask>(face).showMaskGraphic = false;
+                UI51Build.Image(UI51Build.Stretch(UI51Build.Child(face, "Art")), back, Color.white, false, false);
+            }
+            return cards;
         }
 
         /// <summary>Centro in px del mockup (x da sinistra, y dall'alto), ancorato in alto al centro.</summary>

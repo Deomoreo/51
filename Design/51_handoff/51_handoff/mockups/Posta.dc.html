@@ -35,6 +35,7 @@
     <sc-if value="{{canClaimAll}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{claimAll}}" class="gold-btn" style="height:36px;padding:0 14px;border-radius:18px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;">Raccogli tutto</button></sc-if>
   </div>
 
+  <sc-if value="{{hasMail}}" hint-placeholder-val="{{true}}">
   <div class="panel" style="position:absolute;top:88px;left:20px;width:350px;box-sizing:border-box;padding:4px 0;">
     <sc-for list="{{msgs}}" as="m" hint-placeholder-count="5">
       <button type="button" class="msg" onClick="{{m.open}}" style="height:76px;border-bottom:1px solid rgba(243,201,105,0.08);">
@@ -54,6 +55,16 @@
       </button>
     </sc-for>
   </div>
+  </sc-if>
+
+  <sc-if value="{{emptyMail}}" hint-placeholder-val="{{false}}">
+    <div class="pop" style="position:absolute;top:220px;left:30px;right:30px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;">
+      <div style="position:relative;width:120px;height:110px;"><img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:200px;height:200px;transform:translate(-50%,-50%);opacity:0.4;"><img src="../assets/ic_mail.png" alt="" style="position:absolute;left:25px;top:20px;width:70px;height:70px;opacity:0.8;"></div>
+      <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:#F5E9D0;">Nessun messaggio</span>
+      <span style="font-size:13px;line-height:1.5;color:rgba(245,233,208,0.65);">Qui arrivano regali degli amici, premi delle stagioni e avvisi del Team 51.</span>
+      <a href="Home.dc.html" class="gold-btn" style="margin-top:8px;height:48px;padding:0 24px;border-radius:14px;font-size:13px;">TORNA A GIOCARE</a>
+    </div>
+  </sc-if>
   <div style="position:absolute;left:0;width:390px;bottom:30px;text-align:center;font-size:11px;color:rgba(245,233,208,0.4);">I messaggi vengono eliminati dopo 30 giorni</div>
 
   <!-- message detail -->
@@ -82,7 +93,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"aperto":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"aperto":{"editor":"boolean","default":false},"vuoto":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   constructor(props) { super(props); this.state = { open: props.aperto === true ? 'benvenuto' : null, claimed: { torneo: true }, read: { manutenzione: true, torneo: true } }; }
   renderVals() {
@@ -96,6 +107,7 @@ class Component extends DCLogic {
       { id: 'manutenzione', title: 'Manutenzione programmata', from: 'Team 51', time: '3 giorni fa', icon: IC.warn, iw: '24px', tile: 'grey', body: 'Giovedì dalle 3:00 alle 4:00 i server saranno in manutenzione. Le partite in corso verranno salvate.', gifts: [] },
       { id: 'torneo', title: 'Premio torneo del weekend', from: 'Team 51', time: '6 giorni fa', icon: IC.trophy, iw: '30px', tile: 'gold', body: 'Hai chiuso il torneo al 12° posto. Complimenti!', gifts: [G(IC.coin, '150', '14px', '14px', '34px')] }
     ];
+    if (this.props.vuoto === true) msgs.length = 0;
     const TILE = { gold: ['rgba(243,201,105,0.12)', 'rgba(243,201,105,0.45)'], purple: ['rgba(124,58,237,0.18)', 'rgba(167,139,250,0.5)'], friend: ['rgba(39,181,133,0.12)', 'rgba(127,224,184,0.45)'], grey: ['rgba(255,255,255,0.05)', 'rgba(245,233,208,0.2)'] };
     const claimed = this.state.claimed, read = this.state.read;
     const claimable = msgs.filter((m) => m.gifts.length && !claimed[m.id]);
@@ -105,6 +117,7 @@ class Component extends DCLogic {
     const decorate = (m) => ({ ...m, tileBg: TILE[m.tile][0], tileBorder: TILE[m.tile][1] });
     const d = d0 ? decorate(d0) : null;
     return {
+      hasMail: msgs.length > 0, emptyMail: msgs.length === 0,
       unreadLabel: unread ? unread + ' messaggi non letti' : 'Tutto letto',
       canClaimAll: claimable.length > 1, claimAll: () => markClaim(claimable.map((m) => m.id)),
       msgs: msgs.map((m) => {

@@ -35,6 +35,7 @@ namespace Project51.Unity
         /// </summary>
         public void SetNetworkGameState(GameState newGameState)
         {
+            if (halted) return;
             // Ricalcola l'indice locale/masterClient/bot ORA, non fidandosi di quello calcolato al
             // primissimo Awake() della scena: su un device reale (rete piu' lenta della LAN/localhost
             // dell'Editor) PhotonNetwork.PlayerList poteva non essere ancora del tutto sincronizzato
@@ -56,6 +57,9 @@ namespace Project51.Unity
             }
             lastNetworkIntroState = stateText;
 
+            if (freshSmazzata && newGameState.RoundIndex <= 1) ResetTimeouts(); // partita nuova (rivincita)
+            // Rivincita: i numeri di turno ripartono da capo, le mosse della partita finita non c'entrano piu'.
+            if (freshSmazzata && newGameState.RoundIndex <= 1 && gameState != null && gameState.RoundEnded) { recentNetworkMoves.Clear(); countedTurn = -1; }
             gameState = newGameState;
             pendingDealerAccuso = null;
             hiddenCapturedPlayer = -1;
@@ -64,10 +68,17 @@ namespace Project51.Unity
 
             // Un GameState "fresco" dal Master rende irrilevante (anzi pericolosa, se applicata
             // fuori ordine su uno stato diverso) qualunque mossa di rete accodata in precedenza:
-            // scartiamo la coda e ripartiamo puliti. Azzeriamo anche i flag di animazione/redeal:
+            // scartiamo la coda e ripartiamo puliti, rimettendo solo le mosse arrivate dal turno dello stato in poi
+            // (recentNetworkMoves). Azzeriamo anche i flag di animazione/redeal:
             // se questo client stava rianimando una mossa vecchia quando e' arrivato un resync
             // (es. dopo RequestNetworkResync), quello stato locale non ha piu' senso.
             pendingNetworkMoves.Clear();
+            stateGen++;
+            int stateTurn = TurnId(gameState);
+            // Gia' dentro lo stato, o di una partita precedente (numero di smazzata piu' alto: rivincita)
+            recentNetworkMoves.RemoveAll(m => m.TurnId < stateTurn || m.TurnId / 100 > gameState.RoundIndex);
+            if (countedTurn / 100 > gameState.RoundIndex) countedTurn = -1;
+            foreach (var m in recentNetworkMoves) pendingNetworkMoves.Enqueue(m);
             pendingLocalMove = null;
             isMoveAnimationInProgress = false;
             isRedealPendingVisual = false;
@@ -95,6 +106,7 @@ namespace Project51.Unity
                 cardViewManager?.ForceRefresh();
             }
             OnMoveExecuted?.Invoke(null);
+            TryProcessNextQueuedNetworkMove(); // le mosse gia' arrivate entrano subito, prima di quelle in arrivo
         }
 
         /// <summary>
@@ -191,6 +203,7 @@ namespace Project51.Unity
         private void CreateRoundManager()
         {
             roundManager = new RoundManager(gameState);
+            if (cardViewManager != null) cardViewManager.RevealedHandPlayer = -1; // stato nuovo: niente Tre assi scoperti
             roundManager.OnNewHandsDealt += HandleNewHandsDealt; // redeal a meta' smazzata con distribuzione animata
             roundManager.OnDealerAccusoDeclared += HandleDealerAccusoDeclared;
         }
@@ -252,6 +265,28 @@ namespace Project51.Unity
         /// <summary>Ultima mossa del giocatore locale arrivata mentre eravamo occupati (vedi ExecuteMove).</summary>
         private Move pendingLocalMove;
 
+        /// <summary>
+        /// Ultime mosse arrivate dalla rete, la prima per ogni numero di turno. Lo stato intero del master puo' partire prima di una
+        /// mossa che qui e' gia' arrivata (scartata perche' avanti, o in coda): SetNetworkGameState rigioca quelle dal turno dello
+        /// stato in poi, cosi' chi rientra ha subito lo stato completo (scelta dell'utente 02/10) invece di aspettare la mossa dopo.
+        /// </summary>
+        private readonly List<Move> recentNetworkMoves = new List<Move>();
+
+        /// <summary>Cresce a ogni stato dal master: un'animazione partita sullo stato vecchio non applica piu' la sua mossa.</summary>
+        private int stateGen;
+
+        /// <summary>Ultimo turno contato per i tempi scaduti: una mossa rigiocata dopo uno stato non conta due volte.</summary>
+        private int countedTurn = -1;
+
+        private void RememberNetworkMove(Move move)
+        {
+            // Stesso turno ma mossa diversa (chi gioca e l'arbitro, o una mossa sbagliata): si tengono tutte, nell'ordine d'arrivo;
+            // rigiocate, entra la prima valida e le altre risultano gia' passate, come sul master.
+            if (move.TurnId < 0 || recentNetworkMoves.Exists(m => m.TurnId == move.TurnId && m.Equals(move))) return;
+            recentNetworkMoves.Add(move);
+            if (recentNetworkMoves.Count > 16) recentNetworkMoves.RemoveAt(0);
+        }
+
         /// <summary>Throttle per RequestNetworkResync, per non spammare il Master di richieste.</summary>
         private float lastResyncRequestTime = -999f;
         
@@ -268,6 +303,149 @@ namespace Project51.Unity
         public event System.Action<Move> OnLocalPlayerMoveRequested;
 
         public GameState GameState => gameState;
+
+        private bool halted;
+
+        /// <summary>
+        /// Tempo del turno online (scelte dell'utente 02/10): 30 s fissi, poi la carta la sceglie l'IA sul telefono di chi gioca; se nessuna
+        /// carta arriva (telefono in secondo piano, app modificata) dopo altri GraceSeconds la gioca l'arbitro di quel turno: il master,
+        /// oppure, quando tocca al master stesso o a un bot che gioca lui, un altro giocatore (GameSceneInitializer.RefereeActorFor).
+        /// I tempi scaduti di fila di ogni posto li conta l'arbitro e stanno nella stanza (restano se cambia il master); al terzo il posto
+        /// passa per sempre al bot e conta come abbandono (SeatInactive, poi InactiveTooLong sul suo telefono). Gli altri contano lo
+        /// stesso tempo solo per mostrarlo. Fermo durante animazioni, distribuzione e accusi.
+        /// </summary>
+        public const float TurnSeconds = 30f;
+        public const float GraceSeconds = 10f;
+        public const int MaxTimeouts = 3;
+        /// <summary>Secondi rimasti al turno umano online in corso; negativo = nessun tempo (bot, allenamento, animazioni, mossa inviata).</summary>
+        public float TurnTimeLeft { get; private set; } = -1f;
+        /// <summary>Tempi scaduti di fila del giocatore locale (si azzera quando gioca da se').</summary>
+        public int Timeouts => Seats != null ? Seats.Strikes(GameModeService.Current.LocalPlayerIndex) : 0;
+        public event System.Action InactiveTooLong;
+        /// <summary>Su chi fa da arbitro: un posto umano e' arrivato a MaxTimeouts (NetworkGameController lo passa al bot per tutti).</summary>
+        public event System.Action<int> SeatInactive;
+        private GameState timerState, sentState;
+        private long timerKey = -1, sentKey = -1;
+        private float turnElapsed;
+        private double lastTick;
+        private bool timerPaused, inactiveRaised;
+        private GameSceneInitializer seats;
+        private GameSceneInitializer Seats => seats != null ? seats : (seats = FindObjectOfType<GameSceneInitializer>());
+        // Tempi scaduti di fila che questo telefono ha visto da se' sul proprio posto: solo questi rendono l'uscita per inattivita' un
+        // abbandono per le sospensioni (il conto nella stanza lo scrive l'arbitro, che potrebbe essere un'app modificata).
+        private int ownTimeouts;
+        public bool InactivityConfirmed => ownTimeouts >= MaxTimeouts;
+
+        // Partita nuova (anche la rivincita): i tempi scaduti di fila ripartono da zero.
+        private void ResetTimeouts()
+        {
+            inactiveRaised = false;
+            ownTimeouts = 0;
+            Seats?.ClearStrikes();
+        }
+
+        /// <summary>Mossa del proprio posto applicata: scelta allo scadere e il tempo era davvero scaduto qui (anche in secondo piano).</summary>
+        private void CountOwnTimeout(Move move)
+        {
+            if (!move.Timeout) { ownTimeouts = 0; return; }
+            bool sentHere = sentKey == TurnKey() && sentState == gameState;
+            bool sameTurn = timerKey == TurnKey() && timerState == gameState;
+            float elapsed = sameTurn ? turnElapsed + (timerPaused ? 0f : (float)(Time.realtimeSinceStartupAsDouble - lastTick)) : 0f;
+            if (sentHere || elapsed >= TurnSeconds) ownTimeouts++;
+        }
+
+        /// <summary>Uscita per inattivita' una volta sola (posto tolto dall'arbitro, NetworkGameController.RPC_SeatInactive).</summary>
+        public void LeaveForInactivity()
+        {
+            if (inactiveRaised || InactiveTooLong == null) return;
+            inactiveRaised = true;
+            if (gameState != null) { sentKey = TurnKey(); sentState = gameState; } // niente altre mosse da qui: il posto passa al bot
+            InactiveTooLong.Invoke();
+        }
+
+        /// <summary>
+        /// Numero del turno (scelta dell'utente 02/10): sale a ogni mossa e a ogni smazzata. Di due mosse per lo stesso turno (chi gioca
+        /// e l'arbitro allo scadere) vale la prima che il server inoltra; le altre arrivano con un numero gia' passato e si scartano.
+        /// </summary>
+        public static int TurnId(GameState state)
+        {
+            int cards = state.Deck.Count;
+            foreach (var p in state.Players) cards += p.Hand.Count;
+            return state.RoundIndex * 100 + (99 - cards);
+        }
+
+        /// <summary>Chi fa da arbitro conta i tempi scaduti del posto: +1 per una carta scelta allo scadere, 0 per una giocata da se'.</summary>
+        private void CountTimeout(Move move)
+        {
+            var s = Seats;
+            if (s == null || !s.IsLocalReferee(move.PlayerIndex)) return;
+            int before = s.Strikes(move.PlayerIndex), after = move.Timeout ? before + 1 : 0;
+            if (after != before) s.SetStrikes(move.PlayerIndex, after);
+            if (after >= MaxTimeouts) SeatInactive?.Invoke(move.PlayerIndex);
+        }
+
+        /// <summary>
+        /// Collegamento perso (NetworkGameController): il tempo si ferma, una rete che cade non conta come inattivita'. Al rientro nella
+        /// stanza il turno riparte da 30 s e una mossa toccata durante il distacco (SendMove non l'aveva mandata) si puo' rifare.
+        /// </summary>
+        public void SetConnected(bool connected)
+        {
+            timerPaused = !connected;
+            if (connected) { sentKey = -1; sentState = null; timerKey = -1; }
+        }
+
+        // Cambia a ogni mossa (una carta in meno tra mani e mazzo), a ogni smazzata e a ogni giocatore di turno.
+        private long TurnKey() => TurnKey(gameState);
+
+        public static long TurnKey(GameState state)
+        {
+            int cards = state.Deck.Count;
+            foreach (var p in state.Players) cards += p.Hand.Count;
+            return ((long)state.RoundIndex * 10 + state.CurrentPlayerIndex) * 100 + cards;
+        }
+
+        private void TickTurnTimer()
+        {
+            // Tempo reale (continua anche con l'app in secondo piano): chi torna a tempo scaduto gioca subito la carta scelta.
+            double now = Time.realtimeSinceStartupAsDouble;
+            float delta = lastTick > 0 ? (float)(now - lastTick) : 0f;
+            lastTick = now;
+            TurnTimeLeft = -1f;
+            if (!GameModeService.Current.IsMultiplayer || gameState == null || gameState.RoundEnded || halted || timerPaused) return;
+            long key = TurnKey();
+            if (key != timerKey || gameState != timerState) { timerKey = key; timerState = gameState; turnElapsed = 0f; }
+            if (IsBusy || isDealFlightPending || isAccusoWindowOpen || (sentKey == key && sentState == gameState)) return;
+            turnElapsed += delta;
+            int seat = CurrentPlayerIndex;
+            bool human = IsHumanPlayerTurn, local = human && GameModeService.Current.IsLocalPlayer(seat);
+            if (human) TurnTimeLeft = Mathf.Max(0f, TurnSeconds - turnElapsed);
+            // Il proprio turno allo scadere; quello di un altro (anche di un bot, se il master e' fermo) dopo la tolleranza, dall'arbitro.
+            // Master tolto per inattivita' ma ancora nella stanza: i bot li gioca l'arbitro con i tempi di un bot.
+            float limit = local ? TurnSeconds : !human && Seats != null && Seats.MasterRemoved ? GamePreferences.Scaled(aiMoveDelay) + 1f : TurnSeconds + GraceSeconds;
+            if (turnElapsed < limit) return;
+            if (!local && (Seats == null || !Seats.IsLocalReferee(seat))) return;
+
+            RefreshValidMoves();
+            if (currentValidMoves == null || currentValidMoves.Count == 0) return;
+            var move = cirullaAI?.ChooseMove(gameState, seat, currentValidMoves) ?? currentValidMoves[0];
+            move.Timeout = true;
+            if (local) { ExecuteMove(move); return; } // passa dai controlli della propria mossa (una sola per turno)
+            sentKey = key; sentState = gameState;
+            OnLocalPlayerMoveRequested?.Invoke(move);
+        }
+
+        /// <summary>Una mossa sta animando o aspetta in coda: lo stato non e' ancora quello finale (vittoria per abbandono).</summary>
+        public bool IsBusy => isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress ||
+                              pendingNetworkMoves.Count > 0 || pendingLocalMove != null || GamePresentation.IsBusy;
+
+        /// <summary>Partita chiusa per abbandono degli avversari (MatchResultsV2): niente piu' mosse, ne' dei bot ne' dalla rete.</summary>
+        public void Halt()
+        {
+            halted = true;
+            CancelInvoke(); // le animazioni gia' partite finiscono da sole sotto il pannello, le mosse nuove no (guardie su halted)
+            pendingNetworkMoves.Clear();
+            pendingLocalMove = null;
+        }
         /// <summary>Distribuzione in corso: il mazzo sul tavolo resta visibile finche' le ultime carte non sono partite.</summary>
         public bool IsDealInProgress => isDealFlightPending;
         public RoundManager RoundManager => roundManager;
@@ -408,6 +586,7 @@ namespace Project51.Unity
         // da quello reale della partita, esattamente come nei sintomi riportati ("la partita va
         // avanti come se fosse un'altra sessione"). I client non-Master devono solo aspettare il
         // GameState del Master via RPC (RPC_ReceiveInitialGameState -> SetNetworkGameState).
+        if (halted) return;
         var providerGuard = GameModeService.Current;
         if (providerGuard.IsMultiplayer && !providerGuard.IsMasterClient)
         {
@@ -470,6 +649,7 @@ namespace Project51.Unity
         gameState.TeamMode = cfg != null && cfg.Format == GameFormat.TwoVsTwo && numPlayers == 4;
         gameState.Rules = (cfg?.Rules ?? MatchRules.Default).Clone();
         MatchScore.ContinueMatch(previousGameState, gameState, cfg != null ? cfg.TargetScore : 51);
+        if (gameState.RoundIndex <= 1) { ResetTimeouts(); recentNetworkMoves.Clear(); countedTurn = -1; } // partita nuova (anche la rivincita): i tempi scaduti di fila e i numeri di turno ripartono da zero
         Debug.Log($"[TurnController] GameState created: {gameState.NumPlayers} players, dealer={gameState.DealerIndex}, current={gameState.CurrentPlayerIndex}");
         
         // Cattura l'eventuale accuso del dealer (StartSmazzata lo processa in modo sincrono, PRIMA
@@ -651,9 +831,10 @@ namespace Project51.Unity
                     yield return cardAnimationController.PlayDealtCardsFromOrigin(pendingInitialTableStagedCards, dealerOrigin, tableCardStagger).WaitForCompletion();
                 }
 
-                // 4) Finestra Accuso, come sempre.
+                // 4) Finestra Accuso, come sempre - tranne i Tre assi, che hanno gia' chiuso la partita.
                 isDealFlightPending = false;
-                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
+                if (!gameState.RoundEnded) ShowHandNotice();
+                if (!gameState.RoundEnded) yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
             }
             finally
             {
@@ -674,6 +855,13 @@ namespace Project51.Unity
                 isDealFlightPending = false;
             }
 
+            if (gameState.RoundEnded)
+            {
+                yield return PlayTreAssiReveal();
+                ShowRoundEndPanel();
+                yield break;
+            }
+
             RefreshValidMoves();
             PlayYourTurnCue();
 
@@ -687,6 +875,50 @@ namespace Project51.Unity
                     Invoke(nameof(ExecuteAITurn), GamePreferences.Scaled(aiMoveDelay));
                 }
             }
+        }
+
+        /// <summary>
+        /// Tre assi, a carte distribuite: si scoprono i tre assi di chi li ha ricevuti (bordo d'oro) e il
+        /// cartello dice perche' la partita finisce; poi arrivano i risultati. Senza Tre assi non fa nulla.
+        /// </summary>
+        private System.Collections.IEnumerator PlayTreAssiReveal()
+        {
+            int holder = RoundManager.TreAssiHolder(gameState);
+            if (holder < 0) yield break;
+
+            if (cardViewManager != null)
+            {
+                cardViewManager.RevealedHandPlayer = holder;
+                cardViewManager.ForceRefresh();
+            }
+            if (dealerAccusoRevealController == null)
+            {
+                dealerAccusoRevealController = FindObjectOfType<DealerAccusoRevealController>(true);
+            }
+            GameFeedback.ForPlayer(FeedbackKind.Accuso, holder, new Vector2(.5f, .48f));
+            GameAudio.Play(SoundId.Accuso);
+            if (dealerAccusoRevealController == null) yield break;
+
+            string detail = TreAssiDetail(gameState, holder, GameModeService.Current.LocalPlayerIndex, GetSimpleDisplayName(holder));
+            yield return dealerAccusoRevealController.Show("TRE ASSI!", detail);
+            // Ancora un attimo per guardare le carte scoperte prima dei risultati.
+            yield return new WaitForSeconds(GamePreferences.Scaled(1f));
+            dealerAccusoRevealController.HideAnimated();
+        }
+
+        /// <summary>Avviso breve a carte distribuite (mockup MomentoDistribuzione / MomentoUltima): "MANO 3 DI 6", all'ultima mano "ULTIMA MANO".</summary>
+        private void ShowHandNotice()
+        {
+            if (roundManager != null) GamePresentation.ShowHand(roundManager.CurrentHandNumber, roundManager.TotalHands);
+        }
+
+        /// <summary>Riga sotto "TRE ASSI!": chi li ha ricevuti e chi vince (a coppie la coppia).</summary>
+        public static string TreAssiDetail(GameState state, int holder, int localPlayer, string holderName)
+        {
+            if (holder == localPlayer) return "Hai ricevuto tre assi: la partita è tua";
+            if (state.TeamMode && MatchScore.EntryOf(state, holder) == MatchScore.EntryOf(state, localPlayer))
+                return $"{holderName} ha ricevuto tre assi: la partita è vostra";
+            return $"{holderName} ha ricevuto tre assi: " + (state.TeamMode ? "vince la sua coppia" : "vince la partita");
         }
 
         [SerializeField] private DealerRouletteController dealerRouletteController;
@@ -807,19 +1039,15 @@ namespace Project51.Unity
                     // true = includeInactive, stesso motivo della roulette dealer.
                     dealerAccusoRevealController = FindObjectOfType<DealerAccusoRevealController>(true);
                 }
-                GameFeedback.ForPlayer(FeedbackKind.Scopa, dealerIndex, new Vector2(.5f, .48f));
+                GameFeedback.ForPlayer(FeedbackKind.Accuso, dealerIndex, new Vector2(.5f, .48f));
                 if (dealerAccusoRevealController != null)
                 {
-                    // Niente numero di punti: RoundManager applica un moltiplicatore (regole match)
-                    // che non e' passato attraverso l'evento - un valore base fisso rischierebbe di
-                    // essere sbagliato. Solo il fatto ("ha fatto scopa da 15/30") e' garantito corretto.
-                    int points = type == AccusoType.Dealer30 ? 30 : 15;
                     string detail = GameModeService.Current.IsLocalPlayer(dealerIndex)
                         ? "Prendi le carte del tavolo"
                         : $"{GetSimpleDisplayName(dealerIndex)} prende le carte del tavolo";
-                    GameAudio.Play(SoundId.Scopa);
+                    GameAudio.Play(SoundId.Accuso);
                     cardViewManager.SetDealerAccusoGlow(ghosts, true);
-                    yield return dealerAccusoRevealController.Show($"SCOPA DA {points}!", detail);
+                    yield return dealerAccusoRevealController.Show(DealerAccusoTitle(type, gameState.Rules), detail);
                     // Il cartello sfuma mentre le carte volano via: nessuna pausa morta.
                     dealerAccusoRevealController.HideAnimated();
                     cardViewManager.SetDealerAccusoGlow(ghosts, false);
@@ -999,7 +1227,8 @@ namespace Project51.Unity
         /// <param name="fromNetwork">True if this call originated from a network RPC (prevents re-broadcasting)</param>
         public void ExecuteMove(Move move, bool fromNetwork = false)
         {
-            if (move == null || gameState == null || gameState.RoundEnded)
+            if (fromNetwork && move != null) RememberNetworkMove(move);
+            if (move == null || gameState == null || gameState.RoundEnded || halted)
             {
                 return;
             }
@@ -1043,6 +1272,12 @@ namespace Project51.Unity
                     // Mai inviare in rete una mossa gia' non valida qui (es. rigiocata dopo un'attesa).
                     RefreshValidMoves();
                     if (!currentValidMoves.Contains(move)) return;
+                    // Una sola mossa per turno: il doppio tocco o il tempo che scade mentre la mossa viaggia non ne mandano una seconda
+                    // (arriverebbe non valida a tutti e chiederebbe lo stato intero al master).
+                    long key = TurnKey();
+                    if (sentKey == key && sentState == gameState) return;
+                    sentKey = key;
+                    sentState = gameState;
                     OnLocalPlayerMoveRequested?.Invoke(move);
                     return;
                 }
@@ -1058,6 +1293,15 @@ namespace Project51.Unity
                     OnLocalPlayerMoveRequested?.Invoke(move);
                     return;
                 }
+            }
+
+            // Turno gia' passato: un'altra mossa per lo stesso turno e' arrivata prima (chi gioca e l'arbitro allo scadere). Nessun resync.
+            // Turno avanti: questo telefono e' rimasto indietro e chiede lo stato al master.
+            if (fromNetwork && move.TurnId >= 0 && gameState != null && move.TurnId != TurnId(gameState))
+            {
+                Debug.Log($"[TurnController] Mossa per il turno {move.TurnId}, qui siamo al {TurnId(gameState)}: {move}");
+                if (move.TurnId > TurnId(gameState)) RequestNetworkResync(move);
+                return;
             }
 
             // Ensure valid moves list is initialized
@@ -1088,6 +1332,13 @@ namespace Project51.Unity
                 return;
             }
 
+            if (fromNetwork && provider.IsMultiplayer && provider.IsHumanPlayer(move.PlayerIndex) && (move.TurnId < 0 || move.TurnId > countedTurn))
+            {
+                countedTurn = Mathf.Max(countedTurn, move.TurnId);
+                if (provider.IsLocalPlayer(move.PlayerIndex)) CountOwnTimeout(move);
+                CountTimeout(move);
+            }
+
             StartCoroutine(ExecuteMoveWithAnimation(move, fromNetwork));
         }
 
@@ -1113,6 +1364,8 @@ namespace Project51.Unity
                 pendingLocalMove = null;
                 ExecuteMove(localMove);
             }
+
+            TickTurnTimer();
         }
 
         private void TryProcessNextQueuedNetworkMove()
@@ -1122,13 +1375,12 @@ namespace Project51.Unity
                 return;
             }
 
-            if (pendingNetworkMoves.Count == 0)
+            // Fino alla prima che fa partire un'animazione: una mossa scartata non lascia ferme le altre.
+            while (pendingNetworkMoves.Count > 0 &&
+                   !(isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress || GamePresentation.IsBusy))
             {
-                return;
+                ExecuteMove(pendingNetworkMoves.Dequeue(), fromNetwork: true);
             }
-
-            var nextMove = pendingNetworkMoves.Dequeue();
-            ExecuteMove(nextMove, fromNetwork: true);
         }
 
         /// <summary>
@@ -1190,6 +1442,7 @@ namespace Project51.Unity
         /// </summary>
         private System.Collections.IEnumerator ExecuteMoveWithAnimation(Move move, bool fromNetwork)
         {
+            int gen = stateGen; // uno stato nuovo dal master durante l'animazione rende questa mossa vecchia (vedi stateGen)
             isMoveAnimationInProgress = true;
             bool scopaFeedbackPending = IsScopaCapture(gameState, move);
 
@@ -1284,6 +1537,7 @@ namespace Project51.Unity
                                 var sweep = playedVisual.gameObject.AddComponent<CardShaderEffect>();
                                 sweep.Bind(playedVisualRenderer);
                                 sweep.PlaySweep(.4f);
+                                GamePresentation.ShowScopa(move.PlayerIndex);
                                 scopaFeedbackPending = false;
                             }
                             Sequence captureSequence = cardAnimationController.CaptureSequence(
@@ -1305,8 +1559,12 @@ namespace Project51.Unity
                     }
                 }
 
+                if (gen != stateGen) yield break; // la rigioca (se serve) lo stato nuovo
                 if (scopaFeedbackPending)
+                {
                     GameFeedback.ForPlayer(FeedbackKind.Scopa, move.PlayerIndex, new Vector2(.5f, .48f));
+                    GamePresentation.ShowScopa(move.PlayerIndex);
+                }
                 ApplyMoveInternal(move, fromNetwork);
 
                 if (playedVisualRendererForCrossfade != null && !isRedealPendingVisual)
@@ -1344,14 +1602,14 @@ namespace Project51.Unity
                     }
                 }
 
-                isMoveAnimationInProgress = false;
+                if (gen == stateGen) isMoveAnimationInProgress = false; // altrimenti l'ha gia' azzerato SetNetworkGameState
 
                 // Se nel frattempo e' arrivata (ed e' stata accodata) un'altra mossa di rete,
                 // applicala ora. Se un redeal e' stato appena innescato da ApplyMoveInternal
                 // (isRedealPendingVisual=true, impostato in modo sincrono prima che questa
                 // coroutine arrivi qui), il metodo e' un no-op e sara' invece
                 // HandleNewHandsRevealSequence a occuparsene alla fine della sua animazione.
-                TryProcessNextQueuedNetworkMove();
+                if (gen == stateGen) TryProcessNextQueuedNetworkMove();
             }
         }
 
@@ -1368,6 +1626,12 @@ namespace Project51.Unity
             }
             roundManager.ApplyMove(move);
 
+            // Tre assi a una distribuzione successiva: RoundManager chiude la partita senza l'evento della
+            // mano nuova, ma la distribuzione va vista (poi i tre assi e i risultati). Va avviata prima del
+            // ForceRefresh qui sotto, come fa l'evento, o le carte nuove comparirebbero gia' in mano.
+            bool treAssi = gameState.RoundEnded && RoundManager.TreAssiHolder(gameState) >= 0;
+            if (treAssi) HandleNewHandsDealt();
+
             if (!isRedealPendingVisual && cardViewManager != null)
             {
                 cardViewManager.ForceRefresh();
@@ -1382,11 +1646,11 @@ namespace Project51.Unity
             // Notify listeners that a move was executed so they can animate
             OnMoveExecuted?.Invoke(move);
 
-            // If RoundManager set RoundEnded, handle end
-            if (gameState.RoundEnded) 
-            { 
-                ShowRoundEndPanel();
-                return; 
+            // If RoundManager set RoundEnded, handle end (con i Tre assi ci pensa la distribuzione appena avviata)
+            if (gameState.RoundEnded)
+            {
+                if (!treAssi) ShowRoundEndPanel();
+                return;
             }
 
             // Refresh valid moves for the next player
@@ -1517,8 +1781,10 @@ namespace Project51.Unity
                 // partiva ancor prima che le carte finissero di arrivare in mano (bug segnalato -
                 // il countdown scadeva senza che si potesse nemmeno vedere la mano nuova).
                 isDealFlightPending = false;
+                if (!gameState.RoundEnded) ShowHandNotice();
                 // true come alla prima mano: le carte sono gia' arrivate, cosi' la mano accusata si gira durante il pugno.
-                yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
+                // Niente finestra se la mano nuova ha dato i Tre assi (partita gia' chiusa).
+                if (!gameState.RoundEnded) yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
 
                 if (capturedPileManager != null)
                 {
@@ -1550,6 +1816,13 @@ namespace Project51.Unity
                 // di rete arrivate ed accodate durante il redeal vanno applicate ora che il
                 // client torna libero.
                 TryProcessNextQueuedNetworkMove();
+            }
+
+            if (gameState.RoundEnded)
+            {
+                yield return PlayTreAssiReveal();
+                ShowRoundEndPanel();
+                yield break;
             }
 
             RefreshValidMoves();
@@ -1859,6 +2132,17 @@ namespace Project51.Unity
             if (gameState == null || gameState.RoundEnded || !IsHumanPlayerTurn) return;
             if (!GameModeService.Current.IsLocalPlayer(CurrentPlayerIndex)) return;
             GameAudio.Play(SoundId.YourTurn);
+        }
+
+        /// <summary>
+        /// Cartello del 15/30 del mazziere: e' un accuso da 1 o 2 punti, non una scopa (SPEC 10.4). Punti
+        /// con le regole della partita, come li somma RoundManager.
+        /// </summary>
+        public static string DealerAccusoTitle(AccusoType type, MatchRules rules)
+        {
+            int sum = type == AccusoType.Dealer30 ? 30 : 15;
+            int points = (rules ?? MatchRules.Default).AccusoPoints(sum / 15);
+            return points > 0 ? $"ACCUSO {sum} · +{points}" : $"ACCUSO {sum}";
         }
 
         /// <summary>

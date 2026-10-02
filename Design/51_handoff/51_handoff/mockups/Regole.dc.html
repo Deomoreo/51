@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Regole</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.38) saturate(1.1);transform:scale(1.12);}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;}
+  .card{border-radius:4px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .tabs{scrollbar-width:none;} .tabs::-webkit-scrollbar{display:none;}
+  .scroller{scrollbar-width:thin;scrollbar-color:rgba(243,201,105,0.4) transparent;}
+  @keyframes fade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+  .fade{animation:fade .25s ease-out both;}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;gap:12px;">
+    <a href="Impostazioni.dc.html" class="rb" aria-label="Indietro"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:15px;height:15px;"></a>
+    <h1 style="flex:1;margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;">Regole</h1>
+    <a href="TutorialPartita.dc.html" style="height:34px;padding:0 12px;border-radius:17px;border:1px solid rgba(243,201,105,0.5);display:inline-flex;align-items:center;font-size:12px;font-weight:800;">Rifai il tutorial</a>
+  </div>
+  <div class="tabs" style="position:absolute;top:80px;left:0;right:0;padding:0 20px;display:flex;gap:6px;overflow-x:auto;">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+      <sc-if value="{{t.on}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{t.pick}}" style="flex:none;height:34px;padding:0 14px;border-radius:17px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);color:#F3C969;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">{{t.label}}</button></sc-if>
+      <sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{t.pick}}" style="flex:none;height:34px;padding:0 14px;border-radius:17px;background:rgba(6,13,27,0.6);border:1px solid rgba(243,201,105,0.2);color:rgba(245,233,208,0.75);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">{{t.label}}</button></sc-if>
+    </sc-for>
+  </div>
+  <div class="scroller fade" style="position:absolute;top:130px;left:20px;right:12px;bottom:24px;overflow-y:auto;padding-right:8px;display:flex;flex-direction:column;gap:12px;">
+    <p style="margin:0;font-size:14px;line-height:1.55;color:rgba(245,233,208,0.82);">{{intro}}</p>
+    <sc-if value="{{hasItems}}" hint-placeholder-val="{{true}}">
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="3">
+        <div class="panel" style="padding:14px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#F5E9D0;">{{it.title}}</span>
+          <span style="font-size:13px;line-height:1.5;color:rgba(245,233,208,0.72);">{{it.text}}</span>
+          <sc-if value="{{it.hasEx}}" hint-placeholder-val="{{true}}">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:radial-gradient(ellipse at 50% 50%,#1A7A58,#0C4532);border:1px solid rgba(243,201,105,0.3);">
+              <sc-if value="{{it.hasPlay}}" hint-placeholder-val="{{true}}"><img src="{{it.play}}" alt="" class="card" style="width:40px;height:62px;outline:2px solid #F3C969;outline-offset:1px;"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><path d="M1 7h17M13 1l6 6-6 6" fill="none" stroke="#F3C969" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+              <div style="display:flex;gap:5px;"><sc-for list="{{it.takes}}" as="k" hint-placeholder-count="2"><img src="{{k}}" alt="" class="card" style="width:40px;height:62px;"></sc-for></div>
+              <span style="margin-left:auto;font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:#FCE29A;text-align:right;">{{it.note}}</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{hasRows}}" hint-placeholder-val="{{false}}">
+      <div class="panel" style="padding:4px 0;">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid rgba(243,201,105,0.08);"><span style="width:92px;flex:none;font-size:13px;font-weight:800;color:#F3C969;">{{r.k}}</span><span style="flex:1;font-size:13px;line-height:1.45;color:rgba(245,233,208,0.78);">{{r.v}}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;border:1px dashed rgba(243,201,105,0.35);background:rgba(6,13,27,0.55);">
+      <span style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#F3C969;flex:none;">i</span>
+      <span style="font-size:12px;line-height:1.5;color:rgba(245,233,208,0.7);">{{tip}}</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sezione":{"editor":"enum","options":["prese","scopa","accusi","punti","formati"],"default":"prese"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: null }; }
+  renderVals() {
+    const D = {"prese": {"label": "Prese", "intro": "A ogni turno giochi una carta. Se può prendere, porti nel tuo mazzetto la carta giocata e quelle prese; altrimenti resta sul tavolo. Una carta che può prendere non si può scartare. Se sul tavolo c’è la carta uguale, la presa della carta uguale ha la precedenza su somme e 15.", "items": [["Carta uguale", "Prende una carta del tavolo con lo stesso valore. Ha la precedenza: se c’è, non puoi fare somme o 15.", {"play": "../assets/c_6s.png", "takes": ["../assets/c_6d.png"], "note": "6 prende 6"}], ["Somma", "Prende due o più carte che insieme fanno il suo valore.", {"play": "../assets/card_re_coppe.png", "takes": ["../assets/c_6d.png", "../assets/c_4c.png"], "note": "Re (10) prende 6 + 4"}], ["Regola del 15", "Prende carte che, insieme a lei, fanno 15. Vale anche con una sola carta.", {"play": "../assets/card_5_coppe.png", "takes": ["../assets/card_re_coppe.png"], "note": "5 + Re = 15"}], ["Asso", "Se sul tavolo c’è un asso, prende solo quello. Se non ci sono assi, prende tutto il tavolo: “asso piglia tutto”.", {"play": "../assets/card_asso_denari.png", "takes": ["../assets/card_asso_bastoni.png"], "note": "Asso prende Asso"}]], "tip": "Valori: Asso 1 · dal 2 al 7 il loro numero · Fante 8 · Cavallo 9 · Re 10. Il 7 di coppe è la matta: in gioco vale 7, negli accusi fa da jolly."}, "scopa": {"label": "Scopa", "intro": "Se con una presa lasci il tavolo vuoto fai scopa: vale 1 punto. Anche l’asso che piglia tutto fa scopa. Se invece l’asso prende un solo asso e sul tavolo restano altre carte, non è scopa.", "items": [["Esempio", "Sul tavolo ci sono 3 e 4: giocando il 7 prendi entrambe e il tavolo resta vuoto.", {"play": "../assets/card_settebello.png", "takes": ["../assets/card_3_spade.png", "../assets/c_4c.png"], "note": "Scopa!"}]], "tip": "L’ultima giocata della smazzata non vale mai scopa."}, "accusi": {"label": "Accusi", "intro": "Quando ricevi le carte puoi accusare: mostri la mano a tutti e prendi subito i punti. Hai 5 secondi per premere ACCUSA.", "items": [["Cirulla · 3 punti", "Tre carte con somma 9 o meno. La matta conta 1.", {"play": "", "takes": ["../assets/card_asso_bastoni.png", "../assets/card_2_bastoni.png", "../assets/card_3_spade.png"], "note": "1 + 2 + 3 = 6"}], ["Decino · 10 punti", "Tre carte dello stesso valore, oppure una coppia più la matta.", {"play": "", "takes": ["../assets/c_6s.png", "../assets/c_6d.png"], "note": "coppia di 6 + matta"}], ["15 o 30 del mazziere", "Se le 4 carte iniziali sul tavolo fanno 15 (1 punto) o 30 (2 punti), il mazziere le prende tutte. La matta vale da 1 a 10. È un accuso, non una scopa.", null]], "tip": "Se la mano è sia Cirulla che Decino vale il Decino. Un solo accuso a testa per mano."}, "punti": {"label": "Punteggio", "intro": "Alla fine di ogni smazzata si contano i punti. Vince chi arriva per primo a 51.", "rows": [["Scope", "1 per ogni scopa"], ["Settebello", "1 a chi prende il 7 di denari"], ["Denari", "1 a chi ne ha di più: almeno 6 in 1 vs 1 e 2 vs 2, a 4 giocatori basta la maggioranza"], ["Carte", "1 a chi ne ha di più: almeno 21 in 1 vs 1 e 2 vs 2, a 4 giocatori basta la maggioranza"], ["Primiera", "1 al punteggio di primiera più alto"], ["Grande", "5 per Fante, Cavallo e Re di denari"], ["Piccola", "3 per Asso, 2 e 3 di denari, +1 per ogni 4, 5, 6 di denari"], ["Accusi", "i punti degli accusi della smazzata"]], "tip": "Primiera: per ogni seme conta la carta migliore (7 = 21, 6 = 18, Asso = 16, 5 = 15, 4 = 14, 3 = 13, 2 = 12, figure = 10). In caso di parità il punto non va a nessuno."}, "formati": {"label": "Formati", "intro": "Le regole sono le stesse in tutte le modalità; cambiano giocatori e mani.", "rows": [["1 vs 1", "2 giocatori · 6 mani per smazzata"], ["2 vs 2", "compagni di fronte · 3 mani · punti di coppia"], ["Tutti contro tutti", "4 giocatori, ognuno per sé · 3 mani"], ["Cappotto", "tutti e 10 i denari: nel 2 vs 2 e a 4 la partita finisce subito"], ["Tre assi", "se ricevi tre assi in mano vinci subito la partita"], ["Pareggio", "se due giocatori sono in testa oltre 51 si gioca un’altra smazzata"]], "tip": "Si ricevono 3 carte a testa, poi 4 vanno sul tavolo. Quando tutti hanno finito le carte se ne ricevono altre 3."}};
+    const tab = this.state.tab || (this.props.sezione ?? 'prese');
+    const d = D[tab];
+    return {
+      tabs: Object.keys(D).map((k) => ({ label: D[k].label, on: k === tab, off: k !== tab, pick: () => this.setState({ tab: k }) })),
+      intro: d.intro, tip: d.tip,
+      hasItems: !!d.items, hasRows: !!d.rows,
+      items: (d.items || []).map((it) => ({ title: it[0], text: it[1], hasEx: !!it[2], hasPlay: !!(it[2] && it[2].play), play: it[2] ? it[2].play : '', takes: it[2] ? it[2].takes : [], note: it[2] ? it[2].note : '' })),
+      rows: (d.rows || []).map((r) => ({ k: r[0], v: r[1] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

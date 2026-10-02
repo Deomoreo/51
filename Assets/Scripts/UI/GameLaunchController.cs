@@ -194,6 +194,7 @@ namespace Project51.Unity
 
         private void StartTrainingMatch(MatchConfig config)
         {
+            CancelPendingLaunch(); // allenamento scelto mentre una partita online aspettava il controllo della sospensione
             if (logEvents)
                 Debug.Log("[GameLaunchController] Starting training match...");
 
@@ -271,6 +272,26 @@ namespace Project51.Unity
             if (logEvents)
                 Debug.Log("[GameLaunchController] Starting quick match...");
 
+            // Moderazione: gioco online sospeso -> la schermata Sospensione (contro i bot si gioca sempre).
+            WhenOnlineAllowed(() => StartQuickMatchNow(config));
+        }
+
+        // Partenze online in attesa del controllo della sospensione: ogni partenza nuova, l'allenamento o Annulla (CancelPendingLaunch)
+        // la scartano, cosi' una risposta in ritardo non crea o non apre una stanza che non si vuole piu'.
+        private int _launchSeq;
+
+        private void WhenOnlineAllowed(System.Action go, System.Action blocked = null)
+        {
+            int id = ++_launchSeq;
+            Project51.Unity.UI.UI51SuspensionView.WhenOnlineAllowed(() => { if (this != null && id == _launchSeq) go(); }, blocked);
+        }
+
+        /// <summary>Annulla una partenza online ancora in attesa del controllo della sospensione.</summary>
+        public void CancelPendingLaunch() => _launchSeq++;
+
+        private void StartQuickMatchNow(MatchConfig config)
+        {
+            if (this == null) return;
             ShowMatchmakingStatus("Connessione in corso...");
 
             if (MatchmakingManager.Instance != null)
@@ -292,8 +313,15 @@ namespace Project51.Unity
         /// <summary>
         /// Chiamato per creare una nuova stanza privata.
         /// </summary>
-        public void CreatePrivateRoom(MatchConfig config = null)
+        /// <param name="blocked">Sospensione letta dal server: la schermata Sospensione e' aperta, chi chiama torna libero.</param>
+        public void CreatePrivateRoom(MatchConfig config = null, System.Action blocked = null)
         {
+            WhenOnlineAllowed(() => CreatePrivateRoomNow(config), blocked);
+        }
+
+        private void CreatePrivateRoomNow(MatchConfig config)
+        {
+            if (this == null) return;
             var cfg = config ?? _pendingConfig ?? new MatchConfig { Intent = MatchIntent.PrivateRoom };
             _pendingConfig = cfg;
 
@@ -320,14 +348,20 @@ namespace Project51.Unity
             }
         }
 
-        public void JoinPrivateRoom(string roomCode, MatchConfig config)
+        public void JoinPrivateRoom(string roomCode, MatchConfig config, System.Action blocked = null)
         {
             _pendingConfig = config;
-            OnJoinRoomCodeEntered(roomCode);
+            WhenOnlineAllowed(() => JoinRoomNow(roomCode), blocked);
         }
 
         private void OnJoinRoomCodeEntered(string roomCode)
         {
+            WhenOnlineAllowed(() => JoinRoomNow(roomCode));
+        }
+
+        private void JoinRoomNow(string roomCode)
+        {
+            if (this == null) return;
             if (logEvents)
                 Debug.Log($"[GameLaunchController] Joining room: {roomCode}");
 

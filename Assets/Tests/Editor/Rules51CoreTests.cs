@@ -367,6 +367,34 @@ namespace Project51.Tests
             Assert.AreEqual(MoveType.PlayOnly, move.Type);
         }
 
+        #region Tutorial
+
+        /// <summary>
+        /// La partita guidata (UI51TutorialView) racconta queste carte: stessa sequenza di TurnController.StartNewGame
+        /// (CreateNewGame(2), poi DealInitialCards in StartSmazzata). Se cambia la distribuzione va cercato un seme nuovo.
+        /// </summary>
+        [Test]
+        public void TutorialSeed_DealsTheCardsTheTutorialTalksAbout()
+        {
+            GameState state;
+            try
+            {
+                Rules51.Reseed(Project51.Unity.GameSceneInitializer.TutorialSeed);
+                state = Rules51.CreateNewGame(2);
+                Rules51.DealInitialCards(state);
+            }
+            finally { Rules51.Reseed(System.Environment.TickCount); }
+
+            Assert.AreEqual(1, state.DealerIndex, "mazziere il bot");
+            Assert.AreEqual(0, state.CurrentPlayerIndex, "di mano tu");
+            CollectionAssert.AreEqual(new[] { new Card(Suit.Denari, 1), new Card(Suit.Bastoni, 7), new Card(Suit.Bastoni, 2) }, state.Players[0].Hand);
+            CollectionAssert.AreEquivalent(new[] { new Card(Suit.Bastoni, 1), new Card(Suit.Coppe, 10), new Card(Suit.Spade, 4), new Card(Suit.Coppe, 3) }, state.Table);
+            Assert.IsNull(RoundManager.DealerAccusoFor(state.Table), "niente 15/30 del mazziere");
+            foreach (var p in state.Players)
+                Assert.IsFalse(AccusiChecker.IsCirulla(p.Hand) || AccusiChecker.IsDecino(p.Hand), "niente accusi");
+        }
+
+        #endregion
         #endregion
     }
 }

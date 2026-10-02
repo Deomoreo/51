@@ -27,6 +27,13 @@ namespace Project51.UIV2.Core
         public GameObject[] TabPages;
         public Button ModeConfirm;
         public TMP_Text DifficultyInfo;
+        // UI51 Fase 13 (opzionali), scheda Stanza privata del mockup v3: formato, codice con Incolla; CreateRoom e JoinRoom
+        // creano ed entrano subito.
+        public Button[] PrivateFormats;
+        public TMP_InputField PrivateCode;
+        public Button PrivatePaste;
+        private static readonly GameFormat[] Formats = { GameFormat.OneVsOne, GameFormat.TwoVsTwo, GameFormat.FourPlayers };
+        private float modeScrollHeight;
         private string pendingDeck;
         public bool IsOpen => DeckModal.IsOpen || ModeModal.IsOpen;
 
@@ -40,6 +47,19 @@ namespace Project51.UIV2.Core
             JoinRoom.onClick.AddListener(() => OpenRoomFlow(false));
             if (Tabs != null) for (int i = 0; i < Tabs.Length; i++) { int index = i; Tabs[i].onClick.AddListener(() => ShowTab(index)); }
             if (ModeConfirm != null) ModeConfirm.onClick.AddListener(() => ModeModal.Close());
+            if (PrivateFormats != null) for (int i = 0; i < PrivateFormats.Length; i++) { int index = i; PrivateFormats[i].onClick.AddListener(() => ChoosePrivateFormat(index)); }
+            if (PrivateCode != null)
+            {
+                PrivateCode.onValueChanged.AddListener(value =>
+                {
+                    string code = RoomFlowV2.NormalizeCode(value);
+                    if (code != value) PrivateCode.SetTextWithoutNotify(code);
+                });
+                PrivateCode.onSubmit.AddListener(_ => OpenRoomFlow(false));
+                PrivatePaste.onClick.AddListener(() => PrivateCode.text = RoomFlowV2.NormalizeCode(GUIUtility.systemCopyBuffer));
+            }
+            var scrollSize = ModeScroll.GetComponent<LayoutElement>();
+            if (scrollSize != null) modeScrollHeight = scrollSize.preferredHeight;
         }
 
         private void ShowTab(int index)
@@ -47,8 +67,31 @@ namespace Project51.UIV2.Core
             if (Tabs == null || TabPages == null) return;
             for (int i = 0; i < TabPages.Length; i++) TabPages[i].SetActive(i == index);
             for (int i = 0; i < Tabs.Length; i++) Tabs[i].GetComponent<SelectableToggleItem>().SetSelected(i == index);
-            if (ModeConfirm != null) ModeConfirm.gameObject.SetActive(index != 2);
+            if (ModeConfirm != null)
+            {
+                ModeConfirm.gameObject.SetActive(index != 2);
+                // Stanza privata non ha CONFERMA: la pagina (due riquadri nel mockup v3) prende anche il suo spazio.
+                var scrollSize = ModeScroll.GetComponent<LayoutElement>();
+                var sheet = ModeConfirm.transform.parent.GetComponent<VerticalLayoutGroup>();
+                var confirmSize = ModeConfirm.GetComponent<LayoutElement>();
+                if (scrollSize != null && sheet != null && confirmSize != null && PrivateFormats != null && PrivateFormats.Length > 0)
+                    scrollSize.preferredHeight = modeScrollHeight + (index == 2 ? confirmSize.preferredHeight + sheet.spacing : 0f);
+            }
             ModeScroll.verticalNormalizedPosition = 1;
+            RefreshPrivateFormats();
+        }
+
+        private void ChoosePrivateFormat(int index)
+        {
+            if (RoomFlow != null) RoomFlow.Format = Formats[index];
+            RefreshPrivateFormats();
+        }
+
+        private void RefreshPrivateFormats()
+        {
+            if (PrivateFormats == null || RoomFlow == null) return;
+            for (int i = 0; i < PrivateFormats.Length; i++)
+                PrivateFormats[i].GetComponent<SelectableToggleItem>().SetSelected(Formats[i] == RoomFlow.Format);
         }
         /// <summary>
         /// Crea/entra in stanza privata: il pannello Modalita' si chiude per lasciare il posto al
@@ -57,14 +100,25 @@ namespace Project51.UIV2.Core
         /// </summary>
         private void OpenRoomFlow(bool create)
         {
+            bool inline = PrivateFormats != null && PrivateFormats.Length > 0 && PrivateCode != null;
+            if (inline && !create && !RoomFlowV2.IsValidCode(RoomFlowV2.NormalizeCode(PrivateCode.text)))
+            {
+                Project51.UI51.UIAnim.ShakeX((RectTransform)PrivateCode.transform); // meno di 5 caratteri: resta qui
+                return;
+            }
             ModeModal.Close();
             if (RoomFlow == null)
             {
                 if (create) Modes.Select_CreatePrivateRoom(); else Modes.Select_JoinPrivateRoom();
                 return;
             }
-            if (create) RoomFlow.OpenCreate(); else RoomFlow.OpenJoin();
-            RoomFlow.ReturnOnCancel = ShowModes;
+            // Prima di partire (un ingresso rifiutato torna subito qui), e sulla scheda Stanza privata: la scelta in corso puo'
+            // essere Online o Allenamento, ma si era qui.
+            RoomFlow.ReturnOnCancel = () => { ShowModes(); ShowTab(2); };
+            if (inline && create) RoomFlow.CreateNow();
+            else if (inline) RoomFlow.JoinCode(PrivateCode.text);
+            else if (create) RoomFlow.OpenCreate();
+            else RoomFlow.OpenJoin();
         }
 
         public void OpenDecks()
@@ -90,6 +144,16 @@ namespace Project51.UIV2.Core
             ShowModes();
         }
 
+        /// <summary>"GIOCA CONTRO I BOT" della Sospensione: Modalita' sulla scheda Allenamento, col formato che era scelto.</summary>
+        public void OpenTraining()
+        {
+            var c = Modes.CurrentSelection;
+            int format = c.Format == GameFormat.OneVsOne ? 0 : c.Format == GameFormat.TwoVsTwo ? 1 : 2;
+            if (c.Intent != MatchIntent.Training) ChooseMode(3 + format);
+            if (!ModeModal.IsOpen) ShowModes();
+            ShowTab(1);
+        }
+
         /// <summary>
         /// Riapre Modalita' tornando indietro dal flusso stanze. Senza il controllo "e' gia'
         /// aperto" di OpenModes: qui si sta rientrando, e il pannello potrebbe risultare ancora
@@ -103,9 +167,8 @@ namespace Project51.UIV2.Core
         }
         private void ChooseMode(int index)
         {
-            var formats = new[] { GameFormat.OneVsOne, GameFormat.TwoVsTwo, GameFormat.FourPlayers };
             var config = new MatchConfig { Intent = index < 3 ? MatchIntent.QuickMatch : MatchIntent.Training,
-                Format = formats[index % 3], BotDifficulty = Modes.CurrentSelection.BotDifficulty,
+                Format = Formats[index % 3], BotDifficulty = Modes.CurrentSelection.BotDifficulty,
                 DeckBackId = CardDecks.SelectedId, Rules = MatchRules.Default.Clone() };
             if (config.Format == GameFormat.OneVsOne) { config.Rules.CappottoEndsGameImmediately = false; config.Rules.CappottoBonusPoints = 0; }
             Modes.SetSelection(config); RefreshMode();

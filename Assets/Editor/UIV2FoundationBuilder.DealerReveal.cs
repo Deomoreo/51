@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Project51.EditorTools
 {
     /// <summary>
-    /// Cartello dell'accuso del mazziere (Scopa da 15/30) in GameScene/GameCanvas/DealerAccusoReveal:
+    /// Cartello dell'accuso del mazziere (15/30) in GameScene/GameCanvas/DealerAccusoReveal:
     /// cornice oro con bagliore morbido sopra al tavolo, titolo in Poppins ExtraBold e riga di dettaglio.
     /// Sostituisce il vecchio rettangolo scuro di Tools/51/Build Dealer Accuso Reveal. Rilanciabile.
     /// </summary>
@@ -54,7 +54,7 @@ namespace Project51.EditorTools
             title.anchorMin = title.anchorMax = title.pivot = new Vector2(0.5f, 0.5f);
             title.sizeDelta = new Vector2(760f, 76f);
             title.anchoredPosition = new Vector2(0f, 26f);
-            var titleText = AddText(title, "SCOPA DA 30!", 50f, FontStyles.Normal, Color.white, TextAlignmentOptions.Center);
+            var titleText = AddText(title, "ACCUSO 30 · +2", 50f, FontStyles.Normal, Color.white, TextAlignmentOptions.Center);
             UseFont(titleText, extraBold, navyOutline);
 
             var detail = CreateUIObject("Detail", fill);

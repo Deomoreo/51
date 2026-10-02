@@ -52,6 +52,17 @@ namespace Project51.UIV2.Core
         [SerializeField] private Button privacyButton;
         [SerializeField] private Button termsButton;
         [SerializeField] private LegalModalV2 legal;
+        [Tooltip("Riga \"Regole e tutorial\" (UI51 Fase 12): apre la pagina Regole sopra alle Impostazioni.")]
+        [SerializeField] private Button rulesButton;
+        [SerializeField] private Project51.Unity.UI.UI51RulesView rules;
+        [Tooltip("Riga \"Cambia password\" (UI51 Fase 11): manda il link all'email dell'account e mostra \"Controlla la posta\".")]
+        [SerializeField] private Button passwordButton;
+        [SerializeField] private Project51.Unity.UI.UI51RecoveryView recovery;
+        [Tooltip("Sezione PRIVACY E SOCIALE (2.56), solo con un account: riga Giocatori bloccati che apre la pagina.")]
+        [SerializeField] private GameObject socialSection;
+        [SerializeField] private Button blockedButton;
+        [SerializeField] private Project51.Unity.UI.UI51BlockedView blocked;
+        [SerializeField] private ScrollRect scroll;
 
         public const string AccountHeaderText = "ACCOUNT";
         public const string GeneralHeaderText = "GENERALE";
@@ -83,6 +94,10 @@ namespace Project51.UIV2.Core
             if (graphicsSwitch != null) graphicsSwitch.onValueChanged.AddListener(GamePreferences.SetReducedGraphics);
             if (logoutButtons != null)
                 foreach (var b in logoutButtons) if (b != null) b.onClick.AddListener(Logout);
+            if (rulesButton != null && rules != null) rulesButton.onClick.AddListener(() => rules.Open());
+            if (blockedButton != null && blocked != null) blockedButton.onClick.AddListener(blocked.Open);
+            if (passwordButton != null && recovery != null)
+                passwordButton.onClick.AddListener(() => recovery.ChangePassword(AuthBootstrapper.Instance?.PlayFabAuth?.Email));
             if (legal != null)
             {
                 if (privacyButton != null) privacyButton.onClick.AddListener(legal.ShowPrivacy);
@@ -123,6 +138,8 @@ namespace Project51.UIV2.Core
             if (accountSection != null) accountSection.SetActive(entered);
             if (accountGroup != null) accountGroup.SetActive(realAccount);
             if (guestGroup != null) guestGroup.SetActive(entered && !realAccount);
+            if (socialSection != null) socialSection.SetActive(realAccount); // gli ospiti non bloccano (non hanno dove salvarlo)
+            if (scroll != null) scroll.verticalNormalizedPosition = 1f;
             if (emailLabel != null) emailLabel.text = MaskEmail(auth?.Email);
             var footerText = footer != null ? footer.GetComponent<TMP_Text>() : null;
             if (footerText != null) footerText.text = "51Cirulla · v" + Application.version;

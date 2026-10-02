@@ -290,7 +290,7 @@ namespace Project51.Unity.UI
                     s.ThumbFill = UI51Shape.Linear((UI51Tokens.Navy, 0f), (UI51Tokens.Hex("#1B6B8F"), 0.33f), (UI51Tokens.Success, 0.66f),
                         (UI51Tokens.Hex("#6B3FA0"), 1f));
                     break;
-                case 4: Set(ref s, UI51Tokens.Rgba(79, 128, 232, 0.22f), UI51Tokens.Hex("#9DB8F5"), 1, UI51Tokens.Rgba(79, 128, 232, 0.15f), 38f); break; // EVENTO
+                case 4: Set(ref s, UI51Tokens.Rgba(79, 128, 232, 0.22f), UI51Tokens.TeamBlueText, 1, UI51Tokens.Rgba(79, 128, 232, 0.15f), 38f); break; // EVENTO
                 case 5: Set(ref s, UI51Tokens.Rgba(229, 72, 77, 0.18f), UI51Tokens.DangerText, 1, UI51Tokens.Rgba(229, 72, 77, 0.12f), 26f); break;      // AVVISO
                 default: Set(ref s, UI51Tokens.Rgba(39, 181, 133, 0.2f), UI51Tokens.SuccessText, 2, UI51Tokens.Rgba(39, 181, 133, 0.12f), 32f); break;   // CONSIGLI
             }

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Benvenuto</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .card{border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  @keyframes pop{0%{transform:scale(0.85);opacity:0}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .28s ease-out both;}
+  .opt{width:100%;display:flex;align-items:center;gap:14px;padding:16px;border-radius:18px;cursor:pointer;text-align:left;box-sizing:border-box;}
+  .opt:hover{filter:brightness(1.08);}
+</style>
+</helmet>
+<div class="bg-photo" style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,14,28,0.25) 0%,rgba(6,14,28,0.1) 25%,rgba(5,11,24,0.7) 52%,rgba(3,7,16,0.97) 100%);"></div>
+  <div style="position:absolute;top:110px;left:0;width:390px;height:220px;">
+    <img src="../assets/Bagliore_morbido.png" alt="" style="position:absolute;left:50%;top:50%;width:320px;height:320px;transform:translate(-50%,-50%);opacity:0.85;">
+    <img src="../assets/logo_51.png" alt="51" style="position:absolute;left:50%;top:50%;width:170px;height:auto;transform:translate(-50%,-50%);">
+  </div>
+  <div style="position:absolute;left:24px;right:24px;top:420px;display:flex;flex-direction:column;gap:14px;">
+    <div style="text-align:center;display:flex;flex-direction:column;gap:6px;margin-bottom:6px;">
+      <h1 style="margin:0;font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:#F5E9D0;">Benvenuto al tavolo!</h1>
+      <span style="font-size:14px;color:rgba(245,233,208,0.7);">Conosci già la Cirulla?</span>
+    </div>
+    <a href="TutorialPartita.dc.html" class="opt" style="background:linear-gradient(180deg,rgba(243,201,105,0.2),rgba(12,26,50,0.95));border:2px solid #F3C969;">
+      <div style="width:52px;height:52px;border-radius:26px;background:linear-gradient(180deg,#FCE29A,#C4922F);display:flex;align-items:center;justify-content:center;flex:none;"><img src="../assets/back_giada.png" alt="" style="width:24px;height:36px;border-radius:3px;"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;">No, insegnami</span><span style="font-size:12px;color:rgba(245,233,208,0.7);">Una partita guidata di 3 minuti</span></div>
+      <span style="height:24px;padding:0 9px;border-radius:12px;background:rgba(243,201,105,0.18);display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:#F3C969;flex:none;"><img src="../assets/ic_coin.png" alt="" style="width:13px;height:13px;">+200</span>
+    </a>
+    <a href="Home.dc.html" class="opt" style="background:rgba(10,22,44,0.85);border:1px solid rgba(243,201,105,0.35);">
+      <div style="width:52px;height:52px;border-radius:26px;background:rgba(255,255,255,0.06);border:1px solid rgba(243,201,105,0.35);display:flex;align-items:center;justify-content:center;flex:none;"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:16px;height:16px;transform:scaleX(-1);"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px;"><span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#F5E9D0;">Sì, voglio giocare</span><span style="font-size:12px;color:rgba(245,233,208,0.6);">Vai subito alla Home</span></div>
+    </a>
+    <span style="text-align:center;font-size:11px;color:rgba(245,233,208,0.5);margin-top:4px;">Il tutorial e le regole sono sempre nelle Impostazioni</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

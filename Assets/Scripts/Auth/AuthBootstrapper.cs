@@ -197,14 +197,15 @@ namespace Project51.Auth
             if (PhotonNetwork.CurrentRoom != null && !PhotonNetwork.InRoom) return;
             local.SetCustomProperties(HasRealProfile
                 ? LookProps(Profile.FrameId, Profile.BannerId, Profile.XP, Profile.TotalGames, Profile.Wins, Profile.TotalScope, PlayFabAuth.PlayFabId)
-                : LookProps(null, null, 0, 0, 0, 0, null));
+                : LookProps(null, null, 0, 0, 0, 0, null, PlayFabAuth != null && PlayFabAuth.IsLoggedIn ? PlayFabAuth.PlayFabId : null));
         }
 
         /// <summary>
         /// Proprieta' Photon dell'aspetto e del profilo rapido. frame null = ospite o profilo non caricato: tutte le chiavi a null
         /// (Photon le toglie). Le legge ProfileCosmetics.ReadLook / ReadStats.
         /// </summary>
-        public static ExitGames.Client.Photon.Hashtable LookProps(string frame, string banner, int xp, int games, int wins, int scope, string playFabId)
+        public static ExitGames.Client.Photon.Hashtable LookProps(string frame, string banner, int xp, int games, int wins, int scope, string playFabId,
+            string guestId = null)
         {
             bool real = frame != null;
             return new ExitGames.Client.Photon.Hashtable
@@ -216,11 +217,96 @@ namespace Project51.Auth
                 { ProfileService.LookWinsKey, real ? (object)wins : null },
                 { ProfileService.LookScopeKey, real ? (object)scope : null },
                 { ProfileService.LookIdKey, real && !string.IsNullOrEmpty(playFabId) ? playFabId : null },
+                // Ospite: solo l'ID della sessione, per poterlo segnalare (scelta dell'utente 01/10: anche gli ospiti si sanzionano).
+                { ProfileService.LookGuestIdKey, !real && !string.IsNullOrEmpty(guestId) ? guestId : null },
             };
+        }
+
+        /// <summary>
+        /// "Accedi" cambia l'account della sessione PlayFab: Photon va autenticato di nuovo con quello, altrimenti i webhook
+        /// (controllo della sospensione, roster della partita) lavorano sull'account con cui si era avviata l'app.
+        /// </summary>
+        public void RebindPhoton()
+        {
+            if (FriendsChat.Instance != null) Destroy(FriendsChat.Instance.gameObject);
+            RewardsService.Reset();
+            ModerationService.Reset();
+            if (PlayFabAuth == null || _photonConnector == null) return;
+            // Subito fuori da Photon e senza le credenziali vecchie, compreso il biglietto che PhotonNetwork.Reconnect riusa (senza
+            // l'indirizzo del master non riparte): finche' il token nuovo non arriva si resta scollegati, mai di nuovo con l'account di prima.
+            PhotonNetwork.AuthValues = null;
+            PhotonNetwork.NetworkingClient.MasterServerAddress = null;
+            _photonConnector.Disconnect();
+            if (_rebindCoroutine != null) StopCoroutine(_rebindCoroutine);
+            _rebindCoroutine = StartCoroutine(ReconnectPhoton(int.MaxValue));
+        }
+
+        /// <summary>
+        /// Un tentativo di Photon con l'account di adesso e un token nuovo da PlayFab (riconnessione della Home con il biglietto scaduto o
+        /// di un altro account, partita cercata senza credenziali). Se ce n'e' gia' uno in corso (anche quello di RebindPhoton) salta la sua
+        /// attesa tra un tentativo e l'altro (RIPROVA, tentativi della Home).
+        /// </summary>
+        public void ReconnectPhotonNow()
+        {
+            if (_rebindCoroutine != null) { _retryNow = true; return; }
+            if (PlayFabAuth != null && _photonConnector != null)
+                _rebindCoroutine = StartCoroutine(ReconnectPhoton(1));
+        }
+
+        private Coroutine _rebindCoroutine;
+        private bool _retryNow;
+
+        private bool PhotonOnThisAccount =>
+            PhotonNetwork.IsConnectedAndReady && PlayFabAuth != null && PhotonNetwork.LocalPlayer.UserId == PlayFabAuth.PlayFabId;
+
+        private static bool PhotonIdle =>
+            PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected
+            || PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.PeerCreated;
+
+        private IEnumerator ReconnectPhoton(int attempts)
+        {
+            // Rete o PlayFab giu': si riprova sempre piu' piano finche' l'account resta dentro, mai con le credenziali vecchie. Finito
+            // solo con Photon collegato proprio a questo account.
+            for (int attempt = 0; attempt < attempts && PlayFabAuth.IsLoggedIn; attempt++)
+            {
+                if (attempt > 0)
+                {
+                    float wake = Time.unscaledTime + Mathf.Min(30f, 2f * attempt);
+                    while (!_retryNow && Time.unscaledTime < wake) yield return null;
+                }
+                _retryNow = false;
+                if (PhotonOnThisAccount) break;
+                bool done = false, ok = false;
+                PlayFabAuth.GetPhotonAuthenticationToken(GetPhotonAppId(), _ => ok = done = true,
+                    error => { done = true; Debug.LogWarning("[AuthBootstrapper] Photon token after login failed: " + error); });
+                while (!done) yield return null;
+                if (!ok) continue;
+                // Una connessione partita nel frattempo (Gioca online durante l'attesa) ha gia' le credenziali di questo account (RebindPhoton
+                // ha tolto quelle vecchie): se ne aspetta l'esito invece di tagliarla.
+                float until = Time.unscaledTime + 15f;
+                while (!PhotonIdle && !PhotonNetwork.IsConnectedAndReady && Time.unscaledTime < until) yield return null;
+                if (PhotonOnThisAccount) break;
+                if (!PhotonIdle) _photonConnector.Disconnect(); // collegato con un altro account, o fermo a meta': prima fuori
+                until = Time.unscaledTime + 5f;
+                while (!PhotonIdle && Time.unscaledTime < until) yield return null;
+                _photonConnector.ConfigureCustomAuthentication(PlayFabAuth.PlayFabId, PlayFabAuth.PhotonCustomAuthToken);
+                _photonConnector.ConnectToPhoton(PlayFabAuth.GetBestDisplayName());
+                // Esito: collegato, o di nuovo fuori (connessione fallita, o il limite di 30 s del connettore).
+                while (PlayFabAuth.IsLoggedIn && !PhotonNetwork.IsConnectedAndReady && !PhotonIdle) yield return null;
+                if (PhotonOnThisAccount) break;
+            }
+            _rebindCoroutine = null;
         }
 
         public void LogoutAndRestart(bool clearRealAccountFlag = false)
         {
+            // Amici (Photon Chat): via la connessione col vecchio account; Ensure() ne crea una nuova al prossimo uso.
+            if (FriendsChat.Instance != null) Destroy(FriendsChat.Instance.gameObject);
+            RewardsService.Reset();
+            ModerationService.Reset();
+            if (_rebindCoroutine != null) { StopCoroutine(_rebindCoroutine); _rebindCoroutine = null; }
+            PhotonNetwork.NetworkingClient.MasterServerAddress = null; // il biglietto dell'account vecchio non deve riportarlo dentro
+
             try
             {
                 if (PhotonNetwork.IsConnected)
@@ -343,6 +429,14 @@ namespace Project51.Auth
             bool playFabLoginSuccess = false;
             string playFabError = null;
             
+            // Gia' dentro (riprova dopo un errore, RIPROVA del caricamento): si tiene l'account. Un accesso da ospite qui
+            // sostituirebbe quello fatto con "Accedi". Dopo il logout la sessione non c'e' piu' e si entra come ospite.
+            if (PlayFabAuth.IsLoggedIn)
+            {
+                playFabLoginSuccess = true;
+                playFabLoginDone = true;
+            }
+            else
             PlayFabAuth.LoginAsGuest(
                 playFabId =>
                 {

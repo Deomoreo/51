@@ -32,6 +32,8 @@ namespace Project51.UIV2.Core
         public Button LoginForgot;
         public TMP_InputField LoginEmail;
         public TMP_Text LoginStatus;
+        [Tooltip("Password dimenticata (UI51 Fase 11): la apre il link sotto alla password.")]
+        public Project51.Unity.UI.UI51RecoveryView Recovery;
         [Tooltip("\"oppure\" + ACCEDI COME OSPITE: spariscono dopo l'ingresso, quando si e' gia' ospite.")]
         public GameObject[] LoginGuestOnly;
         [Tooltip("Righe sotto al pulsante ospite (Non hai un account? / REGISTRATI): salgono al suo posto.")]
@@ -83,7 +85,6 @@ namespace Project51.UIV2.Core
         /// <summary>Opacita' del bagliore quando il pulsante e' premibile (come la costruisce il builder).</summary>
         private const float GlowAlpha = 150f / 255f;
 
-        private bool sendingRecovery;
         private bool termsAccepted;
         private bool registerWasOpen;
         private bool guestRowsHidden;
@@ -261,53 +262,10 @@ namespace Project51.UIV2.Core
         // Accesso
         // ------------------------------------------------------------------
 
-        /// <summary>
-        /// Risposta uguale sia che l'email esista sia che non esista: se dicessimo "questo indirizzo
-        /// non e' registrato" regaleremmo a chiunque un modo per scoprire chi ha un account qui.
-        /// </summary>
-        private const string RecoverySent =
-            "Se l'indirizzo è associato a un account 51, riceverai un'email con le istruzioni per reimpostare la password.";
-
-        /// <summary>
-        /// Password dimenticata: PlayFab manda l'email di recupero all'indirizzo gia' scritto nel
-        /// primo campo, usando il modello configurato in AppConfig (vuoto = modello predefinito del
-        /// titolo). Gli errori del servizio finiscono nel log per noi, mai a schermo per l'utente:
-        /// un messaggio tecnico di PlayFab non lo aiuta e racconta piu' del dovuto.
-        /// </summary>
+        /// <summary>Password dimenticata: pagina UI51 (Fase 11) con l'email già scritta nel primo campo, se è un'email.</summary>
         private void ForgotPassword()
         {
-            if (sendingRecovery) return;
-
-            string email = LoginEmail != null ? (LoginEmail.text ?? string.Empty).Trim() : string.Empty;
-            if (!LooksLikeEmail(email))
-            {
-                SetStatus(LoginStatus, "Scrivi prima la tua email nel primo campo.", true);
-                return;
-            }
-
-            sendingRecovery = true;
-            SetStatus(LoginStatus, "Invio in corso...", false);
-            var request = new SendAccountRecoveryEmailRequest { Email = email, TitleId = PlayFabSettings.TitleId };
-            string template = AppConfig.RecoveryEmailTemplateId;
-            if (!string.IsNullOrEmpty(template)) request.EmailTemplateId = template;
-
-            PlayFabClientAPI.SendAccountRecoveryEmail(request,
-                _ =>
-                {
-                    sendingRecovery = false;
-                    SetStatus(LoginStatus, RecoverySent, false);
-                },
-                error =>
-                {
-                    sendingRecovery = false;
-                    Debug.LogWarning("[AuthScreensV2] Recupero password: " + (error != null ? error.GenerateErrorReport() : "errore sconosciuto"));
-                    // Indirizzo sconosciuto o malformato: stessa risposta del caso riuscito.
-                    bool aboutTheAddress = error != null
-                        && (error.Error == PlayFabErrorCode.AccountNotFound || error.Error == PlayFabErrorCode.InvalidEmailAddress);
-                    SetStatus(LoginStatus,
-                        aboutTheAddress ? RecoverySent : "Non è stato possibile completare la richiesta. Riprova tra poco.",
-                        !aboutTheAddress);
-                });
+            if (Recovery != null) Recovery.Open(LoginEmail != null ? (LoginEmail.text ?? string.Empty).Trim() : string.Empty);
         }
 
         // ------------------------------------------------------------------

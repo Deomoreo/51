@@ -12,7 +12,8 @@ namespace Project51.Unity.UI
     /// <summary>
     /// Profilo rapido al tavolo (mockup Partita/Partita4 "profilo", PartitaMioProfilo): scheda da 300 col banner del giocatore,
     /// avatar, livello e titolo, statistiche, medaglie; per gli altri giocatori con account Aggiungi amico, Silenzia emoticon,
-    /// Segnala; per me la barra XP. Costruita da UI51TableBuilder.BuildQuickProfile, aperta da PlayerBannerManager.OpenProfile.
+    /// Segnala (col motivo) e Blocca; per gli ospiti solo Silenzia e Segnala; per me la barra XP. Costruita da
+    /// UI51TableBuilder.BuildQuickProfile, aperta da PlayerBannerManager.OpenProfile.
     /// </summary>
     public sealed class QuickProfileCard : MonoBehaviour
     {
@@ -22,7 +23,7 @@ namespace Project51.Unity.UI
             public string Name, Team, PlayFabId;
             public Sprite Avatar;
             public int Frame, Style, Level, Games, Wins, Scope, Xp;
-            public bool Stats, Self;
+            public bool Stats, Self, Guest; // Guest: PlayFabId e' quello della sessione d'ospite
             public float Top; // bordo alto della scheda nel mockup (390x844)
         }
 
@@ -42,14 +43,24 @@ namespace Project51.Unity.UI
         [SerializeField] private Button addButton, muteButton, reportButton;
         [SerializeField] private GameObject addedLabel;
         [SerializeField] private TMP_Text muteLabel, reportLabel;
+        [SerializeField] private GameObject actionRow;
+        [SerializeField] private Button blockButton;
+        [SerializeField] private TMP_Text blockLabel;
+        [SerializeField] private GameObject reasons;
+        [SerializeField] private Button[] reasonButtons = new Button[0]; // stesso ordine di ReasonIds
+        [SerializeField] private Button cancelReasons;
         [SerializeField] private GameObject self;
         [SerializeField] private TMP_Text xpLevel, xpText;
         [SerializeField] private RectTransform xpFill;
 
         // Richieste gia' partite in questa sessione: riaprendo la scheda resta "inviata".
         private static readonly HashSet<string> s_Added = new HashSet<string>(), s_Reported = new HashSet<string>();
+        /// <summary>Motivi della segnalazione (scelta dell'utente 01/10), come i pulsanti del builder.</summary>
+        public static readonly string[] ReasonIds = { ModerationService.ReasonEmoticon, ModerationService.ReasonName, ModerationService.ReasonGame };
+        public static readonly string[] ReasonLabels = { "Emoticon offensive", "Nome offensivo", "Gioco scorretto" };
+
         private string playFabId;
-        private bool wired;
+        private bool wired, guest;
         private float[] nameY; // y costruite di nome e squadra
 
         public bool IsOpen => gameObject.activeSelf;
@@ -58,6 +69,7 @@ namespace Project51.Unity.UI
         {
             Wire();
             playFabId = v.Self ? null : v.PlayFabId;
+            guest = v.Guest;
             content.anchoredPosition = new Vector2(0f, (CenterY - v.Top) * content.localScale.y);
             UI51Banners.Apply(banner, ProfileCosmetics.Banner(v.Style));
             if (v.Avatar != null) avatar.SetAvatar(v.Avatar);
@@ -84,6 +96,7 @@ namespace Project51.Unity.UI
             for (int i = 0; i < medalIcons.Length; i++) medalIcons[i].SetActive((mask & (1 << i)) != 0);
 
             actions.SetActive(playFabId != null);
+            if (reasons != null) reasons.SetActive(false);
             RefreshActions();
 
             self.SetActive(v.Self && v.Stats);
@@ -127,21 +140,77 @@ namespace Project51.Unity.UI
             });
             reportButton.onClick.AddListener(() =>
             {
-                string id = playFabId;
-                if (id == null || s_Reported.Contains(id)) return;
-                reportButton.interactable = false;
-                FriendsService.ReportPlayer(id, "Segnalazione dal tavolo", () => { s_Reported.Add(id); RefreshActions(); },
-                    () => reportButton.interactable = true);
+                if (playFabId != null && !s_Reported.Contains(playFabId)) ShowReasons(true);
             });
+            for (int i = 0; i < reasonButtons.Length && i < ReasonIds.Length; i++)
+            {
+                string reason = ReasonIds[i];
+                reasonButtons[i].onClick.AddListener(() => Report(reason));
+            }
+            if (cancelReasons != null) cancelReasons.onClick.AddListener(() => ShowReasons(false));
+            if (blockButton != null) blockButton.onClick.AddListener(() =>
+            {
+                if (playFabId == null || guest) return;
+                bool block = !BlockList.IsBlocked(playFabId);
+                if (block) BlockList.RememberName(playFabId, nameText.text);
+                BlockList.SetBlocked(playFabId, block);
+                if (block) UI51Toast.Show("Giocatore bloccato: niente emoticon, inviti o amicizia da lui");
+                RefreshActions();
+                Relayout();
+            });
+        }
+
+        /// <summary>Al server (moderazione): 5 account diversi da almeno 3 partite in 7 giorni sanzionano il segnalato.</summary>
+        private void Report(string reason)
+        {
+            string id = playFabId;
+            if (id == null || s_Reported.Contains(id)) return;
+            SetReasonsInteractable(false);
+            ModerationService.Report(id, reason, () =>
+            {
+                s_Reported.Add(id);
+                SetReasonsInteractable(true);
+                UI51Toast.Show("Segnalazione inviata. Grazie!");
+                if (this != null && playFabId == id) { ShowReasons(false); RefreshActions(); }
+            }, () =>
+            {
+                SetReasonsInteractable(true);
+                UI51Toast.Show("Segnalazione non inviata. Riprova tra poco.", UI51Toast.Kind.Error);
+            });
+        }
+
+        private void SetReasonsInteractable(bool on)
+        {
+            foreach (var b in reasonButtons) if (b != null) b.interactable = on;
+        }
+
+        /// <summary>Segnala apre i motivi al posto dei pulsanti; la scheda cresce verso il basso dal suo bordo alto.</summary>
+        private void ShowReasons(bool on)
+        {
+            if (reasons == null) return;
+            actions.SetActive(!on);
+            reasons.SetActive(on);
+            Relayout();
+        }
+
+        private void Relayout()
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(card);
+            card.anchoredPosition = new Vector2(0f, -card.rect.height * 0.5f);
         }
 
         private void RefreshActions()
         {
             if (playFabId == null) return;
             bool added = s_Added.Contains(playFabId), reported = s_Reported.Contains(playFabId);
-            addButton.gameObject.SetActive(!added);
+            bool blocked = !guest && BlockList.IsBlocked(playFabId);
+            // Bloccato: restano Segnala e Sblocca. Ospite: niente amicizia ne' blocco (il suo account dura una sessione).
+            if (actionRow != null) actionRow.SetActive(!blocked);
+            addButton.gameObject.SetActive(!guest && !added);
             addButton.interactable = true;
-            addedLabel.SetActive(added);
+            addedLabel.SetActive(!guest && added);
+            if (blockButton != null) blockButton.gameObject.SetActive(!guest);
+            if (blockLabel != null) blockLabel.text = blocked ? "Sblocca giocatore" : "Blocca giocatore";
             muteLabel.text = EmoticonMute.IsMuted(playFabId) ? "Riattiva emoticon" : "Silenzia emoticon";
             reportLabel.text = reported ? "Segnalazione inviata" : "Segnala giocatore";
             reportButton.interactable = !reported;

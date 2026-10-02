@@ -134,7 +134,7 @@ namespace Project51.UI51
         {
             if (target == null) return null;
             DOTween.Kill(target);
-            var pose = Pose.Capture(target, Has(AnimProp.Alpha));
+            var pose = Pose.Capture(target, Has(AnimProp.Alpha), Has(AnimProp.X) || Has(AnimProp.Y));
             Apply(pose, 0f);
             bool infinite = loops < 0;
             float end = yoyo && loops % 2 == 0 ? 0f : 1f;
@@ -174,13 +174,17 @@ namespace Project51.UI51
             readonly Vector2 m_Position;
             readonly Vector3 m_Euler, m_Scale;
             readonly float m_Alpha;
+            // Senza tracce X/Y la posizione resta del layout: un pop su un figlio di LayoutGroup appena attivato non la blocca
+            // sul valore di prima del passaggio di layout.
+            readonly bool m_Moves;
             Vector2 m_WrotePosition;
             Quaternion m_WroteRotation;
             Vector3 m_WroteScale;
 
-            Pose(RectTransform r, bool alpha, Pose last)
+            Pose(RectTransform r, bool alpha, bool moves, Pose last)
             {
                 m_Rect = r;
+                m_Moves = moves;
                 m_Position = last != null && r.anchoredPosition == last.m_WrotePosition ? last.m_Position : r.anchoredPosition;
                 m_Euler = last != null && Quaternion.Angle(r.localRotation, last.m_WroteRotation) < 0.01f ? last.m_Euler : r.localEulerAngles;
                 m_Scale = last != null && r.localScale == last.m_WroteScale ? last.m_Scale : r.localScale;
@@ -191,10 +195,10 @@ namespace Project51.UI51
                 m_WroteScale = r.localScale;
             }
 
-            public static Pose Capture(RectTransform r, bool alpha)
+            public static Pose Capture(RectTransform r, bool alpha, bool moves)
             {
                 s_Last.TryGetValue(r, out var last);
-                var pose = new Pose(r, alpha, last);
+                var pose = new Pose(r, alpha, moves, last);
                 if (s_Last.Count > 256)
                 {
                     var dead = new List<RectTransform>();
@@ -208,7 +212,7 @@ namespace Project51.UI51
             public void Write(Vector2 offset, Vector3 euler, float scale, float alpha)
             {
                 if (m_Rect == null) return;
-                m_Rect.anchoredPosition = m_WrotePosition = m_Position + offset;
+                if (m_Moves) m_Rect.anchoredPosition = m_WrotePosition = m_Position + offset;
                 m_Rect.localEulerAngles = m_Euler + euler;
                 m_WroteRotation = m_Rect.localRotation;
                 m_Rect.localScale = m_WroteScale = m_Scale * scale;

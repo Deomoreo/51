@@ -15,9 +15,9 @@ MonoBehaviour:
   AppSettings:
     AppIdRealtime: 9dc9dc3f-76df-4483-a751-2aed89ae79e0
     AppIdFusion: 
-    AppIdChat: 
+    AppIdChat: d66e624b-503f-4a83-81ca-896f9874eefb
     AppIdVoice: 
-    AppVersion: 
+    AppVersion: 2.56
     UseNameServer: 1
     FixedRegion: eu
     Server: 
@@ -47,6 +47,7 @@ MonoBehaviour:
   - RPC_ReceiveAccuso
   - RPC_RequestInitialGameState
   - RPC_Emoticon
+  - RPC_SeatInactive
   DisableAutoOpenWizard: 1
-  ShowSettings: 0
+  ShowSettings: 1
   DevRegionSetOnce: 1

@@ -87,12 +87,15 @@ namespace Project51.UI51.EditorTools
             // Account
             var account = UI51AccessBuilder.TopBand(UI51Build.Child(c, "Account"), 20f, 20f, 22f, 58f);
             var avatar = UI51Build.Place(UI51Build.Child(account, "Avatar"), new Vector2(0f, 0.5f), new Vector2(58f, 58f), Vector2.zero);
-            UI51Build.Solid(avatar, UI51Tokens.Navy, 29f, 2f, UI51Tokens.Gold);
+            var avatarShape = UI51Build.Solid(avatar, UI51Tokens.Navy, 29f, 2f, UI51Tokens.Gold, true);
+            var avatarButton = UI51Build.Button(avatarShape, avatarShape);
+            UI51Build.GetOrAdd<UI51Press>(avatar);
             var inner = UI51Build.Stretch(UI51Build.Child(avatar, "Inner"), 2f, 2f, 2f, 2f);
             UI51Build.Solid(inner, UI51Tokens.Navy, 27f);
             UI51Build.GetOrAdd<Mask>(inner).showMaskGraphic = true;
-            UI51Build.Image(UI51Build.Stretch(UI51Build.Child(inner, "Fallback")), UI51Build.Sprite("Avatars", "avatar_1"), Color.white, false, false);
-            var portrait = UI51Build.Image(UI51Build.Stretch(UI51Build.Child(inner, "Portrait")), null, Color.white, false, false);
+            // Ritaglio come AvatarFrame: gli sprite avatar non sono quadrati (avatar_1 354x428), stirati si schiacciano.
+            AvatarFrame.FitPortrait(UI51Build.Image(UI51Build.Child(inner, "Fallback"), UI51Build.Sprite("Avatars", "avatar_1"), Color.white, false, false), 54f);
+            var portrait = UI51Build.Image(UI51Build.Child(inner, "Portrait"), null, Color.white, false, false);
             portrait.enabled = false;
             var badge = UI51Build.Place(UI51Build.Child(avatar, "Level"), new Vector2(1f, 0f), new Vector2(24f, 24f), new Vector2(4f, -4f));
             UI51Build.Shape(badge, UI51Shape.Linear((UI51Tokens.GoldLight, 0f), (UI51Tokens.GoldDark, 1f)), 180f, UI51Tokens.Radii(12f), 2f, UI51Tokens.BadgeRing);
@@ -128,7 +131,9 @@ namespace Project51.UI51.EditorTools
             // Ospite
             var guest = UI51AccessBuilder.TopBand(UI51Build.Child(c, "Guest"), 20f, 20f, 22f, 58f);
             var gAvatar = UI51Build.Place(UI51Build.Child(guest, "Avatar"), new Vector2(0f, 0.5f), new Vector2(58f, 58f), Vector2.zero);
-            UI51Build.Solid(gAvatar, UI51Tokens.WithAlpha(UI51Tokens.Navy, 0.6f), 29f, 1.5f, UI51Tokens.GoldA(0.55f));
+            var gAvatarShape = UI51Build.Solid(gAvatar, UI51Tokens.WithAlpha(UI51Tokens.Navy, 0.6f), 29f, 1.5f, UI51Tokens.GoldA(0.55f), true);
+            var guestAvatarButton = UI51Build.Button(gAvatarShape, gAvatarShape);
+            UI51Build.GetOrAdd<UI51Press>(gAvatar);
             UI51Build.Image(UI51Build.Center(UI51Build.Child(gAvatar, "Icon"), 24f, 28f), UI51Build.Sprite("Common", "ic_person_cream"), UI51Tokens.WhiteA(0.75f));
             var gInfo = UI51Build.Stretch(UI51Build.Child(guest, "Info"), 70f, 0f, 0f, 0f);
             UI51Build.Column(gInfo, 6f, null, TextAnchor.MiddleLeft, true, true);
@@ -160,6 +165,10 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "accountGroup", account.gameObject);
                 UI51Build.Ref(so, "guestGroup", guest.gameObject);
                 UI51Build.Ref(so, "registerButton", registerButton);
+                var buttons = so.FindProperty("avatarButtons");
+                buttons.arraySize = 2;
+                buttons.GetArrayElementAtIndex(0).objectReferenceValue = avatarButton;
+                buttons.GetArrayElementAtIndex(1).objectReferenceValue = guestAvatarButton;
             });
         }
 
@@ -175,7 +184,8 @@ namespace Project51.UI51.EditorTools
             if (bg != null) bg.color = Color.clear;
 
             float top = 118f - TopBarH;
-            var mail = QuickAction(c, "Mail", "ic_mail", 22f, "Posta", 14f, top);
+            // Colonna sinistra del mockup: Amici (UI51SocialBuilder), Posta, Missioni (non c'e'), Notizie; passo 76 (62 + 14).
+            var mail = QuickAction(c, "Mail", "ic_mail", 22f, "Posta", 14f, top + 76f);
             // Colonna destra impilata (come il flex del mockup): l'ospite vede Opzioni in cima.
             var right = UI51Build.Place(UI51Build.Child(c, "Right"), new Vector2(1f, 1f), new Vector2(56f, 214f), new Vector2(-14f, -top));
             UI51Build.Column(right, 14f, null, TextAnchor.UpperCenter, false, false);
@@ -445,40 +455,8 @@ namespace Project51.UI51.EditorTools
                 UI51Tokens.CreamA(0.7f), TextAlignmentOptions.MidlineLeft);
             info.enableWordWrapping = true;
 
-            // Stanza privata
-            var card = UI51Build.Child(pages[2], "Create");
-            UI51Build.Solid(card, UI51Tokens.WhiteA(0.03f), 14f, 1f, UI51Tokens.GoldA(0.18f));
-            UI51Build.Column(card, 12f, UI51Build.Pad(14, 14, 14, 14), TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
-            var intro = UI51Build.Child(card, "Intro");
-            UI51Build.Layout(intro, -1f, 40f);
-            var circle = UI51Build.Place(UI51Build.Child(intro, "Circle"), new Vector2(0f, 0.5f), new Vector2(34f, 34f), Vector2.zero);
-            UI51Build.Solid(circle, UI51Tokens.GoldA(0.12f), 17f, 1f, UI51Tokens.GoldA(0.4f));
-            UI51Build.Image(UI51Build.Center(UI51Build.Child(circle, "Glyph"), 17f, 17f), UI51Build.Sprite("Common", "ic_link_cream"), Color.white);
-            var introTexts = UI51Build.Stretch(UI51Build.Child(intro, "Texts"), 46f, 0f, 0f, 0f);
-            UI51Build.Column(introTexts, 1f, null, TextAnchor.MiddleLeft, true, true);
-            var t1 = UI51Build.Child(introTexts, "Title");
-            UI51Build.Layout(t1, -1f, 21f);
-            UI51Build.Text(t1, "Gioca con gli amici", FontFace.NunitoBold, 14f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft);
-            var t2 = UI51Build.Child(introTexts, "Desc");
-            UI51Build.Layout(t2, -1f, 17f);
-            UI51Build.Text(t2, "Crea una stanza e condividi il codice", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.6f), TextAlignmentOptions.MidlineLeft);
-            var create = UI51AccessBuilder.GoldButton(card, "CreateRoom", "CREA STANZA", 46f, 13f);
-            // QuickSelectionPanels.ModeOption legge l'icona della tile da un figlio "Icon" della riga scelta.
-            var linkIcon = UI51Build.Image(UI51Build.Center(UI51Build.Child(create.transform, "Icon"), 17f, 17f), UI51Build.Sprite("Common", "ic_link_cream"), Color.white);
-            linkIcon.enabled = false;
-            var orRow = UI51Build.Child(card, "Or");
-            UI51Build.Row(orRow, 10f, null, TextAnchor.MiddleCenter, true, false);
-            UI51Build.Layout(orRow, -1f, 14f);
-            UI51AccessBuilder.OrLine(orRow, "LineL");
-            var orText = UI51Build.Child(orRow, "Label");
-            UI51Build.Size(orText, 0f, 14f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(orText, "OPPURE", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center, 1f));
-            UI51AccessBuilder.OrLine(orRow, "LineR");
-            var joinRt = UI51Build.Child(card, "JoinRoom");
-            UI51PrefabBuilder.ButtonBody(joinRt.gameObject, 346f, 46f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(13f), 1f, UI51Tokens.Gold,
-                FontFace.CinzelBold, 13f, 2f, UI51Tokens.Gold, "ENTRA CON CODICE");
-            UI51Build.Layout(joinRt, -1f, 46f);
-            var join = joinRt.GetComponent<Button>();
+            // Stanza privata (mockup v3): la costruisce la Fase 13, che la rifa' anche da sola.
+            UI51MatchBuilder.BuildPrivateTab(pages[2], panels);
 
             for (int i = 0; i < 3; i++) pages[i].gameObject.SetActive(i == 0);
 
@@ -489,8 +467,6 @@ namespace Project51.UI51.EditorTools
             {
                 UI51AccessBuilder.SetArray(so, "ModeButtons", modeButtons);
                 UI51AccessBuilder.SetArray(so, "DifficultyButtons", difficulty);
-                UI51Build.Ref(so, "CreateRoom", create);
-                UI51Build.Ref(so, "JoinRoom", join);
                 UI51Build.Ref(so, "ModeScroll", sr);
                 UI51AccessBuilder.SetArray(so, "Tabs", tabs);
                 UI51AccessBuilder.SetArray(so, "TabPages", pages[0].gameObject, pages[1].gameObject, pages[2].gameObject);
@@ -710,19 +686,20 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>Spunta del mockup (path SVG M5 12.5 l4.5 4.5 L19 7.5 su 24) fatta con due tratti arrotondati OnGold.</summary>
-        internal static void CheckMark(RectTransform parent, float size, float strokeSvg)
+        internal static void CheckMark(RectTransform parent, float size, float strokeSvg, Color? color = null)
         {
+            var c = color ?? UI51Tokens.OnGold;
             var glyph = UI51Build.Center(UI51Build.Child(parent, "Glyph"), size, size);
             UI51Build.Remove<Image>(glyph.gameObject); // prima versione: icona tinta
             float k = size / 24f, w = strokeSvg * k;
-            Stroke(glyph, "Short", new Vector2(-4.75f, -2.75f) * k, 6.36f * k + w, w, -45f);
-            Stroke(glyph, "Long", new Vector2(2.25f, -0.25f) * k, 13.43f * k + w, w, 45f);
+            Stroke(glyph, "Short", new Vector2(-4.75f, -2.75f) * k, 6.36f * k + w, w, -45f, c);
+            Stroke(glyph, "Long", new Vector2(2.25f, -0.25f) * k, 13.43f * k + w, w, 45f, c);
         }
 
-        static void Stroke(RectTransform parent, string name, Vector2 pos, float length, float width, float angle)
+        static void Stroke(RectTransform parent, string name, Vector2 pos, float length, float width, float angle, Color color)
         {
             var rt = UI51Build.Place(UI51Build.Child(parent, name), new Vector2(0.5f, 0.5f), new Vector2(length, width), pos);
-            UI51Build.Solid(rt, UI51Tokens.OnGold, width / 2f);
+            UI51Build.Solid(rt, color, width / 2f);
             rt.localRotation = Quaternion.Euler(0f, 0f, angle);
         }
 

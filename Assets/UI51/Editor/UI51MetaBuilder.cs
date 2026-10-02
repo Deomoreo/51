@@ -89,9 +89,12 @@ namespace Project51.UI51.EditorTools
             UI51AccessBuilder.NoWrap(UI51Build.Text(title, "Impostazioni", FontFace.CinzelBold, 22f, UI51Tokens.Cream,
                 TextAlignmentOptions.MidlineLeft));
 
-            var body = UI51AccessBuilder.TopBand(UI51Build.Child(page, "Body"), 20f, 20f, 84f, 600f);
-            Stack(body, 18f);
-            UI51Build.Fit(body, false, true);
+            // Il corpo scorre fino a 8 sopra al pie' di pagina: con PRIVACY E SOCIALE (2.56) l'account non sta piu' nei 844 del mockup.
+            var stale = page.Find("Body"); // corpo fisso delle versioni prima della 2.56
+            if (stale != null) Object.DestroyImmediate(stale.gameObject);
+            var scroll = UI51SocialBuilder.ScrollArea(UI51Build.Stretch(UI51Build.Child(page, "Scroller"), 20f, 78f, 20f, 84f),
+                UI51Build.Pad(0, 0, 12, 0), 18f);
+            var body = scroll.content;
 
             var audio = Panel(Section(body, "Audio", "AUDIO"), "Panel");
             var music = Switch(Row(audio, "Music", "Musica"));
@@ -104,7 +107,15 @@ namespace Project51.UI51.EditorTools
                 "Meno effetti e animazioni più brevi"));
 
             // Una sola lingua e nessuna notifica push: la riga Lingua informa e basta, Notifiche non c'e'.
-            Value(Row(Panel(Section(body, "General", "GENERALE"), "Panel"), "Language", "Lingua"), "Italiano");
+            var general = Panel(Section(body, "General", "GENERALE"), "Panel");
+            Value(Row(general, "Language", "Lingua"), "Italiano");
+            Divider(general, "Line1");
+            var rules = RowButton(Row(general, "Rules", "Regole e tutorial")); // apre UI51Rules (Fase 12)
+
+            // Solo con un account (gli ospiti non bloccano): apre la pagina Giocatori bloccati.
+            var social = Section(body, "Social", "PRIVACY E SOCIALE");
+            var blockedRow = RowButton(Row(Panel(social, "Panel"), "Blocked", "Giocatori bloccati", "Emoticon, inviti e messaggi"));
+            var blockedView = BuildBlocked(panel);
 
             var account = Section(body, "Account", "ACCOUNT");
             var member = UI51Build.Child(account, "Member");
@@ -112,7 +123,11 @@ namespace Project51.UI51.EditorTools
             var memberPanel = Panel(member, "Panel");
             var email = Value(Row(memberPanel, "Email", "Email"), "");
             Divider(memberPanel, "Line1");
+            var password = RowButton(Row(memberPanel, "Password", "Cambia password")); // Fase 11: manda il link (UI51RecoveryView)
+            Divider(memberPanel, "Line2");
             var logout = RowButton(Row(memberPanel, "Logout", "Esci"));
+            string[] memberOrder = { "Email", "Line1", "Password", "Line2", "Logout" }; // le righe nuove nascono in fondo
+            for (int i = 0; i < memberOrder.Length; i++) memberPanel.Find(memberOrder[i]).SetSiblingIndex(i);
             var deleteRt = UI51Build.Child(member, "Delete");
             UI51PrefabBuilder.ButtonBody(deleteRt.gameObject, 350f, 50f, UI51Shape.Solid(UI51Tokens.WithAlpha(UI51Tokens.Danger, 0.08f)),
                 UI51Tokens.Radii(14f), 1f, UI51Tokens.WithAlpha(UI51Tokens.Danger, 0.45f), FontFace.NunitoExtraBold, 14f, 0f,
@@ -177,10 +192,71 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "guestGroup", guest.gameObject);
                 UI51Build.Ref(so, "emailLabel", email);
                 UI51AccessBuilder.SetArray(so, "logoutButtons", logout, guestLogout);
+                UI51Build.Ref(so, "rulesButton", rules);
+                UI51Build.Ref(so, "socialSection", social.gameObject);
+                UI51Build.Ref(so, "blockedButton", blockedRow);
+                UI51Build.Ref(so, "blocked", blockedView);
+                UI51Build.Ref(so, "scroll", scroll);
+                UI51Build.Ref(so, "passwordButton", password);
                 UI51Build.Ref(so, "privacyButton", privacy);
                 UI51Build.Ref(so, "termsButton", terms);
                 UI51Build.Ref(so, "legal", legal);
             });
+        }
+
+        /// <summary>
+        /// Impostazioni > Privacy e sociale > Giocatori bloccati (scelta dell'utente 02/10, nessun mockup): pagina a tutto schermo sopra
+        /// alle Impostazioni come Regole. Indietro e titolo come le Impostazioni, una riga di spiegazione, poi una scheda per giocatore
+        /// (riga da 52 col nome e "Sblocca" 88x32 a destra) che scorre fino a 24 dal fondo; vuota: due righe al centro.
+        /// </summary>
+        static Project51.Unity.UI.UI51BlockedView BuildBlocked(Transform settingsPanel)
+        {
+            var root = UI51Build.Stretch(UI51Build.Child(settingsPanel.parent, "UI51Blocked"));
+            root.gameObject.SetActive(true); // TMP su oggetti spenti lancia eccezioni
+            root.SetSiblingIndex(settingsPanel.GetSiblingIndex() + 1);
+            var safe = UI51AccessBuilder.BuildScreen(root, UI51Build.Sprite("Backgrounds", "home_bg_blur"), null);
+            var page = UI51Build.Stretch(UI51Build.Child(safe, "Page"));
+
+            var back = UI51AccessBuilder.RoundButton(page, "Back", false, 40f, 20f, UI51Tokens.Rgba(11, 29, 58, 0.6f),
+                UI51Build.Sprite("Common", "ic_nav_back_cream"), 15f);
+            ((RectTransform)back.transform).anchoredPosition = new Vector2(20f, -22f);
+            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(page, "Title"), 72f, 20f, 22f, 40f),
+                "Giocatori bloccati", FontFace.CinzelBold, 22f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
+            var hint = UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(page, "Hint"), 20f, 20f, 76f, 36f),
+                "Non vedi le loro emoticon e non ricevi inviti o messaggi da loro.", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.6f),
+                TextAlignmentOptions.TopLeft);
+            hint.enableWordWrapping = true;
+
+            var scroll = UI51SocialBuilder.ScrollArea(UI51Build.Stretch(UI51Build.Child(page, "Scroller"), 20f, 24f, 20f, 120f),
+                UI51Build.Pad(0, 0, 12, 0), 8f);
+            var template = Panel(scroll.content, "RowTemplate");
+            var row = Row(template, "Row", "Giocatore");
+            ((RectTransform)row.Find("Texts")).offsetMax = new Vector2(-116f, 0f); // posto per Sblocca
+            var unblock = UI51Build.Child(row, "Unblock");
+            UI51PrefabBuilder.ButtonBody(unblock.gameObject, 88f, 32f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(16f), 1f,
+                UI51Tokens.GoldA(0.5f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Gold, "Sblocca");
+            UI51Build.Place(unblock, new Vector2(1f, 0.5f), new Vector2(88f, 32f), new Vector2(-14f, 0f)).pivot = new Vector2(1f, 0.5f);
+
+            var empty = UI51AccessBuilder.TopBand(UI51Build.Child(page, "Empty"), 20f, 20f, 200f, 60f);
+            UI51Build.Column(empty, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandHeight = false;
+            UI51Build.Layout(UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(empty, "Title"), "Nessun giocatore bloccato",
+                FontFace.NunitoBold, 15f, UI51Tokens.CreamA(0.85f), TextAlignmentOptions.Center)).rectTransform, -1f, 21f);
+            var emptyText = UI51Build.Text(UI51Build.Child(empty, "Text"), "Puoi bloccare un giocatore dal suo profilo, durante la partita.",
+                FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center);
+            emptyText.enableWordWrapping = true;
+            UI51Build.Layout(emptyText.rectTransform, -1f, 34f);
+
+            var view = UI51Build.GetOrAdd<Project51.Unity.UI.UI51BlockedView>(root);
+            UI51Build.Wire(view, so =>
+            {
+                UI51Build.Ref(so, "back", back);
+                UI51Build.Ref(so, "rowTemplate", template);
+                UI51Build.Ref(so, "empty", empty.gameObject);
+                UI51Build.Ref(so, "scroll", scroll);
+            });
+            template.gameObject.SetActive(false);
+            root.gameObject.SetActive(false);
+            return view;
         }
 
         // --- Elimina account

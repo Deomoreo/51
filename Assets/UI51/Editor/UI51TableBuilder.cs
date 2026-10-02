@@ -76,6 +76,7 @@ namespace Project51.UI51.EditorTools
             BuildSorteggio(banners);
             BuildQuickProfile(banners, seatLocal, seatTop, seatLeft, seatRight, bar.parent);
             BuildResults(banners);
+            BuildMoments(banners, bar.parent, seatLocal, seatTop, seatLeft, seatRight);
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (EditorSceneManager.SaveScene(scene, ScenePath)) Debug.Log($"{Tag} Scena salvata: {ScenePath}");
@@ -1250,10 +1251,41 @@ namespace Project51.UI51.EditorTools
                 UI51Tokens.CreamA(0.3f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, "Silenzia emoticon");
             UI51Build.Layout(mute, -1f, 38f, 1f);
             UI51MetaBuilder.Gap(actions, "Gap", 8f);
-            var report = UI51Build.Child(actions, "Report");
-            UI51PrefabBuilder.ButtonBody(report.gameObject, 268f, 34f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
+            // 2.55: Segnala (rosso) e Blocca affiancati; Segnala apre i motivi. La vecchia riga "Report" era figlia diretta di Actions.
+            var oldReport = actions.Find("Report");
+            if (oldReport != null) UnityEngine.Object.DestroyImmediate(oldReport.gameObject);
+            var bottom = UI51Build.Child(actions, "Bottom");
+            UI51Build.Row(bottom, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandWidth = true;
+            UI51Build.Layout(bottom, -1f, 34f);
+            var report = UI51Build.Child(bottom, "Report");
+            UI51PrefabBuilder.ButtonBody(report.gameObject, 131f, 34f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
                 FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.DangerText, "Segnala giocatore");
-            UI51Build.Layout(report, -1f, 34f);
+            UI51Build.Layout(report, -1f, 34f, 1f);
+            var block = UI51Build.Child(bottom, "Block");
+            UI51PrefabBuilder.ButtonBody(block.gameObject, 131f, 34f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
+                FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.CreamA(0.6f), "Blocca giocatore");
+            UI51Build.Layout(block, -1f, 34f, 1f);
+
+            // Motivi della segnalazione (scelta dell'utente 01/10), al posto dei pulsanti: tre righe e Annulla.
+            var reasons = UI51Build.Child(card, "Reasons");
+            UI51MetaBuilder.Stack(reasons, 0f, UI51Build.Pad(14, 0, 0, 0));
+            UI51Build.Layout(UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(reasons, "Caption"), "Perché lo segnali?", FontFace.NunitoBold,
+                12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center)), -1f, 18f);
+            var reasonButtons = new Button[QuickProfileCard.ReasonLabels.Length];
+            for (int i = 0; i < reasonButtons.Length; i++)
+            {
+                UI51MetaBuilder.Gap(reasons, "Gap" + i, i == 0 ? 8f : 6f);
+                var reason = UI51Build.Child(reasons, "Reason" + i);
+                UI51PrefabBuilder.ButtonBody(reason.gameObject, 268f, 36f, UI51Shape.Solid(UI51Tokens.WhiteA(0.04f)), UI51Tokens.Radii(12f), 1f,
+                    UI51Tokens.CreamA(0.2f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, QuickProfileCard.ReasonLabels[i]);
+                UI51Build.Layout(reason, -1f, 36f);
+                reasonButtons[i] = reason.GetComponent<Button>();
+            }
+            UI51MetaBuilder.Gap(reasons, "GapCancel", 4f);
+            var cancel = UI51Build.Child(reasons, "Cancel");
+            UI51PrefabBuilder.ButtonBody(cancel.gameObject, 268f, 30f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
+                FontFace.NunitoBold, 12f, 0f, UI51Tokens.CreamA(0.55f), "Annulla");
+            UI51Build.Layout(cancel, -1f, 30f);
 
             // Io: "Livello N" e "x / y XP", barra 7, nota (PartitaMioProfilo).
             var self = UI51Build.Child(card, "Self");
@@ -1305,6 +1337,14 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "addedLabel", added.gameObject);
                 UI51Build.Ref(so, "muteLabel", mute.Find("Label").GetComponent<TextMeshProUGUI>());
                 UI51Build.Ref(so, "reportLabel", report.Find("Label").GetComponent<TextMeshProUGUI>());
+                UI51Build.Ref(so, "actionRow", row.gameObject);
+                UI51Build.Ref(so, "blockButton", block.GetComponent<Button>());
+                UI51Build.Ref(so, "blockLabel", block.Find("Label").GetComponent<TextMeshProUGUI>());
+                UI51Build.Ref(so, "reasons", reasons.gameObject);
+                var reasonList = so.FindProperty("reasonButtons");
+                reasonList.arraySize = reasonButtons.Length;
+                for (int i = 0; i < reasonButtons.Length; i++) reasonList.GetArrayElementAtIndex(i).objectReferenceValue = reasonButtons[i];
+                UI51Build.Ref(so, "cancelReasons", cancel.GetComponent<Button>());
                 UI51Build.Ref(so, "self", self.gameObject);
                 UI51Build.Ref(so, "xpLevel", xpLevel);
                 UI51Build.Ref(so, "xpText", xpText);
@@ -1313,6 +1353,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Wire(manager, so => UI51Build.Ref(so, "profileCard", view));
             UI51Build.Wire(social, so => UI51Build.Ref(so, "ProfileHit", ownHit));
             added.gameObject.SetActive(false);
+            reasons.gameObject.SetActive(false);
             root.gameObject.SetActive(false); // UI51Build.Child la riaccende: si vede solo al tocco su un banner
         }
 

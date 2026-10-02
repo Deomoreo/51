@@ -27,6 +27,7 @@ namespace Project51.UI51
         public static readonly Color SuccessText = Hex("#7FE0B8");
         public static readonly Color TeamBlue = Hex("#4F80E8");
         public static readonly Color TeamBlueDark = Hex("#1B3A7A");
+        public static readonly Color TeamBlueText = Hex("#9DB8F5");
         public static readonly Color Navy = Hex("#0B1D3A");
         public static readonly Color Wood = Hex("#7A4B29");
         public static readonly Color WoodDark = Hex("#4E2D16");

@@ -564,10 +564,10 @@ namespace Project51.Auth
         }
         
         /// <summary>
-        /// Login con email e password (per utenti già registrati).
+        /// Login con email (o nome utente scelto alla registrazione) e password, per utenti gia' registrati.
         /// Sostituisce la sessione guest corrente con quella dell'account registrato.
         /// </summary>
-        /// <param name="email">Email dell'account.</param>
+        /// <param name="email">Email dell'account, oppure il suo nome utente (senza @).</param>
         /// <param name="password">Password dell'account.</param>
         /// <param name="onSuccess">Callback con PlayFabId su successo.</param>
         /// <param name="onError">Callback con messaggio di errore user-friendly.</param>
@@ -575,9 +575,9 @@ namespace Project51.Auth
             Action<string> onSuccess = null, Action<string> onError = null)
         {
             // Validazione base
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            if (string.IsNullOrWhiteSpace(email))
             {
-                onError?.Invoke("Inserisci un'email valida");
+                onError?.Invoke("Inserisci l'email o il nome utente");
                 return;
             }
             
@@ -587,54 +587,57 @@ namespace Project51.Auth
                 return;
             }
             
-            Debug.Log($"[PlayFabAuth] Attempting email login for: {email}");
+            bool byEmail = email.Contains("@");
+            Debug.Log($"[PlayFabAuth] Attempting {(byEmail ? "email" : "username")} login for: {email}");
             
-            var request = new LoginWithEmailAddressRequest
+            var info = new GetPlayerCombinedInfoRequestParams
             {
-                Email = email,
-                Password = password,
-                InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
-                {
-                    GetPlayerProfile = true,
-                    GetUserAccountInfo = true
-                }
+                GetPlayerProfile = true,
+                GetUserAccountInfo = true
             };
             
-            PlayFabClientAPI.LoginWithEmailAddress(request,
-                result =>
-                {
-                    // Aggiorna stato come in LoginAsGuest
-                    PlayFabId = result.PlayFabId;
-                    SessionTicket = result.SessionTicket;
-                    
-                    var profile = result.InfoResultPayload?.PlayerProfile;
-                    var accountInfo = result.InfoResultPayload?.AccountInfo;
-                    
-                    DisplayName = profile?.DisplayName ?? accountInfo?.Username ?? "Player";
-                    Email = accountInfo?.PrivateInfo?.Email ?? email;
-                    OnDisplayNameChanged?.Invoke(DisplayName);
-                    
-                    IsAccountLinked = accountInfo != null &&
-                        (accountInfo.GooglePlayGamesInfo != null || accountInfo.AppleAccountInfo != null);
-                    
-                    // L'utente ha fatto login con email => è registrato
-                    IsRegistered = true;
-                    PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
-                    PlayerPrefs.Save();
-                    
-                    Debug.Log($"[PlayFabAuth] Email login successful! PlayFabId: {PlayFabId}");
-                    
-                    onSuccess?.Invoke(PlayFabId);
-                    OnLoginSuccess?.Invoke(PlayFabId);
-                },
-                error =>
-                {
-                    string errorMsg = GetUserFriendlyError(error);
-                    Debug.LogError($"[PlayFabAuth] Email login failed: {error.ErrorMessage}");
-                    onError?.Invoke(errorMsg);
-                    OnLoginError?.Invoke(errorMsg);
-                }
-            );
+            Action<LoginResult> success = result =>
+            {
+                // Aggiorna stato come in LoginAsGuest
+                PlayFabId = result.PlayFabId;
+                SessionTicket = result.SessionTicket;
+                
+                var profile = result.InfoResultPayload?.PlayerProfile;
+                var accountInfo = result.InfoResultPayload?.AccountInfo;
+                
+                DisplayName = profile?.DisplayName ?? accountInfo?.Username ?? "Player";
+                Email = accountInfo?.PrivateInfo?.Email ?? (byEmail ? email : null);
+                OnDisplayNameChanged?.Invoke(DisplayName);
+                
+                IsAccountLinked = accountInfo != null &&
+                    (accountInfo.GooglePlayGamesInfo != null || accountInfo.AppleAccountInfo != null);
+                
+                // L'utente ha fatto login con email o nome utente => e' registrato
+                IsRegistered = true;
+                PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
+                PlayerPrefs.Save();
+                
+                Debug.Log($"[PlayFabAuth] Login successful! PlayFabId: {PlayFabId}");
+                
+                // Prima l'evento: HomeConnectionWatcher deve far partire il rientro in partita prima che onSuccess entri in Home
+                // (li' un segno di partita in corso senza rientro conta come abbandono).
+                OnLoginSuccess?.Invoke(PlayFabId);
+                onSuccess?.Invoke(PlayFabId);
+            };
+            Action<PlayFabError> failure = error =>
+            {
+                string errorMsg = GetUserFriendlyError(error);
+                Debug.LogError($"[PlayFabAuth] Login failed: {error.ErrorMessage}");
+                onError?.Invoke(errorMsg);
+                OnLoginError?.Invoke(errorMsg);
+            };
+            
+            if (byEmail)
+                PlayFabClientAPI.LoginWithEmailAddress(new LoginWithEmailAddressRequest
+                    { Email = email, Password = password, InfoRequestParameters = info }, success, failure);
+            else
+                PlayFabClientAPI.LoginWithPlayFab(new LoginWithPlayFabRequest
+                    { Username = email, Password = password, InfoRequestParameters = info }, success, failure);
         }
         
         /// <summary>
@@ -686,6 +689,8 @@ namespace Project51.Auth
                     return "Password non corretta";
                 case PlayFabErrorCode.InvalidEmailOrPassword:
                     return "Email o password non corretti";
+                case PlayFabErrorCode.InvalidUsernameOrPassword:
+                    return "Nome utente o password non corretti";
                 case PlayFabErrorCode.EmailAddressNotAvailable:
                     return "Questa email è già in uso";
                 case PlayFabErrorCode.UsernameNotAvailable:

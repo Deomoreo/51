@@ -98,6 +98,9 @@ namespace Project51.Core
             foreach (var p in state.Players)
             { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; p.RoundAccusiCount = 0; }
 
+            // Tre assi prima di tutto: niente accusi ne' 15/30 del mazziere.
+            if (EndWithTreAssi()) return;
+
             OnInitialHandsDealt?.Invoke();
 
             ProcessDealerInitialAccuso();
@@ -169,7 +172,9 @@ namespace Project51.Core
         /// </summary>
         public static bool IsFreshSmazzata(GameState state)
         {
-            if (state == null || state.RoundEnded || state.Players == null || state.Players.Count != state.NumPlayers) return false;
+            if (state == null || state.Players == null || state.Players.Count != state.NumPlayers) return false;
+            // Una smazzata chiusa subito dai Tre assi resta "fresca": i client devono vederne la distribuzione.
+            if (state.RoundEnded && TreAssiHolder(state) < 0) return false;
             if (state.Players.Any(p => p.Hand.Count != 3)) return false;
             if (state.DealerIndex < 0 || state.DealerIndex >= state.NumPlayers) return false;
 
@@ -217,6 +222,24 @@ namespace Project51.Core
             state.LastCapturePlayerIndex = playerIndex;
         }
 
+        /// <summary>Giocatore con tre assi in mano, -1 se nessuno. La matta non vale come asso.</summary>
+        public static int TreAssiHolder(GameState state) =>
+            state.Players.FindIndex(p => p.Hand.Count(c => c.IsAce) == 3);
+
+        /// <summary>
+        /// Tre assi (SPEC 11.5): chi li riceve vince subito la partita, a coppie la coppia. Si controlla a
+        /// ogni distribuzione, prima degli accusi (sarebbero anche un Decino). Stesso esito del cappotto.
+        /// </summary>
+        private bool EndWithTreAssi()
+        {
+            int holder = TreAssiHolder(state);
+            if (holder < 0) return false;
+            foreach (int member in MatchScore.MembersOf(state, MatchScore.EntryOf(state, holder)))
+                state.Players[member].TotalScore += MatchScore.CappottoScore;
+            state.RoundEnded = true;
+            return true;
+        }
+
         /// <summary>
         /// Player declares an accuso before playing (Cirulla or Decino)
         /// Returns true if accuso accepted and points awarded.
@@ -225,6 +248,9 @@ namespace Project51.Core
         {
             var rules = GetRules();
             if (rules != null && !rules.EnableAccusi)
+                return false;
+            // Smazzata gia' chiusa (Tre assi, cappotto): niente accusi, anche se arrivano dalla rete.
+            if (state.RoundEnded)
                 return false;
             // Un accuso per giocatore per mano. AccusiPoints conta solo Cirulla/Decino di questa mano ed e'
             // nello stato di rete: regge anche a una finestra riaperta da uno stato completo (rientro online).
@@ -316,6 +342,7 @@ namespace Project51.Core
                     
                     // NEW: After dealing new hands, trigger event so TurnController can check for accusi
                     CurrentHandNumber++;
+                    if (EndWithTreAssi()) return;
                     OnNewHandsDealt?.Invoke();
                 }
                 else

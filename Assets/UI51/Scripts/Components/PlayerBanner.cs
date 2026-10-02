@@ -46,7 +46,7 @@ namespace Project51.UI51
         void OnEnable()
         {
             // Il link KillOnDisable ferma l'anello quando il banner si spegne: si riaccende qui.
-            if (m_IsTurn) UIAnim.Pulse(m_PulseRing);
+            if (m_IsTurn) Pulse();
         }
 
         void OnDisable()
@@ -139,15 +139,49 @@ namespace Project51.UI51
             if (m_Avatar != null) m_Avatar.ShowEmoticon(index);
         }
 
-        /// <summary>Tocca a questo giocatore: bordo oro .85 e anello che pulsa.</summary>
-        public void SetTurn(bool on)
+        /// <summary>
+        /// Tocca a questo giocatore: bordo oro .85 e anello che pulsa. rival = tocca a un altro (mockup MomentiPartita): bordo e
+        /// anello blu, 1.4 s / 8 px / .7.
+        /// </summary>
+        public void SetTurn(bool on, bool rival = false)
         {
-            if (m_IsTurn == on) return;
+            if (m_IsTurn == on && m_Rival == rival) return;
             m_IsTurn = on;
+            m_Rival = rival;
             PaintBorder();
             if (m_PulseRing == null) return;
-            if (on && isActiveAndEnabled) UIAnim.Pulse(m_PulseRing);
+            m_PulseRing.color = UI51Tokens.WithAlpha(m_Low ? UI51Tokens.Danger : rival ? UI51Tokens.TeamBlue : UI51Tokens.Gold, 0f);
+            if (on && isActiveAndEnabled) Pulse();
             else if (!on) UIAnim.Stop(m_PulseRing);
+        }
+
+        bool m_Rival, m_Low;
+
+        /// <summary>Ultimi 5 secondi del turno (mockup MomentiPartita, tempo): bordo e anello rossi, .8 s / 9 px / .8.</summary>
+        public void SetLowTime(bool on)
+        {
+            if (m_Low == on) return;
+            m_Low = on;
+            PaintBorder();
+            if (m_PulseRing == null) return;
+            m_PulseRing.color = UI51Tokens.WithAlpha(on ? UI51Tokens.Danger : m_Rival ? UI51Tokens.TeamBlue : UI51Tokens.Gold, 0f);
+            if (m_IsTurn && isActiveAndEnabled) Pulse();
+        }
+
+        void Pulse()
+        {
+            if (m_Low) UIAnim.Pulse(m_PulseRing, 9f, 0.8f, 0.8f);
+            else if (m_Rival) UIAnim.Pulse(m_PulseRing, 8f, 1.4f, 0.7f);
+            else UIAnim.Pulse(m_PulseRing);
+        }
+
+        [Tooltip("Velo scuro con l'icona rossa del Wi-Fi barrato (mockup MomentoDisconnesso); opzionale, lo mette UI51TableBuilder.")]
+        [SerializeField] GameObject m_Offline;
+
+        /// <summary>Giocatore disconnesso (al suo posto gioca un bot finche' non rientra).</summary>
+        public void SetOffline(bool on)
+        {
+            if (m_Offline != null && m_Offline.activeSelf != on) m_Offline.SetActive(on);
         }
 
         /// <summary>Gettone "M": questo giocatore e' il mazziere della smazzata.</summary>
@@ -175,7 +209,7 @@ namespace Project51.UI51
         void PaintBorder()
         {
             if (m_Background != null)
-                m_Background.borderColor = m_IsTurn ? UI51Tokens.GoldA(0.85f) : UI51Banners.BorderColor(m_Style);
+                m_Background.borderColor = !m_IsTurn ? UI51Banners.BorderColor(m_Style) : m_Low ? UI51Tokens.Danger : m_Rival ? UI51Tokens.TeamBlue : UI51Tokens.GoldA(0.85f);
         }
     }
 }

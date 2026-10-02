@@ -146,3 +146,54 @@ Implementazione consigliata: **un solo shader UI** (Shader Graph) con parametri:
 ## 9. Sistemi di gioco citati dalla grafica (per contesto)
 
 Livelli ed XP; collezione (dorsi, emoticon max 3, accuso); sblocchi da livelli, forzieri, negozio, missioni, eventi, battle pass; idea futura: **frammenti per rarità** (es. Comune 20 · Rara 50 · Epica 120 · Leggendaria 300) + polvere universale + garanzia. Premi giornalieri a 7 giorni con serie. Punteggio Cirulla fino a 51: carte, denari, settebello, primiera, grande, piccola, scope, accusi.
+
+---
+
+## 10. Aggiornamento v2 — tutorial, regole e decisioni di gioco
+
+Nuove schermate in `mockups/`:
+- `Benvenuto` — al primo avvio (dopo registrazione o accesso ospite): "Conosci già la Cirulla?" → "No, insegnami" (partita guidata, premio +200) oppure "Sì, voglio giocare" (Home). Mostrarla una sola volta.
+- `TutorialPartita` (+ `Tutorial2/3/5`, `TutorialSalta`, `TutorialFine`) — partita guidata contro un bot con carte predefinite, sopra il tavolo vero. Overlay "coach": tutto scurito tranne la zona da toccare (spotlight con anello oro pulsante), manina animata, fumetto con avatar di Nonna Rosa, titolo, testo, Indietro/Avanti, pallini dei passi, "Salta" sempre visibile con conferma. 6 passi: le tue carte → carta uguale → somme e 15 → scopa → accusa → arrivare a 51. Fine: +200 monete e dorso Smeraldo, "Gioca la prima partita". Il premio si ottiene solo completando; chi salta può rifarlo da Impostazioni → Regole e tutorial e dal pannello Modalità → Allenamento.
+- `Regole` (+ `RegoleAccusi`, `RegolePunteggio`) — schede Prese · Scopa · Accusi · Punteggio · Formati con esempi illustrati a carte; raggiungibile da Impostazioni ("Regole e tutorial") e dalla fine del tutorial.
+- `Impostazioni` — aggiunta la riga "Regole e tutorial" nella sezione Generale.
+
+Decisioni di regolamento prese (da applicare alla logica di gioco):
+1. **Precedenza della carta uguale**: se sul tavolo c'è una carta dello stesso valore della carta giocata, la presa per carta uguale è obbligatoria; somme e regola del 15 non sono ammesse in quel caso.
+2. **Soglie a 4 giocatori (1v3)**: punto Carte e punto Denari alla semplice maggioranza (senza le soglie 21 e 6, che restano per 1v1 e 2v2). Il pari merito continua a non assegnare il punto.
+3. **Asso piglia tutto**: vale scopa quando prende tutto il tavolo. Se l'asso prende solo un asso e sul tavolo restano carte, non è scopa (naturale, il tavolo non è vuoto).
+4. **15 / 30 del mazziere**: è un accuso, non una scopa. Vale 1 punto (15) e 2 punti (30). Correggere il banner: niente "SCOPA DA 15/30", usare l'animazione/il testo dell'accuso ("ACCUSO 15 · +1", "ACCUSO 30 · +2").
+
+---
+
+## 11. Aggiornamento v3 — schermate mancanti e nuove regole
+
+Flusso Home → tavolo
+- `Matchmaking` (1v1 / 2v2 / 1v3, stato cerca / trovato): carte che ondeggiano, posti che si riempiono, timer, Annulla; poi "Partita trovata" → Sorteggio.
+- `SalaPrivata` (ruolo host / ospite): codice a tessere con Copia e Condividi, posti con tag HOST, amici online da invitare, AVVIA solo a tavolo pieno, conferma di uscita.
+- `StanzaErrore` (codice non valido / stanza piena / partita iniziata).
+
+Account e sistema
+- `SceltaNome` (dopo la registrazione, controllo disponibilità, suggerimenti, avatar) → `Benvenuto`.
+- `PasswordDimenticata` (+ stato inviata con reinvio a tempo), `CambiaPassword` (barra sicurezza + requisiti), `Lingua` (pannello dal basso).
+- `Notifiche` (pre-permesso), `Aggiornamento` (obbligatorio), `Manutenzione` (con conto alla rovescia).
+- `InvitoRicevuto`: banner in alto alto quanto il contenuto, 20 s per accettare.
+- `Toast` (avvisi brevi), stati vuoti di `Amici` e `Posta` (prop `vuoto`).
+- `SegnalazioneEsito`: al segnalatore, quando il giocatore segnalato viene sanzionato (senza mostrare il nome). `Sospensione`: al giocatore sanzionato (motivo, conto alla rovescia, può giocare contro i bot).
+
+Momenti di partita (`MomentiPartita`, prop `momento`)
+- Turno avversario: anello blu sempre sul banner di chi gioca; **il timer compare solo negli ultimi 5 secondi** (anello e etichetta diventano rossi). Variante a 4 giocatori sui banner laterali (`MomentoTurno4`).
+- Tempo che scade (tuo turno), avversario disconnesso (icona fissa sul banner + **avviso breve** che svanisce), SCOPA! (animazione centrale), distribuzione (carte che volano + **avviso breve "MANO 3 DI 6"** che compare a ogni distribuzione e svanisce), ultima mano (avviso breve), spareggio.
+- Regola per tutti gli avvisi brevi: compaiono ~0.3 s, restano ~2.5 s, svaniscono ~0.6 s. Nei mockup sono ripetuti in loop solo per mostrarli.
+
+Vittorie immediate (`Cappotto`, prop `tipo`)
+- Cappotto e **Tre assi** con pioggia di monete, ricompense speciali e trofeo dedicato.
+
+Progressione
+- `LivelloSu`, `Forziere` (da aprire → 3 carte da girare con rarità Comune/Rara/Epica e barra frammenti), `NuovoOggetto` (sbloccato / frammenti), `Classifica` (Settimana / Amici / Sempre, podio, posizione fissata, premi per fascia), `Trofei` (categorie, progressi, dettaglio).
+
+Nuova regola da applicare alla logica
+5. **Tre assi** (decisione confermata): chi riceve tre assi nella mano vince immediatamente la partita.
+   - Vale in **tutte le modalità** (1v1, 2v2, 1v3).
+   - Nel **2v2 vince la coppia** del giocatore che ha i tre assi.
+   - Ha la **precedenza sugli accusi**: tre assi sarebbero anche un Decino, ma si applica solo la vittoria immediata (niente accuso, niente finestra di 5 secondi).
+   - Si controlla alla distribuzione di ogni mano (anche le mani successive alla prima), subito dopo aver dato le carte. Schermata: `Cappotto` con `tipo="treassi"` (`TreAssi`).

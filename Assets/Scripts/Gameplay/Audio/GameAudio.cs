@@ -72,12 +72,14 @@ namespace Project51.Unity
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             GamePresentation.ConnectionNotice += OnConnectionNotice;
+            GamePresentation.PlayerNotice += OnPlayerNotice;
         }
 
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             GamePresentation.ConnectionNotice -= OnConnectionNotice;
+            GamePresentation.PlayerNotice -= OnPlayerNotice;
             if (instance == this) instance = null;
         }
 
@@ -110,6 +112,8 @@ namespace Project51.Unity
         {
             if (!string.IsNullOrEmpty(message)) Play(SoundId.Notification, sync: Sync.Onset);
         }
+
+        private static void OnPlayerNotice(int seat, string title, string sub, bool alert) => OnConnectionNotice(title, 0f);
 
         /// <summary>Effetto sonoro di gioco (carte, accusi, fine partita). Non fa nulla se gli effetti sono spenti.</summary>
         public static void Play(SoundId id, float volumeScale = 1f, Sync sync = Sync.Start, float hitIn = 0f)

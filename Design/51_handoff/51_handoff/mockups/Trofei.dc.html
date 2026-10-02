@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Trofei</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:#05080f;font-family:'Nunito',sans-serif;}
+  a{color:#F3C969;text-decoration:none;}
+  .bg-blur{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 34%;filter:blur(10px) brightness(0.42) saturate(1.1);transform:scale(1.12);}
+  .bg-photo{background-image:url('../assets/home_bg_base.png');background-size:cover;background-position:center 30%;}
+  .panel{background:linear-gradient(180deg,rgba(10,22,44,0.82),rgba(6,13,27,0.9));border:1px solid rgba(243,201,105,0.25);border-radius:16px;}
+  .sheet{background:linear-gradient(180deg,rgba(14,28,52,0.98),rgba(7,14,28,0.99));border:1px solid rgba(243,201,105,0.5);box-shadow:0 20px 50px rgba(0,0,0,0.6);}
+  .cap{font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#F3C969;}
+  .h1{margin:0;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:#F5E9D0;line-height:1.15;}
+  .rb{width:40px;height:40px;box-sizing:border-box;border-radius:20px;background:rgba(11,29,58,0.6);border:1px solid rgba(243,201,105,0.45);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex:none;}
+  .gold-btn{border:1px solid rgba(255,255,255,0.5);background:linear-gradient(180deg,#FCE29A 0%,#F3C969 55%,#C4922F 100%);color:#25160A;cursor:pointer;font-family:'Cinzel',serif;font-weight:700;letter-spacing:2px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .gold-btn:hover{filter:brightness(1.05);}
+  .ghost-btn{border:1px solid rgba(243,201,105,0.5);background:transparent;color:#F3C969;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .ghost-btn:hover{background:rgba(243,201,105,0.08);}
+  .input{width:100%;height:50px;box-sizing:border-box;padding:0 14px 0 44px;border-radius:14px;border:1px solid rgba(243,201,105,0.3);background:rgba(255,255,255,0.06);color:#F5E9D0;font-family:'Nunito',sans-serif;font-size:14px;}
+  .input::placeholder{color:rgba(245,233,208,0.45);}
+  .input:focus{outline:none;border-color:#F3C969;background:rgba(255,255,255,0.1);}
+  .card{border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,0.45);display:block;background:#fff;}
+  .scrim{position:absolute;inset:0;border:0;padding:0;margin:0;background:rgba(3,7,16,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;}
+  @keyframes pop{0%{transform:scale(0.8);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .3s ease-out both;}
+  @keyframes up{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+  .sheet-up{animation:up .3s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes fadeUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .4s ease-out both;}
+  @keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(243,201,105,0.6)}50%{box-shadow:0 0 0 9px rgba(243,201,105,0)}}
+  .pulse{animation:pulseRing 1.6s ease-in-out infinite;}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes rays{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .rays{animation:rays 18s linear infinite;}
+  @keyframes burst{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0}35%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.15);opacity:0.65}}
+  .burst{animation:burst 1s ease-out both;}
+  @keyframes wave{0%,100%{transform:translateY(8px) rotate(0)}25%{transform:translateY(-10px) rotate(-4deg)}50%{transform:translateY(-14px) rotate(0)}75%{transform:translateY(-6px) rotate(4deg)}}
+  .wave{animation:wave 1.4s ease-in-out infinite;}
+
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;">
+  <div class="bg-blur" style="position:absolute;inset:-30px;"></div>
+  <div style="position:absolute;top:22px;left:20px;right:20px;display:flex;align-items:center;gap:12px;"><a href="Profilo.dc.html" class="rb" aria-label="Indietro"><img src="../assets/ic_nav_back_cream.png" alt="" style="width:15px;height:15px;"></a><h1 class="h1" style="flex:1;">Trofei</h1><span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:#FCE29A;">{{done}} / {{total}}</span></div>
+  <div style="position:absolute;top:76px;left:20px;right:20px;height:8px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:{{pct}};height:100%;background:linear-gradient(90deg,#C4922F,#FCE29A);"></div></div>
+  <div style="position:absolute;top:100px;left:0;right:0;padding:0 20px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;">
+    <sc-for list="{{cats}}" as="c" hint-placeholder-count="5">
+      <sc-if value="{{c.on}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{c.pick}}" style="flex:none;height:32px;padding:0 12px;border-radius:16px;background:rgba(243,201,105,0.16);border:1px solid rgba(243,201,105,0.7);color:#F3C969;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">{{c.label}}</button></sc-if>
+      <sc-if value="{{c.off}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{c.pick}}" style="flex:none;height:32px;padding:0 12px;border-radius:16px;background:rgba(6,13,27,0.6);border:1px solid rgba(243,201,105,0.2);color:rgba(245,233,208,0.75);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">{{c.label}}</button></sc-if>
+    </sc-for>
+  </div>
+  <div style="position:absolute;top:148px;left:20px;right:20px;bottom:20px;overflow-y:auto;scrollbar-width:thin;display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px;align-content:start;">
+    <sc-for list="{{list}}" as="t" hint-placeholder-count="9">
+      <button type="button" onClick="{{t.open}}" class="panel" style="height:142px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;box-sizing:border-box;cursor:pointer;border-color:{{t.border}};">
+        <img src="{{t.img}}" alt="" style="width:50px;height:50px;filter:{{t.filter}};">
+        <span style="font-size:11px;font-weight:800;color:{{t.col}};text-align:center;line-height:1.2;">{{t.name}}</span>
+        <sc-if value="{{t.isDone}}" hint-placeholder-val="{{true}}"><span style="font-size:9px;color:rgba(245,233,208,0.45);">{{t.date}}</span></sc-if>
+        <sc-if value="{{t.inProg}}" hint-placeholder-val="{{false}}"><div style="width:100%;display:flex;flex-direction:column;gap:3px;"><div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.12);overflow:hidden;"><div style="width:{{t.p}};height:100%;background:#F3C969;"></div></div><span style="font-size:9px;font-weight:700;color:rgba(245,233,208,0.55);">{{t.prog}}</span></div></sc-if>
+      </button>
+    </sc-for>
+  </div>
+  <sc-if value="{{detail}}" hint-placeholder-val="{{false}}">
+    <button type="button" class="scrim" aria-label="Chiudi" onClick="{{close}}"></button>
+    <div class="sheet sheet-up" role="dialog" aria-labelledby="td" style="position:absolute;left:0;bottom:0;width:390px;box-sizing:border-box;padding:22px 20px 26px;border-radius:24px 24px 0 0;border-width:1px 0 0 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+      <img src="{{d.img}}" alt="" style="width:90px;height:90px;filter:{{d.filter}} drop-shadow(0 8px 14px rgba(0,0,0,0.5));">
+      <span id="td" style="font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:#F5E9D0;">{{d.name}}</span>
+      <span style="font-size:13px;color:rgba(245,233,208,0.7);">{{d.desc}}</span>
+      <span style="font-size:12px;font-weight:800;color:#F3C969;">{{d.status}}</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:rgba(243,201,105,0.12);font-size:12px;font-weight:800;color:#F3C969;"><img src="../assets/ic_coin.png" alt="" style="width:14px;height:14px;">Premio: {{d.reward}}</span>
+      <button type="button" onClick="{{close}}" class="ghost-btn" style="margin-top:10px;width:100%;height:46px;border-radius:14px;font-size:14px;">Chiudi</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { cat: 'tutti', open: null }; }
+  renderVals() {
+    const M = {"trophy": "../assets/medal_trophy.png", "sun": "../assets/medal_sun.png", "club": "../assets/medal_club.png", "sword": "../assets/medal_sword.png"};
+    const T = [
+      ['prima', 'partite', 'Prima vittoria', 'Vinci la tua prima partita', M.trophy, 1, 1, '12 mar', 50],
+      ['settebello', 'prese', 'Settebello', 'Prendi il settebello 25 volte', M.sun, 25, 25, '30 mar', 100],
+      ['cento', 'prese', 'Cento scope', 'Fai 100 scope', M.club, 100, 100, '2 mag', 150],
+      ['accusatore', 'accusi', 'Accusatore', 'Fai 20 accusi', M.sword, 20, 20, '18 giu', 100],
+      ['re', 'prese', 'Re della scopa', 'Fai 500 scope', M.club, 312, 500, '', 300],
+      ['imbattibile', 'partite', 'Imbattibile', 'Vinci 10 partite di fila', M.trophy, 7, 10, '', 250],
+      ['decino', 'accusi', 'Decino d’oro', 'Accusa 5 Decini', M.sword, 2, 5, '', 200],
+      ['collezionista', 'collezione', 'Collezionista', 'Sblocca 10 dorsi', M.sun, 3, 10, '', 200],
+      ['cappotto', 'partite', 'Cappotto!', 'Prendi tutti e 10 i denari in una partita a 4', M.sun, 0, 1, '', 500]
+    ];
+    const cats = [ ['tutti', 'Tutti'], ['partite', 'Partite'], ['prese', 'Prese'], ['accusi', 'Accusi'], ['collezione', 'Collezione'] ];
+    const done = T.filter((t) => t[5] >= t[6]).length;
+    const list = T.filter((t) => this.state.cat === 'tutti' || t[1] === this.state.cat);
+    const deco = (t) => { const ok = t[5] >= t[6]; return { name: t[2], img: t[4], isDone: ok, inProg: !ok, date: 'Ottenuto il ' + t[7], p: Math.round(t[5] / t[6] * 100) + '%', prog: t[5] + ' / ' + t[6], filter: ok ? 'none' : 'grayscale(1) brightness(0.55)', col: ok ? '#F5E9D0' : 'rgba(245,233,208,0.6)', border: ok ? 'rgba(243,201,105,0.5)' : 'rgba(243,201,105,0.18)', desc: t[3], status: ok ? 'Ottenuto il ' + t[7] : 'Progresso: ' + t[5] + ' / ' + t[6], reward: t[8] + ' monete' }; };
+    const d0 = T.find((t) => t[0] === this.state.open);
+    return {
+      done: String(done), total: '24', pct: Math.round(done / 24 * 100) + '%',
+      cats: cats.map((c) => ({ label: c[1], on: c[0] === this.state.cat, off: c[0] !== this.state.cat, pick: () => this.setState({ cat: c[0] }) })),
+      list: list.map((t) => ({ ...deco(t), open: () => this.setState({ open: t[0] }) })),
+      detail: !!d0, close: () => this.setState({ open: null }),
+      d: d0 ? deco(d0) : { img: '', filter: 'none', name: '', desc: '', status: '', reward: '' }
+    };
+  }
+}
+</script>
+</body>
+</html>

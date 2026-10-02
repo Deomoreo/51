@@ -6,7 +6,10 @@ namespace Project51.Core
 {
     public static class Rules51
     {
-        private static readonly Random Rng = new Random();
+        private static Random Rng = new Random();
+
+        /// <summary>Rimescolate ripetibili da qui in poi (il tutorial parte da una distribuzione nota).</summary>
+        public static void Reseed(int seed) => Rng = new Random(seed);
 
         #region Game Creation & Deck Initialization
 
@@ -319,12 +322,12 @@ namespace Project51.Core
                     var equalMoves = GetEqualValueCaptures(state, playerIndex, card);
                     validMoves.AddRange(equalMoves);
 
-                    // Sum to card value captures
-                    var sumMoves = GetSumToValueCaptures(state, playerIndex, card);
+                    // Precedenza della carta uguale (SPEC §10.1): se in tavola c'e' la carta uguale si prende
+                    // quella, niente somme ne' 15.
+                    var sumMoves = equalMoves.Count > 0 ? new List<Move>() : GetSumToValueCaptures(state, playerIndex, card);
                     validMoves.AddRange(sumMoves);
 
-                    // Sum to 15 with card captures
-                    var sum15Moves = GetSumTo15Captures(state, playerIndex, card);
+                    var sum15Moves = equalMoves.Count > 0 ? new List<Move>() : GetSumTo15Captures(state, playerIndex, card);
                     validMoves.AddRange(sum15Moves);
                     
                     // Track if this card has any captures

@@ -7,6 +7,9 @@ using UnityEngine;
 
 public class K7FlowTests
 {
+    // Uscendo dal Play non si ricarica il dominio: una partita online in Editor lascia GameModeService in multigiocatore.
+    [SetUp] public void Offline() => GameModeService.Reset();
+
     private static Type CoreType(string name)
     {
         var type = typeof(GamePreferences).Assembly.GetType("Project51.Core." + name);

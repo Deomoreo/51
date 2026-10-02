@@ -1,6 +1,6 @@
 # Termini di servizio di 51
 
-Ultimo aggiornamento: 18/09/2026
+Ultimo aggiornamento: 01/10/2026
 
 Benvenuto in 51. Utilizzando l'applicazione, creando un account o accedendo ai servizi online, accetti i presenti Termini di servizio.
 
@@ -10,8 +10,10 @@ Benvenuto in 51. Utilizzando l'applicazione, creando un account o accedendo ai s
 ## 2. Account
 L'utente è responsabile della riservatezza delle proprie credenziali di accesso e delle attività effettuate tramite il proprio account. Non è consentito utilizzare account di altri utenti, impersonare altre persone o tentare di ottenere accesso non autorizzato ai servizi. In caso di sospetto accesso non autorizzato, l'utente è invitato a modificare la password e a contattare Deomoreo@gmail.com.
 
-## 3. Comportamento degli utenti
-Non è consentito utilizzare 51 per molestare, minacciare o danneggiare altri utenti; utilizzare cheat, bot o software non autorizzato; sfruttare bug o vulnerabilità intenzionalmente; interferire con server o servizi; utilizzare nomi, messaggi o contenuti offensivi o illegali. Gli account che violano queste regole possono essere limitati o sospesi.
+## 3. Regole di comportamento (fair play)
+Non è consentito utilizzare 51 per molestare, minacciare o danneggiare altri utenti; utilizzare cheat, bot o software non autorizzato; sfruttare bug o vulnerabilità intenzionalmente; interferire con server o servizi; utilizzare nomi, messaggi, emoticon o contenuti offensivi o illegali. Gli account che violano queste regole possono essere limitati o sospesi.
+
+Nelle partite online non è consentito abbandonare ripetutamente le partite in corso né restare inattivi per far perdere tempo agli altri giocatori. Le segnalazioni di più giocatori diversi, gli abbandoni ripetuti e gli altri comportamenti scorretti possono portare, anche in modo automatico, allo spegnimento temporaneo delle emoticon o alla sospensione temporanea del gioco online; chi viene sanzionato più volte riceve sanzioni più lunghe. Il gioco contro i bot resta sempre disponibile. Le stesse limitazioni possono valere anche per chi gioca come ospite, sul dispositivo utilizzato.
 
 ## 4. Progressi e contenuti di gioco
 Progressi, statistiche, oggetti cosmetici, valute virtuali e altri contenuti associati all'account fanno parte del servizio di gioco. Salvo quando richiesto dalla legge, i contenuti virtuali non rappresentano denaro reale e non attribuiscono diritti di proprietà al di fuori del gioco.

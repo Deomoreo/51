@@ -139,18 +139,21 @@ namespace Project51.UI51
                 ir.offsetMax = new Vector2(-m_RingWidth, -m_RingWidth);
                 m_Inner.radius = inner * 0.5f;
             }
-            if (m_Avatar != null)
-            {
-                var ar = m_Avatar.rectTransform;
-                var sprite = m_Avatar.sprite;
-                float aspect = sprite != null && sprite.rect.width > 0f ? sprite.rect.height / sprite.rect.width : 1f;
-                float w = inner * AvatarScale;
-                ar.anchorMin = ar.anchorMax = ar.pivot = new Vector2(0.5f, 1f);
-                ar.sizeDelta = new Vector2(w, w * aspect);
-                ar.anchoredPosition = new Vector2(0f, AvatarTop * inner);
-            }
+            if (m_Avatar != null) FitPortrait(m_Avatar, inner);
             // Il cerchio emoticon ha l'anello oro 2 px fuori dal diametro (CSS box-shadow 0 0 0 2px).
             if (m_Emoticon != null) m_Emoticon.radius = size * 0.5f + 2f;
+        }
+
+        /// <summary>Ritaglio dell'avatar dentro un interno tondo di diametro inner, con le proporzioni dello sprite (anche testata Home).</summary>
+        public static void FitPortrait(Image avatar, float inner)
+        {
+            var ar = avatar.rectTransform;
+            var sprite = avatar.sprite;
+            float aspect = sprite != null && sprite.rect.width > 0f ? sprite.rect.height / sprite.rect.width : 1f;
+            float w = inner * AvatarScale;
+            ar.anchorMin = ar.anchorMax = ar.pivot = new Vector2(0.5f, 1f);
+            ar.sizeDelta = new Vector2(w, w * aspect);
+            ar.anchoredPosition = new Vector2(0f, AvatarTop * inner);
         }
 
         /// <summary>Gradiente della cornice (stop dei conic-gradient dei mockup, SPEC §2).</summary>
