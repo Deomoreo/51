@@ -27,7 +27,7 @@ namespace Project51.UIV2.Components
 
     /// <summary>
     /// Bottom nav data-driven (Gioca/Collezione/Negozio/Profilo): le celle sono slot gia' presenti
-    /// nel prefab (stessa idea del vecchio UIBottomNavBar), ma etichette/icone vengono
+    /// nel prefab, ma etichette/icone vengono
     /// scritte da SetItems invece di essere testo statico nel prefab, cosi' l'ordine o il
     /// numero di tab puo' cambiare senza toccare la UI a mano.
     /// </summary>

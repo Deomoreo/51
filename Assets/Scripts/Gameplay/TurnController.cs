@@ -523,7 +523,7 @@ namespace Project51.Unity
                 return;
             }
             
-            // Single-player or no GameManager found - only auto-start if explicitly enabled
+            // Single-player - only auto-start if explicitly enabled
             // AND we're not expecting a GameSceneInitializer
             if (autoStartGame)
             {

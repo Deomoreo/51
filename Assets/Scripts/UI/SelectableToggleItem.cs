@@ -17,9 +17,9 @@ namespace Project51.Unity
         [SerializeField] private GameObject checkIcon;
         [Tooltip("Opzionale: oggetto mostrato solo se selezionato, per un bordo/glow dietro l'elemento invece di (o in aggiunta a) uno swap di sprite - usato da DeckCell nel Panel Mazzo (feedback: un riempimento pieno 'sembra una macchia', meglio un bordo luminoso).")]
         [SerializeField] private GameObject glowObject;
-        [Tooltip("Opzionale: oggetto mostrato SOLO se selezionato (es. testo 'In uso'), in aggiunta a checkIcon/glowObject - usato dalla pagina CARTE (DeckPageBuilder).")]
+        [Tooltip("Opzionale: oggetto mostrato SOLO se selezionato (es. testo 'In uso'), in aggiunta a checkIcon/glowObject.")]
         [SerializeField] private GameObject equippedOnlyObject;
-        [Tooltip("Opzionale: oggetto mostrato SOLO se NON selezionato (es. pulsante 'USA') - usato dalla pagina CARTE (DeckPageBuilder).")]
+        [Tooltip("Opzionale: oggetto mostrato SOLO se NON selezionato (es. pulsante 'USA').")]
         [SerializeField] private GameObject availableOnlyObject;
 
         public void SetSelected(bool selected)

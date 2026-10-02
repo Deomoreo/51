@@ -94,7 +94,6 @@
     <Compile Include="Assets\UI51\Editor\UI51FontBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\UIV2DesignTests.cs" />
     <Compile Include="Assets\Tests\Editor\CirullaAITests.cs" />
-    <Compile Include="Assets\Editor\UIV2SandboxSceneBuilder.cs" />
     <Compile Include="Assets\Editor\GameSceneStrayCleanup.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAccusoValueTests.cs" />
     <Compile Include="Assets\Tests\Editor\CardDeckTests.cs" />

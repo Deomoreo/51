@@ -47,7 +47,7 @@ namespace Project51.Auth
 
         // Stanze separate per versione dell'app (via dell'utente, 30/09): ConnectUsingSettings sovrascrive GameVersion con
         // AppSettings.AppVersion, vuota nell'asset, quindi versioni diverse finivano nella stessa stanza. Vale per ogni
-        // connessione (qui, MatchmakingManager, NetworkManager).
+        // connessione (qui, MatchmakingManager).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void MatchOnlySameAppVersion()
         {

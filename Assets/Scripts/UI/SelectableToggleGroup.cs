@@ -20,7 +20,7 @@ namespace Project51.Unity
         // per una regressione dove TUTTA la selezione (righe E pillole) ha smesso di
         // funzionare - se AddPersistentListener falliva a build-time, interrompeva
         // silenziosamente il resto dello script che stava ancora wireando i gruppi. Un
-        // campo Action normale, assegnato a runtime da chi lo usa (PanelModalitaController),
+        // campo Action normale, assegnato a runtime da chi lo usa,
         // non passa mai dalla serializzazione Editor: molto meno rischioso.
         public Action<int> onSelectedRuntime;
 

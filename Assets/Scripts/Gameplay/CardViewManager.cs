@@ -132,10 +132,10 @@ namespace Project51.Unity
         [SerializeField] private bool enableSpriteDebug = false;
         [SerializeField] private CardSpriteMapping[] explicitMappings;
         [Header("Matta")]
-        [Tooltip("Alone dietro alla matta quando vale come un'altra carta (Bagliore morbido cerchio). Assegnato da Tools/UIV2/Build Accuso Window.")]
+        [Tooltip("Alone dietro alla matta quando vale come un'altra carta (Bagliore morbido cerchio).")]
         [SerializeField] private Sprite mattaHaloSprite;
         [Header("Suggerimenti mosse")]
-        [Tooltip("Bagliore dietro alle carte in mano che fanno una presa (Bagliore morbido cerchio). Assegnato da Tools/UIV2/Build In-Game Settings.")]
+        [Tooltip("Bagliore dietro alle carte in mano che fanno una presa (Bagliore morbido cerchio).")]
         [SerializeField] private Sprite moveHintGlowSprite;
         [Header("UI")]
         [SerializeField] private MoveSelectionUI moveSelectionUI;
@@ -1179,11 +1179,7 @@ namespace Project51.Unity
             RenderTableCards(state.Table);
 
             // Determina l'indice del player locale tramite GameModeService (fonte di verita' reale,
-            // popolata da GameSceneInitializer sia in training che in multiplayer). In precedenza
-            // usava reflection su "Project51.Unity.GameManager, Project51.Networking": quell'assembly
-            // non esiste piu' (asmdef rimosso), quindi la lookup falliva sempre e localIndex restava
-            // sempre 0 - ogni client renderizzava la mano del player 0 come "la propria mano",
-            // motivo per cui in multiplayer tutti i client vedevano le stesse identiche carte.
+            // popolata da GameSceneInitializer sia in training che in multiplayer).
             int localIndex = GameModeService.Current.LocalPlayerIndex;
             if (localIndex < 0 || localIndex >= state.Players.Count)
                 localIndex = 0;

@@ -1362,8 +1362,7 @@ namespace Project51.UI51.EditorTools
         /// gira la ruota. Schermata intera in scala uniforme (BuildScreen: DesignCanvasFit 390x844, come Accesso): intestazione,
         /// ruota a 2 o 4 spicchi con avatar e nomi, mozzo col sole, lancetta, stato, scheda MAZZIERE, conto e AL TAVOLO
         /// ("Continue": suono UiConfirm). Tempi, animazioni e spicchi in SorteggioView, attesa e consegna in
-        /// DealerRouletteController.PlayWheel. Non rieseguire Tools/UIV2/Build Dealer Roulette: ricrea DealerRoulette da zero
-        /// e perde questi nodi.
+        /// DealerRouletteController.PlayWheel.
         /// </summary>
         static void BuildSorteggio(PlayerBannerManager banners)
         {

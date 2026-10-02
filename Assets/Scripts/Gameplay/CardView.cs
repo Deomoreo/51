@@ -509,10 +509,7 @@ namespace Project51.Unity
 
         /// <summary>
         /// True solo se e' specificamente il turno del client locale (non solo "di un umano
-        /// qualsiasi"). Prima usava reflection su "Project51.Unity.GameManager, Project51.Networking",
-        /// un assembly che non esiste piu': tornava sempre null -> fallback "return true" sempre,
-        /// per chiunque, in qualunque momento - qualsiasi client poteva trascinare/giocare carte
-        /// fuori dal proprio turno, desincronizzando la partita in multiplayer.
+        /// qualsiasi"), letto da GameModeService.
         /// </summary>
         private bool IsLocalPlayersTurn()
         {

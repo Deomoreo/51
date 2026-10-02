@@ -24,7 +24,7 @@ namespace Project51.Core
 
     /// <summary>
     /// Default single-player implementation of IGameModeProvider.
-    /// Used when no multiplayer GameManager is present.
+    /// Used until GameSceneInitializer sets a multiplayer provider.
     /// </summary>
     public class SinglePlayerProvider : IGameModeProvider
     {

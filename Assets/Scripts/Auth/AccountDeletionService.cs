@@ -170,8 +170,6 @@ namespace Project51.Auth
             PlayerPrefs.Save();
 
             if (PlayerProgressLocal.Instance != null) PlayerProgressLocal.Instance.ResetAllProgress();
-            var playerData = UnityEngine.Object.FindObjectOfType<Project51.Networking.PlayerDataManager>();
-            if (playerData != null) playerData.ResetPlayerData();
 
             var bootstrapper = AuthBootstrapper.Instance;
             if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);

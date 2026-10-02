@@ -12,8 +12,8 @@ namespace Project51.Unity
     /// feedback e' semplicemente che non si illumina). Usata per la scelta delle emoticon
     /// "equipaggiate" (max 3 usabili in partita, scelte tra quelle sbloccate).
     ///
-    /// L'ORDINE conta (bug reale segnalato dall'utente): chi consuma SelectedIndices (es. la
-    /// riga "EQUIPAGGIATE" in DeckPageController) deve poter riempire gli slot nell'ordine in
+    /// L'ORDINE conta (bug reale segnalato dall'utente): chi consuma SelectedIndices (es. una
+    /// riga di slot "EQUIPAGGIATE") deve poter riempire gli slot nell'ordine in
     /// cui l'utente ha effettivamente cliccato, non ordinato per indice di griglia - altrimenti
     /// il terzo elemento scelto puo' "saltare" in mezzo invece di andare nell'ultimo slot
     /// libero. Per questo _selected e' una List (ordine di inserimento), non piu' un HashSet.
