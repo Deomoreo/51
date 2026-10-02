@@ -10,8 +10,8 @@ namespace Project51.UI51.EditorTools
     /// <summary>
     /// UI51 Fase 14 su GameScene, dentro "Tools/UI51/Build Fase 5 (Tavolo 1v1)": momenti di partita (mockup MomentiPartita).
     /// GameCanvas/UI51Moments (UI51TableMoments): chip della mano, avviso sui giocatori, SCOPA!; nei banner UI51 il velo
-    /// "Offline" col Wi-Fi barrato del giocatore disconnesso. Il vecchio avviso di connessione (GameSocialV2/Design/
-    /// ConnectionNotice) si spegne: gli avvisi li mostra UI51Moments. Il turno blu e' in PlayerBanner.SetTurn.
+    /// "Offline" col Wi-Fi barrato del giocatore disconnesso. Gli avvisi di connessione li mostra UI51Moments.
+    /// Il turno blu e' in PlayerBanner.SetTurn.
     /// </summary>
     public static partial class UI51TableBuilder
     {
@@ -141,11 +141,6 @@ namespace Project51.UI51.EditorTools
             tempo.gameObject.SetActive(false);
 
             foreach (var seat in seats) BuildOffline(seat);
-
-            // Il vecchio avviso di connessione resta in scena spento (non si iscrive piu'): li mostra UI51Moments.
-            var social = Object.FindObjectOfType<GameSocialV2>(true);
-            var old = social != null ? social.transform.Find("Design/ConnectionNotice") : null;
-            if (old != null) old.gameObject.SetActive(false);
         }
 
         /// <summary>Contenitore in scala del mockup, pivot in alto al centro; la y la mette UI51TableMoments sotto al banner in alto.</summary>

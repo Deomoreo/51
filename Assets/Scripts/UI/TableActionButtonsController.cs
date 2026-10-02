@@ -23,7 +23,6 @@ namespace Project51.Unity.UI
 
         [Header("Finestra accuso")]
         [SerializeField] private GameObject accusoCountdownBadge;
-        [SerializeField] private Image accusoGlow;
         [SerializeField] private RingArcGraphic accusoRing;
         [SerializeField] private CanvasGroup accusoPrompt;
         [SerializeField] private float pulsesPerSecond = 1.6f;
@@ -81,13 +80,6 @@ namespace Project51.Unity.UI
                 if (accusoPulse == null) accusoButton.transform.localScale = Vector3.one * (1f + 0.1f * wave);
                 accusoButton.transform.localRotation = Quaternion.Euler(0f, 0f, shake);
             }
-            if (accusoGlow != null)
-            {
-                accusoGlow.gameObject.SetActive(!reduced);
-                var color = accusoGlow.color;
-                color.a = pressedThisWindow ? 0.25f : 0.45f + 0.5f * wave;
-                accusoGlow.color = color;
-            }
             if (accusoPrompt != null)
             {
                 accusoPrompt.alpha = Mathf.MoveTowards(accusoPrompt.alpha, pressedThisWindow ? 0f : 1f, Time.unscaledDeltaTime * 4f);
@@ -98,7 +90,6 @@ namespace Project51.Unity.UI
         {
             if (accusoCountdownBadge != null) accusoCountdownBadge.SetActive(open);
             else if (accusoCountdownText != null) accusoCountdownText.gameObject.SetActive(open);
-            if (accusoGlow != null) accusoGlow.gameObject.SetActive(open && !GamePreferences.ReducedGraphics);
             if (accusoRing != null) accusoRing.gameObject.SetActive(open);
             if (accusoPrompt != null)
             {

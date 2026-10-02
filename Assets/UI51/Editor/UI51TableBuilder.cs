@@ -87,7 +87,7 @@ namespace Project51.UI51.EditorTools
 
         static void BuildTopHud(TableTopBarController controller, Transform bar, InGameSettingsV2 settings)
         {
-            foreach (string old in new[] { "Background", "SettingsButton", "HandText", "CardsLeftText" })
+            foreach (string old in new[] { "HandText", "CardsLeftText" })
                 UI51AccessBuilder.HideChild(bar, old);
 
             var hud = UI51Build.Stretch(UI51Build.Child(bar, "UI51TopHud"));
@@ -267,14 +267,14 @@ namespace Project51.UI51.EditorTools
             var shifter = UnityEngine.Object.FindObjectOfType<LocalSeatBottomShift>(true);
             var cards = UnityEngine.Object.FindObjectOfType<Project51.Unity.CardViewManager>(true);
             var emoji = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "EmojiButton");
-            var accuso = new[] { "AccusoButton", "AccusoWindowGlow", "AccusoWindowRing" };
+            var accuso = new[] { "AccusoButton", "AccusoWindowRing" };
             var badge = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowBadge");
             var prompt = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowPrompt");
             if (shifter == null || cards == null || emoji == null || badge == null || prompt == null ||
                 System.Array.Exists(accuso, n => UI51AccessBuilder.FindPath(scene, "TableActionButtons", n) == null))
             {
                 Debug.LogError($"{Tag} Manca un pezzo per i posti (LocalSeatBottomShift, CardViewManager, TableActionButtons/EmojiButton, " +
-                               "AccusoButton, AccusoWindowGlow, AccusoWindowRing, AccusoWindowBadge, AccusoWindowPrompt). Posti non toccati.");
+                               "AccusoButton, AccusoWindowRing, AccusoWindowBadge, AccusoWindowPrompt). Posti non toccati.");
                 return;
             }
 
@@ -465,7 +465,7 @@ namespace Project51.UI51.EditorTools
         /// LocalSeatBottomShift), tondo 40 col fumetto crema. Scelta: fila fino a 3 dentro al mio banner al posto di nome e chip
         /// (GameSocialV2.QuickBar*), cosi' non copre ne' la mano ne' il gettone "M". Mia emoticon: nuvoletta 76 (+2 d'oro) che sale
         /// dal banner (UIAnim.EmoticonBubble, GameSocialV2.OwnFly); quelle degli altri vanno al posto del loro avatar (AvatarFrame).
-        /// La vecchia striscia EmoticonQuickBar e le vecchie nuvolette restano in scena, spente o per i posti laterali dei 4 giocatori.
+        /// Le vecchie nuvolette restano in scena, spente o per i posti laterali dei 4 giocatori.
         /// </summary>
         static void BuildEmoticons(UnityEngine.SceneManagement.Scene scene, Transform seatLocal)
         {
@@ -491,8 +491,6 @@ namespace Project51.UI51.EditorTools
             var disc = UI51Build.Solid(emoji, UI51Tokens.Rgba(8, 17, 34, 0.7f), 20f, 1f, UI51Tokens.GoldA(0.45f), true);
             UI51Build.Button(UI51Build.GetOrAdd<Button>(emoji), disc);
             UI51Build.GetOrAdd<UI51Press>(emoji);
-            UI51AccessBuilder.HideChild(emoji, "Icon");
-            UI51AccessBuilder.HideChild(emoji, "Caption");
             UI51Build.Image(UI51Build.Center(UI51Build.Child(emoji, "UI51Icon"), 20f, 20f), chat, Color.white);
 
             // Scelta: righe 123..239 del mockup (banner da 60, bordo 1 e margine 6), 3 tondi da 36 a passo 40 allineati a destra.
@@ -588,9 +586,6 @@ namespace Project51.UI51.EditorTools
             button.sizeDelta = new Vector2(50f, 50f) * Unit;
             UI51Build.Button(button.GetComponent<Button>(), hitArea);
             UI51Build.GetOrAdd<UI51Press>(button);
-            UI51AccessBuilder.HideChild(button, "Icon");
-            UI51AccessBuilder.HideChild(button, "Caption");
-            UI51AccessBuilder.HideChild(button, "Glow");
             var look = UI51Build.Center(UI51Build.Child(button, "UI51Accuso"), 50f, 50f);
             look.localScale = new Vector3(Unit, Unit, 1f);
             // Box-shadow del mockup: l'anello d'oro (primo) sopra l'ombra nera.
@@ -617,8 +612,6 @@ namespace Project51.UI51.EditorTools
             EditorUtility.SetDirty(arc);
             var badgeImage = badge.GetComponent<Image>();
             if (badgeImage != null) badgeImage.enabled = false;
-            UI51AccessBuilder.HideChild(badge, "Fill");
-            UI51AccessBuilder.HideChild(badge, "Number");
             var dot = UI51Build.Center(UI51Build.Child(badge, "UI51Badge"), 20f, 20f);
             dot.localScale = new Vector3(Unit, Unit, 1f);
             UI51Build.Solid(dot, UI51Tokens.Rgba(8, 17, 34, 0.92f), 10f, 1.5f, UI51Tokens.Gold);
@@ -626,9 +619,6 @@ namespace Project51.UI51.EditorTools
                 FontFace.NunitoExtraBold, 11f, UI51Tokens.Cream, TextAlignmentOptions.Center));
 
             // Avviso: chip del mockup (.chip) che si allarga col testo; alpha e visibilita' restano al controller.
-            UI51AccessBuilder.HideChild(prompt, "Fill");
-            UI51AccessBuilder.HideChild(prompt, "Ring");
-            UI51AccessBuilder.HideChild(prompt, "Text");
             var chip = UI51Build.Center(UI51Build.Child(prompt, "UI51Prompt"), 0f, 24f);
             chip.localScale = new Vector3(Unit, Unit, 1f);
             UI51Build.Solid(chip, UI51Tokens.BlackA(0.45f), 12f, 1f, UI51Tokens.GoldA(0.35f));
@@ -681,7 +671,6 @@ namespace Project51.UI51.EditorTools
             UI51Build.Wire(controller, so =>
             {
                 UI51Build.Ref(so, "accusoCountdownText", seconds);
-                UI51Build.Ref(so, "accusoGlow", null);
                 UI51Build.Ref(so, "accusoPulse", pulse);
                 UI51Build.Ref(so, "accusoShine", shine);
             });

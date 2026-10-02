@@ -192,7 +192,6 @@ namespace Project51.UI51.EditorTools
             var rewards = QuickAction(right, "Rewards", "ic_chest_cream", 24f, "Premi", 0f, 0f);
             var ranking = QuickAction(right, "Ranking", "ic_trophy_cream", 22f, "Classifica", 0f, 0f);
             var settings = QuickAction(right, "Settings", "ic_settings_cream", 21f, "Opzioni", 0f, 0f);
-            foreach (var old in new[] { "Rewards", "Ranking", "Settings" }) UI51AccessBuilder.HideChild(c, old);
 
             // Tile Modalita' / Mazzo
             var mode = Tile(c, "Mode", 20f);
@@ -377,7 +376,6 @@ namespace Project51.UI51.EditorTools
         static void BuildModeSheet(QuickSelectionPanels panels)
         {
             var modal = panels.ModeModal.transform;
-            foreach (var old in new[] { "PanelFrame", "ModeRowGroup", "DifficultyPillGroup" }) UI51AccessBuilder.HideChild(modal, old);
             var sheet = SheetFrame(modal, "Modalit\u00e0 di gioco", "Scegli come vuoi giocare", out var close);
 
             // Schede
@@ -553,7 +551,6 @@ namespace Project51.UI51.EditorTools
         static void BuildDeckSheet(QuickSelectionPanels panels)
         {
             var modal = panels.DeckModal.transform;
-            foreach (var old in new[] { "PanelFrame", "DeckSelectionGroup" }) UI51AccessBuilder.HideChild(modal, old);
             var catalog = CardDecks.Catalog;
             int count = catalog != null ? catalog.Entries.Count : 0;
             if (catalog == null) Debug.LogWarning($"{Tag} CardDeckCatalog non trovato: foglio Mazzo senza carte.");

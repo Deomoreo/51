@@ -63,7 +63,7 @@ namespace Project51.UIV2.Animations
             {
                 if (rect.parent == null) continue;
                 string parent = rect.parent.name;
-                bool auth = rect.name == "Design" && (parent == "LoginPanel" || parent == "RegisterPanel" || parent == "AccountPanel");
+                bool auth = rect.name == "Design" && (parent == "RegisterPanel" || parent == "AccountPanel");
                 bool page = (rect.name == "DesignArea" && parent == "StartScreenV2") || (rect.name == "Design" && parent == "NewsV2");
                 if ((!auth && !page) || rect.GetComponent<UIV2PageEntrance>() != null) continue;
                 rect.gameObject.AddComponent<UIV2PageEntrance>();

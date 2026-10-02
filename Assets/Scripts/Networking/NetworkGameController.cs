@@ -84,7 +84,6 @@ namespace Project51.Networking
             // e la dichiarazione era manuale (arrivata da un altro client), il fallback automatico
             // di fine finestra (CheckAndDeclareAccusiForAllPlayers) non deve ridichiararlo.
             turnController.MarkAccusoResolved(playerIndex);
-            // Optional: trigger UI badges or animations via AccusoUIBridge if present
             var pileMgr = FindObjectOfType<CapturedPileManager>();
             pileMgr?.ForceRefresh();
 

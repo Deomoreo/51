@@ -11,7 +11,7 @@ namespace Project51.Unity.UI
     /// <summary>
     /// Popola i 4 PlayerBanner (slot Locale/Sinistra/Alto/Destra) con dati reali da
     /// TurnController.GameState: nome, punteggio, turno attivo. Aggiornamento a polling
-    /// (stessa cadenza/pattern di TurnIndicator), non a evento: TurnController non espone
+    /// (ogni 0,2 s), non a evento: TurnController non espone
     /// un OnTurnChanged, solo OnMoveExecuted/OnLocalPlayerMoveRequested.
     /// </summary>
     public class PlayerBannerManager : MonoBehaviour
@@ -505,8 +505,8 @@ namespace Project51.Unity.UI
 
         /// <summary>
         /// Stessa convenzione a indice relativo gia' usata in
-        /// CapturedPileManager.MapToViewIndex, CardViewManager.RenderAIHandsDynamic e
-        /// AccusoPanelController.GetAccusoCardSizeForPlayer (duplicata li' come qui: non
+        /// CapturedPileManager.MapToViewIndex e CardViewManager.RenderAIHandsDynamic
+        /// (duplicata li' come qui: non
         /// esiste un helper condiviso nel progetto per questo calcolo).
         /// </summary>
         private static int ResolveRelativeSlot(int playerIndex, int localIndex, int numPlayers)

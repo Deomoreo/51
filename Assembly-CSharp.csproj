@@ -80,7 +80,6 @@
     <Compile Include="Assets\UIV2\Scripts\Core\GameSocialV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileScreenV2.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChannelSelector.cs" />
-    <Compile Include="Assets\Scripts\UI\AccusoCardSlot.cs" />
     <Compile Include="Assets\Scripts\UI\QuickProfileCard.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ListRow.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\IgnoreUiRaycastWhenInactive.cs" />
@@ -122,7 +121,6 @@
     <Compile Include="Assets\Scripts\Auth\AccountDeletionService.cs" />
     <Compile Include="Assets\Scripts\Auth\FriendsChat.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileEditorV2.cs" />
-    <Compile Include="Assets\Scripts\UI\UICardFoilNoiseTexture.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\NewsItemViewV2.cs" />
     <Compile Include="Assets\Scripts\Auth\RewardsService.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2HapticButton.cs" />
@@ -152,7 +150,6 @@
     <Compile Include="Assets\UIV2\Scripts\Core\AppLoadingView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ProfileViewData.cs" />
     <Compile Include="Assets\Scripts\UI\UI51RewardDay.cs" />
-    <Compile Include="Assets\Scripts\DEBUG\HierarchyDumper.cs" />
     <Compile Include="Assets\Scripts\UI\FollowBottomLine.cs" />
     <Compile Include="Assets\Scripts\Auth\ProfileService.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\BottomSheet.cs" />
@@ -173,7 +170,6 @@
     <Compile Include="Assets\UIV2\Scripts\Core\InGameSettingsV2.cs" />
     <Compile Include="Assets\UI51\Scripts\Core\UI51DashedBorder.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2MoteField.cs" />
-    <Compile Include="Assets\Scripts\UI\AccusoPanelController.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AccusoImpactV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\DismissOnBackdrop.cs" />
     <Compile Include="Assets\Scripts\UI\UI51RecoveryView.cs" />
@@ -187,7 +183,6 @@
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\Utilities\TextButtonTransition.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\UI51VersionLabel.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\UI51Press.cs" />
-    <Compile Include="Assets\Scripts\UI\AccusoUIBridge.cs" />
     <Compile Include="Assets\Scripts\UI\MainHudController.cs" />
     <Compile Include="Assets\Scripts\Auth\FriendsService.cs" />
     <Compile Include="Assets\Scripts\UI\ModalManager.cs" />
@@ -201,7 +196,6 @@
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2BottomNav.cs" />
     <Compile Include="Assets\Scripts\UI\UI51BlockedView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AuthScreensV2.cs" />
-    <Compile Include="Assets\Scripts\UI\TurnIndicator.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2TopBar.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ResourcePill.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableToggleItem.cs" />
@@ -209,7 +203,6 @@
     <Compile Include="Assets\Scripts\UI\HomeCenterCardsLayout.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ShapeGlow.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\BottomNavSafeAreaBleed.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Core\ConnectionNoticeV2.cs" />
     <Compile Include="Assets\Scripts\UI\UI51WelcomeView.cs" />
     <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
@@ -274,7 +267,6 @@
     <Compile Include="Assets\UIV2\Scripts\Core\NativeShare.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthUIController.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\AvatarFrame.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Core\LoadingProgressBar.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimatedComponent.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionDecksPanel.cs" />
     <Compile Include="Assets\Scripts\UI\UI51ConnectionOverlay.cs" />

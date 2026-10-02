@@ -1121,7 +1121,7 @@ namespace Project51.Unity
         /// <summary>
         /// Indice relativo (0=Locale/1=Sinistra/2=Alto/3=Destra) del giocatore assoluto dato,
         /// stessa convenzione usata in tutto il progetto (PlayerBannerManager.ResolveRelativeSlot,
-        /// CardViewManager.RenderAIHandsDynamic, AccusoPanelController, ecc. - duplicata ovunque,
+        /// CardViewManager.RenderAIHandsDynamic, ecc. - duplicata ovunque,
         /// nessun helper condiviso esiste nel progetto per questo calcolo).
         /// </summary>
         private int GetRelativeSlot(int playerIndex)
