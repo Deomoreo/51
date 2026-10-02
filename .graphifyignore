@@ -20,3 +20,6 @@ UserSettings/
 Build/
 Builds/
 graphify-out/
+# Capture/screenshot output
+Captures/
+Assets/Screenshots/

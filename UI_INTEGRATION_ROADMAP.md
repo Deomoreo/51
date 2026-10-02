@@ -279,10 +279,6 @@ Un mockup alla volta: Amici, Posta, Premi, Classifica, HUD, profilo rapido, emot
 - `Assets/Scripts/Auth/ProfileService.cs`: profilo e campo SelectedDeck disponibili, da collegare alla V2.
 - `ProjectSettings/EditorBuildSettings.asset`: scene attive della build.
 
-## Attenzione ai documenti storici
-
-`PROJECT_STATUS.md` e `Assets/UIV2/README.md` descrivono fasi precedenti. Non usarli come fotografia dello stato attuale: per esempio JoinRoomPopupUI e WaitingRoomUI risultano oggi in MainMenu, mentre il vecchio audit li dichiarava assenti. Prima di correggere un problema storico, riprodurlo nello stato corrente.
-
 #### Consegna Collezione V2 e selezione mazzi
 
 - La voce Carte e il selettore Mazzo della Home aprono Collezione V2. Sono selezionabili Napoletano, Classico e Corte di Giada; le schede mostrano il mazzo in uso. Emoticon e Accusi restano disabilitati in attesa dei rispettivi collegamenti.
