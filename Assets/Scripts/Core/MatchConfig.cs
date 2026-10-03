@@ -246,6 +246,14 @@ namespace Project51.Core
         /// </summary>
         public static MatchRules Default => new MatchRules();
 
+        /// <summary>Regole standard del formato: nel 1v1 il cappotto non chiude la partita e non da' punti.</summary>
+        public static MatchRules ForFormat(GameFormat format)
+        {
+            var rules = new MatchRules();
+            if (format == GameFormat.OneVsOne) { rules.CappottoEndsGameImmediately = false; rules.CappottoBonusPoints = 0; }
+            return rules;
+        }
+
         /// <summary>
         /// If false, Cirulla/Decino are disabled entirely.
         /// </summary>

@@ -20,7 +20,7 @@ namespace Project51.UI51.EditorTools
     /// Fase 6 (mockup Partita4, disposizione compatta) negli stessi passi: pillola a 4 punteggi, banner verticali ai lati con
     /// scope coricate, gettone e tocco sulle scope, dorsi piccoli degli altri tre.
     /// Le misure del mockup sono su 390 di larghezza, il tavolo e' disegnato su 1080: i nodi UI51 stanno
-    /// dentro contenitori con scala <see cref="Unit"/>, cosi' nel codice restano i numeri del mockup.
+    /// dentro contenitori con scala <see cref="UI51Build.Unit"/>, cosi' nel codice restano i numeri del mockup.
     /// Il vecchio aspetto resta in scena spento. Idempotente: rieseguirlo riusa i nodi per nome.
     /// </summary>
     public static partial class UI51TableBuilder
@@ -28,24 +28,21 @@ namespace Project51.UI51.EditorTools
         const string ScenePath = "Assets/Scenes/GameScene.unity";
         const string Tag = "[UI51 Fase 5]";
 
-        /// <summary>Un'unita' del mockup (390 di larghezza) in unita' del tavolo (1080 di larghezza).</summary>
-        public const float Unit = 1080f / 390f;
-
         [MenuItem("Tools/UI51/Build Fase 5 (Tavolo 1v1)")]
         private static void Menu() => Build();
 
         public static void Build()
         {
-            if (UI51AccessBuilder.HasDirtyScene()) return;
+            if (UI51Build.HasDirtyScene()) return;
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             var topBar = UnityEngine.Object.FindObjectOfType<TableTopBarController>(true);
             var settings = UnityEngine.Object.FindObjectOfType<InGameSettingsV2>(true);
-            var bar = UI51AccessBuilder.FindPath(scene, "GameCanvas", "TableTopBar");
+            var bar = UI51Build.FindPath(scene, "GameCanvas", "TableTopBar");
             var banners = UnityEngine.Object.FindObjectOfType<PlayerBannerManager>(true);
-            var seatLocal = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Local");
-            var seatTop = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Top");
-            var seatLeft = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Left");
-            var seatRight = UI51AccessBuilder.FindPath(scene, "PlayerBanners", "Banner_Right");
+            var seatLocal = UI51Build.FindPath(scene, "PlayerBanners", "Banner_Local");
+            var seatTop = UI51Build.FindPath(scene, "PlayerBanners", "Banner_Top");
+            var seatLeft = UI51Build.FindPath(scene, "PlayerBanners", "Banner_Left");
+            var seatRight = UI51Build.FindPath(scene, "PlayerBanners", "Banner_Right");
             var ownPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Own"));
             var rivalPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Opponent"));
             var sidePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("PlayerBanner_Vertical"));
@@ -201,7 +198,7 @@ namespace Project51.UI51.EditorTools
                 if (child.name != "UI51Banner") child.gameObject.SetActive(false);
 
             var holder = UI51Build.Place(UI51Build.Child(seat, "UI51Banner"), new Vector2(alignX, 0.5f), new Vector2(width, height), Vector2.zero);
-            holder.localScale = new Vector3(Unit, Unit, 1f);
+            holder.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
 
             var scope = UI51Build.Stretch(UI51Build.Child(holder, "Scope"));
             var cards = new Image[4];
@@ -232,7 +229,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Shape(dealer, AvatarFrame.FrameFill(FrameStyle.Oro), 110f, UI51Tokens.Radii(12f), 0f, Color.clear, false,
                 new UI51Shadow(0f, 3f, 6f, UI51Tokens.BlackA(0.5f)));
             UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(dealer, "Disc"), 2f, 2f, 2f, 2f), UI51Tokens.Hex("#F8EBCF"), 10f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(dealer, "M")), "M", FontFace.CinzelBold, 10f,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(dealer, "M")), "M", FontFace.CinzelBold, 10f,
                 UI51Tokens.Hex("#6B4418"), TextAlignmentOptions.Center));
             dealer.gameObject.SetActive(false);
 
@@ -263,19 +260,19 @@ namespace Project51.UI51.EditorTools
         {
             var shifter = UnityEngine.Object.FindObjectOfType<LocalSeatBottomShift>(true);
             var cards = UnityEngine.Object.FindObjectOfType<Project51.Unity.CardViewManager>(true);
-            var emoji = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "EmojiButton");
+            var emoji = UI51Build.FindPath(scene, "TableActionButtons", "EmojiButton");
             var accuso = new[] { "AccusoButton", "AccusoWindowRing" };
-            var badge = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowBadge");
-            var prompt = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowPrompt");
+            var badge = UI51Build.FindPath(scene, "TableActionButtons", "AccusoWindowBadge");
+            var prompt = UI51Build.FindPath(scene, "TableActionButtons", "AccusoWindowPrompt");
             if (shifter == null || cards == null || emoji == null || badge == null || prompt == null ||
-                System.Array.Exists(accuso, n => UI51AccessBuilder.FindPath(scene, "TableActionButtons", n) == null))
+                System.Array.Exists(accuso, n => UI51Build.FindPath(scene, "TableActionButtons", n) == null))
             {
                 Debug.LogError($"{Tag} Manca un pezzo per i posti (LocalSeatBottomShift, CardViewManager, TableActionButtons/EmojiButton, " +
                                "AccusoButton, AccusoWindowRing, AccusoWindowBadge, AccusoWindowPrompt). Posti non toccati.");
                 return;
             }
 
-            float row = 1920f / Unit - 18f - 25f; // centro della fila in fondo: banner alto 50, a 18 dal fondo
+            float row = 1920f / UI51Build.Unit - 18f - 25f; // centro della fila in fondo: banner alto 50, a 18 dal fondo
             Seat(seatTop, 135f + 60f, 82f + 25f, 120f);
             Seat(seatLocal, 60f + 93f, row, 186f);
             // Lati (Fase 6): 64x100 a 22 dai bordi; l'altezza la decide LocalSeatBottomShift.SideSeatY anche a runtime.
@@ -284,8 +281,8 @@ namespace Project51.UI51.EditorTools
             Seat(seatRight, 390f - 22f - 32f, side, 64f, 100f);
             // Emoji e ACCUSA ai lati del banner (grafica nuova in BuildEmoticons e BuildAccuso).
             Center(emoji, 34f, row);
-            foreach (var n in accuso) Center(UI51AccessBuilder.FindPath(scene, "TableActionButtons", n), 353f, row + 1f);
-            ((RectTransform)badge).anchoredPosition = new Vector2((353f + 20f) * Unit, -(row + 1f - 20f) * Unit); // sull'anello, a 45 gradi
+            foreach (var n in accuso) Center(UI51Build.FindPath(scene, "TableActionButtons", n), 353f, row + 1f);
+            ((RectTransform)badge).anchoredPosition = new Vector2((353f + 20f) * UI51Build.Unit, -(row + 1f - 20f) * UI51Build.Unit); // sull'anello, a 45 gradi
             Center(prompt, 195f, row - 25f - 16.5f); // tra la mano e il banner
 
             UI51Build.Wire(shifter, so =>
@@ -304,13 +301,13 @@ namespace Project51.UI51.EditorTools
             // del banner, centro a 61 dal bordo esterno. Scritti qui: il prefab in memoria tiene i valori vecchi.
             UI51Build.Wire(cards, so =>
             {
-                so.FindProperty("opponentCardHeight").floatValue = 30f * Unit;
-                so.FindProperty("topHandBelowBanner").floatValue = 22f * Unit;
-                so.FindProperty("topHandStep").floatValue = 23f * Unit;
+                so.FindProperty("opponentCardHeight").floatValue = 30f * UI51Build.Unit;
+                so.FindProperty("topHandBelowBanner").floatValue = 22f * UI51Build.Unit;
+                so.FindProperty("topHandStep").floatValue = 23f * UI51Build.Unit;
                 so.FindProperty("topHandFanDegrees").floatValue = 0f;
                 so.FindProperty("sideHandBelowBanner").floatValue = 0f;
-                so.FindProperty("sideHandInsetFromBannerEdge").floatValue = 61f * Unit;
-                so.FindProperty("sideHandStep").floatValue = 23f * Unit;
+                so.FindProperty("sideHandInsetFromBannerEdge").floatValue = 61f * UI51Build.Unit;
+                so.FindProperty("sideHandStep").floatValue = 23f * UI51Build.Unit;
             });
         }
 
@@ -393,7 +390,7 @@ namespace Project51.UI51.EditorTools
             // Posa di riserva finche' TableDeckView non misura il tavolo: gia' in unita' del mockup, mai a scala 1 davanti alle carte.
             float unit = Project51.Unity.CameraResponsiveFit.DesignWorldSize.x / 390f;
             rt.localScale = new Vector3(unit, unit, 1f);
-            rt.position = new Vector3((52f - 195f) * unit, (1920f / Unit * 0.5f - 92f) * unit, 0f);
+            rt.position = new Vector3((52f - 195f) * unit, (1920f / UI51Build.Unit * 0.5f - 92f) * unit, 0f);
 
             var cushion = UI51Build.Stretch(UI51Build.Child(rt, "Cushion"));
             // Velluto: il radiale del mockup (luce al 35%) letto lungo la verticale, bordo d'oro 2.
@@ -433,10 +430,10 @@ namespace Project51.UI51.EditorTools
                 180f, UI51Tokens.Radii(26f), 2f, UI51Tokens.BadgeRing);
             var column = UI51Build.Stretch(UI51Build.Child(medal, "Text"));
             UI51Build.Column(column, 0f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleCenter);
-            var value = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(column, "Value"), "0", FontFace.CinzelBold, 19f,
+            var value = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(column, "Value"), "0", FontFace.CinzelBold, 19f,
                 UI51Tokens.OnGold, TextAlignmentOptions.Center));
             UI51Build.Layout(value, -1f, 19f);
-            var label = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(column, "Label"), "RIMASTE", FontFace.NunitoExtraBold, 8f,
+            var label = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(column, "Label"), "RIMASTE", FontFace.NunitoExtraBold, 8f,
                 UI51Tokens.WithAlpha(UI51Tokens.OnGold, 0.8f), TextAlignmentOptions.Center, 0.5f));
             UI51Build.Layout(label, -1f, 11f);
 
@@ -467,7 +464,7 @@ namespace Project51.UI51.EditorTools
         static void BuildEmoticons(UnityEngine.SceneManagement.Scene scene, Transform seatLocal)
         {
             var social = UnityEngine.Object.FindObjectOfType<GameSocialV2>(true);
-            var emoji = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "EmojiButton") as RectTransform;
+            var emoji = UI51Build.FindPath(scene, "TableActionButtons", "EmojiButton") as RectTransform;
             var holder = seatLocal.Find("UI51Banner") as RectTransform;
             var chat = UI51Build.Sprite("Common", "ic_chat_cream");
             var frames = UI51EmoticonSet.Frames(0);
@@ -478,13 +475,10 @@ namespace Project51.UI51.EditorTools
                 return;
             }
 
-            // Emoji come i tondi di S1: forma (anche area di tocco), Button e UI51Press sullo stesso nodo, in scala Unit (misure del
+            // Emoji come i tondi di S1: forma (anche area di tocco), Button e UI51Press sullo stesso nodo, in scala UI51Build.Unit (misure del
             // mockup). Il posto resta quello di BuildLayout: la scala del nodo non cambia la sua anchoredPosition.
-            UI51Build.Remove<Image>(emoji.gameObject); // vecchio fondo sq_blue: un nodo tiene una sola Graphic
-            var firstTry = emoji.Find("UI51Emoji"); // prima versione di S5 (grafica in un figlio)
-            if (firstTry != null) UnityEngine.Object.DestroyImmediate(firstTry.gameObject);
             emoji.sizeDelta = new Vector2(40f, 40f);
-            emoji.localScale = new Vector3(Unit, Unit, 1f);
+            emoji.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             var disc = UI51Build.Solid(emoji, UI51Tokens.Rgba(8, 17, 34, 0.7f), 20f, 1f, UI51Tokens.GoldA(0.45f), true);
             UI51Build.Button(UI51Build.GetOrAdd<Button>(emoji), disc);
             UI51Build.GetOrAdd<UI51Press>(emoji);
@@ -506,7 +500,7 @@ namespace Project51.UI51.EditorTools
                 icons[i] = UI51Build.Image(UI51Build.Center(UI51Build.Child(slot, "Icon"), 36f, 36f),
                     i < social.Sprites.Length ? social.Sprites[i] : null, Color.white);
             }
-            var hint = UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(picker, "Hint"), -10f, 0f, 126f, 36f),
+            var hint = UI51Build.NoWrap(UI51Build.Text(Box(UI51Build.Child(picker, "Hint"), -10f, 0f, 126f, 36f),
                 "Nessuna emoticon\nScegline in Collezione", FontFace.NunitoExtraBold, 9f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Right));
             UI51Build.Layout(hint, ignore: true);
             hint.gameObject.SetActive(false);
@@ -546,7 +540,7 @@ namespace Project51.UI51.EditorTools
 
         /// <summary>
         /// Mockup Partita. ACCUSA: stesso nodo e stesso Button (TableActionButtonsController ne scrive scala e rotazione, lo sposta
-        /// LocalSeatBottomShift), area di tocco 50 trasparente; il medaglione d'oro col pugno sta nel figlio UI51Accuso in scala Unit:
+        /// LocalSeatBottomShift), area di tocco 50 trasparente; il medaglione d'oro col pugno sta nel figlio UI51Accuso in scala UI51Build.Unit:
         /// ombra, anello che pulsa e faccia con riflesso mentre la finestra e' aperta. Anello del tempo 58 e pallino dei secondi a 45
         /// gradi restano (decisione: sempre visibili nella finestra). Avviso: chip del mockup fra mano e banner. Pugno al centro del
         /// tavolo: UI51AccusoReveal sotto AccusoImpact (AccusoImpactV2.Parts, UIAnim.Accuso), posato da GameSocialV2 sul tavolo.
@@ -557,10 +551,10 @@ namespace Project51.UI51.EditorTools
             var controller = UnityEngine.Object.FindObjectOfType<TableActionButtonsController>(true);
             var impact = UnityEngine.Object.FindObjectOfType<AccusoImpactV2>(true);
             var social = UnityEngine.Object.FindObjectOfType<GameSocialV2>(true);
-            var button = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoButton") as RectTransform;
-            var ring = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowRing");
-            var badge = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowBadge") as RectTransform;
-            var prompt = UI51AccessBuilder.FindPath(scene, "TableActionButtons", "AccusoWindowPrompt") as RectTransform;
+            var button = UI51Build.FindPath(scene, "TableActionButtons", "AccusoButton") as RectTransform;
+            var ring = UI51Build.FindPath(scene, "TableActionButtons", "AccusoWindowRing");
+            var badge = UI51Build.FindPath(scene, "TableActionButtons", "AccusoWindowBadge") as RectTransform;
+            var prompt = UI51Build.FindPath(scene, "TableActionButtons", "AccusoWindowPrompt") as RectTransform;
             var fist = UI51Build.Sprite("Common", "pugno");
             var glowSprite = UI51Build.Sprite("Common", "Bagliore_morbido");
             var dimSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UIV2/Art/Generated/glow_soft_pill.png");
@@ -580,11 +574,11 @@ namespace Project51.UI51.EditorTools
             hitArea.color = Color.clear;
             hitArea.raycastTarget = true;
             hitArea.canvasRenderer.cullTransparentMesh = false; // trasparente ma deve prendere i tocchi
-            button.sizeDelta = new Vector2(50f, 50f) * Unit;
+            button.sizeDelta = new Vector2(50f, 50f) * UI51Build.Unit;
             UI51Build.Button(button.GetComponent<Button>(), hitArea);
             UI51Build.GetOrAdd<UI51Press>(button);
             var look = UI51Build.Center(UI51Build.Child(button, "UI51Accuso"), 50f, 50f);
-            look.localScale = new Vector3(Unit, Unit, 1f);
+            look.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             // Box-shadow del mockup: l'anello d'oro (primo) sopra l'ombra nera.
             UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(look, "Shadow")), Color.clear, 25f, 0f, default, false,
                 new UI51Shadow(0f, 6f, 14f, UI51Tokens.BlackA(0.5f)));
@@ -601,8 +595,8 @@ namespace Project51.UI51.EditorTools
             UI51Build.Image(UI51Build.Center(UI51Build.Child(face.rectTransform, "Icon"), 31f, 32f), fist, Color.white);
 
             // Anello del tempo appena fuori dal medaglione e secondi sul suo bordo (in BuildLayout, a 45 gradi).
-            ((RectTransform)ring).sizeDelta = new Vector2(58f, 58f) * Unit;
-            arc.Thickness = 3f * Unit;
+            ((RectTransform)ring).sizeDelta = new Vector2(58f, 58f) * UI51Build.Unit;
+            arc.Thickness = 3f * UI51Build.Unit;
             arc.TrackColor = UI51Tokens.Rgba(8, 17, 34, 0.4f);
             arc.TailColor = UI51Tokens.GoldDark;
             arc.HeadColor = UI51Tokens.GoldLight;
@@ -610,18 +604,18 @@ namespace Project51.UI51.EditorTools
             var badgeImage = badge.GetComponent<Image>();
             if (badgeImage != null) badgeImage.enabled = false;
             var dot = UI51Build.Center(UI51Build.Child(badge, "UI51Badge"), 20f, 20f);
-            dot.localScale = new Vector3(Unit, Unit, 1f);
+            dot.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             UI51Build.Solid(dot, UI51Tokens.Rgba(8, 17, 34, 0.92f), 10f, 1.5f, UI51Tokens.Gold);
-            var seconds = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(dot, "Value")), "5",
+            var seconds = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(dot, "Value")), "5",
                 FontFace.NunitoExtraBold, 11f, UI51Tokens.Cream, TextAlignmentOptions.Center));
 
             // Avviso: chip del mockup (.chip) che si allarga col testo; alpha e visibilita' restano al controller.
             var chip = UI51Build.Center(UI51Build.Child(prompt, "UI51Prompt"), 0f, 24f);
-            chip.localScale = new Vector3(Unit, Unit, 1f);
+            chip.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             UI51Build.Solid(chip, UI51Tokens.BlackA(0.45f), 12f, 1f, UI51Tokens.GoldA(0.35f));
             UI51Build.Row(chip, 0f, UI51Build.Pad(0, 12, 0, 12), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             UI51Build.Fit(chip, true, false);
-            var ask = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "Hai un accuso? Tocca il <color=#F3C969>pugno</color>",
+            var ask = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "Hai un accuso? Tocca il <color=#F3C969>pugno</color>",
                 FontFace.NunitoExtraBold, 12f, UI51Tokens.Cream, TextAlignmentOptions.Center));
             ask.richText = true;
 
@@ -631,7 +625,7 @@ namespace Project51.UI51.EditorTools
             revealGroup.blocksRaycasts = false;
             revealGroup.interactable = false;
             var anchor = UI51Build.Place(UI51Build.Child(reveal, "Anchor"), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-            anchor.localScale = new Vector3(Unit, Unit, 1f); // ripiego: centro dello schermo, misure del mockup
+            anchor.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f); // ripiego: centro dello schermo, misure del mockup
             var box = UI51Build.Place(UI51Build.Child(anchor, "Box"), new Vector2(0.5f, 0.5f), new Vector2(390f, 320f), new Vector2(0f, 4f));
             var dim = UI51Build.Image(UI51Build.Center(UI51Build.Child(box, "Dim"), 446f, 340f), dimSprite, UI51Tokens.Rgba(3, 8, 18, 0.82f), false, false);
             UI51Build.GetOrAdd<CanvasGroup>(dim);
@@ -645,11 +639,11 @@ namespace Project51.UI51.EditorTools
             text.pivot = new Vector2(0.5f, 1f);
             UI51Build.GetOrAdd<CanvasGroup>(text);
             // Titolo con l'ombra netta del mockup (0 3px 0 #6B4418); l'ombra sfumata non c'e'.
-            var titleShadow = UI51AccessBuilder.NoWrap(UI51Build.Text(TopLine(text, "TitleShadow", 3f, 38f), "ACCUSO",
+            var titleShadow = UI51Build.NoWrap(UI51Build.Text(TopLine(text, "TitleShadow", 3f, 38f), "ACCUSO",
                 FontFace.CinzelBold, 28f, UI51Tokens.Hex("#6B4418"), TextAlignmentOptions.Center, 4f));
-            var title = UI51AccessBuilder.NoWrap(UI51Build.Text(TopLine(text, "Title", 0f, 38f), "ACCUSO",
+            var title = UI51Build.NoWrap(UI51Build.Text(TopLine(text, "Title", 0f, 38f), "ACCUSO",
                 FontFace.CinzelBold, 28f, UI51Tokens.GoldLight, TextAlignmentOptions.Center, 4f));
-            var who = UI51AccessBuilder.NoWrap(UI51Build.Text(TopLine(text, "Who", 40f, 18f), "Tu · <color=#FCE29A>+3</color>",
+            var who = UI51Build.NoWrap(UI51Build.Text(TopLine(text, "Who", 40f, 18f), "Tu · <color=#FCE29A>+3</color>",
                 FontFace.NunitoExtraBold, 13f, UI51Tokens.Cream, TextAlignmentOptions.Center));
             who.richText = true;
             // Carte accusate (4 giocatori, accuso di un altro): 76x118 a passo 86, bordo d'oro staccato 2 e bagliore.
@@ -744,9 +738,9 @@ namespace Project51.UI51.EditorTools
             // Blocco del mockup appeso 172 sopra il centro dello schermo: su iPhone 12 il titolo cade a 250 come nel mockup,
             // su SE alla stessa distanza dal centro del tavolo. Niente raycast dentro: ogni tocco arriva al velo e chiude.
             var content = UI51Build.Place(UI51Build.Child(viewer, "Content"), new Vector2(0.5f, 0.5f), new Vector2(390f, 300.6f),
-                new Vector2(0f, 172f * Unit));
+                new Vector2(0f, 172f * UI51Build.Unit));
             content.pivot = new Vector2(0.5f, 1f);
-            content.localScale = new Vector3(Unit, Unit, 1f);
+            content.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             var title = UI51Build.Text(Box(UI51Build.Child(content, "Title"), 20f, -0.7f, 350f, 27f), "Le tue scope", FontFace.CinzelBold, 19f,
                 UI51Tokens.Cream, TextAlignmentOptions.Center);
             title.enableWordWrapping = false; // nomi lunghi: "..." in fondo
@@ -764,7 +758,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(matta, "Pulse"), -2f, -2f, -2f, -2f), Color.clear, 9f, 2f, UI51Tokens.GoldLight);
             var tag = UI51Build.Place(UI51Build.Child(matta, "Tag"), new Vector2(0.5f, 1f), new Vector2(58f, 18f), new Vector2(0f, 9f));
             UI51Build.Solid(tag, UI51Tokens.Gold, 9f, 1f, UI51Tokens.GoldLight, false, new UI51Shadow(0f, 2f, 4f, UI51Tokens.BlackA(0.4f)));
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tag, "Text")), "MATTA", FontFace.CinzelBold, 10f,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tag, "Text")), "MATTA", FontFace.CinzelBold, 10f,
                 UI51Tokens.OnGold, TextAlignmentOptions.Center));
             matta.gameObject.SetActive(false);
             var chips = UI51Build.Place(UI51Build.Child(content, "Chips"), new Vector2(0.5f, 1f), new Vector2(0f, 28f), new Vector2(0f, -243.6f));
@@ -772,7 +766,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Fit(chips, true, false);
             var captures = Chip(chips, "ChipA", UI51Tokens.Cream);
             var count = Chip(chips, "ChipB", UI51Tokens.Gold);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(TopLine(content, "Hint", 285.1f, 16f), "Tocca ovunque per chiudere", FontFace.NunitoRegular,
+            UI51Build.NoWrap(UI51Build.Text(TopLine(content, "Hint", 285.1f, 16f), "Tocca ovunque per chiudere", FontFace.NunitoRegular,
                 11f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center));
 
             UI51Build.Wire(manager, so =>
@@ -795,7 +789,7 @@ namespace Project51.UI51.EditorTools
 
         /// <summary>
         /// Mockup Partita (vassoio "Scegli la presa"). Sotto MoveSelectionUI (canvas 550): UI51CaptureTray con Marks (anelli e numeri
-        /// sulle carte del tavolo, template UI51Mark) e Sheet dal basso in scala Unit (carta giocata, freccia, titolo, X, divisore,
+        /// sulle carte del tavolo, template UI51Mark) e Sheet dal basso in scala UI51Build.Unit (carta giocata, freccia, titolo, X, divisore,
         /// fila delle prese che scorre: template Choice). Altezza, riempimento e animazione a runtime in MoveSelectionUI.ShowTray.
         /// Il vecchio pannello V2 resta come ripiego per i chiamanti solo testo.
         /// </summary>
@@ -819,7 +813,7 @@ namespace Project51.UI51.EditorTools
 
             // Anelli sulle carte del tavolo: il centro di Marks e' l'origine, LateUpdate posa ogni copia sui bounds della carta.
             var marks = UI51Build.Place(UI51Build.Child(tray, "Marks"), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-            marks.localScale = new Vector3(Unit, Unit, 1f);
+            marks.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             var mark = UI51Build.Place(UI51Build.Child(marks, "UI51Mark"), new Vector2(0.5f, 0.5f), new Vector2(70f, 108f), Vector2.zero);
             Graphic firstRing = null;
             for (int f = 0; f < colors.Length; f++)
@@ -837,12 +831,12 @@ namespace Project51.UI51.EditorTools
             UI51Build.Column(badges, 2f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.UpperRight, false, false);
             var markBadge = UI51Build.Size(UI51Build.Child(badges, "Badge"), 20f, 20f);
             UI51Build.Solid(markBadge, Color.white, 10f, 2f, UI51Tokens.BadgeRing); // la tinta (colore della presa) la da' il runtime
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(markBadge, "Value")), "1", FontFace.CinzelBold, 10f,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(markBadge, "Value")), "1", FontFace.CinzelBold, 10f,
                 UI51Tokens.BadgeRing, TextAlignmentOptions.Center));
 
             // Vassoio: bordo alto d'oro su fondo scuro (CSS border-top sopra lo sfondo), riempimento che prende i tocchi.
             var sheet = UI51Build.Place(UI51Build.Child(tray, "Sheet"), new Vector2(0.5f, 0f), new Vector2(390f, 241f), Vector2.zero);
-            sheet.localScale = new Vector3(Unit, Unit, 1f);
+            sheet.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             UI51Build.Shape(sheet, UI51Shape.Solid(Color.Lerp(UI51Tokens.Rgba(12, 26, 50, 1f), UI51Tokens.Gold, 0.5f)), 180f,
                 UI51Tokens.RadiiTop(24f), 0f, default, false, new UI51Shadow(0f, -14f, 34f, UI51Tokens.BlackA(0.55f)));
             UI51Build.Shape(UI51Build.Stretch(UI51Build.Child(sheet, "Fill"), 0f, 0f, 0f, 1f), UI51Tokens.SheetFill(), 180f,
@@ -858,7 +852,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Solid(Box(UI51Build.Child(arrow, "Shaft"), 0f, 5f, 16f, 2f), UI51Tokens.Gold, 1f);
             UI51Build.Solid(Box(UI51Build.Child(arrow, "HeadUp"), 8.95f, 2.5f, 9.1f, 2f, 45f), UI51Tokens.Gold, 1f);
             UI51Build.Solid(Box(UI51Build.Child(arrow, "HeadDown"), 8.95f, 7.5f, 9.1f, 2f, -45f), UI51Tokens.Gold, 1f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(sheet, "Title"), 86f, 13f, 246f, 46f), "SCEGLI LA PRESA",
+            UI51Build.NoWrap(UI51Build.Text(Box(UI51Build.Child(sheet, "Title"), 86f, 13f, 246f, 46f), "SCEGLI LA PRESA",
                 FontFace.CinzelBold, 13f, UI51Tokens.Gold, TextAlignmentOptions.MidlineLeft, 2f));
             // X: unica uscita oltre alla scelta, area di tocco 44 (30 + 7 per lato). Il nome "Close" da' il suono UiBack.
             var close = Box(UI51Build.Child(sheet, "Close"), 342f, 21f, 30f, 30f);
@@ -908,7 +902,7 @@ namespace Project51.UI51.EditorTools
             var badge = UI51Build.Place(UI51Build.Child(choice, "Badge"), new Vector2(0.5f, 1f), new Vector2(24f, 24f), new Vector2(0f, 9f));
             UI51Build.Layout(badge, ignore: true);
             UI51Build.Solid(badge, Color.white, 12f, 2f, UI51Tokens.BadgeRing);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(badge, "Value")), "1", FontFace.CinzelBold, 11f,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(badge, "Value")), "1", FontFace.CinzelBold, 11f,
                 UI51Tokens.BadgeRing, TextAlignmentOptions.Center));
             var cards = UI51Build.Child(choice, "Cards");
             UI51Build.Row(cards, 6f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleCenter, true, true);
@@ -954,13 +948,13 @@ namespace Project51.UI51.EditorTools
         }
 
         static void CaptureChipText(RectTransform chip, string text, FontFace face, float size, Color color) =>
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), text, face, size, color, TextAlignmentOptions.Center));
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), text, face, size, color, TextAlignmentOptions.Center));
 
         // --- S9: opzioni e abbandono
 
         /// <summary>
         /// Mockup Partita (opzioni). Dentro InGameSettings/Panel (canvas 600: sopra vassoio, risultati e pugno): velo sopra la foto
-        /// sfocata che c'era gia' (Blur), foglio dal basso in scala Unit con Audio, Grafica (una sola "Grafica ridotta", come la Home:
+        /// sfocata che c'era gia' (Blur), foglio dal basso in scala UI51Build.Unit con Audio, Grafica (una sola "Grafica ridotta", come la Home:
         /// Bassa/Media/Alta del mockup non hanno un effetto vero), Partita (suggerimenti mosse, in piu' del mockup) e TORNA AL TAVOLO.
         /// Apertura, posto sopra la safe area e animazione in InGameSettingsV2.
         /// </summary>
@@ -982,7 +976,7 @@ namespace Project51.UI51.EditorTools
             var backdropButton = UI51Build.Button(backdrop, backdrop);
 
             var bottom = UI51Build.Place(UI51Build.Child(root, "Bottom"), new Vector2(0.5f, 0f), new Vector2(390f, 0f), Vector2.zero);
-            bottom.localScale = new Vector3(Unit, Unit, 1f);
+            bottom.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             // Padding 12 + 1 di bordo. Sheet disegna r26 e oro .3: il tavolo ha r24, oro .4, ombra verso l'alto; il foglio prende i
             // tocchi, cosi' non arrivano al velo.
             var sheet = UI51AccessBuilder.Sheet(bottom, UI51Build.Pad(13, 20, 24, 20), 14f, UI51Tokens.SheetFill());
@@ -991,20 +985,20 @@ namespace Project51.UI51.EditorTools
             UI51HomeBuilder.SheetHeader(sheet, "Opzioni", "La partita continua mentre sei qui", out var close);
 
             var body = UI51Build.Child(sheet, "Body");
-            UI51MetaBuilder.Stack(body, 0f);
+            UI51Build.Stack(body, 0f);
             var audio = UI51MetaBuilder.Panel(UI51MetaBuilder.Section(body, "Audio", "AUDIO", 8f), "Panel");
             var music = UI51MetaBuilder.Switch(UI51MetaBuilder.Row(audio, "Music", "Musica"));
             UI51MetaBuilder.Divider(audio, "Line1");
             var sfx = UI51MetaBuilder.Switch(UI51MetaBuilder.Row(audio, "Sfx", "Effetti sonori"));
             UI51MetaBuilder.Divider(audio, "Line2");
             var vibration = UI51MetaBuilder.Switch(UI51MetaBuilder.Row(audio, "Vibration", "Vibrazione"));
-            UI51MetaBuilder.Gap(body, "Gap1", 16f);
+            UI51Build.Gap(body, "Gap1", 16f);
             var graphics = UI51MetaBuilder.Switch(UI51MetaBuilder.Row(UI51MetaBuilder.Panel(UI51MetaBuilder.Section(body, "Graphics", "GRAFICA", 8f),
                 "Panel"), "Reduced", "Grafica ridotta", "Meno effetti e animazioni più brevi"));
-            UI51MetaBuilder.Gap(body, "Gap2", 16f);
+            UI51Build.Gap(body, "Gap2", 16f);
             var hints = UI51MetaBuilder.Switch(UI51MetaBuilder.Row(UI51MetaBuilder.Panel(UI51MetaBuilder.Section(body, "Match", "PARTITA", 8f),
                 "Panel"), "Hints", "Suggerimenti mosse", "Evidenzia le carte che fanno una presa"));
-            UI51MetaBuilder.Gap(body, "Gap3", 18f);
+            UI51Build.Gap(body, "Gap3", 18f);
             var back = UI51Build.Child(body, "BackToTable");
             UI51PrefabBuilder.GoldBody(back.gameObject, 350f, 52f, 16f, FontFace.CinzelBold, 14f, 2f, "TORNA AL TAVOLO");
             UI51Build.Layout(back, -1f, 52f);
@@ -1046,12 +1040,12 @@ namespace Project51.UI51.EditorTools
 
             // Bordo alto 202 sopra il centro dello schermo (regola del visore S7): su iPhone 12 a 220 come nel mockup, su SE alla
             // stessa distanza dal centro. Pivot al centro per il pop; OpenLeave abbassa la scheda di meta' della sua altezza.
-            var center = UI51Build.Place(UI51Build.Child(dialog, "Center"), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(0f, 202f * Unit));
-            center.localScale = new Vector3(Unit, Unit, 1f);
+            var center = UI51Build.Place(UI51Build.Child(dialog, "Center"), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(0f, 202f * UI51Build.Unit));
+            center.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             var card = UI51Build.Place(UI51Build.Child(center, "Card"), new Vector2(0.5f, 0.5f), new Vector2(342f, 353f), new Vector2(0f, -176.5f));
             UI51Build.Shape(card, UI51Tokens.DialogFill(), 180f, UI51Tokens.Radii(UI51Tokens.RadiusDialog), 1f, UI51Tokens.WithAlpha(danger, 0.5f),
                 true, UI51Tokens.ShadowDialog);
-            UI51MetaBuilder.Stack(card, 0f, UI51Build.Pad(23, 21, 21, 21)); // 22/20/20 + 1 di bordo: dentro restano i 300 del mockup
+            UI51Build.Stack(card, 0f, UI51Build.Pad(23, 21, 21, 21)); // 22/20/20 + 1 di bordo: dentro restano i 300 del mockup
             UI51Build.Fit(card, false, true);
 
             var iconRow = UI51Build.Child(card, "IconRow");
@@ -1059,29 +1053,29 @@ namespace Project51.UI51.EditorTools
             var circle = UI51Build.Place(UI51Build.Child(iconRow, "IconCircle"), new Vector2(0.5f, 1f), new Vector2(56f, 56f), Vector2.zero);
             UI51Build.Solid(circle, UI51Tokens.WithAlpha(danger, 0.12f), 28f, 1f, UI51Tokens.WithAlpha(danger, 0.5f));
             UI51Build.Image(UI51Build.Center(UI51Build.Child(circle, "Icon"), 26f, 26f), exit, Color.white);
-            UI51MetaBuilder.Gap(card, "Gap1", 14f);
+            UI51Build.Gap(card, "Gap1", 14f);
             var title = UI51Build.Child(card, "Title");
             UI51Build.Layout(title, -1f, 26f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(title, "Abbandonare la partita?", FontFace.CinzelBold, 19f, UI51Tokens.Cream,
+            UI51Build.NoWrap(UI51Build.Text(title, "Abbandonare la partita?", FontFace.CinzelBold, 19f, UI51Tokens.Cream,
                 TextAlignmentOptions.Center));
             // Stacchi 10 e 14 del mockup + mezza interlinea sopra e sotto il testo (CSS la mette, TMP no).
-            UI51MetaBuilder.Gap(card, "Gap2", 10.9f);
+            UI51Build.Gap(card, "Gap2", 10.9f);
             var body = UI51Build.Text(UI51Build.Child(card, "Body"), InGameSettingsV2.LeaveLost, FontFace.NunitoRegular, 13f,
                 UI51Tokens.CreamA(0.65f), TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(body, 13.6f); // line-height 1.5
-            UI51MetaBuilder.Gap(card, "Gap3", 14.9f);
+            UI51Build.Wrap(body, 13.6f); // line-height 1.5
+            UI51Build.Gap(card, "Gap3", 14.9f);
             var chips = UI51Build.Child(card, "Chips");
             UI51Build.Row(chips, 8f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             UI51Build.Layout(chips, -1f, 26f);
             Color chipFill = UI51Tokens.WithAlpha(danger, 0.12f), chipBorder = UI51Tokens.WithAlpha(danger, 0.4f);
             Chip(chips, "Defeat", UI51Tokens.DangerText, chipFill, chipBorder, 10, 11f).text = "Sconfitta";
             Chip(chips, "NoXp", UI51Tokens.DangerText, chipFill, chipBorder, 10, 11f).text = "Nessuna esperienza";
-            UI51MetaBuilder.Gap(card, "Gap4", 18f);
+            UI51Build.Gap(card, "Gap4", 18f);
             var stay = UI51Build.Child(card, "Stay");
             UI51PrefabBuilder.GoldBody(stay.gameObject, 300f, 50f, 14f, FontFace.CinzelBold, 14f, 2f, "RESTA AL TAVOLO");
             UI51Build.Layout(stay, -1f, 50f);
             Listen(stay.GetComponent<Button>(), settings.CloseLeave);
-            UI51MetaBuilder.Gap(card, "Gap5", 10f);
+            UI51Build.Gap(card, "Gap5", 10f);
             var leave = UI51Build.Child(card, "Leave"); // come DangerButton: fondo e bordo rossi tenui, testo rosa
             UI51PrefabBuilder.ButtonBody(leave.gameObject, 300f, 46f, UI51Shape.Solid(UI51Tokens.WithAlpha(danger, 0.08f)), UI51Tokens.Radii(14f),
                 1f, UI51Tokens.WithAlpha(danger, 0.5f), FontFace.NunitoExtraBold, 14f, 0f, UI51Tokens.DangerText, "Abbandona");
@@ -1153,14 +1147,14 @@ namespace Project51.UI51.EditorTools
 
             // Bordo alto della scheda: QuickProfileCard lo mette a (422 - top del mockup) dal centro dello schermo, per posto.
             var content = UI51Build.Place(UI51Build.Child(root, "Content"), new Vector2(0.5f, 0.5f), new Vector2(300f, 0f),
-                new Vector2(0f, 122f * Unit));
+                new Vector2(0f, 122f * UI51Build.Unit));
             content.pivot = new Vector2(0.5f, 1f);
-            content.localScale = new Vector3(Unit, Unit, 1f);
+            content.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             var card = UI51Build.Place(UI51Build.Child(content, "Card"), new Vector2(0.5f, 1f), new Vector2(300f, 0f), Vector2.zero);
             card.pivot = new Vector2(0.5f, 0.5f); // pop dal centro; la scheda cresce verso il basso dal bordo alto (Fit + pivot del Content)
             UI51Build.Shape(card, UI51Shape.Linear((UI51Tokens.Rgba(14, 28, 52, 0.98f), 0f), (UI51Tokens.Rgba(7, 14, 28, 0.99f), 1f)), 180f,
                 UI51Tokens.Radii(22f), 1f, UI51Tokens.GoldA(0.5f), true, new UI51Shadow(0f, 20f, 44f, UI51Tokens.BlackA(0.6f)));
-            UI51MetaBuilder.Stack(card, 0f, UI51Build.Pad(16, 16, 16, 16));
+            UI51Build.Stack(card, 0f, UI51Build.Pad(16, 16, 16, 16));
             UI51Build.Fit(card, false, true);
             var bannerRt = UI51Build.Stretch(UI51Build.Child(card, "Banner"), 1f, 1f, 1f, 1f);
             UI51Build.Layout(bannerRt, -1f, -1f, -1f, -1f, true);
@@ -1179,11 +1173,11 @@ namespace Project51.UI51.EditorTools
             name.enableWordWrapping = false; // puntini in fondo (riga alta 22 >= 16 x 1,37)
             var pill = Box(UI51Build.Child(header, "LevelPill"), 74f, 24f, 22f, 22f);
             UI51Build.Shape(pill, UI51Shape.Linear((UI51Tokens.GoldLight, 0f), (UI51Tokens.GoldDark, 1f)), 180f, UI51Tokens.Radii(11f), 0f, Color.clear);
-            var level = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(pill, "Value")), "1", FontFace.CinzelBold, 10f,
+            var level = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(pill, "Value")), "1", FontFace.CinzelBold, 10f,
                 UI51Tokens.OnGold, TextAlignmentOptions.Center));
-            var title = UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Title"), 102f, 24f, 130f, 22f), "Principiante",
+            var title = UI51Build.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Title"), 102f, 24f, 130f, 22f), "Principiante",
                 FontFace.NunitoBold, 12f, UI51Tokens.Gold, TextAlignmentOptions.MidlineLeft));
-            var team = UI51AccessBuilder.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Team"), 74f, 47f, 160f, 16f), "Avversario",
+            var team = UI51Build.NoWrap(UI51Build.Text(Box(UI51Build.Child(header, "Team"), 74f, 47f, 160f, 16f), "Avversario",
                 FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f), TextAlignmentOptions.MidlineLeft));
             var x = UI51Build.Solid(Box(UI51Build.Child(header, "Close"), 240f, 0f, 28f, 28f), UI51Tokens.WhiteA(0.06f), 14f, 0f, default, true);
             UI51Build.Image(UI51Build.Center(UI51Build.Child(x.transform, "Icon"), 10f, 10f), closeIcon, Color.white);
@@ -1200,9 +1194,9 @@ namespace Project51.UI51.EditorTools
                 var tile = UI51Build.Child(stats, "Tile" + i);
                 UI51Build.Layout(tile, -1f, 52f, 1f);
                 UI51Build.Solid(tile, UI51Tokens.WhiteA(0.04f), 12f);
-                values[i] = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Value"), 0f, 22f, 0f, 8f), "0",
+                values[i] = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Value"), 0f, 22f, 0f, 8f), "0",
                     FontFace.CinzelBold, 16f, UI51Tokens.Cream, TextAlignmentOptions.Center));
-                UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Label"), 0f, 8f, 0f, 32f), labels[i],
+                UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Label"), 0f, 8f, 0f, 32f), labels[i],
                     FontFace.NunitoBold, 9f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center));
             }
 
@@ -1216,7 +1210,7 @@ namespace Project51.UI51.EditorTools
 
             // Altri giocatori con account: Aggiungi amico (oro) / Richiesta inviata, Silenzia emoticon; sotto Segnala in rosso.
             var actions = UI51Build.Child(card, "Actions");
-            UI51MetaBuilder.Stack(actions, 0f, UI51Build.Pad(14, 0, 0, 0));
+            UI51Build.Stack(actions, 0f, UI51Build.Pad(14, 0, 0, 0));
             var row = UI51Build.Child(actions, "Row");
             UI51Build.Row(row, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandWidth = true;
             UI51Build.Layout(row, -1f, 38f);
@@ -1225,17 +1219,15 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(add, -1f, 38f, 1f);
             var added = UI51Build.Child(row, "Added");
             UI51Build.Solid(added, Color.clear, 12f, 1f, UI51Tokens.GoldA(0.5f));
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(added, "Label")), "Richiesta inviata",
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(added, "Label")), "Richiesta inviata",
                 FontFace.NunitoExtraBold, 12f, UI51Tokens.Gold, TextAlignmentOptions.Center));
             UI51Build.Layout(added, -1f, 38f, 1f);
             var mute = UI51Build.Child(row, "Mute");
             UI51PrefabBuilder.ButtonBody(mute.gameObject, 131f, 38f, UI51Shape.Solid(UI51Tokens.WhiteA(0.04f)), UI51Tokens.Radii(12f), 1f,
                 UI51Tokens.CreamA(0.3f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, "Silenzia emoticon");
             UI51Build.Layout(mute, -1f, 38f, 1f);
-            UI51MetaBuilder.Gap(actions, "Gap", 8f);
-            // 2.55: Segnala (rosso) e Blocca affiancati; Segnala apre i motivi. La vecchia riga "Report" era figlia diretta di Actions.
-            var oldReport = actions.Find("Report");
-            if (oldReport != null) UnityEngine.Object.DestroyImmediate(oldReport.gameObject);
+            UI51Build.Gap(actions, "Gap", 8f);
+            // 2.55: Segnala (rosso) e Blocca affiancati; Segnala apre i motivi.
             var bottom = UI51Build.Child(actions, "Bottom");
             UI51Build.Row(bottom, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandWidth = true;
             UI51Build.Layout(bottom, -1f, 34f);
@@ -1250,20 +1242,20 @@ namespace Project51.UI51.EditorTools
 
             // Motivi della segnalazione (scelta dell'utente 01/10), al posto dei pulsanti: tre righe e Annulla.
             var reasons = UI51Build.Child(card, "Reasons");
-            UI51MetaBuilder.Stack(reasons, 0f, UI51Build.Pad(14, 0, 0, 0));
-            UI51Build.Layout(UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(reasons, "Caption"), "Perché lo segnali?", FontFace.NunitoBold,
+            UI51Build.Stack(reasons, 0f, UI51Build.Pad(14, 0, 0, 0));
+            UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(reasons, "Caption"), "Perché lo segnali?", FontFace.NunitoBold,
                 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center)), -1f, 18f);
             var reasonButtons = new Button[QuickProfileCard.ReasonLabels.Length];
             for (int i = 0; i < reasonButtons.Length; i++)
             {
-                UI51MetaBuilder.Gap(reasons, "Gap" + i, i == 0 ? 8f : 6f);
+                UI51Build.Gap(reasons, "Gap" + i, i == 0 ? 8f : 6f);
                 var reason = UI51Build.Child(reasons, "Reason" + i);
                 UI51PrefabBuilder.ButtonBody(reason.gameObject, 268f, 36f, UI51Shape.Solid(UI51Tokens.WhiteA(0.04f)), UI51Tokens.Radii(12f), 1f,
                     UI51Tokens.CreamA(0.2f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, QuickProfileCard.ReasonLabels[i]);
                 UI51Build.Layout(reason, -1f, 36f);
                 reasonButtons[i] = reason.GetComponent<Button>();
             }
-            UI51MetaBuilder.Gap(reasons, "GapCancel", 4f);
+            UI51Build.Gap(reasons, "GapCancel", 4f);
             var cancel = UI51Build.Child(reasons, "Cancel");
             UI51PrefabBuilder.ButtonBody(cancel.gameObject, 268f, 30f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
                 FontFace.NunitoBold, 12f, 0f, UI51Tokens.CreamA(0.55f), "Annulla");
@@ -1271,14 +1263,14 @@ namespace Project51.UI51.EditorTools
 
             // Io: "Livello N" e "x / y XP", barra 7, nota (PartitaMioProfilo).
             var self = UI51Build.Child(card, "Self");
-            UI51MetaBuilder.Stack(self, 0f, UI51Build.Pad(14, 0, 0, 0));
+            UI51Build.Stack(self, 0f, UI51Build.Pad(14, 0, 0, 0));
             var head = UI51Build.Child(self, "Head");
             UI51Build.Layout(head, -1f, 15f);
-            var xpLevel = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Level")), "Livello 1",
+            var xpLevel = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Level")), "Livello 1",
                 FontFace.NunitoExtraBold, 11f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
-            var xpText = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Xp")), "0 / 100 XP",
+            var xpText = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(head, "Xp")), "0 / 100 XP",
                 FontFace.NunitoBold, 11f, UI51Tokens.CreamA(0.65f), TextAlignmentOptions.MidlineRight));
-            UI51MetaBuilder.Gap(self, "Gap1", 6f);
+            UI51Build.Gap(self, "Gap1", 6f);
             var bar = UI51Build.Child(self, "Bar");
             UI51Build.Layout(bar, -1f, 7f);
             UI51Build.Solid(bar, UI51Tokens.WhiteA(0.12f), 3.5f);
@@ -1286,10 +1278,10 @@ namespace Project51.UI51.EditorTools
             fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(0.62f, 1f); fill.pivot = new Vector2(0f, 0.5f);
             fill.offsetMin = fill.offsetMax = Vector2.zero;
             UI51Build.Shape(fill, UI51Shape.Linear((UI51Tokens.GoldDark, 0f), (UI51Tokens.GoldLight, 1f)), 90f, UI51Tokens.Radii(3.5f), 0f, Color.clear);
-            UI51MetaBuilder.Gap(self, "Gap2", 10f);
+            UI51Build.Gap(self, "Gap2", 10f);
             var note = UI51Build.Child(self, "Note");
             UI51Build.Layout(note, -1f, 15f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(note, "Banner, avatar e cornice si cambiano dal Profilo", FontFace.NunitoRegular, 11f,
+            UI51Build.NoWrap(UI51Build.Text(note, "Banner, avatar e cornice si cambiano dal Profilo", FontFace.NunitoRegular, 11f,
                 UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
 
             var view = UI51Build.GetOrAdd<QuickProfileCard>(root);
@@ -1370,19 +1362,19 @@ namespace Project51.UI51.EditorTools
             // Mockup: sfondo a luminosita' .40, lo sfocato e' gia' a .41.
             root.Find("Bg").GetComponent<Image>().color = new Color(0.975f, 0.975f, 0.975f, 1f);
             // Alone oro del mockup (ellisse al 50%/45%, fino al 60%): primo figlio di Safe, dietro a tutto.
-            UI51Build.Image(UI51AccessBuilder.CenterAt(UI51Build.Child(safe, "Wash"), 195f, 379.8f, 331f, 788f), wash, UI51Tokens.GoldA(0.12f),
+            UI51Build.Image(UI51Build.CenterAt(UI51Build.Child(safe, "Wash"), 195f, 379.8f, 331f, 788f), wash, UI51Tokens.GoldA(0.12f),
                 false, false);
 
             // Intestazione: testi allineati in alto sul top del mockup, senza "..." (altezze = righe CSS).
-            var mode = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Mode"), 20f, 20f, 60f, 15f),
+            var mode = UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(safe, "Mode"), 20f, 20f, 60f, 15f),
                 "PARTITA 1 VS 1", FontFace.CinzelSemiBold, 11f, UI51Tokens.Gold, TextAlignmentOptions.Top, 3f));
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Title"), 20f, 20f, 81f, 32f),
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(safe, "Title"), 20f, 20f, 81f, 32f),
                 "Chi fa il mazziere?", FontFace.CinzelBold, 24f, UI51Tokens.Cream, TextAlignmentOptions.Top));
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Subtitle"), 20f, 20f, 119f, 18f),
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(safe, "Subtitle"), 20f, 20f, 119f, 18f),
                 "Il mazziere distribuisce le carte", FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.6f), TextAlignmentOptions.Top));
 
             // Ruota 300 con centro (195, 346): alone, anello d'oro, faccia che gira (verde a sinistra = avversario, blu a destra = io).
-            var wheel = UI51AccessBuilder.CenterAt(UI51Build.Child(safe, "Wheel"), 195f, 346f, 300f, 300f);
+            var wheel = UI51Build.CenterAt(UI51Build.Child(safe, "Wheel"), 195f, 346f, 300f, 300f);
             UI51Build.Image(UI51Build.Center(UI51Build.Child(wheel, "Glow"), 440f, 440f), glow, UI51Tokens.WhiteA(0.35f), false, false);
             UI51Build.Shape(UI51Build.Center(UI51Build.Child(wheel, "Rim"), 300f, 300f), AvatarFrame.FrameFill(FrameStyle.Oro), 110f,
                 UI51Tokens.Radii(150f), 0f, Color.clear, false, new UI51Shadow(0f, 20f, 40f, UI51Tokens.BlackA(0.6f)));
@@ -1455,7 +1447,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Solid(diamond, UI51Tokens.Gold, 0f, 1.2f, brown);
             UI51Build.Solid(Box(UI51Build.Child(pointer, "Dot"), 13f, 7f, 8f, 8f), brown, 4f);
 
-            var status = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Status"), 0f, 0f, 584f, 19f),
+            var status = UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(safe, "Status"), 0f, 0f, 584f, 19f),
                 Project51.Unity.UI.SorteggioView.Waiting, FontFace.CinzelBold, 14f, UI51Tokens.CreamA(0.75f), TextAlignmentOptions.Top, 3f));
 
             // Scheda MAZZIERE (top 540, alta 103): pivot al centro per il pop del mockup. Avatar 60 con alone, testi che si stringono.
@@ -1474,7 +1466,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Column(texts, 4f, null, TextAnchor.MiddleLeft, true, true);
             var chip = CaptureChip(texts, "Chip", UI51Shape.Solid(UI51Tokens.Gold), 0f, 8, 8);
             UI51Build.Layout(chip, -1f, 20f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "MAZZIERE", FontFace.CinzelBold, 10f, UI51Tokens.OnGold,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "MAZZIERE", FontFace.CinzelBold, 10f, UI51Tokens.OnGold,
                 TextAlignmentOptions.Center, 1f));
             var winName = UI51Build.Text(UI51Build.Child(texts, "Name"), "", FontFace.CinzelBold, 18f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft);
             winName.enableWordWrapping = false;
@@ -1485,13 +1477,13 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(winNote, -1f, 16.5f);
 
             // Conto e AL TAVOLO (top 672): riga centrata "La partita inizia tra N", sotto il pulsante contornato d'oro.
-            var footer = UI51AccessBuilder.TopBand(UI51Build.Child(safe, "Footer"), 0f, 0f, 672f, 74f);
+            var footer = UI51Build.TopBand(UI51Build.Child(safe, "Footer"), 0f, 0f, 672f, 74f);
             var countRow = UI51Build.Place(UI51Build.Child(footer, "CountRow"), new Vector2(0.5f, 1f), new Vector2(0f, 18f), Vector2.zero);
             UI51Build.Row(countRow, 3.5f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             UI51Build.Fit(countRow, true, false);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(countRow, "Label"), "La partita inizia tra", FontFace.NunitoRegular, 13f,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(countRow, "Label"), "La partita inizia tra", FontFace.NunitoRegular, 13f,
                 UI51Tokens.CreamA(0.7f), TextAlignmentOptions.MidlineLeft));
-            var count = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(countRow, "Number"), "3", FontFace.CinzelBold, 13f,
+            var count = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(countRow, "Number"), "3", FontFace.CinzelBold, 13f,
                 UI51Tokens.Gold, TextAlignmentOptions.MidlineLeft));
             var cont = UI51Build.Child(footer, "Continue");
             UI51PrefabBuilder.ButtonBody(cont.gameObject, 158f, 46f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(14f), 1f, UI51Tokens.Gold,
@@ -1508,9 +1500,9 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "m_Slices4", slices.gameObject);
                 UI51Build.Ref(so, "m_Cross", cross.gameObject);
                 UI51Build.Ref(so, "m_Pointer", pointer);
-                UI51AccessBuilder.SetArray(so, "m_Seats", seats);
-                UI51AccessBuilder.SetArray(so, "m_SeatAvatars", seatAvatars);
-                UI51AccessBuilder.SetArray(so, "m_SeatNames", seatNames);
+                UI51Build.SetArray(so, "m_Seats", seats);
+                UI51Build.SetArray(so, "m_SeatAvatars", seatAvatars);
+                UI51Build.SetArray(so, "m_SeatNames", seatNames);
                 UI51Build.Ref(so, "m_Status", status);
                 UI51Build.Ref(so, "m_Card", card);
                 UI51Build.Ref(so, "m_WinAvatar", winAvatar);
@@ -1568,7 +1560,7 @@ namespace Project51.UI51.EditorTools
             var chip = UI51Build.Child(row, name);
             UI51Build.Solid(chip, fill ?? UI51Tokens.BlackA(0.45f), 13f, 1f, border ?? UI51Tokens.GoldA(0.35f));
             UI51Build.Row(chip, 0f, UI51Build.Pad(0, pad, 0, pad), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
-            return UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "", FontFace.NunitoExtraBold, size, color,
+            return UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "", FontFace.NunitoExtraBold, size, color,
                 TextAlignmentOptions.Center));
         }
 
@@ -1585,11 +1577,11 @@ namespace Project51.UI51.EditorTools
             var rt = (RectTransform)seat;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(width, height) * Unit;
+            rt.sizeDelta = new Vector2(width, height) * UI51Build.Unit;
             Center(rt, centerX, centerY);
         }
 
-        static void Center(Transform t, float x, float y) => ((RectTransform)t).anchoredPosition = new Vector2(x, -y) * Unit;
+        static void Center(Transform t, float x, float y) => ((RectTransform)t).anchoredPosition = new Vector2(x, -y) * UI51Build.Unit;
 
         /// <summary>Rettangolo in coordinate del mockup: origine in alto a sinistra del genitore, y in giu', gradi orari come in CSS.</summary>
         static RectTransform Box(RectTransform rt, float left, float top, float w, float h, float degrees = 0f)
@@ -1606,7 +1598,7 @@ namespace Project51.UI51.EditorTools
         static RectTransform Holder(RectTransform parent, string name, float x)
         {
             var rt = UI51Build.Place(UI51Build.Child(parent, name), new Vector2(x, 1f), Vector2.zero, Vector2.zero);
-            rt.localScale = new Vector3(Unit, Unit, 1f);
+            rt.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             return rt;
         }
 
@@ -1616,10 +1608,10 @@ namespace Project51.UI51.EditorTools
         {
             var seg = UI51Build.Child(pill, name);
             UI51Build.Column(seg, 0f, UI51Build.Pad(0, pad, 0, pad), TextAnchor.MiddleCenter);
-            var l = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(seg, "Label"), label, FontFace.NunitoExtraBold,
+            var l = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(seg, "Label"), label, FontFace.NunitoExtraBold,
                 labelSize, labelColor, TextAlignmentOptions.Center, 1f));
             UI51Build.Layout(l, -1f, Mathf.Ceil(labelSize * 1.36f));
-            var v = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(seg, "Value"), value, FontFace.CinzelBold,
+            var v = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(seg, "Value"), value, FontFace.CinzelBold,
                 valueSize, valueColor, TextAlignmentOptions.Center));
             UI51Build.Layout(v, -1f, valueSize); // line-height 1 nel mockup
             return new[] { l, v };

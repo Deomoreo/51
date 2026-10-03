@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Project51.UIV2.Core
 {
-    public sealed class AnimatedModalV2 : MonoBehaviour, IUIV2Modal
+    public sealed class AnimatedModalV2 : MonoBehaviour
     {
         public CanvasGroup Group;
         [Tooltip("Facoltativo: senza cornice la finestra fa solo la dissolvenza.")]

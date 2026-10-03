@@ -42,8 +42,6 @@ namespace Project51.UIV2.Screens
         public CollectionAccusiPanel AccusiPanel => accusiPanel;
         public CollectionTab CurrentTab { get; private set; }
 
-        public event Action<CollectionTab> OnTabChanged;
-
         private void Awake()
         {
             if (segmentedTabs != null) segmentedTabs.onTabChanged.AddListener(index => SetTab((CollectionTab)index));
@@ -75,12 +73,7 @@ namespace Project51.UIV2.Screens
             segmentedTabs.Select((int)CurrentTab, false);
         }
 
-        public void SetTab(CollectionTab tab)
-        {
-            bool changed = tab != CurrentTab;
-            ApplyTab(tab);
-            if (changed) OnTabChanged?.Invoke(tab);
-        }
+        public void SetTab(CollectionTab tab) => ApplyTab(tab);
 
         private void ApplyTab(CollectionTab tab)
         {

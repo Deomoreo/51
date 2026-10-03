@@ -34,7 +34,7 @@ namespace Project51.UI51.EditorTools
         [MenuItem("Tools/UI51/Build All (Fase 1)")]
         private static void BuildAll()
         {
-            if (HasDirtyScene()) return;
+            if (UI51Build.HasDirtyScene()) return;
             UI51ImportBuilder.Build();
             UI51FontBuilder.Build();
             UI51PrefabBuilder.Build();
@@ -43,7 +43,7 @@ namespace Project51.UI51.EditorTools
 
         public static void Build()
         {
-            if (HasDirtyScene()) return;
+            if (UI51Build.HasDirtyScene()) return;
             foreach (string name in Required)
                 if (Prefab(name) == null)
                 {
@@ -182,19 +182,6 @@ namespace Project51.UI51.EditorTools
         }
 
         // --- Helper
-
-        static bool HasDirtyScene()
-        {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var s = SceneManager.GetSceneAt(i);
-                if (!s.isDirty) continue;
-                Debug.LogError($"[UI51 Gallery] La scena aperta '{(string.IsNullOrEmpty(s.path) ? s.name : s.path)}' ha modifiche non salvate: " +
-                               "salvala o scartala e riesegui. Non la tocco.");
-                return true;
-            }
-            return false;
-        }
 
         static GameObject Prefab(string name) => AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath(name));
 

@@ -437,8 +437,6 @@ namespace Project51.UI51.EditorTools
 
             // Cerchio icona 56 + 14 di stacco nella stessa riga, cosi' Show la spegne intera senza icona.
             // Bianco tinto da Paint (oro/rosso .12, bordo .5).
-            var oldGap = card.Find("GapIcon");
-            if (oldGap != null) UnityEngine.Object.DestroyImmediate(oldGap.gameObject);
             var iconRow = UI51Build.Child(card, "IconRow");
             UI51Build.Layout(iconRow, -1f, 70f);
             var circleRt = UI51Build.Place(UI51Build.Child(iconRow, "IconCircle"), new Vector2(0.5f, 1f), new Vector2(56f, 56f), Vector2.zero);

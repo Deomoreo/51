@@ -490,21 +490,9 @@ namespace Project51.Unity
 
             targetCamera.orthographic = true;
 
-            var responsiveFit = targetCamera.GetComponent("CameraResponsiveFit") as MonoBehaviour;
-            if (responsiveFit == null)
-            {
-                var responsiveType = System.Type.GetType("Project51.Unity.CameraResponsiveFit, Project51.Gameplay");
-                if (responsiveType == null)
-                {
-                    Debug.LogWarning("[GameSceneInitializer] CameraResponsiveFit type not available yet. A Unity/VS refresh may be required.");
-                    return;
-                }
-
-                responsiveFit = targetCamera.gameObject.AddComponent(responsiveType) as MonoBehaviour;
-            }
-
-            var applyMethod = responsiveFit.GetType().GetMethod("Apply");
-            applyMethod?.Invoke(responsiveFit, null);
+            var fit = targetCamera.GetComponent<CameraResponsiveFit>();
+            if (fit == null) fit = targetCamera.gameObject.AddComponent<CameraResponsiveFit>();
+            fit.Apply();
         }
 
         /// <summary>

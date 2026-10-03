@@ -2,7 +2,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
-using Project51.UIV2.Animations;
 
 namespace Project51.UIV2.Components
 {
@@ -15,7 +14,7 @@ namespace Project51.UIV2.Components
     /// niente localScale, nessun ricalcolo manuale su resize/LayoutGroup perche' gli anchor
     /// sono gia' frazioni della larghezza disponibile del genitore.
     /// </summary>
-    public class UIV2ProgressBar : MonoBehaviour, IUIV2ProgressAnimatable
+    public class UIV2ProgressBar : MonoBehaviour
     {
         [SerializeField] private RectTransform fillRect;
         [SerializeField] private TMP_Text valueLabel;

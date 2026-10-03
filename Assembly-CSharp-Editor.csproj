@@ -68,6 +68,8 @@
     <Compile Include="Assets\Tests\Editor\Rules51ExtraTests.cs" />
     <Compile Include="Assets\Tests\Editor\InGameSettingsTests.cs" />
     <Compile Include="Assets\Tests\Editor\UI51ResultsTests.cs" />
+    <Compile Include="Assets\Tests\Editor\SeatOfTests.cs" />
+    <Compile Include="Assets\Tests\Editor\MoveSerializerTests.cs" />
     <Compile Include="Assets\Tests\Editor\UI51ProgressTests.cs" />
     <Compile Include="Assets\Tests\Editor\ProfileV2BindingTests.cs" />
     <Compile Include="Assets\Tests\Editor\MailServiceTests.cs" />

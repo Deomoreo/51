@@ -28,7 +28,6 @@ namespace Project51.UIV2.Core
         public RectTransform BottomNavHost => bottomNavHost;
         public RectTransform ModalHost => modalHost;
         public RectTransform OverlayHost => overlayHost;
-        public RectTransform FxHost => fxHost;
 
         private void Awake()
         {

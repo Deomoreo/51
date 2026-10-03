@@ -580,8 +580,7 @@ namespace Project51.Networking
             // Moderazione: da qui la partita online e' "in corso" (chiudere l'app prima della fine conta come abbandono).
             Project51.Auth.ModerationService.MatchInProgress();
 
-            // Serialize move to JSON
-            string moveJson = SerializeMove(move);
+            string moveJson = GameStateSerializer.SerializeMove(move);
 
             if (logNetworkMoves)
             {
@@ -663,11 +662,10 @@ namespace Project51.Networking
                 return;
             }
 
-            // Deserialize move
-            Move move = DeserializeMove(moveJson);
+            Move move = GameStateSerializer.DeserializeMove(moveJson);
             if (move == null)
             {
-                Debug.LogError("Failed to deserialize move!");
+                Debug.LogError($"Failed to deserialize move: {moveJson}");
                 return;
             }
 
@@ -785,81 +783,6 @@ namespace Project51.Networking
             // l'ordine di Photon un accuso vero di una smazzata futura non arriva prima del suo stato.
             pendingAccusi.RemoveAll(pa => pa.roundIndex > gameState.RoundIndex);
             FlushPendingAccusi();
-        }
-
-        #endregion
-
-        #region Serialization
-
-        /// <summary>
-        /// Serializza una mossa in formato JSON.
-        /// Formato: playerIndex|playedCard|moveType|capturedCards
-        /// </summary>
-        private string SerializeMove(Move move)
-        {
-            // Format: playerIndex|suit:rank|moveType|suit1:rank1,suit2:rank2,...
-            string result = $"{move.PlayerIndex}|{move.PlayedCard.Suit}:{move.PlayedCard.Rank}|{(int)move.Type}";
-
-            if (move.CapturedCards != null && move.CapturedCards.Count > 0)
-            {
-                var capturedParts = new List<string>();
-                foreach (var card in move.CapturedCards)
-                {
-                    capturedParts.Add($"{card.Suit}:{card.Rank}");
-                }
-                result += "|" + string.Join(",", capturedParts);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Deserializza una mossa da formato JSON.
-        /// </summary>
-        private Move DeserializeMove(string moveJson)
-        {
-            try
-            {
-                string[] parts = moveJson.Split('|');
-                if (parts.Length < 3)
-                {
-                    Debug.LogError($"Invalid move format: {moveJson}");
-                    return null;
-                }
-
-                // Parse player index
-                int playerIndex = int.Parse(parts[0]);
-
-                // Parse played card
-                string[] cardParts = parts[1].Split(':');
-                Suit suit = (Suit)System.Enum.Parse(typeof(Suit), cardParts[0]);
-                int rank = int.Parse(cardParts[1]);
-                Card playedCard = new Card(suit, rank);
-
-                // Parse move type
-                MoveType moveType = (MoveType)int.Parse(parts[2]);
-
-                // Parse captured cards (if any)
-                List<Card> capturedCards = new List<Card>();
-                if (parts.Length > 3 && !string.IsNullOrEmpty(parts[3]))
-                {
-                    string[] capturedParts = parts[3].Split(',');
-                    foreach (var capturedPart in capturedParts)
-                    {
-                        string[] capCardParts = capturedPart.Split(':');
-                        Suit capSuit = (Suit)System.Enum.Parse(typeof(Suit), capCardParts[0]);
-                        int capRank = int.Parse(capCardParts[1]);
-                        capturedCards.Add(new Card(capSuit, capRank));
-                    }
-                }
-
-                return new Move(playerIndex, playedCard, moveType, capturedCards);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"Error deserializing move: {ex.Message}");
-                return null;
-            }
         }
 
         #endregion

@@ -60,10 +60,8 @@ namespace Project51.Unity.UI
             var config = new MatchConfig
             {
                 Intent = MatchIntent.Training, Format = GameFormat.OneVsOne, BotDifficulty = BotDifficulty.Easy,
-                Rules = MatchRules.Default.Clone(),
+                Rules = MatchRules.ForFormat(GameFormat.OneVsOne),
             };
-            config.Rules.CappottoEndsGameImmediately = false;
-            config.Rules.CappottoBonusPoints = 0;
             GameSceneInitializer.Tutorial = true;
             launcher.Launch(config);
         }

@@ -18,7 +18,7 @@ namespace Project51.UIV2.Core
     /// prevedeva, perche' nel suo flusso vivevano su un pannello separato o non esistevano -
     /// indietro alla schermata iniziale, accesso come ospite, rimandi fra le due schermate,
     /// password dimenticata, conferma password, forza della password e accettazione dei Termini.
-    /// Grafica costruita da Tools/UIV2/Build Auth Screens.
+    /// Grafica costruita da Tools/UI51/Build Fase 2 (Accesso).
     /// </summary>
     public sealed class AuthScreensV2 : MonoBehaviour
     {

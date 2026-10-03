@@ -15,7 +15,7 @@ namespace Project51.UIV2.Core
     /// solo con un esito. Gli errori a schermo sono testi fissi, mai messaggi grezzi del server.
     ///
     /// Canvas proprio con ordine 2200 (come LegalModalV2) per stare sopra alle Impostazioni, anche
-    /// quando sono aperte dalla schermata iniziale (1500). Grafica: Tools/UIV2/Build Delete Account.
+    /// quando sono aperte dalla schermata iniziale (1500). Grafica: Tools/UI51/Build Fase 4 (Collezione, Profilo, Impostazioni).
     /// </summary>
     public sealed class DeleteAccountModalV2 : MonoBehaviour
     {

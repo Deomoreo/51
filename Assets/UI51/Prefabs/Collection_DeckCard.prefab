@@ -566,32 +566,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1e4c209bbab3bd46a4c9b0b065bf5c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  border: {fileID: 0}
-  fillRect: {fileID: 0}
-  fill: {fileID: 0}
   art: {fileID: 7333481284653407923}
-  lockIcon: {fileID: 0}
   equippedBadge: {fileID: 733926832791364353}
   nameLabel: {fileID: 2554725107199862623}
   statusLabel: {fileID: 4164585363578562403}
   actionButton: {fileID: 6646193676611051982}
-  actionBackground: {fileID: 0}
-  actionLabel: {fileID: 0}
   lockedArtSprite: {fileID: 0}
   lockedArtTint: {r: 0.6, g: 0.6, b: 0.6, a: 1}
   preserveArtAspect: 0
-  ownedActionSprite: {fileID: 0}
-  lockedActionSprite: {fileID: 0}
-  equippedBorderColor: {r: 0.9098039, g: 0.69803923, b: 0.2901961, a: 1}
-  normalBorderColor: {r: 0.27450982, g: 0.4, b: 0.5568628, a: 1}
-  equippedBorderThickness: 5
-  normalBorderThickness: 3
-  unlockedFillColor: {r: 0.101960786, g: 0.17254902, b: 0.26666668, a: 1}
-  lockedFillColor: {r: 0.05490196, g: 0.09411765, b: 0.15686275, a: 1}
   nameColor: {r: 0.9607843, g: 0.9137255, b: 0.8156863, a: 1}
   lockedNameColor: {r: 0.4862745, g: 0.57254905, b: 0.6901961, a: 1}
   equippedStatusText: IN USO
-  useActionText: USA
 --- !u!1 &5887033688389653327
 GameObject:
   m_ObjectHideFlags: 0

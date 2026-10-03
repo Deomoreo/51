@@ -61,13 +61,12 @@ namespace Project51.UIV2.Core
                 profile.OnRegisterPressed += OpenRegistration;
                 profile.OnLoginPressed += OpenLogin;
                 profile.OnEditPressed += OpenProfileEditor;
-                profile.SetActionsAvailable(settings != null, authUI != null, false);
+                profile.SetActionsAvailable(settings != null, authUI != null);
             }
             if (profileEditor != null) profileEditor.OnSave += SaveCosmetics;
             if (collection != null)
             {
                 collection.DecksPanel.OnDeckActionPressed += SelectDeck;
-                collection.DecksPanel.SetFooter(string.Empty);
             }
             quickPanels.SelectionChanged += SelectionChanged;
             navigation.OnItemSelected += Navigate;
@@ -191,7 +190,7 @@ namespace Project51.UIV2.Core
             foreach (var item in catalog.Entries)
                 decks.Add(new DeckViewData { Id = item.Id, Name = item.DisplayName, Subtitle = item.Subtitle,
                     Artwork = item.Artwork, Unlocked = true, Equipped = item.Id == selected });
-            collection.DecksPanel.Bind(decks, decks.Count);
+            collection.DecksPanel.Bind(decks);
             collection.SetTabCount(CollectionTab.Decks, decks.Count.ToString());
         }
 
@@ -310,7 +309,6 @@ namespace Project51.UIV2.Core
                     Level = level, XpCurrent = xp, XpMax = maxXp,
                     HasProgress = cloudLoaded || progress != null,
                     HasMatchStats = !isGuest && cloudLoaded,
-                    HasAdvancedStats = false,
                     MatchesPlayed = cloudLoaded ? cloud.TotalGames : 0,
                     Wins = cloudLoaded ? cloud.Wins : 0
                 });
@@ -321,12 +319,8 @@ namespace Project51.UIV2.Core
                 Level = level,
                 Avatar = avatar,
                 XpCurrent = xp,
-                XpMax = isGuest ? 0 : maxXp, // 0 = esagono livello e barra XP nascosti per gli ospiti
-                EnergyCurrent = 0,
-                EnergyMax = 0
+                XpMax = isGuest ? 0 : maxXp // 0 = esagono livello e barra XP nascosti per gli ospiti
             });
-            // No authoritative currency/energy service exists yet; do not display preview balances.
-            topBar.SetResources(null);
             topBar.SetGuest(isGuest);
             home.SetGuest(isGuest);
         }

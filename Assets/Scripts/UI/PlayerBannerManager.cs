@@ -19,7 +19,7 @@ namespace Project51.Unity.UI
         [Tooltip("Indice 0=Locale, 1=Sinistra, 2=Alto, 3=Destra")]
         [SerializeField] private PlayerBanner[] banners = new PlayerBanner[4];
 
-        [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati da Tools/UIV2/Apply Table Layout V4.")]
+        [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati in GameScene.")]
         [SerializeField] private Sprite[] seatAvatars = new Sprite[0];
 
         [Tooltip("UI51: stessi indici di banners. Dove c'e' un banner UI51 quello storico resta solo come ancora delle carte. Assegnati da Tools/UI51/Build Fase 5.")]
@@ -470,19 +470,8 @@ namespace Project51.Unity.UI
         public const string PartnerLabel = "Compagno";
         public const float PartnerWiden = 8f;
 
-        /// <summary>
-        /// Stessa convenzione a indice relativo gia' usata in
-        /// CardViewManager.RenderAIHandsDynamic
-        /// (duplicata li' come qui: non
-        /// esiste un helper condiviso nel progetto per questo calcolo).
-        /// </summary>
-        private static int ResolveRelativeSlot(int playerIndex, int localIndex, int numPlayers)
-        {
-            if (numPlayers <= 0) return 0;
-            int relative = ((playerIndex - localIndex) % numPlayers + numPlayers) % numPlayers;
-            if (numPlayers == 2 && relative == 1) relative = 2; // unico avversario, reso "in alto"
-            return relative;
-        }
+        /// <summary>Posto visivo del giocatore (unico avversario del 1v1 "in alto"): CardViewManager.SeatOf.</summary>
+        private static int ResolveRelativeSlot(int playerIndex, int localIndex, int numPlayers) => CardViewManager.SeatOf(playerIndex, localIndex, numPlayers);
 
         /// <summary>
         /// Sprite reali delle carte scope (PlayerState.ScopaCards) via CardViewManager,

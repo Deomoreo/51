@@ -188,8 +188,7 @@ namespace Project51.UIV2.Core
         {
             var config = new MatchConfig { Intent = index < 3 ? MatchIntent.QuickMatch : MatchIntent.Training,
                 Format = Formats[index % 3], BotDifficulty = Selection.BotDifficulty,
-                Rules = MatchRules.Default.Clone() };
-            if (config.Format == GameFormat.OneVsOne) { config.Rules.CappottoEndsGameImmediately = false; config.Rules.CappottoBonusPoints = 0; }
+                Rules = MatchRules.ForFormat(Formats[index % 3]) };
             Select(config);
         }
         private void ChooseDifficulty(int index)

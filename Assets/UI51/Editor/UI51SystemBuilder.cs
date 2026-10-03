@@ -25,7 +25,7 @@ namespace Project51.UI51.EditorTools
 
         public static void Build()
         {
-            if (UI51AccessBuilder.HasDirtyScene()) return;
+            if (UI51Build.HasDirtyScene()) return;
             UI51Build.EditPrefab(ResourcesRoot + UI51Toast.ResourcePath + ".prefab", BuildToast);
             UI51Build.EditPrefab(ResourcesRoot + UI51ConnectionOverlay.ResourcePath + ".prefab", BuildConnection);
             UI51Build.EditPrefab(ResourcesRoot + UI51ServiceScreen.ResourcePath + ".prefab", BuildService);
@@ -85,10 +85,8 @@ namespace Project51.UI51.EditorTools
             var success = UI51Build.Child(pill, "Success");
             UI51Build.Layout(success, 22f, 22f);
             UI51Build.Solid(success, UI51Tokens.Success, 11f);
-            var check = UI51Build.GetOrAdd<UI51Polyline>(UI51Build.Center(UI51Build.Child(success, "Check"), 11f, 11f));
-            check.Set(new Vector2(24f, 24f), 3.4f, new Vector2(5f, 12.5f), new Vector2(9.5f, 17f), new Vector2(19f, 7.5f));
-            check.color = Color.white;
-            check.raycastTarget = false;
+            UI51Build.Polyline(UI51Build.Center(UI51Build.Child(success, "Check"), 11f, 11f), new Vector2(24f, 24f), 3.4f, Color.white,
+                new Vector2(5f, 12.5f), new Vector2(9.5f, 17f), new Vector2(19f, 7.5f));
 
             var coin = UI51Build.Child(pill, "Coin");
             UI51Build.Layout(coin, 18f, 18f);
@@ -97,10 +95,10 @@ namespace Project51.UI51.EditorTools
             var error = UI51Build.Child(pill, "Error");
             UI51Build.Layout(error, 20f, 20f);
             UI51Build.Solid(error, UI51Tokens.Danger, 10f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(error, "Mark")), "!", FontFace.NunitoExtraBold, 12f, Color.white,
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(error, "Mark")), "!", FontFace.NunitoExtraBold, 12f, Color.white,
                 TextAlignmentOptions.Center));
 
-            var label = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(pill, "Label"), "ID copiato negli appunti", FontFace.NunitoExtraBold, 13f,
+            var label = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(pill, "Label"), "ID copiato negli appunti", FontFace.NunitoExtraBold, 13f,
                 UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
             UI51Build.Layout(label, -1f, 18f);
 
@@ -136,23 +134,23 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(ring, 84f, 84f);
             var spinner = UI51Build.Stretch(UI51Build.Child(ring, "Spinner"));
             UI51Build.Solid(UI51Build.Center(UI51Build.Child(spinner, "Track"), 80f, 80f), Color.clear, 40f, 4f, UI51Tokens.GoldA(0.15f));
-            Stroke(UI51Build.Stretch(UI51Build.Child(spinner, "Arc")), new Vector2(84f, 84f), 4f, UI51Tokens.Gold,
+            UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(spinner, "Arc")), new Vector2(84f, 84f), 4f, UI51Tokens.Gold,
                 UI51Polyline.Arc(new Vector2(42f, 42f), 38f, -90f, 0f));
             var wifi = UI51Build.Place(UI51Build.Child(ring, "Wifi"), new Vector2(0f, 1f), new Vector2(44f, 36f), new Vector2(20f, -26f));
             var vb = new Vector2(44f, 36f);
-            var w1 = Stroke(UI51Build.Stretch(UI51Build.Child(wifi, "W1")), vb, 3.5f, UI51Tokens.Gold,
+            var w1 = UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(wifi, "W1")), vb, 3.5f, UI51Tokens.Gold,
                 UI51Polyline.Quad(new Vector2(17f, 27f), new Vector2(22f, 23f), new Vector2(27f, 27f), 8));
-            var w2 = Stroke(UI51Build.Stretch(UI51Build.Child(wifi, "W2")), vb, 3.5f, UI51Tokens.Gold,
+            var w2 = UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(wifi, "W2")), vb, 3.5f, UI51Tokens.Gold,
                 UI51Polyline.Quad(new Vector2(10f, 20f), new Vector2(22f, 9f), new Vector2(34f, 20f)));
-            var w3 = Stroke(UI51Build.Stretch(UI51Build.Child(wifi, "W3")), vb, 3.5f, UI51Tokens.Gold,
+            var w3 = UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(wifi, "W3")), vb, 3.5f, UI51Tokens.Gold,
                 UI51Polyline.Quad(new Vector2(3f, 12f), new Vector2(22f, -4f), new Vector2(41f, 12f), 20));
             Dot(wifi, new Vector2(22f, 32f), 2.8f, UI51Tokens.Gold);
 
-            UI51MetaBuilder.Gap(reconnect, "GapTitle", 16f);
+            UI51Build.Gap(reconnect, "GapTitle", 16f);
             Title(reconnect, "Riconnessione…");
-            UI51MetaBuilder.Gap(reconnect, "GapText", 8f);
+            UI51Build.Gap(reconnect, "GapText", 8f);
             Body(reconnect, "Text", "La connessione è instabile, stiamo provando a ricollegarti.");
-            UI51MetaBuilder.Gap(reconnect, "GapBars", 14f);
+            UI51Build.Gap(reconnect, "GapBars", 14f);
             var barsRow = UI51Build.Child(reconnect, "Attempts");
             UI51Build.Layout(barsRow, -1f, 6f);
             UI51Build.Row(barsRow, 6f, null, TextAnchor.MiddleCenter, true, true);
@@ -163,19 +161,19 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Layout(bar, 26f, 6f);
                 bars[i] = UI51Build.Solid(bar, Color.white, 3f);
             }
-            UI51MetaBuilder.Gap(reconnect, "GapAttempt", 8f);
-            var attempt = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(reconnect, "Attempt"), "Tentativo 1 di 5", FontFace.NunitoBold, 11f,
+            UI51Build.Gap(reconnect, "GapAttempt", 8f);
+            var attempt = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(reconnect, "Attempt"), "Tentativo 1 di 5", FontFace.NunitoBold, 11f,
                 UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
             UI51Build.Layout(attempt, -1f, 15f, 1f);
             var seatBlock = UI51Build.Child(reconnect, "Seat");
             UI51Build.Layout(seatBlock, -1f, -1f, 1f);
-            UI51MetaBuilder.Stack(seatBlock, 0f, UI51Build.Pad(14, 0, 0, 0));
+            UI51Build.Stack(seatBlock, 0f, UI51Build.Pad(14, 0, 0, 0));
             var seatBox = UI51Build.Child(seatBlock, "Box");
             UI51Build.Solid(seatBox, UI51Tokens.GoldA(0.08f), 12f, 1f, UI51Tokens.GoldA(0.3f));
-            UI51MetaBuilder.Stack(seatBox, 0f, UI51Build.Pad(10, 12, 10, 12));
+            UI51Build.Stack(seatBox, 0f, UI51Build.Pad(10, 12, 10, 12));
             var seat = UI51Build.Text(UI51Build.Child(seatBox, "Text"), "Il tuo posto al tavolo resta tuo per 60s. Gli altri giocatori ti aspettano.",
                 FontFace.NunitoRegular, 12f, UI51Tokens.Cream, TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(seat, 8.6f); // line-height 1.45
+            UI51Build.Wrap(seat, 8.6f); // line-height 1.45
 
             // Nessuna connessione
             var error = Card(safe, "Error", 220f, UI51Tokens.WithAlpha(UI51Tokens.Danger, 0.5f));
@@ -186,22 +184,22 @@ namespace Project51.UI51.EditorTools
             var off = UI51Build.Center(UI51Build.Child(icon, "WifiOff"), 46f, 38f);
             var vbOff = new Vector2(46f, 38f);
             var faded = UI51Tokens.WithAlpha(UI51Tokens.DangerText, 0.45f);
-            Stroke(UI51Build.Stretch(UI51Build.Child(off, "W2")), vbOff, 3.5f, faded,
+            UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(off, "W2")), vbOff, 3.5f, faded,
                 UI51Polyline.Quad(new Vector2(4f, 13f), new Vector2(23f, -3f), new Vector2(42f, 13f), 20));
-            Stroke(UI51Build.Stretch(UI51Build.Child(off, "W1")), vbOff, 3.5f, faded,
+            UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(off, "W1")), vbOff, 3.5f, faded,
                 UI51Polyline.Quad(new Vector2(11f, 21f), new Vector2(23f, 10f), new Vector2(35f, 21f)));
             Dot(off, new Vector2(23f, 32f), 3f, faded);
-            Stroke(UI51Build.Stretch(UI51Build.Child(off, "Slash")), vbOff, 4f, UI51Tokens.DangerText, new Vector2(8f, 4f), new Vector2(38f, 34f));
+            UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(off, "Slash")), vbOff, 4f, UI51Tokens.DangerText, new Vector2(8f, 4f), new Vector2(38f, 34f));
 
-            UI51MetaBuilder.Gap(error, "GapTitle", 16f);
+            UI51Build.Gap(error, "GapTitle", 16f);
             Title(error, "Nessuna connessione");
-            UI51MetaBuilder.Gap(error, "GapText", 8f);
+            UI51Build.Gap(error, "GapText", 8f);
             var errorText = Body(error, "Text", UI51ConnectionOverlay.HomeErrorText);
-            UI51MetaBuilder.Gap(error, "GapRetry", 18f);
+            UI51Build.Gap(error, "GapRetry", 18f);
             var retry = UI51Build.Child(error, "Retry");
             UI51PrefabBuilder.GoldBody(retry.gameObject, 300f, 50f, 14f, FontFace.CinzelBold, 14f, 2f, "RIPROVA");
             UI51Build.Layout(retry, -1f, 50f, 1f);
-            UI51MetaBuilder.Gap(error, "GapExit", 10f);
+            UI51Build.Gap(error, "GapExit", 10f);
             var exit = UI51Build.Child(error, "Exit");
             UI51PrefabBuilder.ButtonBody(exit.gameObject, 300f, 44f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(14f), 1f, UI51Tokens.GoldA(0.45f),
                 FontFace.NunitoExtraBold, 13f, 0f, UI51Tokens.Gold, "Continua offline");
@@ -215,8 +213,8 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "view", view.gameObject);
                 UI51Build.Ref(so, "reconnectCard", reconnect);
                 UI51Build.Ref(so, "spinner", spinner);
-                UI51AccessBuilder.SetArray(so, "waves", w1.rectTransform, w2.rectTransform, w3.rectTransform);
-                UI51AccessBuilder.SetArray(so, "attemptBars", bars);
+                UI51Build.SetArray(so, "waves", w1.rectTransform, w2.rectTransform, w3.rectTransform);
+                UI51Build.SetArray(so, "attemptBars", bars);
                 UI51Build.Ref(so, "attemptLabel", attempt);
                 UI51Build.Ref(so, "seatBox", seatBlock.gameObject);
                 UI51Build.Ref(so, "seatLabel", seat);
@@ -249,7 +247,7 @@ namespace Project51.UI51.EditorTools
             var safe = UI51AccessBuilder.BuildScreen(update, bg, UI51Shape.Linear(
                 (UI51Tokens.Rgba(6, 14, 28, 0.3f), 0f), (UI51Tokens.Rgba(5, 11, 24, 0.55f), 0.3f),
                 (UI51Tokens.Rgba(4, 9, 20, 0.92f), 0.55f), (UI51Tokens.Rgba(3, 7, 16, 0.98f), 1f)));
-            UI51Build.Image(UI51AccessBuilder.CenterAt(UI51Build.Child(safe, "Glow"), 195f, 180f, 300f, 300f), glow, UI51Tokens.WhiteA(0.8f));
+            UI51Build.Image(UI51Build.CenterAt(UI51Build.Child(safe, "Glow"), 195f, 180f, 300f, 300f), glow, UI51Tokens.WhiteA(0.8f));
             UI51AccessBuilder.Logo(safe, 195f, 180f, 150f);
 
             var head = Band(safe, "Head", 310f);
@@ -257,18 +255,18 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(pill, -1f, 24f);
             UI51Build.Solid(pill, UI51Tokens.GoldA(0.15f), 12f, 1f, UI51Tokens.GoldA(0.5f));
             UI51Build.Row(pill, 0f, UI51Build.Pad(0, 10, 0, 10), TextAnchor.MiddleCenter, true, true);
-            var version = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(pill, "Label"), "Versione 2.50 disponibile", FontFace.NunitoExtraBold, 11f,
+            var version = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(pill, "Label"), "Versione 2.50 disponibile", FontFace.NunitoExtraBold, 11f,
                 UI51Tokens.Gold, TextAlignmentOptions.Center));
-            UI51MetaBuilder.Gap(head, "GapTitle", 8f);
+            UI51Build.Gap(head, "GapTitle", 8f);
             Headline(head, "È ora di aggiornare");
-            UI51MetaBuilder.Gap(head, "GapText", 8f);
+            UI51Build.Gap(head, "GapText", 8f);
             Paragraph(head, "Per continuare a giocare online serve la nuova versione. Ci vuole meno di un minuto.");
 
             var newsHolder = Band(safe, "News", 470f);
             var news = UI51Build.Child(newsHolder, "Panel");
             UI51Build.Shape(news, UI51Tokens.PanelFill(), 180f, UI51Tokens.Radii(16f), 1f, UI51Tokens.GoldA(0.25f));
             UI51Build.Layout(news, -1f, -1f, 1f);
-            UI51MetaBuilder.Stack(news, 10f, UI51Build.Pad(14, 16, 14, 16));
+            UI51Build.Stack(news, 10f, UI51Build.Pad(14, 16, 14, 16));
             Caption(news, "NOVITÀ", 2f, TextAlignmentOptions.MidlineLeft);
             var newsRows = new Object[3];
             var newsTexts = new Object[3];
@@ -281,10 +279,10 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Layout(dot, 20f, 20f);
                 UI51Build.Solid(dot, UI51Tokens.GoldA(0.15f), 10f);
                 // ✦ non c'e' in nessun font del progetto: stella a 4 punte disegnata (8 px, tratto pieno quasi quanto il glifo).
-                Stroke(UI51Build.Center(UI51Build.Child(dot, "Star"), 9f, 9f), new Vector2(10f, 10f), 1.3f, UI51Tokens.Gold, new Vector2(5f, 0.6f), new Vector2(6.1f, 3.9f), new Vector2(9.4f, 5f),
+                UI51Build.Polyline(UI51Build.Center(UI51Build.Child(dot, "Star"), 9f, 9f), new Vector2(10f, 10f), 1.3f, UI51Tokens.Gold, new Vector2(5f, 0.6f), new Vector2(6.1f, 3.9f), new Vector2(9.4f, 5f),
                     new Vector2(6.1f, 6.1f), new Vector2(5f, 9.4f), new Vector2(3.9f, 6.1f), new Vector2(0.6f, 5f), new Vector2(3.9f, 3.9f), new Vector2(5f, 0.6f));
                 var text = UI51Build.Text(UI51Build.Child(row, "Text"), sample[i], FontFace.NunitoRegular, 13f, UI51Tokens.Cream, TextAlignmentOptions.TopLeft);
-                UI51MetaBuilder.Wrap(text, 3.6f); // line-height 1.4
+                UI51Build.Wrap(text, 3.6f); // line-height 1.4
                 UI51Build.Layout(text, -1f, -1f, 1f);
                 newsRows[i] = row.gameObject;
                 newsTexts[i] = text;
@@ -294,8 +292,8 @@ namespace Project51.UI51.EditorTools
             var updateNow = UI51Build.Child(updateBottom, "UpdateNow");
             UI51PrefabBuilder.GoldBody(updateNow.gameObject, 342f, 54f, 16f, FontFace.CinzelBold, 15f, 2f, "AGGIORNA ORA");
             UI51Build.Layout(updateNow, -1f, 54f, 1f);
-            UI51MetaBuilder.Gap(updateBottom, "Gap", 10f);
-            var installed = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(updateBottom, "Installed"),
+            UI51Build.Gap(updateBottom, "Gap", 10f);
+            var installed = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(updateBottom, "Installed"),
                 "Versione installata 2.44 · I tuoi progressi sono salvati", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.45f), TextAlignmentOptions.Center));
             UI51Build.Layout(installed, -1f, 15f, 1f);
 
@@ -309,23 +307,23 @@ namespace Project51.UI51.EditorTools
             UI51Build.Image(UI51Build.Center(UI51Build.Child(art, "Glow"), 220f, 220f), glow, UI51Tokens.WhiteA(0.6f));
             var gear = UI51Build.Center(UI51Build.Child(art, "Gear"), 80f, 80f);
             UI51Build.Image(gear, UI51Build.Sprite("Common", "ic_settings_cream"), Color.white);
-            UI51MetaBuilder.Gap(head, "GapCaption", 18f); // gap 10 + margin-top 8
+            UI51Build.Gap(head, "GapCaption", 18f); // gap 10 + margin-top 8
             Caption(head, "MANUTENZIONE", 3f, TextAlignmentOptions.Center);
-            UI51MetaBuilder.Gap(head, "GapTitle", 10f);
+            UI51Build.Gap(head, "GapTitle", 10f);
             Headline(head, "Stiamo sistemando il tavolo");
-            UI51MetaBuilder.Gap(head, "GapText", 10f);
+            UI51Build.Gap(head, "GapText", 10f);
             Paragraph(head, "I server sono in manutenzione per migliorare il gioco. Le partite in corso sono state salvate.");
 
             var timerHolder = Band(safe, "Timer", 470f);
             var timer = UI51Build.Child(timerHolder, "Panel");
             UI51Build.Shape(timer, UI51Tokens.PanelFill(), 180f, UI51Tokens.Radii(16f), 1f, UI51Tokens.GoldA(0.25f));
             UI51Build.Layout(timer, -1f, -1f, 1f);
-            UI51MetaBuilder.Stack(timer, 6f, UI51Build.Pad(16, 16, 16, 16));
+            UI51Build.Stack(timer, 6f, UI51Build.Pad(16, 16, 16, 16));
             Caption(timer, "TORNIAMO TRA CIRCA", 2f, TextAlignmentOptions.Center);
-            var countdown = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(timer, "Countdown"), "42:18", FontFace.CinzelBold, 34f,
+            var countdown = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(timer, "Countdown"), "42:18", FontFace.CinzelBold, 34f,
                 UI51Tokens.GoldLight, TextAlignmentOptions.Center, 2f));
             UI51Build.Layout(countdown, -1f, 46f, 1f);
-            var end = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(timer, "End"), "Fine prevista alle 4:00", FontFace.NunitoRegular, 11f,
+            var end = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(timer, "End"), "Fine prevista alle 4:00", FontFace.NunitoRegular, 11f,
                 UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
             UI51Build.Layout(end, -1f, 15f, 1f);
 
@@ -333,7 +331,7 @@ namespace Project51.UI51.EditorTools
             var retry = UI51Build.Child(maintenanceBottom, "Retry");
             UI51PrefabBuilder.GoldBody(retry.gameObject, 342f, 54f, 16f, FontFace.CinzelBold, 15f, 2f, "RIPROVA");
             UI51Build.Layout(retry, -1f, 54f, 1f);
-            UI51MetaBuilder.Gap(maintenanceBottom, "Gap", 10f);
+            UI51Build.Gap(maintenanceBottom, "Gap", 10f);
             var readNews = UI51Build.Child(maintenanceBottom, "ReadNews");
             UI51PrefabBuilder.ButtonBody(readNews.gameObject, 342f, 46f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(14f), 1f, UI51Tokens.GoldA(0.5f),
                 FontFace.NunitoExtraBold, 14f, 0f, UI51Tokens.Gold, "Leggi le novità");
@@ -347,8 +345,8 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "updateView", update.gameObject);
                 UI51Build.Ref(so, "versionLabel", version);
                 UI51Build.Ref(so, "newsPanel", newsHolder.gameObject);
-                UI51AccessBuilder.SetArray(so, "newsRows", newsRows);
-                UI51AccessBuilder.SetArray(so, "newsTexts", newsTexts);
+                UI51Build.SetArray(so, "newsRows", newsRows);
+                UI51Build.SetArray(so, "newsTexts", newsTexts);
                 UI51Build.Ref(so, "installedLabel", installed);
                 UI51Build.Ref(so, "updateNow", updateNow.GetComponent<Button>());
                 UI51Build.Ref(so, "maintenanceView", maintenance.gameObject);
@@ -363,7 +361,7 @@ namespace Project51.UI51.EditorTools
         /// <summary>Colonna centrata a 24 dai lati, da top px, alta quanto il contenuto.</summary>
         static RectTransform Band(RectTransform safe, string name, float top)
         {
-            var band = UI51AccessBuilder.TopBand(UI51Build.Child(safe, name), 24f, 24f, top, 100f);
+            var band = UI51Build.TopBand(UI51Build.Child(safe, name), 24f, 24f, top, 100f);
             UI51Build.Column(band, 0f, null, TextAnchor.UpperCenter, true, true);
             UI51Build.Fit(band, false, true);
             return band;
@@ -378,27 +376,27 @@ namespace Project51.UI51.EditorTools
             band.pivot = new Vector2(0.5f, 0f);
             band.offsetMin = new Vector2(24f, 30f);
             band.offsetMax = new Vector2(-24f, 30f + h);
-            UI51MetaBuilder.Stack(band, 0f);
+            UI51Build.Stack(band, 0f);
             return band;
         }
 
         static void Headline(RectTransform parent, string text)
         {
             var t = UI51Build.Text(UI51Build.Child(parent, "Title"), text, FontFace.CinzelBold, 24f, UI51Tokens.Cream, TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(t, 0f);
+            UI51Build.Wrap(t, 0f);
             UI51Build.Layout(t, -1f, -1f, 1f);
         }
 
         static void Paragraph(RectTransform parent, string text)
         {
             var t = UI51Build.Text(UI51Build.Child(parent, "Text"), text, FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(t, 13.6f); // line-height 1.5
+            UI51Build.Wrap(t, 13.6f); // line-height 1.5
             UI51Build.Layout(t, -1f, -1f, 1f);
         }
 
         static void Caption(RectTransform parent, string text, float spacing, TextAlignmentOptions align)
         {
-            var t = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(parent, "Caption"), text, FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, align, spacing));
+            var t = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(parent, "Caption"), text, FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, align, spacing));
             UI51Build.Layout(t, -1f, 14f, 1f);
         }
 
@@ -408,8 +406,8 @@ namespace Project51.UI51.EditorTools
         /// </summary>
         static RectTransform Card(RectTransform safe, string name, float top, Color border)
         {
-            var holder = UI51AccessBuilder.TopBand(UI51Build.Child(safe, name), 28f, 28f, top, 300f);
-            UI51MetaBuilder.Stack(holder, 0f);
+            var holder = UI51Build.TopBand(UI51Build.Child(safe, name), 28f, 28f, top, 300f);
+            UI51Build.Stack(holder, 0f);
             UI51Build.Fit(holder, false, true);
             var card = UI51Build.Child(holder, "Card");
             UI51Build.Shape(card, UI51Tokens.DialogFill(), 180f, UI51Tokens.Radii(22f), 1f, border, true, UI51Tokens.ShadowDialog);
@@ -420,25 +418,16 @@ namespace Project51.UI51.EditorTools
         static void Title(RectTransform card, string text)
         {
             var t = UI51Build.Text(UI51Build.Child(card, "Title"), text, FontFace.CinzelBold, 19f, UI51Tokens.Cream, TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(t, 0f);
+            UI51Build.Wrap(t, 0f);
             UI51Build.Layout(t, -1f, -1f, 1f);
         }
 
         static TextMeshProUGUI Body(RectTransform card, string name, string text)
         {
             var t = UI51Build.Text(UI51Build.Child(card, name), text, FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.65f), TextAlignmentOptions.Center);
-            UI51MetaBuilder.Wrap(t, 13.6f); // line-height 1.5
+            UI51Build.Wrap(t, 13.6f); // line-height 1.5
             UI51Build.Layout(t, -1f, -1f, 1f);
             return t;
-        }
-
-        static UI51Polyline Stroke(RectTransform rt, Vector2 viewBox, float width, Color color, params Vector2[] points)
-        {
-            var line = UI51Build.GetOrAdd<UI51Polyline>(rt);
-            line.Set(viewBox, width, points);
-            line.color = color;
-            line.raycastTarget = false;
-            return line;
         }
 
         /// <summary>Pallino (circle cx cy r del mockup) in un riquadro con origine in alto a sinistra.</summary>

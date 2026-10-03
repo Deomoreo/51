@@ -22,7 +22,7 @@ namespace Project51.Tests
             instance = new GameObject("ProfileScreenV2", typeof(RectTransform));
             screen = instance.AddComponent<ProfileScreenV2>();
             var so = new SerializedObject(screen);
-            foreach (var field in new[] { "matchesTile", "winsTile", "winRateTile", "scopasTile", "settebelloTile", "pointRecordTile" })
+            foreach (var field in new[] { "matchesTile", "winsTile", "winRateTile" })
             {
                 var tile = Child(field).AddComponent<UIV2StatTile>();
                 var value = Child("ValueLabel", tile.transform).AddComponent<TextMeshProUGUI>();
@@ -57,17 +57,16 @@ namespace Project51.Tests
         public void UnavailableStatisticsAreDistinctFromARealZero()
         {
             screen.Bind(new ProfileViewData { PlayerName = "Ospite", HasProgress = false,
-                HasMatchStats = false, HasAdvancedStats = false, IsGuest = true });
+                HasMatchStats = false, IsGuest = true });
             Assert.AreEqual("—", TileValue("matchesTile"));
             Assert.AreEqual("—", TileValue("winsTile"));
             Assert.AreEqual("—", TileValue("winRateTile"));
             var xp = (Component)new SerializedObject(screen).FindProperty("xpBar").objectReferenceValue;
             Assert.IsFalse(xp.gameObject.activeSelf);
             screen.Bind(new ProfileViewData { PlayerName = "Ospite", Level = 1, XpMax = 100,
-                HasMatchStats = true, HasAdvancedStats = false });
+                HasMatchStats = true });
             Assert.AreEqual("0", TileValue("matchesTile"));
             Assert.AreEqual("0%", TileValue("winRateTile"));
-            Assert.AreEqual("—", TileValue("scopasTile"));
             Assert.IsTrue(xp.gameObject.activeSelf);
         }
 
@@ -92,7 +91,7 @@ namespace Project51.Tests
         {
             screen.Bind(new ProfileViewData { PlayerName = "Test", PlayerId = "test-id", Level = 2,
                 XpCurrent = 25, XpMax = 200, MatchesPlayed = 8, Wins = 3,
-                IsGuest = false, HasAdvancedStats = false });
+                IsGuest = false });
             Assert.AreEqual("8", TileValue("matchesTile"));
             Assert.AreEqual("3", TileValue("winsTile"));
             Assert.AreEqual("38%", TileValue("winRateTile"));

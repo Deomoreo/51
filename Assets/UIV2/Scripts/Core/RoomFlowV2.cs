@@ -122,18 +122,12 @@ namespace Project51.UIV2.Core
 
         private MatchConfig Config()
         {
-            var config = new MatchConfig
+            return new MatchConfig
             {
                 Intent = MatchIntent.PrivateRoom,
                 Format = format,
-                Rules = MatchRules.Default.Clone()
+                Rules = MatchRules.ForFormat(format)
             };
-            if (format == GameFormat.OneVsOne)
-            {
-                config.Rules.CappottoEndsGameImmediately = false;
-                config.Rules.CappottoBonusPoints = 0;
-            }
-            return config;
         }
 
         private void CreateRoom()

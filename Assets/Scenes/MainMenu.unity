@@ -77632,7 +77632,7 @@ GameObject:
   - component: {fileID: 543216039}
   - component: {fileID: 543216042}
   - component: {fileID: 543216041}
-  - component: {fileID: 543216040}
+  - component: {fileID: 543216043}
   m_Layer: 0
   m_Name: Version
   m_TagString: Untagged
@@ -77659,19 +77659,6 @@ RectTransform:
   m_AnchoredPosition: {x: 540, y: -1865}
   m_SizeDelta: {x: 900, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &543216040
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 543216038}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d13243585652bc4c9a235e746defaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Prefix: v
 --- !u!114 &543216041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77769,6 +77756,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 543216038}
   m_CullTransparentMesh: 1
+--- !u!114 &543216043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 543216038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86dda8df5eb786f4b89744d5cb70a189, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &543247230
 GameObject:
   m_ObjectHideFlags: 0
@@ -110049,7 +110048,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81e1b144832665541bd99701edf42b8f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugLog: 0
   ignoreTop: 1
 --- !u!1 &750730431
 GameObject:
@@ -307880,15 +307878,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d88a17149988a254c9d45474348e66e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  equippedHeaderLabel: {fileID: 0}
-  equippedHeaderPrefix: EQUIPAGGIATE
   equippedSlots:
   - {fileID: 632821074}
   - {fileID: 1597096880}
   - {fileID: 1621641787}
   equippedCountLabel: {fileID: 1617517232}
   collectionCountLabel: {fileID: 1176606462}
-  collectionProgress: {fileID: 0}
   gridContainer: {fileID: 661284399}
   cardPrefab: {fileID: 4518921115686224432, guid: 0d35b630b92424a4dbfc5efe33ff2849, type: 3}
 --- !u!1 &6400620635444109861
@@ -308061,10 +308056,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 687d73154f015a14d9cfbb9af43fa0f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultAvatarFrame: {fileID: 0}
-  portrait: {fileID: 0}
   nameLabel: {fileID: 1015472524}
-  infoLabel: {fileID: 0}
   xpBar: {fileID: 2045766065}
   xpLabel: {fileID: 824206483}
   settingsButton: {fileID: 1187735494}
@@ -308073,13 +308065,7 @@ MonoBehaviour:
   matchesTile: {fileID: 1228673992}
   winsTile: {fileID: 981909632}
   winRateTile: {fileID: 1009083502}
-  scopasTile: {fileID: 0}
-  settebelloTile: {fileID: 0}
-  pointRecordTile: {fileID: 0}
-  trophyContainer: {fileID: 0}
-  trophyPrefab: {fileID: 0}
   registerButton: {fileID: 1778051529}
-  shareButton: {fileID: 0}
   accountGroup: {fileID: 1590476254}
   guestGroup: {fileID: 1421619079}
   guestNameLabel: {fileID: 874085387}
@@ -308164,16 +308150,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   heroArtwork: {fileID: 1816860354}
-  heroArtworkPlaceholder: {fileID: 0}
   heroTitleLabel: {fileID: 1773077017}
-  heroSubtitleLabel: {fileID: 0}
   heroDescriptionLabel: {fileID: 673556636}
   previewButton: {fileID: 1742461139}
   uppercaseHeroTitle: 0
-  collectionCountLabel: {fileID: 0}
-  collectionProgress: {fileID: 0}
-  listContainer: {fileID: 0}
-  rowPrefab: {fileID: 1929146177819920585, guid: 3e9eb9243ccebc9468d49cb1fb045fb6, type: 3}
 --- !u!114 &7176412968286830180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -308235,7 +308215,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81e1b144832665541bd99701edf42b8f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugLog: 0
   ignoreTop: 0
 --- !u!222 &7576553056006758100
 CanvasRenderer:
@@ -308448,12 +308427,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00b493db55c99d045b835ab4bec6c0da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  profileAvatar: {fileID: 0}
   portraitImage: {fileID: 735088870}
   nameLabel: {fileID: 420818770}
-  resourcesContainer: {fileID: 0}
-  resourcePillPrefab: {fileID: 8775256584218101105, guid: 8168faf1cd9d70c4488268946592f1b7, type: 3}
-  energyBar: {fileID: 0}
   xpBar: {fileID: 675951456}
   levelLabel: {fileID: 1881145813}
   levelCaption: {fileID: 1187356711}
@@ -308530,14 +308505,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cf76a7add5b45a4cb68b939245a43f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  heroArtCards: []
-  heroNameLabel: {fileID: 0}
-  heroSubtitleLabel: {fileID: 0}
-  collectionCountLabel: {fileID: 0}
-  collectionProgress: {fileID: 0}
   gridContainer: {fileID: 1751626774}
   deckCardPrefab: {fileID: 3135551452525401067, guid: a0577908f696bc04a9b0818440cc2756, type: 3}
-  footerLabel: {fileID: 0}
 --- !u!224 &9136457845704129347
 RectTransform:
   m_ObjectHideFlags: 0

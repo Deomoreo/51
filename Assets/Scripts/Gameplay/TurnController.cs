@@ -610,22 +610,9 @@ namespace Project51.Unity
         var provider = GameModeService.Current;
         if (provider.IsMultiplayer && provider.IsMasterClient)
         {
-            // Find NetworkGameController and send GameState via reflection (to avoid circular dependency).
-            // L'assembly si chiama "Assembly-CSharp" (il vecchio asmdef "Project51.Networking" non
-            // esiste piu'): con il nome vecchio questa lookup falliva sempre silenziosamente e lo
-            // stato iniziale non arrivava mai agli altri client (tavolo vuoto per loro).
-            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
-            if (netControllerType != null)
-            {
-                var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var netController = netInstanceProp?.GetValue(null);
-                if (netController != null)
-                {
-                    var sendMethod = netControllerType.GetMethod("SendInitialGameState");
-                    sendMethod?.Invoke(netController, new object[] { gameState });
-                    Debug.Log("<color=cyan>[MP] Master sent initial GameState to all clients</color>");
-                }
-            }
+            // Find NetworkGameController and send GameState (InvokeNetwork, per evitare la dipendenza circolare).
+            if (InvokeNetwork("SendInitialGameState", gameState))
+                Debug.Log("<color=cyan>[MP] Master sent initial GameState to all clients</color>");
         }
 
         // NON invochiamo piu' l'IA qui direttamente: DeclareInitialAccusiWithDelay se ne occupa
@@ -1059,21 +1046,10 @@ namespace Project51.Unity
             method?.Invoke(manager, new object[] { gameState.DealerIndex, active });
         }
 
-        /// <summary>
-        /// Indice relativo (0=Locale/1=Sinistra/2=Alto/3=Destra) del giocatore assoluto dato,
-        /// stessa convenzione usata in tutto il progetto (PlayerBannerManager.ResolveRelativeSlot,
-        /// CardViewManager.RenderAIHandsDynamic, ecc. - duplicata ovunque,
-        /// nessun helper condiviso esiste nel progetto per questo calcolo).
-        /// </summary>
+        /// <summary>Posto visivo (0=Locale/1=Sinistra/2=Alto/3=Destra) del giocatore assoluto dato: CardViewManager.SeatOf.</summary>
         private int GetRelativeSlot(int playerIndex)
         {
-            if (gameState == null || gameState.NumPlayers <= 0) return 0;
-
-            int localIndex = GameModeService.Current.LocalPlayerIndex;
-            int numPlayers = gameState.NumPlayers;
-            int relative = ((playerIndex - localIndex) % numPlayers + numPlayers) % numPlayers;
-            if (numPlayers == 2 && relative == 1) relative = 2;
-            return relative;
+            return gameState == null ? 0 : CardViewManager.SeatOf(playerIndex, GameModeService.Current.LocalPlayerIndex, gameState.NumPlayers);
         }
 
         private int GetDealerRelativeSlot()
@@ -1354,28 +1330,8 @@ namespace Project51.Unity
             }
             lastResyncRequestTime = Time.time;
 
-            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
-            if (netControllerType == null)
-            {
-                return;
-            }
-
-            var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            var netController = netInstanceProp?.GetValue(null);
-            if (netController == null)
-            {
-                return;
-            }
-
-            if (isMaster)
-            {
-                var sendMethod = netControllerType.GetMethod("SendInitialGameState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                sendMethod?.Invoke(netController, new object[] { gameState });
-                return;
-            }
-
-            var requestMethod = netControllerType.GetMethod("RequestResync", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            requestMethod?.Invoke(netController, null);
+            if (isMaster) InvokeNetwork("SendInitialGameState", gameState);
+            else InvokeNetwork("RequestResync");
         }
 
         /// <summary>
@@ -1911,20 +1867,21 @@ namespace Project51.Unity
             var provider = GameModeService.Current;
             if (!provider.IsMultiplayer) return;
 
-            // Use reflection to call NetworkGameController.SendAccuso (to avoid circular dependency).
-            // Stesso fix del nome assembly di StartNewGame()/SendInitialGameStateToClients: senza
-            // questo, gli accusi (Cirulla/Decino) non venivano mai sincronizzati agli altri client.
-            var netControllerType = System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
-            if (netControllerType != null)
-            {
-                var netInstanceProp = netControllerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                var netController = netInstanceProp?.GetValue(null);
-                if (netController != null)
-                {
-                    var sendMethod = netControllerType.GetMethod("SendAccuso", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                    sendMethod?.Invoke(netController, new object[] { playerIndex, (int)type });
-                }
-            }
+            InvokeNetwork("SendAccuso", playerIndex, (int)type);
+        }
+
+        // NetworkGameController sta in Assembly-CSharp, che Gameplay non vede: lo si chiama per nome (i nomi dei 3 metodi
+        // pubblici non vanno cambiati). L'assembly e' "Assembly-CSharp": con un nome sbagliato la lookup fallisce in silenzio
+        // e lo stato iniziale o gli accusi non arrivano agli altri. Si mette in cache solo il tipo, l'istanza si rilegge ogni volta.
+        private static System.Type _netControllerType;
+
+        private static bool InvokeNetwork(string method, params object[] args)
+        {
+            _netControllerType ??= System.Type.GetType("Project51.Networking.NetworkGameController, Assembly-CSharp");
+            var instance = _netControllerType?.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+            if (instance == null) return false;
+            _netControllerType.GetMethod(method, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)?.Invoke(instance, args);
+            return true;
         }
 
         /// <summary>

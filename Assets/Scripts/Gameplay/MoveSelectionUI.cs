@@ -13,7 +13,7 @@ namespace Project51.Unity
     /// Pannello "Scegli la presa" quando la stessa carta puo' prendere gruppi di carte diversi.
     /// Ogni opzione mostra le miniature delle carte che prende: tenendo premuto (o passandoci sopra
     /// col mouse) le carte si alzano sul tavolo, rilasciando sull'opzione si gioca la mossa.
-    /// La grafica e' costruita qui a runtime con gli sprite assegnati da Tools/UIV2/Build Capture Choice.
+    /// Il vassoio UI51 lo costruisce Tools/UI51/Build Fase 5 (Tavolo 1v1); qui solo riempimento e animazione.
     /// Sostituisce i vecchi rettangoli di testo e i quadratini gialli che restavano a schermo.
     /// </summary>
     public class MoveSelectionUI : MonoBehaviour

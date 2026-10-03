@@ -4,8 +4,8 @@ using TMPro;
 namespace Project51.UIV2.Core
 {
     /// <summary>
-    /// K2 shared palette, typography and sprites. Configure existing assets with
-    /// Tools/UIV2/Apply Design System; all consumers share this single theme.
+    /// K2 shared palette, typography and sprites, applied at runtime by UIV2DesignSystem;
+    /// all consumers share this single theme.
     /// </summary>
     [CreateAssetMenu(fileName = "UIV2Theme", menuName = "51 Cirulla/UIV2/Theme")]
     public class UIV2Theme : ScriptableObject

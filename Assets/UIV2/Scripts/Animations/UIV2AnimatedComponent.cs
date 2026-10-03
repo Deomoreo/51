@@ -4,8 +4,7 @@ using UnityEngine;
 
 namespace Project51.UIV2.Animations
 {
-    public abstract class UIV2AnimatedComponent : MonoBehaviour,
-        IUIV2Showable, IUIV2Selectable, IUIV2Pressable, IUIV2Unlockable, IUIV2Rewardable
+    public abstract class UIV2AnimatedComponent : MonoBehaviour
     {
         [SerializeField] protected RectTransform visualRoot;
         [SerializeField] protected CanvasGroup visualCanvasGroup;
@@ -14,8 +13,7 @@ namespace Project51.UIV2.Animations
         private Vector3 originalScale;
         private float originalAlpha;
         private bool initialized;
-        private bool selected;
-        private Vector3 RestScale => originalScale * (selected ? 1.05f : 1f);
+        private Vector3 RestScale => originalScale;
 
         protected virtual void Reset() => visualRoot = transform as RectTransform;
 
@@ -49,14 +47,6 @@ namespace Project51.UIV2.Animations
             sequence.OnComplete(() => onComplete?.Invoke());
         }
 
-        public virtual void PlayHide(Action onComplete = null)
-        {
-            var sequence = Begin();
-            if (visualCanvasGroup != null) sequence.Join(visualCanvasGroup.DOFade(0, UIV2Motion.Exit));
-            sequence.Join(VisualRoot.DOScale(RestScale * UIV2Motion.PanelScale, UIV2Motion.Exit).SetEase(Ease.InCubic));
-            sequence.OnComplete(() => onComplete?.Invoke());
-        }
-
         public virtual void PlayPress()
         {
             // A scene installer can add feedback after this component registered its click listener.
@@ -64,20 +54,6 @@ namespace Project51.UIV2.Animations
             var sequence = Begin();
             sequence.Append(VisualRoot.DOScale(RestScale * UIV2Motion.PressScale, UIV2Motion.Press).SetEase(Ease.OutQuad));
             sequence.Append(VisualRoot.DOScale(RestScale, UIV2Motion.Release).SetEase(Ease.OutBack, 1.1f));
-        }
-
-        public virtual void PlaySelected(bool value)
-        {
-            selected = value;
-            Begin().Append(VisualRoot.DOScale(RestScale, UIV2Motion.Exit).SetEase(Ease.OutQuad));
-        }
-
-        public virtual void PlayUnlock(Action onComplete = null)
-        {
-            var sequence = Begin();
-            VisualRoot.localScale = Vector3.zero;
-            sequence.Append(VisualRoot.DOScale(RestScale, UIV2Motion.Enter).SetEase(Ease.OutBack, 1.1f));
-            sequence.OnComplete(() => onComplete?.Invoke());
         }
 
         public virtual void PlayReward(Action onComplete = null)

@@ -293,5 +293,120 @@ namespace Project51.UI51.EditorTools
                 if (preview.IsValid()) EditorSceneManager.ClosePreviewScene(preview);
             }
         }
+
+        // --- Condivisi dai builder
+
+        const string Tag = "[UI51]";
+
+        /// <summary>Unita' del mockup in px della scena (1080 / 390): scala dei contenitori disegnati coi numeri del mockup.</summary>
+        public const float Unit = 1080f / 390f;
+
+        public static void SetArray(SerializedObject so, string field, params UnityEngine.Object[] values)
+        {
+            var p = so.FindProperty(field);
+            if (p == null || !p.isArray) { Debug.LogError($"{Tag} Campo array {field} non trovato su {so.targetObject.GetType().Name}."); return; }
+            p.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        }
+
+        /// <summary>Centro in px del mockup (x da sinistra, y dall'alto), ancorato in alto al centro.</summary>
+        public static RectTransform CenterAt(RectTransform rt, float x, float y, float w, float h)
+        {
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(w, h);
+            rt.anchoredPosition = new Vector2(x - 195f, -y);
+            return rt;
+        }
+
+        /// <summary>Fascia larga quanto il genitore meno i margini, a top px dall'alto, alta h.</summary>
+        public static RectTransform TopBand(RectTransform rt, float left, float right, float top, float h)
+        {
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.offsetMin = new Vector2(left, -top - h);
+            rt.offsetMax = new Vector2(-right, -top);
+            return rt;
+        }
+
+        /// <summary>Colonna a tutta larghezza, altezza dai figli.</summary>
+        public static void Stack(RectTransform rt, float spacing, RectOffset padding = null) =>
+            Column(rt, spacing, padding, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
+
+        public static void Gap(Transform parent, string name, float height) =>
+            Layout(Child(parent, name), -1f, height);
+
+        public static TextMeshProUGUI NoWrap(TextMeshProUGUI t)
+        {
+            t.enableWordWrapping = false;
+            t.overflowMode = TextOverflowModes.Overflow;
+            return t;
+        }
+
+        /// <summary>Una riga sola, con i puntini se non ci sta.</summary>
+        public static TextMeshProUGUI Clip(TextMeshProUGUI t)
+        {
+            t.enableWordWrapping = false;
+            t.overflowMode = TextOverflowModes.Ellipsis;
+            return t;
+        }
+
+        public static void Wrap(TextMeshProUGUI t, float lineSpacing)
+        {
+            t.enableWordWrapping = true;
+            t.overflowMode = TextOverflowModes.Overflow;
+            t.lineSpacing = lineSpacing;
+        }
+
+        /// <summary>Tratto UI51Polyline nel viewBox dato (coordinate SVG), senza raycast.</summary>
+        public static UI51Polyline Polyline(RectTransform rt, Vector2 viewBox, float width, Color color, params Vector2[] points)
+        {
+            var line = GetOrAdd<UI51Polyline>(rt);
+            line.Set(viewBox, width, points);
+            line.color = color;
+            line.raycastTarget = false;
+            return line;
+        }
+
+        // --- Scena
+
+        public static void HideChild(Transform parent, string name)
+        {
+            var t = parent.Find(name);
+            if (t != null) t.gameObject.SetActive(false);
+        }
+
+        public static GameObject PanelRef(SerializedObject authSo, string field, Scene scene, string fallbackName)
+        {
+            var p = authSo.FindProperty(field);
+            if (p != null && p.objectReferenceValue is GameObject go) return go;
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == fallbackName) return t.gameObject;
+            return null;
+        }
+
+        public static Transform FindPath(Scene scene, string parentName, string name)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    if (t.name == name && t.parent != null && t.parent.name == parentName) return t;
+            return null;
+        }
+
+        /// <summary>Vero (con errore in console) se una scena aperta ha modifiche non salvate: il builder non la tocca.</summary>
+        public static bool HasDirtyScene()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var s = SceneManager.GetSceneAt(i);
+                if (!s.isDirty) continue;
+                Debug.LogError($"{Tag} La scena aperta '{(string.IsNullOrEmpty(s.path) ? s.name : s.path)}' ha modifiche non salvate: " +
+                               "salvala o scartala e riesegui. Non la tocco.");
+                return true;
+            }
+            return false;
+        }
     }
 }

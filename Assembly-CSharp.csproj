@@ -90,7 +90,6 @@
     <Compile Include="Assets\Scripts\UI\UI51ResultsView.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerBanner.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\DesignCanvasFit.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\VersionLabelV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\PagedVerticalScrollRect.cs" />
     <Compile Include="Assets\Scripts\UI\UI51SeatCard.cs" />
     <Compile Include="Assets\Photon\PhotonChat\Demos\Demo Chat\Code\ChatNewGui.cs" />
@@ -100,7 +99,6 @@
     <Compile Include="Assets\UIV2\Scripts\Core\CollectionCosmeticsV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\StartScreenV2.cs" />
     <Compile Include="Assets\Scripts\Auth\ModerationService.cs" />
-    <Compile Include="Assets\Scripts\UI\SafeArea.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2SurfaceEffect.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\HomeV2Integration.cs" />
     <Compile Include="Assets\UI51\Scripts\Debug\UI51GalleryDemo.cs" />
@@ -137,7 +135,6 @@
     <Compile Include="Assets\Scripts\Auth\ProfileService.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\BottomSheet.cs" />
     <Compile Include="Assets\Scripts\Networking\HomeConnectionWatcher.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Data\HomeViewData.cs" />
     <Compile Include="Assets\Scripts\UI\UI51MailItem.cs" />
     <Compile Include="Assets\Scripts\UI\UI51TableMoments.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\MatchResultsV2.cs" />
@@ -174,14 +171,12 @@
     <Compile Include="Assets\Scripts\UI\UI51BlockedView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AuthScreensV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2TopBar.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ResourcePill.cs" />
     <Compile Include="Assets\Scripts\UI\SelectableToggleItem.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2ShapeGlow.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\BottomNavSafeAreaBleed.cs" />
     <Compile Include="Assets\Scripts\UI\UI51WelcomeView.cs" />
     <Compile Include="Assets\Scripts\UI\UI51ChestView.cs" />
     <Compile Include="Assets\Scripts\UI\UI51RulesView.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\UIV2ModalFrame.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2DesignSystem.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Theme.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\EmoticonPlayer.cs" />
@@ -191,15 +186,12 @@
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOffset.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2MotionInstaller.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\SegmentedTabs.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\UIV2AvatarBadge.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2ProgressBar.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Data\ResourceViewData.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Screens\AccusoRowView.cs" />
     <Compile Include="Assets\Scripts\UI\LocalSeatBottomShift.cs" />
+    <Compile Include="Assets\Scripts\UI\SafeAreaFitter.cs" />
     <Compile Include="Assets\UI51\Scripts\Core\UI51Tokens.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\AnimatedModalV2.cs" />
     <Compile Include="Assets\Scripts\UI\UI51NewsItem.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Core\IUIV2Modal.cs" />
     <Compile Include="Assets\Scripts\Auth\LeaderboardService.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\PageSwipeSurface.cs" />
     <Compile Include="Assets\Scripts\UI\UI51RewardsView.cs" />
@@ -216,7 +208,6 @@
     <Compile Include="Assets\Scripts\UI\UI51InviteBanner.cs" />
     <Compile Include="Assets\Scripts\Auth\WalletService.cs" />
     <Compile Include="Assets\Scripts\Auth\ServiceGate.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\UIV2PlayerRow.cs" />
     <Compile Include="Assets\Scripts\UI\PortraitCanvasMatch.cs" />
     <Compile Include="Assets\Scripts\UI\UI51MatchmakingView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\ProfileCosmetics.cs" />
@@ -235,13 +226,11 @@
     <Compile Include="Assets\Scripts\UI\UI51ConnectionOverlay.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\RoomFlowV2.cs" />
     <Compile Include="Assets\Scripts\UI\UI51Toast.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Screens\ProfileTrophyView.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\PlayerSummaryViewData.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2RewardFlight.cs" />
     <Compile Include="Assets\Scripts\Auth\PlayFabAuthService.cs" />
     <Compile Include="Assets\Scripts\Auth\NewsService.cs" />
     <Compile Include="Assets\Scripts\UI\SimpleToggleSwitch.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimationHooks.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\UI51\Resources\UI51\Shape.shader" />

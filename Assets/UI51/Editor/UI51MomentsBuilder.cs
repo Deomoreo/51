@@ -44,7 +44,7 @@ namespace Project51.UI51.EditorTools
                 new UI51Shadow(0f, 8f, 18f, UI51Tokens.BlackA(0.45f)));
             UI51Build.Row(chip, 8f, UI51Build.Pad(0, 14, 0, 14), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             UI51Build.Fit(chip, true, false);
-            var chipText = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "MANO 3 DI 6", FontFace.CinzelBold, 12f,
+            var chipText = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(chip, "Text"), "MANO 3 DI 6", FontFace.CinzelBold, 12f,
                 UI51Tokens.Gold, TextAlignmentOptions.Center, 2f));
 
             // Avviso (top 150): alto 46 r23, fondo .95, bordo rosso .55 (oro per gli altri avvisi), avatar 32 e due righe.
@@ -59,14 +59,14 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(avatar, 32f, 32f);
             var lines = UI51Build.Child(notice, "Lines");
             UI51Build.Column(lines, 1f, UI51Build.Pad(0, 0, 0, 0), TextAnchor.MiddleLeft, true, true);
-            var noticeTitle = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(lines, "Title"), "Marco_93 si è disconnesso",
+            var noticeTitle = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(lines, "Title"), "Marco_93 si è disconnesso",
                 FontFace.NunitoExtraBold, 12f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
-            var noticeSub = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(lines, "Sub"), "Gioca un bot finché non rientra",
+            var noticeSub = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(lines, "Sub"), "Gioca un bot finché non rientra",
                 FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(0.6f), TextAlignmentOptions.MidlineLeft));
 
             // SCOPA! (blocco 390x320 a top 250, centro 12 sopra il centro dello schermo come sull'iPhone del mockup).
-            var scopa = UI51Build.Place(UI51Build.Child(root, "Scopa"), new Vector2(0.5f, 0.5f), new Vector2(390f, 320f), new Vector2(0f, 12f * Unit));
-            scopa.localScale = new Vector3(Unit, Unit, 1f);
+            var scopa = UI51Build.Place(UI51Build.Child(root, "Scopa"), new Vector2(0.5f, 0.5f), new Vector2(390f, 320f), new Vector2(0f, 12f * UI51Build.Unit));
+            scopa.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             // radial-gradient(ellipse, nero-blu .7 -> 0 al 70%): il bagliore morbido tinto scuro.
             UI51Build.Image(UI51Build.Stretch(UI51Build.Child(scopa, "Veil")), glow, UI51Tokens.Rgba(3, 8, 18, 0.85f), false, false);
             var burst = UI51Build.Image(UI51Build.Place(UI51Build.Child(scopa, "Burst"), new Vector2(0f, 1f), new Vector2(320f, 320f),
@@ -82,11 +82,11 @@ namespace Project51.UI51.EditorTools
             // Parole a top 358 (108 nel blocco): SCOPA! 44 con l'ombra dura #6B4418 4 sotto, "Tu · +1" 14. Pivot al centro per l'entrata.
             var words = UI51Build.Place(UI51Build.Child(scopa, "Words"), new Vector2(0.5f, 1f), new Vector2(390f, 78f), new Vector2(0f, -147f));
             words.pivot = new Vector2(0.5f, 0.5f);
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(words, "Shade"), 0f, 0f, 4f, 56f), "SCOPA!",
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(words, "Shade"), 0f, 0f, 4f, 56f), "SCOPA!",
                 FontFace.CinzelBold, 44f, UI51Tokens.Hex("#6B4418"), TextAlignmentOptions.Center, 4f));
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(words, "Title"), 0f, 0f, 0f, 56f), "SCOPA!",
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(words, "Title"), 0f, 0f, 0f, 56f), "SCOPA!",
                 FontFace.CinzelBold, 44f, UI51Tokens.GoldLight, TextAlignmentOptions.Center, 4f));
-            var who = UI51AccessBuilder.NoWrap(UI51Build.Text(UI51AccessBuilder.TopBand(UI51Build.Child(words, "Who"), 0f, 0f, 58f, 20f), "Tu · +1",
+            var who = UI51Build.NoWrap(UI51Build.Text(UI51Build.TopBand(UI51Build.Child(words, "Who"), 0f, 0f, 58f, 20f), "Tu · +1",
                 FontFace.NunitoExtraBold, 14f, UI51Tokens.Cream, TextAlignmentOptions.Center));
             who.richText = true;
 
@@ -129,7 +129,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "scopaBurst", burst);
                 UI51Build.Ref(so, "scopaWords", words);
                 UI51Build.Ref(so, "scopaWho", who);
-                UI51AccessBuilder.SetArray(so, "sparks", sparks);
+                UI51Build.SetArray(so, "sparks", sparks);
                 var targets = so.FindProperty("sparkTargets");
                 targets.arraySize = SparkTargets.Length;
                 for (int i = 0; i < SparkTargets.Length; i++) targets.GetArrayElementAtIndex(i).vector2Value = SparkTargets[i];
@@ -148,7 +148,7 @@ namespace Project51.UI51.EditorTools
         {
             var rt = UI51Build.Place(UI51Build.Child(root, name), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.localScale = new Vector3(Unit, Unit, 1f);
+            rt.localScale = new Vector3(UI51Build.Unit, UI51Build.Unit, 1f);
             return rt;
         }
 
@@ -164,7 +164,7 @@ namespace Project51.UI51.EditorTools
         }
 
         static TextMeshProUGUI PillText(RectTransform pill, string name, string text, FontFace face, float size, Color color) =>
-            UI51AccessBuilder.NoWrap(UI51Build.Text(UI51Build.Child(pill, name), text, face, size, color, TextAlignmentOptions.Center));
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(pill, name), text, face, size, color, TextAlignmentOptions.Center));
 
         /// <summary>
         /// Mockup MomentoDisconnesso: velo .6 sulla pillola del banner e Wi-Fi barrato bianco in un tondo rosso 22 (a 10 dal bordo
@@ -205,10 +205,7 @@ namespace Project51.UI51.EditorTools
 
         static void Line(RectTransform parent, string name, Vector2 viewBox, params Vector2[] points)
         {
-            var line = UI51Build.GetOrAdd<UI51Polyline>(UI51Build.Stretch(UI51Build.Child(parent, name)));
-            line.Set(viewBox, 2.6f, points);
-            line.color = Color.white;
-            line.raycastTarget = false;
+            UI51Build.Polyline(UI51Build.Stretch(UI51Build.Child(parent, name)), viewBox, 2.6f, Color.white, points);
         }
     }
 }

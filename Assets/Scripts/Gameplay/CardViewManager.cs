@@ -48,7 +48,7 @@ namespace Project51.Unity
 
         // UI51 Fase 5, tavolo 1v1 (mockup Partita, largo 390): misure del mockup in unita' x MockupUnit = pixel di design.
         // Fase 6 (Partita4): la mia mano e la fascia del tavolo usano le stesse misure anche nei 4 giocatori.
-        private const float MockupUnit = 1080f / 390f; // = UI51TableBuilder.Unit, che Gameplay non vede
+        private const float MockupUnit = 1080f / 390f; // = UI51Build.Unit, che Gameplay non vede
         private const float DuelHandCardHeight = 143f * MockupUnit, DuelHandCardWidth = 92f * MockupUnit, DuelHandStep = 99f * MockupUnit;
         private const float HandBottomAboveBanner = 58f * MockupUnit; // la mano finisce 33 sopra al banner (centro + 25 + 33)
         private const float DuelTopHandBelowBanner = 74.5f * MockupUnit, DuelTopHandStep = 56f * MockupUnit, DuelOpponentCardHeight = 71f * MockupUnit;
@@ -258,8 +258,7 @@ namespace Project51.Unity
                     float baseRotation = 0f;
 
                     int numPlayers = players.Count;
-                    int relative = (p - localIndex + numPlayers) % numPlayers;
-                    int slot = SeatSlot(relative, numPlayers);
+                    int slot = SeatOf(p, localIndex, numPlayers);
                     if (TryGetBannerHandCenter(slot, out var handCenter, out _))
                     {
                         // Mockup 09: carte piccole sotto al banner in alto, coricate sul bordo ai lati.
@@ -434,14 +433,8 @@ namespace Project51.Unity
                 return;
             }
 
-            var responsiveFit = layoutCamera.GetComponent("CameraResponsiveFit") as MonoBehaviour;
-            if (responsiveFit == null)
-            {
-                return;
-            }
-
-            var applyMethod = responsiveFit.GetType().GetMethod("Apply");
-            applyMethod?.Invoke(responsiveFit, null);
+            var fit = layoutCamera.GetComponent<CameraResponsiveFit>();
+            if (fit != null) fit.Apply();
         }
 
         private float GetVisibleWidth()
@@ -630,6 +623,9 @@ namespace Project51.Unity
         {
             return playerCount == 2 && relativePlayerIndex == 1 ? 2 : relativePlayerIndex;
         }
+
+        /// <summary>Posto visivo (SeatSlot) del giocatore assoluto player visto da local, su count posti.</summary>
+        public static int SeatOf(int player, int local, int count) => count <= 0 ? 0 : SeatSlot(((player - local) % count + count) % count, count);
 
         private bool TryGetBannerRect(int slot, out RectTransform rect)
         {

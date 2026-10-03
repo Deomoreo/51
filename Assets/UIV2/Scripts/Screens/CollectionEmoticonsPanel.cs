@@ -8,23 +8,17 @@ using Project51.UIV2.Data;
 namespace Project51.UIV2.Screens
 {
     /// <summary>
-    /// Pannello EMOTICON della pagina COLLEZIONE (mockup 21_collezione_emoticon (1).png): slot
-    /// EQUIPAGGIATE (max = numero di slot nel prefab), conteggio + barra COLLEZIONE e griglia a 4
-    /// colonne spawnata da Bind(). Nessun emoticon e' hardcoded nel prefab.
+    /// Pannello EMOTICON della pagina COLLEZIONE: slot EQUIPAGGIATE (max = numero di slot), conteggio
+    /// COLLEZIONE e griglia spawnata da Bind(). Nessun emoticon e' scritto nella scena.
     /// </summary>
     public class CollectionEmoticonsPanel : MonoBehaviour
     {
-        private const char MiddleDot = (char)0xB7;
-
         [Header("EQUIPAGGIATE")]
-        [SerializeField] private TMP_Text equippedHeaderLabel;
-        [SerializeField] private string equippedHeaderPrefix = "EQUIPAGGIATE";
         [SerializeField] private EmoticonSlotView[] equippedSlots;
         [SerializeField] private TMP_Text equippedCountLabel; // facoltativo: "2 / 3"
 
         [Header("COLLEZIONE")]
         [SerializeField] private TMP_Text collectionCountLabel;
-        [SerializeField] private UIV2ProgressBar collectionProgress;
         [SerializeField] private RectTransform gridContainer;
         [SerializeField] private UIV2CollectionCard cardPrefab;
 
@@ -34,17 +28,12 @@ namespace Project51.UIV2.Screens
 
         public event Action<CollectionItemViewData> OnEmoticonPressed;
         public event Action<CollectionItemViewData> OnRemovePressed;
-        public event Action<int> OnEmptySlotPressed;
 
         private void Awake()
         {
             if (equippedSlots == null) return;
             foreach (var slot in equippedSlots)
-            {
-                if (slot == null) continue;
-                slot.OnRemovePressed += item => OnRemovePressed?.Invoke(item);
-                slot.OnEmptyPressed += index => OnEmptySlotPressed?.Invoke(index);
-            }
+                if (slot != null) slot.OnRemovePressed += item => OnRemovePressed?.Invoke(item);
         }
 
         /// <summary>
@@ -74,7 +63,6 @@ namespace Project51.UIV2.Screens
 
         public void SetEquipped(IReadOnlyList<CollectionItemViewData> equipped)
         {
-            if (equippedHeaderLabel != null) equippedHeaderLabel.text = $"{equippedHeaderPrefix} {MiddleDot} {MaxEquipped} max";
             if (equippedCountLabel != null)
                 equippedCountLabel.text = $"{Mathf.Min(equipped != null ? equipped.Count : 0, MaxEquipped)} / {MaxEquipped}";
             if (equippedSlots == null) return;
@@ -89,7 +77,6 @@ namespace Project51.UIV2.Screens
         public void SetCollectionProgress(int owned, int total)
         {
             if (collectionCountLabel != null) collectionCountLabel.text = $"{owned} / {total}";
-            if (collectionProgress != null) collectionProgress.SetProgress(total > 0 ? (float)owned / total : 0f, animate: false);
         }
 
         private void SpawnCard(CollectionItemViewData item)

@@ -198,6 +198,7 @@ namespace Project51.Unity.UI
                 claiming = false;
                 if (this == null) return;
                 claimLabel.text = ClaimText;
+                if (r.ok) RewardsService.PlaySound(r);
                 if (r.ok && (chest == null || !chest.Open(r))) Celebrate(r);
                 else if (!r.riscattato) Say("NON DISPONIBILE");
                 // Show arriva da DailyChanged (FromServer).

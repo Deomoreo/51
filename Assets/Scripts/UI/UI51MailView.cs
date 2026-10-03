@@ -299,6 +299,7 @@ namespace Project51.Unity.UI
 
         private void MarkClaimed(ServerReward r, bool render = true)
         {
+            RewardsService.PlaySound(r);
             foreach (var m in messages) if (Array.IndexOf(r.riscattati, m.id) >= 0) m.riscattato = true;
             if (render) Render();
         }

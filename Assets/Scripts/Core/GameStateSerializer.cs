@@ -118,6 +118,33 @@ namespace Project51.Core
             }
         }
 
+        // Mossa in rete: giocatore|seme:valore|(int)tipo, piu' "|prese" solo se ha preso qualcosa (MoveSerializerTests).
+        public static string SerializeMove(Move move)
+        {
+            string result = $"{move.PlayerIndex}|{move.PlayedCard.Suit}:{move.PlayedCard.Rank}|{(int)move.Type}";
+            if (move.CapturedCards != null && move.CapturedCards.Count > 0)
+                result += "|" + SerializeCards(move.CapturedCards);
+            return result;
+        }
+
+        /// <summary>Null se il testo non e' una mossa valida.</summary>
+        public static Move DeserializeMove(string data)
+        {
+            try
+            {
+                var parts = data.Split('|');
+                if (parts.Length < 3) return null;
+                var card = DeserializeCards(parts[1]);
+                if (card.Count != 1) return null;
+                return new Move(int.Parse(parts[0]), card[0], (MoveType)int.Parse(parts[2]),
+                    parts.Length > 3 ? DeserializeCards(parts[3]) : new List<Card>());
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static string SerializeCards(List<Card> cards)
         {
             if (cards == null || cards.Count == 0) return "";

@@ -27,7 +27,7 @@ namespace Project51.UI51.EditorTools
 
         public static void Build()
         {
-            if (HasDirtyScene()) return;
+            if (UI51Build.HasDirtyScene()) return;
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
             var auth = UnityEngine.Object.FindObjectOfType<AuthUIController>(true);
@@ -40,8 +40,8 @@ namespace Project51.UI51.EditorTools
             }
 
             var authSo = new SerializedObject(auth);
-            var loginPanel = PanelRef(authSo, "loginPanel", scene, "LoginPanel");
-            var registerPanel = PanelRef(authSo, "registerPanel", scene, "RegisterPanel");
+            var loginPanel = UI51Build.PanelRef(authSo, "loginPanel", scene, "LoginPanel");
+            var registerPanel = UI51Build.PanelRef(authSo, "registerPanel", scene, "RegisterPanel");
             if (loginPanel == null || registerPanel == null)
             {
                 Debug.LogError($"{Tag} LoginPanel o RegisterPanel non trovati. Non tocco nulla.");
@@ -105,7 +105,7 @@ namespace Project51.UI51.EditorTools
 
             var glow = UI51Build.Child(safe, "Glow");
             UI51Build.Image(glow, UI51Build.Sprite("Common", "Bagliore_morbido"), new Color(1f, 1f, 1f, 0.85f));
-            CenterAt(glow, 195f, 260f, 320f, 320f);
+            UI51Build.CenterAt(glow, 195f, 260f, 320f, 320f);
             Logo(safe, 195f, 260f, 182f);
 
             var sheet = Sheet(safe, UI51Build.Pad(24, 22, 22, 22), 13f, UI51Shape.Linear(
@@ -125,7 +125,7 @@ namespace Project51.UI51.EditorTools
             OrLine(orRow, "LineL");
             var orText = UI51Build.Child(orRow, "Label");
             UI51Build.Size(orText, 0f, 14f);
-            NoWrap(UI51Build.Text(orText, "OPPURE", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center, 1f));
+            UI51Build.NoWrap(UI51Build.Text(orText, "OPPURE", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center, 1f));
             OrLine(orRow, "LineR");
 
             ui.ToRegister = GhostButton(sheet, "Register", "Registrati", 50f);
@@ -144,7 +144,6 @@ namespace Project51.UI51.EditorTools
 
         static RegisterUi BuildRegister(Transform panel)
         {
-            HideChild(panel, "Design");
             var overlay = UI51Shape.Linear(
                 (UI51Tokens.Rgba(6, 14, 28, 0.35f), 0f), (UI51Tokens.Rgba(5, 11, 24, 0.62f), 0.3f),
                 (UI51Tokens.Rgba(4, 9, 20, 0.88f), 0.62f), (UI51Tokens.Rgba(3, 7, 16, 0.97f), 1f));
@@ -157,15 +156,15 @@ namespace Project51.UI51.EditorTools
             // Header: box 210x135 da top 78
             var glow = UI51Build.Child(safe, "Glow");
             UI51Build.Image(glow, UI51Build.Sprite("Common", "Bagliore_morbido"), new Color(1f, 1f, 1f, 0.8f));
-            CenterAt(glow, 195f, 145.5f, 210f, 210f);
+            UI51Build.CenterAt(glow, 195f, 145.5f, 210f, 210f);
             Logo(safe, 195f, 145.5f, 100f);
 
             var title = UI51Build.Child(safe, "Title");
-            TopBand(title, 20f, 20f, 227f, 26f);
-            NoWrap(UI51Build.Text(title, "Crea il tuo account", FontFace.CinzelBold, 20f, UI51Tokens.Cream, TextAlignmentOptions.Center));
+            UI51Build.TopBand(title, 20f, 20f, 227f, 26f);
+            UI51Build.NoWrap(UI51Build.Text(title, "Crea il tuo account", FontFace.CinzelBold, 20f, UI51Tokens.Cream, TextAlignmentOptions.Center));
             var subtitle = UI51Build.Child(safe, "Subtitle");
-            TopBand(subtitle, 20f, 20f, 257f, 16f);
-            NoWrap(UI51Build.Text(subtitle, "Unisciti alla sfida di Cirulla-51", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center));
+            UI51Build.TopBand(subtitle, 20f, 20f, 257f, 16f);
+            UI51Build.NoWrap(UI51Build.Text(subtitle, "Unisciti alla sfida di Cirulla-51", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center));
 
             var sheet = Sheet(safe, UI51Build.Pad(24, 22, 22, 22), 12f, UI51Shape.Linear(
                 (UI51Tokens.Rgba(8, 17, 34, 0.35f), 0f), (UI51Tokens.Rgba(7, 15, 30, 0.88f), 0.2f),
@@ -212,10 +211,10 @@ namespace Project51.UI51.EditorTools
             UI51Build.GetOrAdd<UI51Press>(footer);
             var ask = UI51Build.Child(footer, "Ask");
             UI51Build.Size(ask, 0f, 18f);
-            NoWrap(UI51Build.Text(ask, "Hai gi\u00e0 un account?", FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.8f)));
+            UI51Build.NoWrap(UI51Build.Text(ask, "Hai gi\u00e0 un account?", FontFace.NunitoRegular, 13f, UI51Tokens.CreamA(0.8f)));
             var go = UI51Build.Child(footer, "Accedi");
             UI51Build.Size(go, 0f, 18f);
-            NoWrap(UI51Build.Text(go, "Accedi", FontFace.NunitoBold, 13f, UI51Tokens.Gold));
+            UI51Build.NoWrap(UI51Build.Text(go, "Accedi", FontFace.NunitoBold, 13f, UI51Tokens.Gold));
 
             ui.TermsCheck.SetActive(false);   // AuthScreensV2.ToggleTerms lo accende
             ui.Status.gameObject.SetActive(false);
@@ -226,14 +225,14 @@ namespace Project51.UI51.EditorTools
         {
             var rt = UI51Build.Child(parent, name);
             UI51Build.Size(rt, 0f, 18f);
-            NoWrap(UI51Build.Text(rt, text, FontFace.NunitoRegular, 11.5f, color));
+            UI51Build.NoWrap(UI51Build.Text(rt, text, FontFace.NunitoRegular, 11.5f, color));
         }
 
         static Button TermsLinkPiece(Transform parent, string name, string text)
         {
             var rt = UI51Build.Child(parent, name);
             UI51Build.Size(rt, 0f, 18f);
-            var t = NoWrap(UI51Build.Text(rt, text, FontFace.NunitoBold, 11.5f, UI51Tokens.Gold));
+            var t = UI51Build.NoWrap(UI51Build.Text(rt, text, FontFace.NunitoBold, 11.5f, UI51Tokens.Gold));
             t.raycastTarget = true;
             UI51Build.GetOrAdd<UI51Press>(rt);
             return UI51Build.Button(t, t);
@@ -251,7 +250,7 @@ namespace Project51.UI51.EditorTools
 
             // Header: indietro 40 + titolo/sottotitolo
             var header = UI51Build.Child(ui.Frame, "Header");
-            TopBand(header, 20f, 20f, 22f, 40f);
+            UI51Build.TopBand(header, 20f, 20f, 22f, 40f);
             UI51Build.Row(header, 12f, null, TextAnchor.MiddleLeft, true, false);
             ui.Back = RoundButton(header, "Back", false, 40f, 20f, UI51Tokens.Rgba(11, 29, 58, 0.6f), UI51Build.Sprite("Common", "ic_nav_back_cream"), 15f);
             UI51Build.Layout(ui.Back, 40f);
@@ -262,10 +261,10 @@ namespace Project51.UI51.EditorTools
             var title = UI51Build.Child(titles, "Title");
             UI51Build.Layout(title, -1f, 23f);
             // NoWrap: con Ellipsis TMP svuota il testo se la riga (line-height del font) supera l'altezza di layout.
-            ui.Title = NoWrap(UI51Build.Text(title, "Termini di servizio", FontFace.CinzelBold, 20f, UI51Tokens.Cream));
+            ui.Title = UI51Build.NoWrap(UI51Build.Text(title, "Termini di servizio", FontFace.CinzelBold, 20f, UI51Tokens.Cream));
             var subtitle = UI51Build.Child(titles, "Subtitle");
             UI51Build.Layout(subtitle, -1f, 14f);
-            ui.Subtitle = NoWrap(UI51Build.Text(subtitle, "", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f)));
+            ui.Subtitle = UI51Build.NoWrap(UI51Build.Text(subtitle, "", FontFace.NunitoRegular, 11f, UI51Tokens.CreamA(0.5f)));
 
             // Scroller: top 84, left 20, right 12, bottom 104 (padding destro 8 nel contenuto)
             var scrollRt = UI51Build.Stretch(UI51Build.Child(ui.Frame, "Scroll"), 20f, 104f, 12f, 84f);
@@ -293,7 +292,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Shape(card, UI51Tokens.PanelFill(), 180f, UI51Tokens.Radii(16f), 1f, UI51Tokens.BorderGoldSoft);
             UI51Build.Column(card, 0f, UI51Build.Pad(0, 0, 4, 0), TextAnchor.UpperLeft, true, true).childForceExpandWidth = true;
             var indexLabel = UI51Build.Child(card, "Label");
-            var il = NoWrap(UI51Build.Text(indexLabel, "INDICE", FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, TextAlignmentOptions.Left, 2f));
+            var il = UI51Build.NoWrap(UI51Build.Text(indexLabel, "INDICE", FontFace.CinzelSemiBold, 10f, UI51Tokens.Gold, TextAlignmentOptions.Left, 2f));
             il.margin = new Vector4(12f, 12f, 12f, 6f);
 
             var row = UI51Build.Child(card, "IndexRowTemplate");
@@ -305,7 +304,7 @@ namespace Project51.UI51.EditorTools
             var num = UI51Build.Child(row, "Num");
             UI51Build.Size(num, 16f, 20f);
             UI51Build.Layout(num, 16f);
-            NoWrap(UI51Build.Text(num, "1", FontFace.CinzelSemiBold, 11f, UI51Tokens.Gold));
+            UI51Build.NoWrap(UI51Build.Text(num, "1", FontFace.CinzelSemiBold, 11f, UI51Tokens.Gold));
             var label = UI51Build.Child(row, "Label");
             UI51Build.Size(label, 0f, 20f);
             UI51Build.Layout(label, 0f, -1f, 1f);
@@ -375,7 +374,7 @@ namespace Project51.UI51.EditorTools
 
         static bool BuildLoading(Scene scene)
         {
-            var view = FindPath(scene, "AppLoadingV2", "LoadingView");
+            var view = UI51Build.FindPath(scene, "AppLoadingV2", "LoadingView");
             if (view == null) { Debug.LogError($"{Tag} AppLoadingV2/LoadingView non trovato: Caricamento non ricostruito."); return false; }
             MonoBehaviour loading = null;
             foreach (var mb in view.GetComponentsInParent<MonoBehaviour>(true))
@@ -389,20 +388,18 @@ namespace Project51.UI51.EditorTools
 
             var glow = UI51Build.Child(safe, "Glow");
             UI51Build.Image(glow, UI51Build.Sprite("Common", "Bagliore_morbido"), new Color(1f, 1f, 1f, 0.75f));
-            CenterAt(glow, 195f, 260f, 360f, 360f);
+            UI51Build.CenterAt(glow, 195f, 260f, 360f, 360f);
             Logo(safe, 195f, 260f, 196f);
 
             // Ventaglio di 5 dorsi 40x60, r5, ombra. Posizioni fisse, niente LayoutGroup: LoadingWave cattura
             // anchoredPosition a vista ancora non impaginata e le carte finirebbero tutte nello stesso punto.
             var cards = UI51Build.Child(safe, "Cards");
-            TopBand(cards, 0f, 0f, 530f, 80f);
-            var oldRow = cards.GetComponent<HorizontalLayoutGroup>();   // lasciato dalle build precedenti
-            if (oldRow != null) UnityEngine.Object.DestroyImmediate(oldRow);
+            UI51Build.TopBand(cards, 0f, 0f, 530f, 80f);
             var cardRts = WaveBacks(cards, 40f, 60f, 50f);
 
             // Avanzamento: left/right 40, top 640, gap 10
             var progress = UI51Build.Child(safe, "Progress");
-            TopBand(progress, 40f, 40f, 640f, 76f);
+            UI51Build.TopBand(progress, 40f, 40f, 640f, 76f);
             UI51Build.Column(progress, 10f, null, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
             var labels = UI51Build.Child(progress, "Labels");
             UI51Build.Layout(labels, -1f, 16f);
@@ -414,7 +411,7 @@ namespace Project51.UI51.EditorTools
             step.enableWordWrapping = false;
             var pctRt = UI51Build.Child(labels, "Percent");
             UI51Build.Size(pctRt, 0f, 16f);
-            var pct = NoWrap(UI51Build.Text(pctRt, "0%", FontFace.CinzelBold, 12f, UI51Tokens.Cream, TextAlignmentOptions.Right));
+            var pct = UI51Build.NoWrap(UI51Build.Text(pctRt, "0%", FontFace.CinzelBold, 12f, UI51Tokens.Cream, TextAlignmentOptions.Right));
 
             var bar = UI51Build.Child(progress, "Bar");
             UI51Build.Layout(bar, -1f, 10f);
@@ -427,12 +424,6 @@ namespace Project51.UI51.EditorTools
             // era lo sprite di Unity stirato: le estremita' si deformavano mentre la barra cresceva (utente, 01/10).
             var fillImg = UI51Build.Image(fill, null, Color.white, false, false);
             fillImg.enabled = false;
-            UI51Build.Remove<Mask>(fill.gameObject);
-            foreach (var stale in new[] { "Gradient", "Shine" })
-            {
-                var old = fill.Find(stale);
-                if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
-            }
             var clip = UI51Build.Stretch(UI51Build.Child(fill, "Clip"));
             UI51Build.Solid(clip, Color.white, 4f);
             UI51Build.GetOrAdd<Mask>(clip).showMaskGraphic = false;
@@ -443,17 +434,15 @@ namespace Project51.UI51.EditorTools
                 90f, Vector4.zero, 0f, Color.clear);
 
             // Fuori dalla colonna per lo stesso motivo delle carte (UIAnim.Tip anima la Y).
-            var oldTip = progress.Find("Tip");
-            if (oldTip != null) UnityEngine.Object.DestroyImmediate(oldTip.gameObject);
             var tipRt = UI51Build.Child(safe, "Tip");
-            TopBand(tipRt, 40f, 40f, 696f, 40f);
+            UI51Build.TopBand(tipRt, 40f, 40f, 696f, 40f);
             var tip = UI51Build.Text(tipRt, "", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Top);
             tip.enableWordWrapping = true;
             tip.lineSpacing = 9f;   // ~line-height 1.45
 
             // Stato di errore (non nel mockup): Riprova/Annulla, spenti finche' AppLoadingView.Fail non li accende.
             var actions = UI51Build.Child(safe, "Actions");
-            TopBand(actions, 40f, 40f, 740f, 98f);
+            UI51Build.TopBand(actions, 40f, 40f, 740f, 98f);
             UI51Build.Column(actions, 10f, null, TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
             var retry = GoldButton(actions, "Retry", "RIPROVA", 48f, 15f);
             var cancel = GhostButton(actions, "Cancel", "Annulla", 40f);
@@ -466,7 +455,7 @@ namespace Project51.UI51.EditorTools
             version.pivot = new Vector2(0.5f, 0f);
             version.offsetMin = new Vector2(20f, 22f);
             version.offsetMax = new Vector2(-20f, 36f);
-            NoWrap(UI51Build.Text(version, "", FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(0.35f), TextAlignmentOptions.Center));
+            UI51Build.NoWrap(UI51Build.Text(version, "", FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(0.35f), TextAlignmentOptions.Center));
             UI51Build.GetOrAdd<UI51VersionLabel>(version);
 
             if (loading == null)
@@ -515,7 +504,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "LoginForgot", login.Forgot);
                 UI51Build.Ref(so, "LoginEmail", login.Email);
                 UI51Build.Ref(so, "LoginStatus", login.Status);
-                SetArray(so, "LoginGuestOnly", login.Guest.gameObject);
+                UI51Build.SetArray(so, "LoginGuestOnly", login.Guest.gameObject);
 
                 UI51Build.Ref(so, "RegisterBack", register.Back);
                 UI51Build.Ref(so, "RegisterToLogin", register.ToLogin);
@@ -579,14 +568,6 @@ namespace Project51.UI51.EditorTools
             });
         }
 
-        internal static void SetArray(SerializedObject so, string field, params UnityEngine.Object[] values)
-        {
-            var p = so.FindProperty(field);
-            if (p == null || !p.isArray) { Debug.LogError($"{Tag} Campo array {field} non trovato su {so.targetObject.GetType().Name}."); return; }
-            p.arraySize = values.Length;
-            for (int i = 0; i < values.Length; i++) p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
-        }
-
         // --- Mattoni
 
         /// <summary>UI51 (stretch) -> Bg (envelope) -> Overlay (opzionale) -> Safe (DesignCanvasFit 390x844). Ritorna Safe.</summary>
@@ -638,34 +619,13 @@ namespace Project51.UI51.EditorTools
             return cards;
         }
 
-        /// <summary>Centro in px del mockup (x da sinistra, y dall'alto), ancorato in alto al centro.</summary>
-        internal static RectTransform CenterAt(RectTransform rt, float x, float y, float w, float h)
-        {
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(w, h);
-            rt.anchoredPosition = new Vector2(x - 195f, -y);
-            return rt;
-        }
-
-        /// <summary>Fascia larga quanto il genitore meno i margini, a top px dall'alto, alta h.</summary>
-        internal static RectTransform TopBand(RectTransform rt, float left, float right, float top, float h)
-        {
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(1f, 1f);
-            rt.pivot = new Vector2(0.5f, 1f);
-            rt.offsetMin = new Vector2(left, -top - h);
-            rt.offsetMax = new Vector2(-right, -top);
-            return rt;
-        }
-
         internal static void Logo(RectTransform safe, float x, float y, float width)
         {
             var logo = UI51Build.Child(safe, "Logo");
             var sprite = UI51Build.Sprite("Common", "logo_51");
             UI51Build.Image(logo, sprite, Color.white);
             float h = sprite != null ? width * sprite.rect.height / sprite.rect.width : width;
-            CenterAt(logo, x, y, width, h);
+            UI51Build.CenterAt(logo, x, y, width, h);
         }
 
         /// <summary>Foglio in basso a tutta larghezza (bordo solo in alto: i lati escono di 1px), altezza dal contenuto.</summary>
@@ -771,7 +731,7 @@ namespace Project51.UI51.EditorTools
         {
             var rt = UI51Build.Child(parent, name);
             UI51Build.Layout(rt, -1f, height);
-            var t = NoWrap(UI51Build.Text(rt, label, face, size, color, align));
+            var t = UI51Build.NoWrap(UI51Build.Text(rt, label, face, size, color, align));
             t.raycastTarget = true;
             UI51Build.GetOrAdd<UI51Press>(rt);
             return UI51Build.Button(t, t);
@@ -791,7 +751,7 @@ namespace Project51.UI51.EditorTools
         {
             var rt = UI51Build.Child(parent, "Version");
             UI51Build.Layout(rt, -1f, 14f);
-            NoWrap(UI51Build.Text(rt, "", FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(alpha), TextAlignmentOptions.Center));
+            UI51Build.NoWrap(UI51Build.Text(rt, "", FontFace.NunitoRegular, 10f, UI51Tokens.CreamA(alpha), TextAlignmentOptions.Center));
             UI51Build.GetOrAdd<UI51VersionLabel>(rt);
         }
 
@@ -801,52 +761,6 @@ namespace Project51.UI51.EditorTools
             UI51Build.Size(rt, 0f, 1f);
             UI51Build.Layout(rt, 0f, -1f, 1f);
             UI51Build.Image(rt, null, UI51Tokens.WhiteA(0.18f), false, false);
-        }
-
-        internal static TextMeshProUGUI NoWrap(TextMeshProUGUI t)
-        {
-            t.enableWordWrapping = false;
-            t.overflowMode = TextOverflowModes.Overflow;
-            return t;
-        }
-
-        // --- Scena
-
-        internal static void HideChild(Transform parent, string name)
-        {
-            var t = parent.Find(name);
-            if (t != null) t.gameObject.SetActive(false);
-        }
-
-        internal static GameObject PanelRef(SerializedObject authSo, string field, Scene scene, string fallbackName)
-        {
-            var p = authSo.FindProperty(field);
-            if (p != null && p.objectReferenceValue is GameObject go) return go;
-            foreach (var root in scene.GetRootGameObjects())
-                foreach (var t in root.GetComponentsInChildren<Transform>(true))
-                    if (t.name == fallbackName) return t.gameObject;
-            return null;
-        }
-
-        internal static Transform FindPath(Scene scene, string parentName, string name)
-        {
-            foreach (var root in scene.GetRootGameObjects())
-                foreach (var t in root.GetComponentsInChildren<Transform>(true))
-                    if (t.name == name && t.parent != null && t.parent.name == parentName) return t;
-            return null;
-        }
-
-        internal static bool HasDirtyScene()
-        {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var s = SceneManager.GetSceneAt(i);
-                if (!s.isDirty) continue;
-                Debug.LogError($"{Tag} La scena aperta '{(string.IsNullOrEmpty(s.path) ? s.name : s.path)}' ha modifiche non salvate: " +
-                               "salvala o scartala e riesegui. Non la tocco.");
-                return true;
-            }
-            return false;
         }
     }
 }

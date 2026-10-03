@@ -10,10 +10,7 @@ namespace Project51.UIV2.Data
         public int Level;
         public bool IsLocalPlayer;
 
-        // Letti da UIV2_TopBar per l'energy/XP widget (visual calibration 2026-09-13) -
-        // opzionali: se Max <= 0 il rispettivo widget resta a 0 senza generare errori.
-        public int EnergyCurrent;
-        public int EnergyMax;
+        // Barra XP della testata: XpMax <= 0 la nasconde (ospiti).
         public int XpCurrent;
         public int XpMax;
     }

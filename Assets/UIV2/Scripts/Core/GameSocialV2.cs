@@ -156,8 +156,7 @@ namespace Project51.UIV2.Core
         private int Seat(int player)
         {
             if(turns==null)turns=FindObjectOfType<TurnController>(); // un'emoticon arrivata prima del primo Update: 1v1, non 4 posti
-            int count=turns?.GameState?.NumPlayers??4;int relative=(player-GameModeService.Current.LocalPlayerIndex+count)%count;
-            return count==2&&relative==1?2:relative;
+            return CardViewManager.SeatOf(player,GameModeService.Current.LocalPlayerIndex,turns?.GameState?.NumPlayers??4);
         }
         public void ShowEmoticon(int player,int index)
         {

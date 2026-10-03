@@ -62,20 +62,6 @@ namespace Project51.UIV2.Screens
             }
         }
 
-        /// <summary>
-        /// Player/Resources dentro HomeViewData sono per UIV2_TopBar - il chiamante li
-        /// smista li' separatamente, qui vengono ignorati di proposito.
-        /// </summary>
-        public void Bind(HomeViewData data)
-        {
-            if (data == null) return;
-            SetMode(data.SelectedMode);
-            SetDeck(data.SelectedDeck);
-            SetRewardsBadge(data.RewardsBadgeCount);
-            SetRankingBadge(data.RankingBadgeCount);
-            SetMailBadge(data.MailBadgeCount);
-        }
-
         public void SetMode(SelectorOptionViewData mode)
         {
             _currentMode = mode;
@@ -103,11 +89,6 @@ namespace Project51.UIV2.Screens
         public void SetMailBadge(int count)
         {
             if (mailButton != null) mailButton.SetBadgeCount(count);
-        }
-
-        public void SetFriendsBadge(int count)
-        {
-            if (friendsButton != null) friendsButton.SetBadgeCount(count);
         }
 
         public void SetNewsBadge(int count)

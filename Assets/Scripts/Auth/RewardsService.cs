@@ -180,6 +180,13 @@ namespace Project51.Auth
             return r;
         }
 
+        /// <summary>Suono di un premio riscattato: monete, piu' le gemme se ce ne sono.</summary>
+        public static void PlaySound(ServerReward r)
+        {
+            Project51.Unity.GameAudio.Play(Project51.Unity.SoundId.RewardCoin);
+            if (r.gemme > 0) Project51.Unity.GameAudio.Play(Project51.Unity.SoundId.RewardGem);
+        }
+
         /// <summary>"+250 monete · +5 gemme" (vuota se non e' arrivato niente).</summary>
         public static string Summary(ServerReward r)
         {

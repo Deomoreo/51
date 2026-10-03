@@ -69,7 +69,7 @@ namespace Project51.UIV2.Components
                     var data = items[i];
                     slot.Button.gameObject.SetActive(true);
                     // Se il chiamante non passa un'icona, resta quella di default gia' nel
-                    // prefab (stesso pattern di UIV2ResourcePill/UIV2StatTile) invece di
+                    // prefab (stesso pattern di UIV2StatTile) invece di
                     // cancellarla.
                     if (slot.Icon != null && data.Icon != null) slot.Icon.sprite = data.Icon;
                     if (slot.Label != null) slot.Label.text = data.Label;

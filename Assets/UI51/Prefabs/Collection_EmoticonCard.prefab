@@ -711,20 +711,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   visualRoot: {fileID: 7857305924149713253}
   visualCanvasGroup: {fileID: 0}
-  border: {fileID: 0}
   icon: {fileID: 8105816283481143807}
-  lockIcon: {fileID: 0}
   nameLabel: {fileID: 6172980346393349005}
   equippedBadge: {fileID: 7383293334604874684}
-  unlockedBorderColor: {r: 1, g: 1, b: 1, a: 1}
-  equippedBorderColor: {r: 0.91, g: 0.7, b: 0.29, a: 1}
   button: {fileID: 946572183288057519}
-  fillRect: {fileID: 0}
-  fill: {fileID: 0}
-  unlockedFillColor: {r: 1, g: 1, b: 1, a: 1}
-  lockedFillColor: {r: 1, g: 1, b: 1, a: 1}
-  equippedBorderThickness: 4
-  normalBorderThickness: 3
   overrideNameColors: 1
   nameColor: {r: 0.9607843, g: 0.9137255, b: 0.8156863, a: 0.75}
   equippedNameColor: {r: 0.9529412, g: 0.7882353, b: 0.4117647, a: 1}
