@@ -27,19 +27,14 @@ namespace Project51.Auth
     /// 
     /// USO:
     /// 1. Aggiungi questo componente a un GameObject nella prima scena
-    /// 2. Configura authUI se vuoi callback UI
-    /// 3. Il bootstrap parte automaticamente in Start()
-    /// 4. Ascolta OnAuthReady o OnAuthStateChanged per sapere quando procedere
+    /// 2. Il bootstrap parte automaticamente in Start()
+    /// 3. Ascolta OnAuthReady per sapere quando procedere
     /// </summary>
     public class AuthBootstrapper : MonoBehaviour
     {
         public static AuthBootstrapper Instance { get; private set; }
         
         #region Serialized Fields
-        
-        [Header("Configuration")]
-        [Tooltip("Photon App ID (PUN). Se vuoto, usa PhotonServerSettings.")]
-        [SerializeField] private string photonAppIdOverride;
         
         [Header("Retry Settings")]
         [Tooltip("Numero massimo di tentativi per ogni step")]
@@ -50,9 +45,6 @@ namespace Project51.Auth
         
         [Tooltip("Delay massimo tra retry (secondi)")]
         [SerializeField] private float maxRetryDelay = 30f;
-        
-        [Header("UI Callback (Optional)")]
-        [SerializeField] private MonoBehaviour authUIComponent;
         
         #endregion
         
@@ -66,26 +58,17 @@ namespace Project51.Auth
         // Servizi
         public PlayFabAuthService PlayFabAuth { get; private set; }
         public ProfileService Profile { get; private set; }
-
-        /// <summary>
-        /// True se l'utente ha già fatto almeno un login su questo device (anche guest).
-        /// Se true, mostra TapToEnter; se false, mostra auth UI per la prima scelta.
-        /// </summary>
-        public bool ShouldShowTapToEnter => PlayFabAuth != null && PlayFabAuth.HasEverLoggedIn;
         
         #endregion
         
         #region Events
         
         public event Action OnAuthReady;
-        public event Action<AuthState> OnAuthStateChanged;
-        public event Action<string> OnAuthError;
         
         #endregion
         
         #region Private Fields
         
-        private IAuthUI _authUI;
         private PhotonAuthConnector _photonConnector;
         private int _currentRetryCount;
         private Coroutine _authCoroutine;
@@ -115,12 +98,6 @@ namespace Project51.Auth
             Profile.OnProfileUpdated += PublishLook;               // editor profilo e livello dopo la partita
             PlayFabAuth.OnDisplayNameChanged += _ => PublishLook(); // "gioca come ospite" e logout alzano solo questo
 
-            // Setup UI callback
-            if (authUIComponent != null && authUIComponent is IAuthUI ui)
-            {
-                _authUI = ui;
-            }
-            
             // Trova o crea PhotonAuthConnector
             _photonConnector = FindObjectOfType<PhotonAuthConnector>();
             if (_photonConnector == null)
@@ -169,16 +146,6 @@ namespace Project51.Auth
             _authCoroutine = StartCoroutine(AuthenticationFlow());
         }
         
-        /// <summary>
-        /// Riprova l'autenticazione dopo un errore.
-        /// </summary>
-        public void RetryAuthentication()
-        {
-            if (CurrentState == AuthState.Error)
-            {
-                StartAuthentication();
-            }
-        }
 
         /// <summary>Aspetto vero del profilo solo con login vero e profilo caricato: stesso criterio al tavolo e in rete.</summary>
         public bool HasRealProfile => Profile != null && Profile.IsLoaded && PlayFabAuth != null && PlayFabAuth.HasRealLogin;
@@ -327,87 +294,11 @@ namespace Project51.Auth
                 if (clearRealAccountFlag)
                 {
                     PlayFabAuth.ClearRealLoginFlag();
-                    PlayFabAuth.ClearHasLoggedIn();
                     PlayFabAuth.ClearRegisteredFlag();
                 }
             }
 
             StartAuthentication();
-        }
-        
-        /// <summary>
-        /// Registra un'interfaccia UI per i callback.
-        /// </summary>
-        public void RegisterAuthUI(IAuthUI ui)
-        {
-            _authUI = ui;
-            
-            // Notifica stato corrente
-            _authUI?.OnAuthStateChanged(CurrentState);
-            
-            if (CurrentState == AuthState.Ready)
-            {
-                _authUI?.OnAuthReady();
-                _authUI?.SetGuestBadge(!PlayFabAuth.IsAccountLinked);
-                _authUI?.SetPlayerName(PlayFabAuth.GetBestDisplayName());
-            }
-
-            // Keep UI updated if the display name changes later (e.g. after registration/link).
-            PlayFabAuth.OnDisplayNameChanged -= HandleDisplayNameChanged;
-            PlayFabAuth.OnDisplayNameChanged += HandleDisplayNameChanged;
-        }
-
-        private void HandleDisplayNameChanged(string newName)
-        {
-            _authUI?.SetPlayerName(string.IsNullOrWhiteSpace(newName) ? PlayFabAuth.GetBestDisplayName() : newName);
-        }
-        
-        /// <summary>
-        /// Protegge l'account collegandolo al provider di piattaforma (Google/Apple).
-        /// </summary>
-        public void ProtectAccount(Action onSuccess = null, Action<string> onError = null)
-        {
-            var nativePlatformAuth = NativePlatformAuth.Instance;
-            
-            if (nativePlatformAuth == null)
-            {
-                // Crea il componente se non esiste
-                var go = new GameObject("NativePlatformAuth");
-                go.transform.SetParent(transform);
-                nativePlatformAuth = go.AddComponent<NativePlatformAuth>();
-            }
-            
-            _authUI?.ShowLoading(true, "Connecting to account...");
-            
-            nativePlatformAuth.RequestPlatformAuth(
-                (token, authType) =>
-                {
-                    Debug.Log($"[AuthBootstrapper] Platform auth successful, type: {authType}");
-                    
-                    _authUI?.ShowLoading(true, "Linking account...");
-                    
-                    if (authType == PlatformAuthType.Google)
-                    {
-                        PlayFabAuth.LinkGoogleAccount(token, false,
-                            () => OnAccountLinked(onSuccess),
-                            error => OnAccountLinkFailed(error, onError)
-                        );
-                    }
-                    else if (authType == PlatformAuthType.Apple)
-                    {
-                        PlayFabAuth.LinkAppleAccount(token, false,
-                            () => OnAccountLinked(onSuccess),
-                            error => OnAccountLinkFailed(error, onError)
-                        );
-                    }
-                },
-                error =>
-                {
-                    _authUI?.ShowLoading(false);
-                    _authUI?.ShowError(error, true);
-                    onError?.Invoke(error);
-                }
-            );
         }
         
         #endregion
@@ -419,11 +310,9 @@ namespace Project51.Auth
             Debug.Log("[AuthBootstrapper] Starting authentication flow...");
             
             SetState(AuthState.Initializing);
-            _authUI?.ShowLoading(true, "Initializing...");
             
             // Step 1: Login PlayFab (Guest)
             SetState(AuthState.LoggingInPlayFab);
-            _authUI?.ShowLoading(true, "Connecting to server...");
             
             bool playFabLoginDone = false;
             bool playFabLoginSuccess = false;
@@ -462,11 +351,10 @@ namespace Project51.Auth
                 yield break;
             }
             
-            Debug.Log($"[AuthBootstrapper] PlayFab login successful: {PlayFabAuth.PlayFabId}");
+            Debug.Log("[AuthBootstrapper] PlayFab login successful");
             
             // Step 2: Get Photon Token
             SetState(AuthState.GettingPhotonToken);
-            _authUI?.ShowLoading(true, "Authenticating...");
             
             string photonAppId = GetPhotonAppId();
             
@@ -500,27 +388,6 @@ namespace Project51.Auth
             
             if (!photonTokenSuccess)
             {
-                // In prototipo possiamo continuare anche senza Photon configurato.
-                // Caso tipico: PlayFab add-on Photon non configurato => PhotonApplicationNotFound.
-                if (!string.IsNullOrEmpty(photonTokenError) && photonTokenError.IndexOf("PhotonApplicationNotFound", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    Debug.LogWarning("[AuthBootstrapper] Photon not configured on PlayFab (PhotonApplicationNotFound). Continuing without Photon for prototype.");
-
-                    _authUI?.ShowLoading(false);
-                    _authUI?.ShowError(
-                        "Photon non è configurato su PlayFab (PhotonApplicationNotFound).\n" +
-                        "Per il prototipo continuiamo senza multiplayer.\n\n" +
-                        "Quando vorrai abilitarlo:\n" +
-                        "1) PlayFab Game Manager > Add-ons > Photon > configura l'AppId\n" +
-                        "2) Photon Dashboard > Authentication > imposta l'URL PlayFab /photon/authenticate",
-                        canRetry: false);
-
-                    // Segna Ready per permettere testing UI/guest/progressi anche senza networking.
-                    SetState(AuthState.Ready);
-                    OnAuthReady?.Invoke();
-                    yield break;
-                }
-
                 yield return HandleError("Failed to get Photon token", photonTokenError);
                 yield break;
             }
@@ -529,7 +396,6 @@ namespace Project51.Auth
             
             // Step 3: Connect to Photon
             SetState(AuthState.ConnectingPhoton);
-            _authUI?.ShowLoading(true, "Connecting to game server...");
             
             // Configura autenticazione custom
             _photonConnector.ConfigureCustomAuthentication(
@@ -586,17 +452,8 @@ namespace Project51.Auth
             // Step 4: Load profile (opzionale, non blocca)
             Profile.LoadProfile(PublishLook); // anche a caricamento fallito: toglie l'aspetto
             
-            // Step 5: Check account link status
-            PlayFabAuth.CheckAccountLinkStatus(isLinked =>
-            {
-                _authUI?.SetGuestBadge(!isLinked);
-            });
-            
             // READY!
             SetState(AuthState.Ready);
-            _authUI?.ShowLoading(false);
-            _authUI?.SetPlayerName(nickname);
-            _authUI?.OnAuthReady();
             OnAuthReady?.Invoke();
             
             Debug.Log("[AuthBootstrapper] Authentication complete! Ready to play.");
@@ -615,7 +472,6 @@ namespace Project51.Auth
                 float delay = Mathf.Min(baseRetryDelay * Mathf.Pow(2, _currentRetryCount - 1), maxRetryDelay);
                 
                 Debug.Log($"[AuthBootstrapper] Retrying in {delay:F1}s (attempt {_currentRetryCount}/{maxRetries})");
-                _authUI?.ShowLoading(true, $"Retrying in {delay:F0}s...");
                 
                 yield return new WaitForSeconds(delay);
                 
@@ -626,26 +482,7 @@ namespace Project51.Auth
             {
                 // Troppi tentativi, mostra errore finale
                 SetState(AuthState.Error);
-                _authUI?.ShowLoading(false);
-                _authUI?.ShowError(LastError, true);
-                OnAuthError?.Invoke(LastError);
             }
-        }
-        
-        private void OnAccountLinked(Action onSuccess)
-        {
-            _authUI?.ShowLoading(false);
-            _authUI?.SetGuestBadge(false);
-            
-            Debug.Log("[AuthBootstrapper] Account protected successfully!");
-            onSuccess?.Invoke();
-        }
-        
-        private void OnAccountLinkFailed(string error, Action<string> onError)
-        {
-            _authUI?.ShowLoading(false);
-            _authUI?.ShowError(error, true);
-            onError?.Invoke(error);
         }
         
         private void SetState(AuthState newState)
@@ -654,20 +491,11 @@ namespace Project51.Auth
             
             CurrentState = newState;
             Debug.Log($"[AuthBootstrapper] State changed to: {newState}");
-            
-            _authUI?.OnAuthStateChanged(newState);
-            OnAuthStateChanged?.Invoke(newState);
         }
         
         private string GetPhotonAppId()
         {
-            // Prima controlla override
-            if (!string.IsNullOrEmpty(photonAppIdOverride))
-            {
-                return photonAppIdOverride;
-            }
-            
-            // Altrimenti leggi da PhotonServerSettings
+            // Da PhotonServerSettings
             try
             {
                 return PhotonNetwork.PhotonServerSettings?.AppSettings?.AppIdRealtime;

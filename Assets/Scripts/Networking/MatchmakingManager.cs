@@ -33,11 +33,12 @@ namespace Project51.Networking
         public event Action OnMatchFound;
         public event Action<string> OnRoomCreated; // passa il codice stanza
         public event Action OnRoomJoined;
-        public event Action<Photon.Realtime.Player> OnPlayerJoined;
-        public event Action<Photon.Realtime.Player> OnPlayerLeft;
 
-        [Header("Settings")]
-        [SerializeField] private int roomCodeLength = 5;
+        /// <summary>Lunghezza del codice delle stanze private (lo valida anche RoomFlowV2).</summary>
+        public const int RoomCodeLength = 5;
+
+        /// <summary>Chiavi delle proprieta' di stanza (filtro della lobby, JoinRandomRoom, rientro): i valori non cambiano mai.</summary>
+        public const string PropFormat = "format", PropTarget = "target";
 
         private void Awake()
         {
@@ -310,8 +311,8 @@ namespace Project51.Networking
         private string GenerateRoomCode()
         {
             const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Evita caratteri ambigui
-            var code = new char[roomCodeLength];
-            for (int i = 0; i < roomCodeLength; i++)
+            var code = new char[RoomCodeLength];
+            for (int i = 0; i < RoomCodeLength; i++)
             {
                 code[i] = chars[UnityEngine.Random.Range(0, chars.Length)];
             }
@@ -328,10 +329,10 @@ namespace Project51.Networking
                 CleanupCacheOnLeave = true,
                 CustomRoomProperties = new Hashtable
                 {
-                    { "format", (int)CurrentConfig.Format },
-                    { "target", CurrentConfig.TargetScore }
+                    { PropFormat, (int)CurrentConfig.Format },
+                    { PropTarget, CurrentConfig.TargetScore }
                 },
-                CustomRoomPropertiesForLobby = new[] { "format", "target" }
+                CustomRoomPropertiesForLobby = new[] { PropFormat, PropTarget }
             };
             return options;
         }
@@ -342,7 +343,7 @@ namespace Project51.Networking
 
             var expectedProps = new Hashtable
             {
-                { "format", (int)CurrentConfig.Format }
+                { PropFormat, (int)CurrentConfig.Format }
             };
 
             PhotonNetwork.JoinRandomRoom(expectedProps, (byte)CurrentConfig.PlayerCount);
@@ -433,13 +434,13 @@ namespace Project51.Networking
             // e' gia' autorevole su questo tramite le CustomRoomProperties impostate da
             // CreatePrivateRoomInternal/GetRoomOptions: le rileggiamo per allineare CurrentConfig,
             // cosi' che PlayerCount (derivato da Format) sia coerente su tutti i client.
-            if (CurrentConfig != null && PhotonNetwork.CurrentRoom?.CustomProperties != null)
+            if (PhotonNetwork.CurrentRoom.CustomProperties != null)
             {
                 var props = PhotonNetwork.CurrentRoom.CustomProperties;
-                if (props.ContainsKey("format"))
-                    CurrentConfig.Format = (GameFormat)(int)props["format"];
-                if (props.ContainsKey("target"))
-                    CurrentConfig.TargetScore = (int)props["target"];
+                if (props.ContainsKey(PropFormat))
+                    CurrentConfig.Format = (GameFormat)(int)props[PropFormat];
+                if (props.ContainsKey(PropTarget))
+                    CurrentConfig.TargetScore = (int)props[PropTarget];
             }
 
             // CRITICO: salviamo SUBITO la config (corretta) in PlayerPrefs, qui - non solo quando
@@ -457,7 +458,7 @@ namespace Project51.Networking
             // sessione e gioca da solo".
             MatchConfigStorage.Save(CurrentConfig);
 
-            if (CurrentConfig?.Intent == MatchIntent.PrivateRoom)
+            if (CurrentConfig.Intent == MatchIntent.PrivateRoom)
             {
                 SetState(MatchmakingState.InWaitingRoom);
 
@@ -500,8 +501,9 @@ namespace Project51.Networking
         }
 
         /// <summary>
-        /// Rifiuto del server (errore 32752: webhook Photon RoomCreated/RoomBeforeJoin nel CloudScript, gioco online sospeso): la ricerca si
-        /// ferma, niente nuova stanza, e si mostra la Sospensione se e' quella (UI51SuspensionView.ServerRefused).
+        /// Rifiuto del server (errore 32752). Dalla 2.62 i webhook non rifiutano mai: arriva solo da un guasto dei webhook (revisione del
+        /// CloudScript o nome del webhook sbagliati). La sospensione si controlla sul telefono (UI51SuspensionView.WhenOnlineAllowed); qui la
+        /// ricerca si ferma, niente nuova stanza, e UI51SuspensionView.ServerRefused ricontrolla la sospensione, altrimenti mostra un errore generico.
         /// </summary>
         private bool RefusedByServer(short returnCode)
         {
@@ -523,7 +525,6 @@ namespace Project51.Networking
         public override void OnPlayerEnteredRoom(Photon.Realtime.Player newPlayer)
         {
             Debug.Log($"[Matchmaking] Player joined: {newPlayer.NickName}");
-            OnPlayerJoined?.Invoke(newPlayer);
 
             // Per Quick Match, controlla se siamo pronti
             if (CurrentConfig?.Intent == MatchIntent.QuickMatch)
@@ -540,7 +541,6 @@ namespace Project51.Networking
         public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
         {
             Debug.Log($"[Matchmaking] Player left: {otherPlayer.NickName}");
-            OnPlayerLeft?.Invoke(otherPlayer);
         }
 
         public override void OnLeftRoom()

@@ -27,15 +27,11 @@ namespace Project51.Auth
         public static PhotonAuthConnector Instance { get; private set; }
         
         // Stato
-        public bool IsConnected => PhotonNetwork.IsConnected;
         public bool IsConnecting { get; private set; }
-        public string CurrentNickname => PhotonNetwork.NickName;
         
         // Eventi
         public event Action OnConnectedToPhotonEvent;
         public event Action<string> OnConnectionFailed;
-        public event Action OnDisconnectedEvent;
-        public event Action<DisconnectCause> OnDisconnectedWithCause;
         
         // Configurazione
         [Header("Settings")]
@@ -174,17 +170,6 @@ namespace Project51.Auth
             _isAuthConfigured = false;
         }
         
-        /// <summary>
-        /// Aggiorna il nickname del giocatore.
-        /// </summary>
-        public void SetNickname(string nickname)
-        {
-            if (!string.IsNullOrEmpty(nickname))
-            {
-                PhotonNetwork.NickName = nickname;
-            }
-        }
-        
         private void ConfigurePhotonSettings()
         {
             // Ottimizzazioni per gioco mobile turn-based
@@ -209,6 +194,7 @@ namespace Project51.Auth
         
         public override void OnDisconnected(DisconnectCause cause)
         {
+            bool wasConnecting = IsConnecting;
             IsConnecting = false;
             _isAuthConfigured = false;
             
@@ -226,19 +212,16 @@ namespace Project51.Auth
                 _ => $"Disconnected: {cause}"
             };
             
-            // Errori di autenticazione sono critici
-            if (cause == DisconnectCause.CustomAuthenticationFailed ||
+            // Fallimento: errori di autenticazione, o la rete che cade mentre ci si sta ancora collegando (senza questo chi aspetta
+            // l'esito restava fermo fino al limite di 30 s). Il proprio timeout ha gia' avvisato e chiude con DisconnectByClientLogic.
+            bool authCause = cause == DisconnectCause.CustomAuthenticationFailed ||
                 cause == DisconnectCause.InvalidAuthentication ||
-                cause == DisconnectCause.AuthenticationTicketExpired)
+                cause == DisconnectCause.AuthenticationTicketExpired;
+            if ((wasConnecting || authCause) &&
+                cause != DisconnectCause.DisconnectByClientLogic && cause != DisconnectCause.ApplicationQuit)
             {
                 OnConnectionFailed?.Invoke(errorMessage);
             }
-            else
-            {
-                OnDisconnectedEvent?.Invoke();
-            }
-            
-            OnDisconnectedWithCause?.Invoke(cause);
         }
         
         public override void OnCustomAuthenticationFailed(string debugMessage)

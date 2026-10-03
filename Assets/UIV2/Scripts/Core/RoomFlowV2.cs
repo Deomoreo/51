@@ -116,10 +116,10 @@ namespace Project51.UIV2.Core
         }
 
         public static string NormalizeCode(string code) =>
-            new string((code ?? "").Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant).Take(5).ToArray());
+            new string((code ?? "").Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant).Take(MatchmakingManager.RoomCodeLength).ToArray());
 
         public static bool IsValidCode(string code) =>
-            code != null && code.Length == 5 && code.All(c => c >= 'A' && c <= 'Z' || c >= '0' && c <= '9');
+            code != null && code.Length == MatchmakingManager.RoomCodeLength && code.All(c => c >= 'A' && c <= 'Z' || c >= '0' && c <= '9');
 
         public void OpenCreate()
         {
@@ -401,7 +401,7 @@ namespace Project51.UIV2.Core
         }
 
         private static GameFormat RoomFormat =>
-            PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("format", out var value)
+            PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(MatchmakingManager.PropFormat, out var value)
                 ? (GameFormat)(int)value : GameFormat.FourPlayers;
 
         // A coppie i primi due entrati sono compagni (SeatLayout): il posto i della griglia e' l'ordine di ingresso.

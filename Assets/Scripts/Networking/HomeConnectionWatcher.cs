@@ -105,8 +105,8 @@ namespace Project51.Networking
             {
                 var props = PhotonNetwork.CurrentRoom.CustomProperties;
                 config.Intent = MatchIntent.QuickMatch;
-                if (props.ContainsKey("format")) config.Format = (GameFormat)(int)props["format"];
-                if (props.ContainsKey("target")) config.TargetScore = (int)props["target"];
+                if (props.ContainsKey(MatchmakingManager.PropFormat)) config.Format = (GameFormat)(int)props[MatchmakingManager.PropFormat];
+                if (props.ContainsKey(MatchmakingManager.PropTarget)) config.TargetScore = (int)props[MatchmakingManager.PropTarget];
                 MatchConfigStorage.Save(config);
             }
             // La scena del tavolo la carica Photon (AutomaticallySyncScene), lo stato lo chiede NetworkGameController.

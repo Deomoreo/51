@@ -22,7 +22,7 @@ namespace Project51.Auth
         const string InProgressKey = "Moderazione.PartitaInCorso"; // "proprietario|esecuzione|1 vs 1|stanza" dalla prima mossa alla fine
         const string ContactKey = "Moderazione.UltimaPausa";       // ticks UTC dell'ultima pausa durante la partita (posto tenuto 60 s)
         /// <summary>Quanto Photon tiene il posto di chi esce senza volerlo (PlayerTtl in MatchmakingManager).</summary>
-        public const int SeatSeconds = 60;
+        public const int SeatSeconds = Project51.Networking.MatchmakingManager.RejoinWindowMilliseconds / 1000;
         const string SeenKey = "Moderazione.Vista.";              // + proprietario: la "fine" dell'ultima sospensione mostrata
         const string GuestOwner = "ospite";                         // per gli ospiti il proprietario e' il dispositivo
 

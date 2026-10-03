@@ -75,7 +75,6 @@
     <Compile Include="Assets\Tests\Editor\ProfileV2BindingTests.cs" />
     <Compile Include="Assets\Tests\Editor\MailServiceTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51RulesBuilder.cs" />
-    <Compile Include="Assets\Editor\GoldButtonLabelStyle.cs" />
     <Compile Include="Assets\Tests\Editor\UI51TableTests.cs" />
     <Compile Include="Assets\Tests\Editor\FrontendExpansionTests.cs" />
     <Compile Include="Assets\Tests\Editor\MattaAndAccusiRulesTests.cs" />
@@ -98,6 +97,7 @@
     <Compile Include="Assets\UI51\Editor\UI51GalleryBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51AccountBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51IntegrationTests.cs" />
+    <Compile Include="Assets\Tests\Editor\PhotonAuthConnectorTests.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiAndPunteggioComprehensiveTests.cs" />
     <Compile Include="Assets\Tests\Editor\K4CardShaderTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51MomentsBuilder.cs" />
@@ -126,7 +126,6 @@
     <Compile Include="Assets\Tests\Editor\K4BlurTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51ImportBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51MatchBuilder.cs" />
-    <Compile Include="Assets\Editor\StartScreenAuthButtonsBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\K7FlowTests.cs" />
     <Compile Include="Assets\Tests\Editor\CirullaRulesTests.cs" />
   </ItemGroup>

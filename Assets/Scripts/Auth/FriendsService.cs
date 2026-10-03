@@ -55,7 +55,7 @@ namespace Project51.Auth
                 // "Level" si scrive solo quando cambia (al livello 1 non c'e'): il livello viene dagli XP.
                 int level = 0;
                 if (f.Profile?.Statistics != null)
-                    foreach (var stat in f.Profile.Statistics) if (stat.Name == "XP") level = Project51.Core.PlayerXp.LevelOf(stat.Value);
+                    foreach (var stat in f.Profile.Statistics) if (stat.Name == ProfileService.STAT_XP) level = Project51.Core.PlayerXp.LevelOf(stat.Value);
                 string name = f.TitleDisplayName ?? f.Profile?.DisplayName ?? f.Username ?? f.FriendPlayFabId;
                 list.Add(new FriendEntry(f.FriendPlayFabId, name, level, f.Profile?.LastLogin));
             }

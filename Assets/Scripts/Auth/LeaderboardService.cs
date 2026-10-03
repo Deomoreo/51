@@ -23,7 +23,7 @@ namespace Project51.Auth
     /// </summary>
     public static class LeaderboardService
     {
-        public const string Weekly = "XPSettimana", AllTime = "XP";
+        public const string Weekly = "XPSettimana", AllTime = ProfileService.STAT_XP;
         public const int Size = 50;
 
         static readonly CultureInfo Italian = new CultureInfo("it-IT");
@@ -88,7 +88,7 @@ namespace Project51.Auth
             {
                 int level = 0;
                 if (e.Profile?.Statistics != null)
-                    foreach (var s in e.Profile.Statistics) if (s.Name == "XP") level = PlayerXp.LevelOf(s.Value);
+                    foreach (var s in e.Profile.Statistics) if (s.Name == ProfileService.STAT_XP) level = PlayerXp.LevelOf(s.Value);
                 result.Add(new RankEntry
                 {
                     PlayFabId = e.PlayFabId, Name = string.IsNullOrEmpty(e.DisplayName) ? "Giocatore" : e.DisplayName,

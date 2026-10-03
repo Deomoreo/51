@@ -187,12 +187,6 @@ namespace Project51.Networking
             }
 
             _instance = this;
-
-            // Ensure PhotonView exists
-            if (GetComponent<PhotonView>() == null)
-            {
-                Debug.LogError("NetworkGameController requires a PhotonView component!");
-            }
         }
 
         private void Start()
@@ -302,7 +296,7 @@ namespace Project51.Networking
         #region Reconnection
 
         /// <summary>Tempo concesso per rientrare: deve coincidere con il PlayerTtl della stanza.</summary>
-        public const float RejoinWindowSeconds = 60f;
+        public const float RejoinWindowSeconds = MatchmakingManager.RejoinWindowMilliseconds / 1000f;
         /// <summary>Tentativi prima della card "Nessuna connessione" (mockup Connessione); RIPROVA ne concede altrettanti.</summary>
         public const int MaxRejoinAttempts = 5;
 
@@ -626,7 +620,8 @@ namespace Project51.Networking
 
             string gameStateJson = SerializeGameState(gameState);
             
-            Debug.Log($"<color=cyan>[NET] Master sending initial GameState ({gameStateJson.Length} chars)</color>");
+            if (logNetworkMoves)
+                Debug.Log($"<color=cyan>[NET] Master sending initial GameState ({gameStateJson.Length} chars)</color>");
             
             // Send to all OTHER clients (not self - Master already has it)
             photonView.RPC(nameof(RPC_ReceiveInitialGameState), RpcTarget.Others, gameStateJson);
@@ -743,7 +738,8 @@ namespace Project51.Networking
         [PunRPC]
         private void RPC_ReceiveInitialGameState(string gameStateJson, PhotonMessageInfo info)
         {
-            Debug.Log($"<color=yellow>[NET] Receiving initial GameState from Master ({gameStateJson.Length} chars)</color>");
+            if (logNetworkMoves)
+                Debug.Log($"<color=yellow>[NET] Receiving initial GameState from Master ({gameStateJson.Length} chars)</color>");
             
             if (turnController == null)
             {
@@ -758,17 +754,9 @@ namespace Project51.Networking
                 return;
             }
 
-            Debug.Log($"<color=green>[NET] GameState received! Players: {gameState.NumPlayers}, Dealer: {gameState.DealerIndex}, Current: {gameState.CurrentPlayerIndex}</color>");
-            Debug.Log($"<color=green>[NET] Deck cards: {gameState.Deck.Count}, Table cards: {gameState.Table.Count}</color>");
-            
-            // Log player hands for debugging
-            for (int i = 0; i < gameState.NumPlayers; i++)
-            {
-                Debug.Log($"<color=green>[NET] Player {i} hand: {gameState.Players[i].Hand.Count} cards</color>");
-            }
-
             turnController.SetNetworkGameState(gameState);
-            Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
+            if (logNetworkMoves)
+                Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
             if (Project51.Auth.ModerationService.RejoinedAfterRestart)
             {
                 // Di nuovo al tavolo dopo il riavvio: la partita torna di questa esecuzione e chi e' assente gioca col bot.

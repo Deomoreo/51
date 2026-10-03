@@ -13,7 +13,7 @@ namespace Project51.Auth
     /// DATI SALVATI:
     /// - DisplayName: Nome visualizzato (via API dedicata)
     /// - Player Data (Title): Dati pubblici come avatar, country code
-    /// - Statistics: Valori numerici come Level, Wins, TotalGames
+    /// - Statistics: Valori numerici come Level, Wins, TotalGames (le scrive solo il server, qui si leggono)
     /// 
     /// NOTA SICUREZZA:
     /// - Player Data con permesso "Public" è visibile ad altri giocatori
@@ -26,16 +26,14 @@ namespace Project51.Auth
         private const string STAT_LEVEL = "Level";
         private const string STAT_WINS = "Wins";
         private const string STAT_TOTAL_GAMES = "TotalGames";
-        private const string STAT_XP = "XP";
+        /// <summary>Statistica XP: la stessa chiave per profilo, classifica di sempre e livello degli amici.</summary>
+        public const string STAT_XP = "XP";
         public const string STAT_TOTAL_SCOPE = "TotalScope";
-        public const string STAT_TROPHIES = "Trophies";
         
         // Player Data keys
         private const string DATA_AVATAR_ID = "AvatarId";
-        private const string DATA_SELECTED_DECK = "SelectedDeck";
         public const string DATA_BANNER_ID = "BannerId";
         public const string DATA_FRAME_ID = "FrameId";
-        public const string DATA_TITLE_ID = "TitleId";
         public const string DATA_BLOCKED = "Bloccati"; // PlayFab ID bloccati, separati da "|" (BlockList)
         // Aspetto come proprieta' del giocatore Photon: lo scrive AuthBootstrapper.PublishLook, lo legge ProfileCosmetics.ReadLook.
         public const string LookFrameKey = "fr", LookBannerKey = "bn", LookLevelKey = "lv";
@@ -57,19 +55,14 @@ namespace Project51.Auth
         public int TotalGames => GetStatistic(STAT_TOTAL_GAMES, 0);
         public int XP => GetStatistic(STAT_XP, 0);
         public string AvatarId => GetPlayerData(DATA_AVATAR_ID, "default");
-        public string SelectedDeck => GetPlayerData(DATA_SELECTED_DECK, "default");
         public int TotalScope => GetStatistic(STAT_TOTAL_SCOPE, 0);
-        public int Trophies => GetStatistic(STAT_TROPHIES, 0);
         public string BannerId => GetPlayerData(DATA_BANNER_ID, "notte");
         public string FrameId => GetPlayerData(DATA_FRAME_ID, "oro");
-        public string TitleId => GetPlayerData(DATA_TITLE_ID, "");
         public string Blocked => GetPlayerData(DATA_BLOCKED, "");
-        public void SetTitle(string id) => SetPlayerData(DATA_TITLE_ID, id);
         
         // Eventi
         public event Action OnProfileLoaded;
         public event Action OnProfileUpdated;
-        public event Action<string> OnError;
         
         /// <summary>
         /// Carica il profilo completo del giocatore da PlayFab.
@@ -106,158 +99,6 @@ namespace Project51.Auth
             
             // 3. Carica player data
             LoadPlayerData(() => CheckComplete(), () => { hasError = true; CheckComplete(); });
-        }
-        
-        /// <summary>
-        /// Ottiene il profilo pubblico di un altro giocatore.
-        /// </summary>
-        /// <param name="playFabId">PlayFab ID del giocatore.</param>
-        /// <param name="onSuccess">Callback con i dati del profilo.</param>
-        /// <param name="onError">Callback in caso di errore.</param>
-        public void GetPublicProfile(string playFabId, Action<PublicPlayerProfile> onSuccess, Action<string> onError = null)
-        {
-            var request = new GetPlayerProfileRequest
-            {
-                PlayFabId = playFabId,
-                ProfileConstraints = new PlayerProfileViewConstraints
-                {
-                    ShowDisplayName = true,
-                    ShowStatistics = true,
-                    ShowAvatarUrl = true
-                }
-            };
-            
-            PlayFabClientAPI.GetPlayerProfile(request,
-                result =>
-                {
-                    var profile = new PublicPlayerProfile
-                    {
-                        PlayFabId = playFabId,
-                        DisplayName = result.PlayerProfile?.DisplayName ?? "Unknown",
-                        AvatarUrl = result.PlayerProfile?.AvatarUrl
-                    };
-                    
-                    // Estrai statistiche
-                    if (result.PlayerProfile?.Statistics != null)
-                    {
-                        foreach (var stat in result.PlayerProfile.Statistics)
-                        {
-                            switch (stat.Name)
-                            {
-                                case STAT_LEVEL: profile.Level = stat.Value; break;
-                                case STAT_WINS: profile.Wins = stat.Value; break;
-                                case STAT_TOTAL_GAMES: profile.TotalGames = stat.Value; break;
-                            }
-                        }
-                    }
-                    
-                    onSuccess?.Invoke(profile);
-                },
-                error =>
-                {
-                    Debug.LogWarning($"[ProfileService] Failed to get profile for {playFabId}: {error.ErrorMessage}");
-                    onError?.Invoke(error.ErrorMessage);
-                }
-            );
-        }
-        
-        /// <summary>
-        /// Aggiorna il nickname del giocatore.
-        /// </summary>
-        /// <param name="newNickname">Nuovo nickname (3-25 caratteri).</param>
-        /// <param name="onSuccess">Callback su successo.</param>
-        /// <param name="onError">Callback con messaggio errore.</param>
-        public void UpdateNickname(string newNickname, Action onSuccess = null, Action<string> onError = null)
-        {
-            // Validazione locale
-            if (string.IsNullOrWhiteSpace(newNickname))
-            {
-                onError?.Invoke("Nickname cannot be empty");
-                return;
-            }
-            
-            newNickname = newNickname.Trim();
-            
-            if (newNickname.Length < 3 || newNickname.Length > 25)
-            {
-                onError?.Invoke("Nickname must be 3-25 characters");
-                return;
-            }
-            
-            var request = new UpdateUserTitleDisplayNameRequest
-            {
-                DisplayName = newNickname
-            };
-            
-            PlayFabClientAPI.UpdateUserTitleDisplayName(request,
-                result =>
-                {
-                    DisplayName = result.DisplayName;
-                    Debug.Log($"[ProfileService] Nickname updated to: {DisplayName}");
-                    OnProfileUpdated?.Invoke();
-                    onSuccess?.Invoke();
-                },
-                error =>
-                {
-                    string errorMsg = error.ErrorMessage;
-                    
-                    // Errori comuni
-                    if (error.Error == PlayFabErrorCode.NameNotAvailable)
-                    {
-                        errorMsg = "This nickname is already taken";
-                    }
-                    else if (error.Error == PlayFabErrorCode.ProfaneDisplayName)
-                    {
-                        errorMsg = "This nickname contains inappropriate content";
-                    }
-                    
-                    Debug.LogWarning($"[ProfileService] Failed to update nickname: {errorMsg}");
-                    OnError?.Invoke(errorMsg);
-                    onError?.Invoke(errorMsg);
-                }
-            );
-        }
-        
-        /// <summary>
-        /// Incrementa una statistica (es. dopo una vittoria).
-        /// </summary>
-        public void IncrementStatistic(string statName, int value = 1, Action onSuccess = null, Action<string> onError = null)
-        {
-            UpdateStatistic(statName, GetStatistic(statName, 0) + value, onSuccess, onError);
-        }
-        
-        /// <summary>
-        /// Imposta il valore di una statistica.
-        /// </summary>
-        public void UpdateStatistic(string statName, int value, Action onSuccess = null, Action<string> onError = null)
-        {
-            var request = new UpdatePlayerStatisticsRequest
-            {
-                Statistics = new List<StatisticUpdate>
-                {
-                    new StatisticUpdate
-                    {
-                        StatisticName = statName,
-                        Value = value
-                    }
-                }
-            };
-            
-            PlayFabClientAPI.UpdatePlayerStatistics(request,
-                result =>
-                {
-                    _statisticsCache[statName] = value;
-                    Debug.Log($"[ProfileService] Statistic {statName} updated to {value}");
-                    OnProfileUpdated?.Invoke();
-                    onSuccess?.Invoke();
-                },
-                error =>
-                {
-                    Debug.LogWarning($"[ProfileService] Failed to update statistic {statName}: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
-                    onError?.Invoke(error.ErrorMessage);
-                }
-            );
         }
         
         /// <summary>
@@ -307,7 +148,6 @@ namespace Project51.Auth
                 error =>
                 {
                     Debug.LogWarning($"[ProfileService] Failed to update player data: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
                     onError?.Invoke(error.ErrorMessage);
                 }
             );
@@ -338,7 +178,6 @@ namespace Project51.Auth
                 error =>
                 {
                     Debug.LogWarning($"[ProfileService] Failed to update cosmetics: {error}");
-                    OnError?.Invoke(error);
                     onError?.Invoke(error);
                 });
         }
@@ -406,7 +245,6 @@ namespace Project51.Auth
                 error =>
                 {
                     Debug.LogWarning($"[ProfileService] Failed to load display name: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
                     onError?.Invoke();
                 }
             );
@@ -416,7 +254,7 @@ namespace Project51.Auth
         {
             var request = new GetPlayerStatisticsRequest
             {
-                StatisticNames = new List<string> { STAT_LEVEL, STAT_WINS, STAT_TOTAL_GAMES, STAT_XP, STAT_TOTAL_SCOPE, STAT_TROPHIES }
+                StatisticNames = new List<string> { STAT_LEVEL, STAT_WINS, STAT_TOTAL_GAMES, STAT_XP, STAT_TOTAL_SCOPE }
             };
             
             PlayFabClientAPI.GetPlayerStatistics(request,
@@ -441,7 +279,6 @@ namespace Project51.Auth
                 error =>
                 {
                     Debug.LogWarning($"[ProfileService] Failed to load statistics: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
                     onError?.Invoke();
                 }
             );
@@ -451,7 +288,7 @@ namespace Project51.Auth
         {
             var request = new GetUserDataRequest
             {
-                Keys = new List<string> { DATA_AVATAR_ID, DATA_SELECTED_DECK, DATA_BANNER_ID, DATA_FRAME_ID, DATA_TITLE_ID, DATA_BLOCKED }
+                Keys = new List<string> { DATA_AVATAR_ID, DATA_BANNER_ID, DATA_FRAME_ID, DATA_BLOCKED }
             };
             
             PlayFabClientAPI.GetUserData(request,
@@ -473,7 +310,6 @@ namespace Project51.Auth
                 error =>
                 {
                     Debug.LogWarning($"[ProfileService] Failed to load player data: {error.ErrorMessage}");
-                    OnError?.Invoke(error.ErrorMessage);
                     onError?.Invoke();
                 }
             );
@@ -489,21 +325,6 @@ namespace Project51.Auth
             return _playerDataCache.TryGetValue(key, out string value) ? value : defaultValue;
         }
         
-        private static int CalculateLevelFromXP(int xp) => Project51.Core.PlayerXp.LevelOf(xp);
-        
         #endregion
-    }
-    
-    /// <summary>
-    /// Profilo pubblico di un giocatore (visibile da altri).
-    /// </summary>
-    public class PublicPlayerProfile
-    {
-        public string PlayFabId { get; set; }
-        public string DisplayName { get; set; }
-        public string AvatarUrl { get; set; }
-        public int Level { get; set; } = 1;
-        public int Wins { get; set; }
-        public int TotalGames { get; set; }
     }
 }

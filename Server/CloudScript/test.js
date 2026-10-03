@@ -180,7 +180,7 @@ function newRoom(who) {
     return room;
 }
 function forfeit(who, room) {
-    return c.handlers.premioPartita({ vinta: true, abbandono: true, avversario: "", stanza: room || newRoom(who), attore: 2 });
+    return c.handlers.premioPartita({ vinta: true, abbandono: true, stanza: room || newRoom(who), attore: 2 });
 }
 assert.strictEqual(forfeit("A").monete, 40);
 var again = forfeit("A");
@@ -191,13 +191,13 @@ assert.strictEqual(forfeit("C").monete, 40);
 assert.strictEqual(forfeit("D").monete, 40);
 assert.strictEqual(forfeit("B").limiteAbbandoni, true, "quarta vittoria per abbandono");
 assert.strictEqual(c.handlers.premioPartita({ vinta: true }).monete, 40, "le partite finite restano premiate");
-assert.strictEqual(c.handlers.premioPartita({ vinta: false, abbandono: true, avversario: "C" }).monete, 20, "abbandono vale solo per chi vince");
+assert.strictEqual(c.handlers.premioPartita({ vinta: false, abbandono: true }).monete, 20, "abbandono vale solo per chi vince");
 c.setNow(t0 + DAY);
 // Controlli sul record: partita che esiste, chi chiede seduto li', al posto indicato un altro, una volta sola.
 var paid = newRoom("E");
 assert.strictEqual(forfeit("E", paid).monete, 40);
 assert.strictEqual(forfeit("E", paid).abbandonoNonValido, true, "la stessa partita paga una volta sola");
-assert.strictEqual(c.handlers.premioPartita({ vinta: true, abbandono: true, avversario: "X" }).abbandonoNonValido, true, "senza stanza");
+assert.strictEqual(c.handlers.premioPartita({ vinta: true, abbandono: true }).abbandonoNonValido, true, "senza stanza");
 var before = Object.assign({}, c.store.stats);
 r = c.handlers.premioPartita({ vinta: true, abbandono: true, stanza: "NESSUNA", attore: 2, scope: 4 });
 assert.strictEqual(r.abbandonoNonValido, true, "partita che non esiste");
@@ -401,7 +401,7 @@ c.setNow(t0);
 c.handlers.RoomCreated({ UserId: "P1", Type: "Create", GameId: "R9" });
 c.handlers.RoomJoined({ UserId: "P7", GameId: "R9", ActorNr: 2 });
 c.currentPlayerId = "P1";
-c.handlers.premioPartita({ vinta: true, abbandono: true, avversario: "", stanza: "R9", attore: 2 });
+c.handlers.premioPartita({ vinta: true, abbandono: true, stanza: "R9", attore: 2 });
 assert.ok(JSON.parse(c.store.internal.PartiteOggi).abbandoni.indexOf("P7") >= 0, "id dal record anche se il telefono non lo sa");
 // Pulizia dei record orfani (RoomClosed mai arrivato): dopo 2 ore li toglie chi li ha creati, solo se il codice non e' stato riusato;
 // mai prima, anche dopo tante stanze nuove (la partita puo' essere in corso).

@@ -1,6 +1,4 @@
 using System;
-using System;
-using System;
 using UnityEngine;
 using PlayFab;
 using PlayFab.ClientModels;
@@ -9,14 +7,15 @@ namespace Project51.Auth
 {
     /// <summary>
     /// Servizio per l'autenticazione PlayFab.
-    /// Gestisce login guest, recupero token Photon e link account.
+    /// Gestisce login guest, login con email/nome utente e recupero token Photon.
     /// 
     /// CONFIGURAZIONE RICHIESTA:
     /// 
     /// 1. PLAYFAB SETUP:
     ///    - Crea un titolo su PlayFab Game Manager (https://developer.playfab.com)
     ///    - Copia il Title ID e impostalo in PlayFabSettings (o via codice)
-    ///    - In Settings > API Features: abilita "Allow client to post player statistics"
+    ///    - In Settings > API Features: "Allow client to post player statistics" deve restare SPENTO
+    ///      (le statistiche le scrive solo il server, CloudScript premioPartita)
     /// 
     /// 2. PHOTON AUTHENTICATION SETUP (su Photon Dashboard):
     ///    - Vai su https://dashboard.photonengine.com
@@ -43,9 +42,8 @@ namespace Project51.Auth
         private const string DEVICE_ID_KEY = "Project51_DeviceId";
         private const string SESSION_GUEST_ID_KEY = "Project51_SessionGuestId";
         private const string GUEST_NICKNAME_PREFIX = "Ospite ";
-        private const string IS_REGISTERED_KEY = "Project51_IsRegistered";
+        internal const string IS_REGISTERED_KEY = "Project51_IsRegistered";
         private const string HAS_REAL_LOGIN_KEY = "Project51_HasRealLogin";
-        private const string HAS_EVER_LOGGED_KEY = "Project51_HasEverLogged";
         
         // Stato
         public string PlayFabId { get; private set; }
@@ -54,7 +52,6 @@ namespace Project51.Auth
         public string DisplayName { get; private set; }
         public event Action<string> OnDisplayNameChanged;
         public bool IsLoggedIn => !string.IsNullOrEmpty(SessionTicket);
-        public bool IsAccountLinked { get; private set; }
         /// <summary>Email dell'account con login vero (null per l'ospite): le Impostazioni la mostrano mascherata.</summary>
         public string Email { get; private set; }
         
@@ -71,7 +68,6 @@ namespace Project51.Auth
                 if (value)
                     PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
                 PlayerPrefs.Save();
-                OnRegistrationStatusChanged?.Invoke(value);
             }
         } // Closing brace for IsRegistered property
 
@@ -90,33 +86,10 @@ namespace Project51.Auth
             PlayerPrefs.Save();
         }
 
-        /// <summary>
-        /// True se l'utente ha completato almeno un login su questo device (anche guest).
-        /// Usato per decidere se mostrare TapToEnter (returning user) o auth UI (primo avvio).
-        /// </summary>
-        public bool HasEverLoggedIn => PlayerPrefs.GetInt(HAS_EVER_LOGGED_KEY, 0) == 1;
-
-        /// <summary>
-        /// Segna che l'utente ha completato un login su questo device.
-        /// Da chiamare dopo che l'utente ha scelto consapevolmente di entrare (guest/login/register).
-        /// </summary>
-        public void MarkHasLoggedIn()
-        {
-            PlayerPrefs.SetInt(HAS_EVER_LOGGED_KEY, 1);
-            PlayerPrefs.Save();
-        }
-
-        public void ClearHasLoggedIn()
-        {
-            PlayerPrefs.SetInt(HAS_EVER_LOGGED_KEY, 0);
-            PlayerPrefs.Save();
-        }
-
         public void ClearRegisteredFlag()
         {
             PlayerPrefs.SetInt(IS_REGISTERED_KEY, 0);
             PlayerPrefs.Save();
-            OnRegistrationStatusChanged?.Invoke(false);
         }
 
         public void ResetGuestDeviceId()
@@ -174,11 +147,6 @@ namespace Project51.Auth
         
         // Eventi
         public event Action<string> OnLoginSuccess;
-        public event Action<string> OnLoginError;
-        public event Action<string> OnPhotonTokenReceived;
-        public event Action<string> OnPhotonTokenError;
-        public event Action<bool> OnAccountLinkStatusChanged;
-        public event Action<bool> OnRegistrationStatusChanged;
         
         /// <summary>
         /// Esegue il login guest usando CustomID.
@@ -245,7 +213,7 @@ namespace Project51.Auth
 
             OnDisplayNameChanged?.Invoke(DisplayName);
 
-            Debug.Log($"[PlayFabAuth] Guest login successful! PlayFabId: {PlayFabId}, DisplayName: {DisplayName ?? "(guest)"}");
+            Debug.Log($"[PlayFabAuth] Guest login successful ({(DisplayName == null ? "guest" : "registered")})");
             onSuccess?.Invoke(PlayFabId);
             OnLoginSuccess?.Invoke(PlayFabId);
         }
@@ -255,7 +223,6 @@ namespace Project51.Auth
             string errorMsg = GetUserFriendlyError(error);
             Debug.LogError($"[PlayFabAuth] Guest login failed: {error.ErrorMessage}");
             onError?.Invoke(errorMsg);
-            OnLoginError?.Invoke(errorMsg);
         }
         
         /// <summary>
@@ -272,7 +239,6 @@ namespace Project51.Auth
                 string error = "Cannot get Photon token: not logged in to PlayFab";
                 Debug.LogError($"[PlayFabAuth] {error}");
                 onError?.Invoke(error);
-                OnPhotonTokenError?.Invoke(error);
                 return;
             }
             
@@ -289,114 +255,11 @@ namespace Project51.Auth
                     PhotonCustomAuthToken = result.PhotonCustomAuthenticationToken;
                     Debug.Log("[PlayFabAuth] Photon token received successfully");
                     onSuccess?.Invoke(PhotonCustomAuthToken);
-                    OnPhotonTokenReceived?.Invoke(PhotonCustomAuthToken);
                 },
                 error =>
                 {
                     string errorMsg = $"Failed to get Photon token: {error.ErrorMessage}";
                     Debug.LogError($"[PlayFabAuth] {errorMsg}");
-                    onError?.Invoke(errorMsg);
-                    OnPhotonTokenError?.Invoke(errorMsg);
-                }
-            );
-        }
-        
-        /// <summary>
-        /// Collega l'account guest a Google (solo Android).
-        /// </summary>
-        /// <param name="serverAuthCode">Il Server Auth Code da Google Play Games.</param>
-        /// <param name="forceLink">Se true, sovrascrive eventuali link esistenti.</param>
-        /// <param name="onSuccess">Callback su successo.</param>
-        /// <param name="onError">Callback con messaggio di errore.</param>
-        public void LinkGoogleAccount(string serverAuthCode, bool forceLink, Action onSuccess = null, Action<string> onError = null)
-        {
-            if (!IsLoggedIn)
-            {
-                onError?.Invoke("Not logged in");
-                return;
-            }
-            
-            Debug.Log("[PlayFabAuth] Linking Google account...");
-            
-            var request = new LinkGoogleAccountRequest
-            {
-                ServerAuthCode = serverAuthCode,
-                ForceLink = forceLink
-            };
-            
-            PlayFabClientAPI.LinkGoogleAccount(request,
-                result =>
-                {
-                    Debug.Log("[PlayFabAuth] Google account linked successfully");
-                    IsAccountLinked = true;
-                    OnAccountLinkStatusChanged?.Invoke(true);
-                    onSuccess?.Invoke();
-                },
-                error =>
-                {
-                    string errorMsg = error.ErrorMessage;
-                    
-                    // Gestione errori specifici
-                    if (error.Error == PlayFabErrorCode.LinkedAccountAlreadyClaimed)
-                    {
-                        errorMsg = "This Google account is already linked to another player. Use ForceLink to override.";
-                    }
-                    else if (error.Error == PlayFabErrorCode.AccountAlreadyLinked)
-                    {
-                        errorMsg = "This PlayFab account already has a Google account linked.";
-                    }
-                    
-                    Debug.LogError($"[PlayFabAuth] Google link failed: {errorMsg}");
-                    onError?.Invoke(errorMsg);
-                }
-            );
-        }
-        
-        /// <summary>
-        /// Collega l'account guest ad Apple (solo iOS).
-        /// </summary>
-        /// <param name="identityToken">L'Identity Token (JWT) da Apple Sign In.</param>
-        /// <param name="forceLink">Se true, sovrascrive eventuali link esistenti.</param>
-        /// <param name="onSuccess">Callback su successo.</param>
-        /// <param name="onError">Callback con messaggio di errore.</param>
-        public void LinkAppleAccount(string identityToken, bool forceLink, Action onSuccess = null, Action<string> onError = null)
-        {
-            if (!IsLoggedIn)
-            {
-                onError?.Invoke("Not logged in");
-                return;
-            }
-            
-            Debug.Log("[PlayFabAuth] Linking Apple account...");
-            
-            var request = new LinkAppleRequest
-            {
-                IdentityToken = identityToken,
-                ForceLink = forceLink
-            };
-            
-            PlayFabClientAPI.LinkApple(request,
-                result =>
-                {
-                    Debug.Log("[PlayFabAuth] Apple account linked successfully");
-                    IsAccountLinked = true;
-                    OnAccountLinkStatusChanged?.Invoke(true);
-                    onSuccess?.Invoke();
-                },
-                error =>
-                {
-                    string errorMsg = error.ErrorMessage;
-                    
-                    if (error.Error == PlayFabErrorCode.LinkedAccountAlreadyClaimed)
-                    {
-                        errorMsg = "This Apple account is already linked to another player.";
-                    }
-                    else if (error.Error == PlayFabErrorCode.AccountAlreadyLinked)
-                    {
-                        errorMsg = "This PlayFab account already has an Apple account linked.";
-                    }
-                    
-                    Debug.LogError($"[PlayFabAuth] Apple link failed: {errorMsg}");
                     onError?.Invoke(errorMsg);
                 }
             );
@@ -438,42 +301,6 @@ namespace Project51.Auth
         }
         
         /// <summary>
-        /// Verifica se l'account ha provider collegati (Google/Apple).
-        /// </summary>
-        public void CheckAccountLinkStatus(Action<bool> onComplete)
-        {
-            if (!IsLoggedIn)
-            {
-                onComplete?.Invoke(false);
-                return;
-            }
-            
-            var request = new GetAccountInfoRequest();
-            
-            PlayFabClientAPI.GetAccountInfo(request,
-                result =>
-                {
-                    var accountInfo = result.AccountInfo;
-
-                    // Nel Client SDK, UserAccountInfo non espone una lista generica di linked accounts.
-                    // Si deduce lo stato di link dai campi specifici del provider.
-                    IsAccountLinked =
-                        accountInfo != null &&
-                        (accountInfo.GooglePlayGamesInfo != null || accountInfo.AppleAccountInfo != null);
-                    
-                    Debug.Log($"[PlayFabAuth] Account linked status: {IsAccountLinked}");
-                    OnAccountLinkStatusChanged?.Invoke(IsAccountLinked);
-                    onComplete?.Invoke(IsAccountLinked);
-                },
-                error =>
-                {
-                    Debug.LogWarning($"[PlayFabAuth] Failed to check link status: {error.ErrorMessage}");
-                    onComplete?.Invoke(false);
-                }
-            );
-        }
-        
-        /// <summary>
         /// Effettua il logout. Mantiene il device ID per futuro login.
         /// </summary>
         public void Logout()
@@ -484,7 +311,6 @@ namespace Project51.Auth
             DisplayName = null;
             Email = null;
             OnDisplayNameChanged?.Invoke(null);
-            IsAccountLinked = false;
             
             // NON cancelliamo il device ID, così il prossimo login riprende lo stesso account guest
             // NON cancelliamo IsRegistered, rimane per identificare se era già registrato
@@ -492,76 +318,7 @@ namespace Project51.Auth
             Debug.Log("[PlayFabAuth] Logged out");
         }
         
-        #region Email/Password Registration (Protect Account)
-        
-        /// <summary>
-        /// Registra l'account guest con username, email e password (AddUsernamePassword).
-        /// L'utente deve già essere loggato come guest.
-        /// </summary>
-        /// <param name="username">Username (3-20 caratteri, alfanumerico).</param>
-        /// <param name="email">Email valida.</param>
-        /// <param name="password">Password (6-100 caratteri).</param>
-        /// <param name="onSuccess">Callback su successo.</param>
-        /// <param name="onError">Callback con messaggio di errore user-friendly.</param>
-        public void RegisterWithUsernameEmailPassword(string username, string email, string password, 
-            Action onSuccess = null, Action<string> onError = null)
-        {
-            if (!IsLoggedIn)
-            {
-                onError?.Invoke("Devi prima effettuare il login guest");
-                return;
-            }
-            
-            // Validazione base
-            if (string.IsNullOrWhiteSpace(username) || username.Length < 3 || username.Length > 20)
-            {
-                onError?.Invoke("Username deve essere tra 3 e 20 caratteri");
-                return;
-            }
-            
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
-            {
-                onError?.Invoke("Inserisci un'email valida");
-                return;
-            }
-            
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
-            {
-                onError?.Invoke("La password deve essere almeno 6 caratteri");
-                return;
-            }
-            
-            Debug.Log($"[PlayFabAuth] Registering account with username: {username}");
-            
-            var request = new AddUsernamePasswordRequest
-            {
-                Username = username,
-                Email = email,
-                Password = password
-            };
-            
-            PlayFabClientAPI.AddUsernamePassword(request,
-                result =>
-                {
-                    Debug.Log($"[PlayFabAuth] Account registered successfully! Username: {result.Username}");
-                    
-                    IsRegistered = true;
-                    DisplayName = username;
-                    Email = email;
-                    
-                    // Aggiorna display name su PlayFab
-                    UpdateDisplayName(username);
-                    
-                    onSuccess?.Invoke();
-                },
-                error =>
-                {
-                    string errorMsg = GetUserFriendlyError(error);
-                    Debug.LogError($"[PlayFabAuth] Registration failed: {error.ErrorMessage}");
-                    onError?.Invoke(errorMsg);
-                }
-            );
-        }
+        #region Email/Password Login
         
         /// <summary>
         /// Login con email (o nome utente scelto alla registrazione) e password, per utenti gia' registrati.
@@ -588,7 +345,7 @@ namespace Project51.Auth
             }
             
             bool byEmail = email.Contains("@");
-            Debug.Log($"[PlayFabAuth] Attempting {(byEmail ? "email" : "username")} login for: {email}");
+            Debug.Log($"[PlayFabAuth] Attempting {(byEmail ? "email" : "username")} login");
             
             var info = new GetPlayerCombinedInfoRequestParams
             {
@@ -609,15 +366,12 @@ namespace Project51.Auth
                 Email = accountInfo?.PrivateInfo?.Email ?? (byEmail ? email : null);
                 OnDisplayNameChanged?.Invoke(DisplayName);
                 
-                IsAccountLinked = accountInfo != null &&
-                    (accountInfo.GooglePlayGamesInfo != null || accountInfo.AppleAccountInfo != null);
-                
                 // L'utente ha fatto login con email o nome utente => e' registrato
                 IsRegistered = true;
                 PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
                 PlayerPrefs.Save();
                 
-                Debug.Log($"[PlayFabAuth] Login successful! PlayFabId: {PlayFabId}");
+                Debug.Log("[PlayFabAuth] Login successful");
                 
                 // Prima l'evento: HomeConnectionWatcher deve far partire il rientro in partita prima che onSuccess entri in Home
                 // (li' un segno di partita in corso senza rientro conta come abbandono).
@@ -629,7 +383,6 @@ namespace Project51.Auth
                 string errorMsg = GetUserFriendlyError(error);
                 Debug.LogError($"[PlayFabAuth] Login failed: {error.ErrorMessage}");
                 onError?.Invoke(errorMsg);
-                OnLoginError?.Invoke(errorMsg);
             };
             
             if (byEmail)
@@ -641,45 +394,9 @@ namespace Project51.Auth
         }
         
         /// <summary>
-        /// Controlla se l'utente corrente ha già registrato email/password.
-        /// Utile dopo un guest login per sapere se mostrare opzione di registrazione.
-        /// </summary>
-        public void CheckRegistrationStatus(Action<bool> onComplete)
-        {
-            if (!IsLoggedIn)
-            {
-                onComplete?.Invoke(false);
-                return;
-            }
-            
-            var request = new GetAccountInfoRequest();
-            
-            PlayFabClientAPI.GetAccountInfo(request,
-                result =>
-                {
-                    var accountInfo = result.AccountInfo;
-                    
-                    // Se ha PrivateInfo con Email, è registrato
-                    bool hasEmail = accountInfo?.PrivateInfo?.Email != null;
-                    bool hasUsername = !string.IsNullOrEmpty(accountInfo?.Username);
-                    
-                    IsRegistered = hasEmail || hasUsername;
-                    
-                    Debug.Log($"[PlayFabAuth] Registration status: {IsRegistered} (Email: {hasEmail}, Username: {hasUsername})");
-                    onComplete?.Invoke(IsRegistered);
-                },
-                error =>
-                {
-                    Debug.LogWarning($"[PlayFabAuth] Failed to check registration status: {error.ErrorMessage}");
-                    onComplete?.Invoke(IsRegistered); // Usa cache locale
-                }
-            );
-        }
-        
-        /// <summary>
         /// Converte errori PlayFab in messaggi user-friendly in italiano.
         /// </summary>
-        private string GetUserFriendlyError(PlayFabError error)
+        internal static string GetUserFriendlyError(PlayFabError error)
         {
             switch (error.Error)
             {
@@ -712,26 +429,10 @@ namespace Project51.Auth
         
         #endregion
         
-        // TODO: [GOOGLE PLAY GAMES] Quando avremo Google Play Console (25$):
-        // 1. Installare com.google.play.games via Package Manager
-        // 2. Configurare OAuth 2.0 Web Client ID nella Google Play Console
-        // 3. In Unity: Window > Google Play Games > Setup > Android Setup
-        // 4. PlayFab Dashboard: Add-ons > Google > Inserisci Client ID e Secret
-        // 5. Implementare:
-        //    - PlayGamesPlatform.Instance.Authenticate()
-        //    - PlayGamesPlatform.Instance.RequestServerSideAccess(true, code => {...})
-        //    - Chiamare PlayFabClientAPI.LoginWithGooglePlayGamesServices con ServerAuthCode
-        //    - Oppure LinkGoogleAccount se già loggato guest
-        
-        // TODO: [APPLE SIGN IN] Quando avremo Apple Developer Program (99$/anno):
-        // 1. Installare com.lupidan.apple-signin-unity via OpenUPM
-        // 2. Apple Developer Portal: Abilita "Sign in with Apple" per l'App ID
-        // 3. Xcode Capabilities: Aggiungi "Sign in with Apple"
-        // 4. PlayFab Dashboard: Add-ons > Apple > Configura con Bundle ID
-        // 5. Implementare:
-        //    - IAppleAuthManager.LoginWithAppleId con credentialState check
-        //    - Ottenere IdentityToken (JWT)
-        //    - Chiamare PlayFabClientAPI.LoginWithApple o LinkApple
+        // TODO Google/Apple: login di piattaforma NON implementato (NativePlatformAuth e i metodi Link* tolti in Fase 10).
+        // Per aggiungerlo servono il plugin Google Play Games (RequestServerSideAccess -> LoginWithGooglePlayGamesServices o
+        // LinkGoogleAccount) e Sign in with Apple (LoginWithApple o LinkApple), piu' la configurazione su Play Console,
+        // Apple Developer e PlayFab Add-ons.
         
         #region Private Methods
         

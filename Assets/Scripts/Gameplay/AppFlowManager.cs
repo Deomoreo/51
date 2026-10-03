@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
@@ -13,8 +12,6 @@ namespace Project51.Unity
     {
         public const string SCENE_MAIN_MENU = "MainMenu";
         public const string SCENE_GAME = "GameScene";
-        public const string SCENE_LOBBY = "LobbyScene";
-        public const string SCENE_WAITING_ROOM = "WaitingRoom";
 
         private static bool returnToHome;
 
@@ -50,42 +47,6 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Carica la scena di gioco.
-        /// </summary>
-        /// <param name="usePhotonSync">Se true, usa PhotonNetwork.LoadLevel per sincronizzare con altri client.</param>
-        public static void GoToGame(bool usePhotonSync = false)
-        {
-            Debug.Log("[AppFlow] GoToGame called. StackTrace:\n" + Environment.StackTrace);
-            Debug.Log("[AppFlow] Loading Game Scene...");
-
-            if (usePhotonSync && PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient)
-            {
-                PhotonNetwork.LoadLevel(SCENE_GAME);
-            }
-            else
-            {
-                if (!Core.AppLoading.LoadScene(SCENE_GAME)) SceneManager.LoadScene(SCENE_GAME);
-            }
-        }
-
-        /// <summary>
-        /// Carica la Lobby.
-        /// </summary>
-        public static void GoToLobby()
-        {
-            Debug.Log("[AppFlow] Loading Lobby...");
-            
-            if (Application.CanStreamedLevelBeLoaded(SCENE_LOBBY))
-            {
-                SceneManager.LoadScene(SCENE_LOBBY);
-            }
-            else
-            {
-                Debug.LogWarning($"[AppFlow] Scene '{SCENE_LOBBY}' not found. Staying in current scene.");
-            }
-        }
-
-        /// <summary>
         /// Esci dalla partita e torna al menu principale.
         /// </summary>
         public static void LeaveGameAndGoToMenu()
@@ -99,24 +60,6 @@ namespace Project51.Unity
             Core.GameModeService.Reset();
 
             GoToMainMenu();
-        }
-
-        /// <summary>
-        /// Verifica se una scena esiste nel build.
-        /// </summary>
-        public static bool SceneExists(string sceneName)
-        {
-            return Application.CanStreamedLevelBeLoaded(sceneName);
-        }
-
-        /// <summary>
-        /// Ricarica la scena corrente.
-        /// </summary>
-        public static void ReloadCurrentScene()
-        {
-            var currentScene = SceneManager.GetActiveScene().name;
-            Debug.Log($"[AppFlow] Reloading scene: {currentScene}");
-            SceneManager.LoadScene(currentScene);
         }
     }
 }

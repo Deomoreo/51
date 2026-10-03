@@ -169,8 +169,6 @@ namespace Project51.Auth
             foreach (var key in AccountPrefKeys) PlayerPrefs.DeleteKey(key);
             PlayerPrefs.Save();
 
-            if (PlayerProgressLocal.Instance != null) PlayerProgressLocal.Instance.ResetAllProgress();
-
             var bootstrapper = AuthBootstrapper.Instance;
             if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
         }

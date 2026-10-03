@@ -68,7 +68,6 @@
     <Compile Include="Assets\Scripts\UI\RawImageUVScroll.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Root.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\HomeScreenV2.cs" />
-    <Compile Include="Assets\Scripts\Auth\NativePlatformAuth.cs" />
     <Compile Include="Assets\Scripts\UI\UI51TrophiesView.cs" />
     <Compile Include="Assets\Scripts\UI\UI51TutorialView.cs" />
     <Compile Include="Assets\Scripts\UI\UI51LevelUpView.cs" />
@@ -127,7 +126,6 @@
     <Compile Include="Assets\Scripts\UI\SelectableMultiToggleGroup.cs" />
     <Compile Include="Assets\Scripts\Networking\MatchmakingManager.cs" />
     <Compile Include="Assets\Scripts\Auth\AuthState.cs" />
-    <Compile Include="Assets\Scripts\Auth\IAuthUI.cs" />
     <Compile Include="Assets\Scripts\UI\ThemedButton.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2SectionHeader.cs" />
     <Compile Include="Assets\Scripts\UI\TableTopBarController.cs" />

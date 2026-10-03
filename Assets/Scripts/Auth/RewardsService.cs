@@ -38,14 +38,12 @@ namespace Project51.Auth
     public class ServerReward
     {
         public bool ok;
-        public string errore;
         public int giorno;
         public bool riscattato;
         public int secondi;
         public int monete, gemme;
         public ServerChest[] forzieri = new ServerChest[0];
         public string[] riscattati = new string[0];
-        public int postaNuova;
         public bool tetto;
         public long ora; // "moderazione": orologio del server in millisecondi (sanzioni degli ospiti)
         public bool limiteAbbandoni; // vittoria per abbandono senza monete (tetti contro gli abbandoni concordati)
@@ -53,7 +51,7 @@ namespace Project51.Auth
         public ServerReportOutcome[] esiti;
         // premioPartita: XP dati e statistiche del profilo dopo la partita (le scrive solo il server).
         public int xp;
-        public bool statistiche, limitePartite, abbandonoNonValido, ospite;
+        public bool statistiche;
         public int partite, vittorie, esperienza, scopeTotali, livello;
     }
 
@@ -111,15 +109,15 @@ namespace Project51.Auth
 
         /// <summary>
         /// Fine partita: monete (40/20, meta' coi bot, tetto giornaliero), XP e statistiche del profilo li decide il server dall'esito.
-        /// forfeitOpponent non null = vinta per abbandono (id dell'ultimo avversario uscito, "" se sconosciuto): il server la premia poche
-        /// volte al giorno e una per avversario.
+        /// forfeitOpponent non null = vinta per abbandono: il server la premia poche volte al giorno e una per avversario, che ricava
+        /// dal record della partita (stanza e attore), mai da un id mandato dal telefono.
         /// </summary>
         /// <param name="room">Vittoria per abbandono: stanza e numero Photon di chi e' uscito, il server ne ricava l'id dal record della partita.</param>
         public static void MatchReward(bool won, bool training, int scope, int accusi, Action<ServerReward> onDone, Action<string> onError,
             string forfeitOpponent = null, string room = null, int actor = 0)
         {
             var args = new Dictionary<string, object> { { "vinta", won }, { "allenamento", training }, { "scope", scope }, { "accusi", accusi } };
-            if (forfeitOpponent != null) { args["abbandono"] = true; args["avversario"] = forfeitOpponent; }
+            if (forfeitOpponent != null) args["abbandono"] = true;
             if (forfeitOpponent != null && room != null && actor > 0) { args["stanza"] = room; args["attore"] = actor; }
             Call("premioPartita", args, onDone, onError);
         }
@@ -176,7 +174,7 @@ namespace Project51.Auth
         {
             ServerReward r = null;
             try { r = JsonUtility.FromJson<ServerReward>(json); } catch (ArgumentException) { }
-            r = r ?? new ServerReward { errore = "risposta non valida" };
+            r = r ?? new ServerReward();
             r.forzieri = r.forzieri ?? new ServerChest[0];
             r.riscattati = r.riscattati ?? new string[0];
             return r;

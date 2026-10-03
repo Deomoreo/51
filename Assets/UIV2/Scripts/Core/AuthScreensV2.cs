@@ -36,7 +36,6 @@ namespace Project51.UIV2.Core
         public Project51.Unity.UI.UI51RecoveryView Recovery;
         [Tooltip("\"oppure\" + ACCEDI COME OSPITE: spariscono dopo l'ingresso, quando si e' gia' ospite.")]
         public GameObject[] LoginGuestOnly;
-        [Tooltip("Righe sotto al pulsante ospite (Non hai un account? / REGISTRATI): salgono al suo posto.")]
 
         [Header("Registrazione (mockup 24)")]
         public GameObject RegisterPanel;
