@@ -1,46 +1,31 @@
-# Project 51 (Cirulla) — Project Bible
+# 51 (Cirulla)
 
-Questa `README.md` è la **bibbia** del progetto. Prima di fare modifiche o proporre soluzioni, va letta e usata come riferimento principale.
+Mobile card game (Italian Cirulla / "51") built with Unity: 1v1, 2v2 and 1v3 tables against bots or online,
+with guest or account login, XP, rewards, friends and mail.
 
-## Contesto
+- **Unity** 2022.3.60f1, portrait only, Android/iOS.
+- **Online**: Photon PUN 2 (rooms, matchmaking) + PlayFab (accounts, data, CloudScript).
 
-- Gioco Unity di carte: **51 / Cirulla**.
-- Stiamo costruendo l'app e la UX **stile Clash Royale** (home con HUD, banner profilo, tap-to-enter, modali, ecc.).
+## Scenes
+- `Assets/Scenes/MainMenu.unity`: login, Home and every menu page.
+- `Assets/Scenes/GameScene.unity`: the table.
+- `Assets/UI51/Scenes/UI51_Gallery.unity`: component gallery (not in the build).
 
-## Regole di lavoro (importantissime)
+## Where things live
+- `Assets/Scripts/Core`, `Assets/Scripts/Gameplay`: rules, AI and match flow (separate asmdefs).
+- `Assets/Scripts/Networking`, `Assets/Scripts/Auth`: Photon and PlayFab services.
+- `Assets/Scripts/UI`: screen controllers and views.
+- `Assets/UI51`: current UI system (art, prefabs, components); its Editor builders are
+  `Assets/UI51/Editor/UI51*Builder.cs` (menu Tools/UI51). Scenes are changed through builders, not by hand.
+- `Assets/UIV2`: older UI shells still used by some screens.
+- `Assets/Tests/Editor`: EditMode tests.
+- `Server/CloudScript`: PlayFab CloudScript (`51.js`). `node Server/CloudScript/test.js` runs its tests;
+  `node Server/CloudScript/carica.js` writes the upload file. `segreto.txt` and `51.carica.js` stay out of git.
+- `Design/`: handoff mockups and source art that is not imported by Unity. `docs/`: art briefs and the archive.
 
-### Compilazione / Errori IDE
+## Running the tests
+Unity: Window > General > Test Runner > EditMode > Run All.
 
-Se durante lo sviluppo compaiono errori di compilazione in Visual Studio / IntelliSense (anche se il codice è corretto):
-
-- **Procedere comunque** con lo sviluppo.
-- Il fix spesso è:
-  1. Chiudere Visual Studio
-  2. Riavviare/rigenerare i progetti da Unity (o riaprire Unity)
-  3. Riaprire Visual Studio
-
-In altre parole: **non rimuovere cambiamenti solo per “far compilare subito”**, perché potrebbe essere un problema di sync Unity/VS e non del codice.
-
-## Linee guida generali progetto (sempre valide)
-
-### UI / UX
-
-- Preferire flussi UX chiari e prevedibili: niente auto-navigazioni “a sorpresa”.
-- Separare sempre UI di sistema (loading/gate/auth) dalla UI di gioco (HUD/pagine).
-- Evitare dipendenze rigide tra UI e sistemi core: usare eventi/callback o servizi centrali.
-
-### Persistenza / Account
-
-- Non salvare mai password in chiaro.
-- Usare flag locali (es. PlayerPrefs) solo come cache/UX, non come fonte di verità server.
-- Ogni schermata che implica identità/account deve avere un percorso chiaro per logout/switch account.
-
-### Codice
-
-- Preferire modifiche minime e incrementali.
-- Quando possibile, centralizzare la logica (es. auth) in un servizio unico e far aggiornare le UI tramite eventi.
-
-### Performance / Ottimizzazione
-
-- Disattivare o nascondere UI non necessarie quando si entra nel gameplay.
-- Evitare `FindObjectOfType` in loop; se necessario, farlo una volta e cache.
+## More
+- `CLAUDE.md`: working rules for agents; `.claude/skills`: project skills.
+- `SPRINT_BACKLOG.md`: live to-do list and current state.

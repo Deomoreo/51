@@ -30,8 +30,3 @@ approval_mode = "approve"
 
 [shell_environment_policy]
 inherit = "core"
-
-[shell_environment_policy.set]
-CLAUDE_CODE_AUTO_COMPACT_WINDOW = "150000"
-CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "80"
-CLAUDE_CODE_SUBAGENT_MODEL = "sonnet"

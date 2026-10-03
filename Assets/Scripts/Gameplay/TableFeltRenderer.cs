@@ -48,7 +48,7 @@ namespace Project51.Unity
         [SerializeField] private Sprite emblemSprite;
         [SerializeField, Range(0f, 1f)] private float emblemAlpha = 0.08f;
 
-        [Header("Kit tavolo 2.22 (Assets/Art/Table): se c'e' la cornice sostituisce la texture procedurale")]
+        [Header("Kit tavolo 2.22 (sorgenti in Design/sorgenti/Art/Table): se c'e' la cornice sostituisce la texture procedurale")]
         [SerializeField] private Sprite feltSprite;
         [SerializeField] private Sprite vignetteSprite;
         [Tooltip("Sprite 9-slice: lo spessore del legno lo decidono bordi e pixelsPerUnit dell'import.")]

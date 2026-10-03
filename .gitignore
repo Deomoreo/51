@@ -89,12 +89,6 @@ InitTestScene*.unity*
 # /Assets/AddressableAssetsData/OSX/addressables_content_state.bin
 /[Aa]ssets/AddressableAssetsData/*/*.bin*
 
-# Visual Scripting auto-generated files
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
-/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
-
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 graphify-out/
@@ -102,3 +96,9 @@ graphify-out/
 # CloudScript: segreto dei nomi dei webhook e file da caricare (il repository e pubblico)
 Server/CloudScript/segreto.txt
 Server/CloudScript/51.carica.js
+
+# Generated files and local captures (Unity-MCP screenshots, UI Toolkit schemas)
+/Captures/
+/UIElementsSchema/
+/[Aa]ssets/[Ss]creenshots/
+/[Aa]ssets/[Ss]creenshots.meta

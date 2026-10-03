@@ -7,7 +7,8 @@ using UnityEngine;
 namespace Project51.EditorTools
 {
     /// <summary>
-    /// Musica ed effetti da Assets/Audio (pacchetti audio v01-v03): impostazioni di importazione dei README,
+    /// Musica ed effetti da Assets/Audio (pacchetti audio v01-v03): impostazioni di importazione dei README
+    /// (in Design/sorgenti/Audio con i master e le alternative non usate),
     /// libreria Resources/Audio/SoundLibrary con i volumi di partenza, misura di inizio e colpo di ogni file.
     /// Rilanciabile: i volumi gia' ritoccati nella libreria restano, cambiano solo i file.
     /// </summary>

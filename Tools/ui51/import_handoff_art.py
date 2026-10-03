@@ -50,6 +50,8 @@ def conic_disc(stops, size=256, start_deg=20, ss=4):
 
 def main():
     for f in sorted(os.listdir(SRC)):
+        if f == "ic_shop.png":  # Negozio non ancora costruito: sorgente in Design/sorgenti/UI51/Art/Common
+            continue
         if f.startswith("ic_") or f.startswith("medal_") or f in ("ribbon.png", "chest_green.png", "chest_purple.png"):
             copy(f, "Common", 256)
     copy("pugno.png", "Common")  # accuso: 112px a scala 2.2, serve la risoluzione piena
@@ -70,10 +72,8 @@ def main():
     blurred = ImageEnhance.Color(ImageEnhance.Brightness(blurred).enhance(0.42)).enhance(1.1)
     blurred.save(out("Backgrounds", "home_bg_blur.png"), optimize=True)
 
-    # Cornici avatar (Profilo.dc.html, const frames). "classica" e' oro pieno: usa circle.png tinto #F3C969.
-    conic_disc(["#FCE29A", "#C4922F", "#FFF1C4", "#8A5A12", "#FCE29A"]).save(out("Shapes", "ring_oro.png"))
-    conic_disc(["#27B585", "#F3C969", "#0E6B4F", "#FCE29A", "#27B585"]).save(out("Shapes", "ring_smeraldo.png"))
-    conic_disc(["#4F80E8", "#F3C969", "#1B3A7A", "#FCE29A", "#4F80E8"]).save(out("Shapes", "ring_notte.png"))
+    # Cornici avatar (Profilo.dc.html, const frames): tutte usano circle.png tinto (classica = #F3C969).
+    # Gli anelli conici ring_oro/smeraldo/notte non sono usati: sorgenti in Design/sorgenti/UI51/Art/Shapes.
     conic_disc(["#FFFFFF", "#FFFFFF"]).save(out("Shapes", "circle.png"))
     emoticons()
 

@@ -8,6 +8,8 @@ description: Use in project 51 whenever a UI element seems to need an icon, spri
 Never assume an asset is missing before checking the inventory. Never fake, stretch or reuse a wrong asset.
 
 ## 1. Look before declaring missing
+- First `Assets/UI51/Art/<area>/` (what `UI51Build.Sprite` loads), then the handoff sources in
+  `Design/51_handoff/51_handoff/assets`. Unused source art moved out of Assets lives in `Design/sorgenti/`.
 - Sheets in `Assets/UI/Sprites/DragonsHoard/sprites_unity/sprites_unity/`:
   - Icons.png: buttons, bars, panels, tabs, ribbons, frames, `ic_*`
   - Icons2.png: more `ic_*`
@@ -15,7 +17,7 @@ Never assume an asset is missing before checking the inventory. Never fake, stre
   - Avatars.png
   - emoticons: `Assets/UI51/Art/Emoticons/emo_*_sheet_8frames.png` (14_emoticon_set was deleted on 27/09)
   - logo_51
-  The `.meta` sprite list is authoritative (not `import_manifest.json`).
+  The `.meta` sprite list is authoritative.
 - Also search `Assets/UIV2/`, `Assets/UI/`, `Assets/Audio`, and use Unity Search via Unity-MCP
   (`manage_asset` search) by name and type.
 - Try composition: a neutral `panel_fill_*` + tint + `panel_ring_*` + ribbon/medallion + TMP text

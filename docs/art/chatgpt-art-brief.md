@@ -58,9 +58,9 @@ identical.
 | Famiglia | File |
 |---|---|
 | Mazzi | `Assets/Art/Decks/51_CORTE_DI_GIADA_PNG_Unity/Anteprime/51_GIADA_Anteprima_COPPE.jpg` (+ una seconda anteprima) |
-| Tavoli | `Assets/Art/Table/table_frame.png`, `table_felt.png`, `table_vignette.png` + lo sfondo della sala consegnato il 25/09 |
+| Tavoli | `Design/sorgenti/Art/Table/table_frame.png`, `table_felt.png`, `table_vignette.png` + lo sfondo della sala consegnato il 25/09 |
 | Accusi | `Assets/UI/Sprites/DragonsHoard/sprites_unity/sprites_unity/PugnoIcon.png` |
-| Banner | `Assets/Art/firstBanner 1.png`, `Assets/Art/SecondBanner.png` |
+| Banner | `Design/sorgenti/Art/firstBanner 1.png`, `Design/sorgenti/Art/SecondBanner.png` |
 | Avatar / emoticon | `Assets/UI51/Art/Avatars/av_2.png`, `Assets/UI51/Art/Emoticons/emo_risata_sheet_8frames.png` |
 | Negozio | `Assets/UI51/Art/Common/chest_purple.png`, `chest_green.png` |
 | Atmosfera Home | `Assets/UI51/Art/Backgrounds/home_bg_base.png` |

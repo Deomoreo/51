@@ -5,7 +5,6 @@ Assets/PlayFabEditorExtensions/
 Assets/GooglePlayGames/
 Assets/ParrelSync/
 Assets/Plugins/
-Assets/JsonDotNetWrapper/
 Assets/TextMesh Pro/
 Packages/
 UIElementsSchema/
@@ -20,6 +19,8 @@ UserSettings/
 Build/
 Builds/
 graphify-out/
+docs/archivio/
+Design/sorgenti/
 # Capture/screenshot output
 Captures/
 Assets/Screenshots/
