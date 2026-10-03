@@ -17,8 +17,8 @@ ripristinato in 2.04: K6 non interviene sulla traiettoria o sulla durata del vol
 - Un pool persistente di quattro UIParticle, 18/24/48 particelle secondo evento;
   emissione manuale, vita massima .95 s, pulizia entro 1.1 s. Nessun raycast e nessun
   consumo di UnityEngine.Random. Cambio scena e disabilitazione svuotano il pool.
-- `GameFeedback.SetParticlesEnabled(false)` prepara I5, senza introdurre ora un'altra
-  impostazione utente. I coriandoli preesistenti dei risultati restano indipendenti.
+- Le particelle seguono solo "Grafica ridotta" (`GamePreferences.ReducedGraphics`, I5);
+  il vecchio interruttore `SetParticlesEnabled` e' stato tolto in Fase 10. I coriandoli preesistenti dei risultati restano indipendenti.
 
 ## Piattaforme
 

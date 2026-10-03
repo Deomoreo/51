@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System.Collections.Generic;
 using NUnit.Framework;
 using Project51.Auth;
@@ -508,4 +507,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif

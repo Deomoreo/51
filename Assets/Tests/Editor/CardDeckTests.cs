@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using UnityEditor;
@@ -96,4 +95,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif

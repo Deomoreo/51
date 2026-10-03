@@ -155,47 +155,6 @@ namespace Project51.Unity
             }
         }
 
-        /// <summary>Legacy CPU utility kept for callers/tests; screen capture uses only the GPU.</summary>
-        public static void BoxBlur(Color32[] pixels, int width, int height, int radius, int passes)
-        {
-            if (pixels == null || radius < 1 || passes < 1 || pixels.Length != width * height) return;
-            var buffer = new Color32[pixels.Length];
-            for (int pass = 0; pass < passes; pass++)
-            {
-                Blur1D(pixels, buffer, width, height, radius, horizontal: true);
-                Blur1D(buffer, pixels, width, height, radius, horizontal: false);
-            }
-        }
-
-        private static void Blur1D(Color32[] source, Color32[] target, int width, int height, int radius, bool horizontal)
-        {
-            int lines = horizontal ? height : width;
-            int length = horizontal ? width : height;
-            int span = radius * 2 + 1;
-            for (int line = 0; line < lines; line++)
-            {
-                int r = 0, g = 0, b = 0, a = 0;
-                for (int i = -radius; i <= radius; i++)
-                {
-                    var c = source[Index(line, Mathf.Clamp(i, 0, length - 1), width, horizontal)];
-                    r += c.r; g += c.g; b += c.b; a += c.a;
-                }
-                for (int i = 0; i < length; i++)
-                {
-                    target[Index(line, i, width, horizontal)] = new Color32((byte)(r / span), (byte)(g / span), (byte)(b / span), (byte)(a / span));
-                    var enter = source[Index(line, Mathf.Min(i + radius + 1, length - 1), width, horizontal)];
-                    var leave = source[Index(line, Mathf.Max(i - radius, 0), width, horizontal)];
-                    r += enter.r - leave.r;
-                    g += enter.g - leave.g;
-                    b += enter.b - leave.b;
-                    a += enter.a - leave.a;
-                }
-            }
-        }
-
-        private static int Index(int line, int position, int width, bool horizontal) =>
-            horizontal ? line * width + position : position * width + line;
-
         private static RenderTexture Temporary(int width, int height)
         {
             var texture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);

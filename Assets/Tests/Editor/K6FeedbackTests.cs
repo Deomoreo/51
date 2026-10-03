@@ -1,4 +1,3 @@
-using System;
 using System.Reflection;
 using NUnit.Framework;
 using Project51.Core;
@@ -25,23 +24,18 @@ public class K6FeedbackTests
     [TearDown]
     public void RestorePreference()
     {
-        typeof(GamePreferences).GetMethod("SetVibrationEnabled")?.Invoke(null, new object[] { savedPreference != 0 });
+        GamePreferences.SetVibrationEnabled(savedPreference != 0);
         if (!hadPreference) PlayerPrefs.DeleteKey(Key);
         PlayerPrefs.Save();
     }
 
-    private static Type FeedbackType()
-    {
-        var type = typeof(GamePreferences).Assembly.GetType("Project51.Core.GameFeedback");
-        Assert.IsNotNull(type, "K6 needs a single feedback policy shared by gameplay and UI.");
-        type.GetMethod("Reset", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
-        return type;
-    }
+    private static void ResetFeedback() =>
+        typeof(GameFeedback).GetMethod("Reset", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
 
     [Test]
     public void AcceptedClickStillPulsesAfterEarlierListenerClosesPanel()
     {
-        FeedbackType();
+        ResetFeedback();
         GamePreferences.SetVibrationEnabled(true);
         var go = new GameObject("K6 click", typeof(RectTransform), typeof(Button));
         try
@@ -60,7 +54,7 @@ public class K6FeedbackTests
     [Test]
     public void DisabledButtonDoesNotPulse()
     {
-        FeedbackType();
+        ResetFeedback();
         GamePreferences.SetVibrationEnabled(true);
         var go = new GameObject("K6 disabled click", typeof(RectTransform), typeof(Button));
         try
@@ -97,27 +91,12 @@ public class K6FeedbackTests
         finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 
-    [Test]
-    public void DisablingParticlesSuppressesPresentationAndClearsSubscribers()
-    {
-        FeedbackType();
-        int presented = 0, cleared = 0;
-        GameFeedback.Presented += (kind, position) => presented++;
-        GameFeedback.ParticlesDisabled += () => cleared++;
-        GameFeedback.SetParticlesEnabled(false);
-        GameFeedback.Present(FeedbackKind.Scopa, false, Vector2.zero);
-        Assert.AreEqual(1, cleared);
-        Assert.AreEqual(0, presented);
-        GameFeedback.SetParticlesEnabled(true);
-        GameFeedback.Present(FeedbackKind.Scopa, false, Vector2.zero);
-        Assert.AreEqual(1, presented);
-    }
-
     public static System.Collections.IEnumerator RunRuntimeChecks()
     {
         var presenter = UnityEngine.Object.FindObjectOfType<UIV2FeedbackParticles>();
         Assert.IsNotNull(presenter);
-        GameFeedback.SetParticlesEnabled(true);
+        bool reduced = GamePreferences.ReducedGraphics;
+        GamePreferences.SetReducedGraphics(false);
         var randomState = UnityEngine.Random.state;
         float expected = UnityEngine.Random.value;
         UnityEngine.Random.state = randomState;
@@ -130,34 +109,31 @@ public class K6FeedbackTests
         yield return new WaitForSecondsRealtime(1.2f);
         foreach (var ps in systems) { Assert.AreEqual(0, ps.particleCount); Assert.IsFalse(ps.gameObject.activeInHierarchy); }
         presenter.Burst(FeedbackKind.Accuso, Vector2.one * .5f);
-        GameFeedback.SetParticlesEnabled(false);
+        GamePreferences.SetReducedGraphics(true);
         foreach (var ps in systems) { Assert.AreEqual(0, ps.particleCount); Assert.IsFalse(ps.gameObject.activeInHierarchy); }
-        GameFeedback.SetParticlesEnabled(true);
+        GamePreferences.SetReducedGraphics(reduced);
         Debug.Log("K6_RUNTIME_CHECKS_PASSED: bounded pool, expiry, disable cleanup, gameplay RNG unchanged.");
     }
 
     [Test]
     public void DisabledPreferenceSuppressesLocalHapticsAndPersists()
     {
-        var type = FeedbackType();
-        var setter = typeof(GamePreferences).GetMethod("SetVibrationEnabled");
-        Assert.IsNotNull(setter);
-        setter.Invoke(null, new object[] { false });
+        ResetFeedback();
+        GamePreferences.SetVibrationEnabled(false);
         Assert.AreEqual(0, PlayerPrefs.GetInt(Key, 1));
-        Assert.IsFalse((bool)type.GetMethod("TryHaptic").Invoke(null, new object[] { false, true }));
+        Assert.IsFalse(GameFeedback.TryHaptic(false, true));
     }
 
     [Test]
     public void RemoteEventsNeverConsumeTheLocalHapticAndDuplicateTapsAreThrottled()
     {
-        var type = FeedbackType();
-        typeof(GamePreferences).GetMethod("SetVibrationEnabled").Invoke(null, new object[] { true });
-        var play = type.GetMethod("TryHaptic");
-        Assert.IsFalse((bool)play.Invoke(null, new object[] { false, false }));
-        Assert.IsTrue((bool)play.Invoke(null, new object[] { false, true }));
-        Assert.IsFalse((bool)play.Invoke(null, new object[] { false, true }));
+        ResetFeedback();
+        GamePreferences.SetVibrationEnabled(true);
+        Assert.IsFalse(GameFeedback.TryHaptic(false, false));
+        Assert.IsTrue(GameFeedback.TryHaptic(false, true));
+        Assert.IsFalse(GameFeedback.TryHaptic(false, true));
         // A confirmed win/impact may supersede a light click in the same frame.
-        Assert.IsTrue((bool)play.Invoke(null, new object[] { true, true }));
-        Assert.IsFalse((bool)play.Invoke(null, new object[] { true, true }));
+        Assert.IsTrue(GameFeedback.TryHaptic(true, true));
+        Assert.IsFalse(GameFeedback.TryHaptic(true, true));
     }
 }

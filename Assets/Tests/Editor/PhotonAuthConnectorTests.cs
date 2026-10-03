@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Photon.Realtime;
 using Project51.Auth;
@@ -52,4 +51,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif

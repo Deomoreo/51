@@ -10,10 +10,9 @@ namespace Project51.Core
     {
         public static event Action<FeedbackKind, Vector2> Presented;
         public static event Action ParticlesDisabled;
-        private static bool particlesEnabled = true;
         public static bool ParticlesEnabled
         {
-            get { BindPolicy(); return particlesEnabled && !GamePreferences.ReducedGraphics; }
+            get { BindPolicy(); return !GamePreferences.ReducedGraphics; }
         }
         private static float lastHaptic = float.NegativeInfinity;
         private static bool lastStrong;
@@ -24,20 +23,13 @@ namespace Project51.Core
         private static void PolicyChanged()
         {
             System.Threading.Interlocked.Increment(ref generation);
-            if (!particlesEnabled || GamePreferences.ReducedGraphics) ParticlesDisabled?.Invoke();
+            if (GamePreferences.ReducedGraphics) ParticlesDisabled?.Invoke();
 #if UNITY_IOS && !UNITY_EDITOR
             K6SetGeneration(generation);
 #endif
         }
 
         private static void FocusChanged(bool value) { focused = value; PolicyChanged(); }
-
-        public static void SetParticlesEnabled(bool enabled)
-        {
-            BindPolicy();
-            particlesEnabled = enabled;
-            if (!enabled) ParticlesDisabled?.Invoke();
-        }
 
         public static void Present(FeedbackKind kind, bool localHuman, Vector2 viewportPosition)
         {
@@ -124,7 +116,6 @@ namespace Project51.Core
             PolicyChanged();
             Presented = null;
             ParticlesDisabled = null;
-            particlesEnabled = true;
             lastHaptic = float.NegativeInfinity;
             lastStrong = false;
         }

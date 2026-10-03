@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using System.Collections.Generic;
@@ -165,6 +164,7 @@ namespace Project51.Tests
             // Table is empty
 
             var moves = Rules51.GetValidMoves(state, 0);
+            Assert.IsNotEmpty(moves);
             Assert.IsTrue(moves.All(m => m.Type == MoveType.PlayOnly));
         }
 
@@ -204,6 +204,30 @@ namespace Project51.Tests
             // the Ace (7 != 1, and no subset sums to 15-7=8 with only a lone Ace).
             Assert.IsFalse(moves.Any(m => m.Type == MoveType.AceCapture));
             Assert.IsTrue(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.IsMatta));
+        }
+
+        [Test]
+        public void Matta_Is_Not_Wild_For_Normal_Captures()
+        {
+            var state = new GameState(2);
+            state.Players[0].Hand.Clear();
+            state.Players[1].Hand.Clear();
+            state.Table.Clear();
+
+            var matta = new Card(Suit.Coppe, 7);
+            state.Table.Add(matta);
+
+            state.Players[0].Hand.Add(new Card(Suit.Spade, 3));
+
+            var moves = Rules51.GetValidMoves(state, 0);
+            var movesFor3 = moves.Where(m => m.PlayedCard.Value == 3).ToList();
+            Assert.IsTrue(movesFor3.All(m => m.Type == MoveType.PlayOnly));
+
+            state.Players[0].Hand.Clear();
+            state.Players[0].Hand.Add(new Card(Suit.Denari, 7));
+            moves = Rules51.GetValidMoves(state, 0);
+            var movesFor7 = moves.Where(m => m.PlayedCard.Value == 7).ToList();
+            Assert.IsTrue(movesFor7.Any(m => m.Type == MoveType.CaptureEqual && m.CapturedCards.Any(c => c.IsMatta)));
         }
 
         #endregion
@@ -350,4 +374,3 @@ namespace Project51.Tests
         #endregion
     }
 }
-#endif

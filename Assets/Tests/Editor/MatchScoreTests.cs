@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -237,4 +236,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif

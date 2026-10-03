@@ -1,8 +1,7 @@
-#if UNITY_EDITOR
-using System;
 using System.Reflection;
 using NUnit.Framework;
 using Project51.Core;
+using Project51.Unity;
 using UnityEngine;
 
 namespace Project51.Tests
@@ -11,35 +10,24 @@ namespace Project51.Tests
     /// Tests for TurnController.ResolveAIDifficulty(): verifica che la difficolta' bot scelta
     /// dall'utente (MatchConfig.BotDifficulty, esposta via GameSceneInitializer.ActiveConfig)
     /// venga mappata correttamente su AIDifficulty per CirullaAI.
-    /// TurnController vive nell'assembly Project51.Gameplay (nessun riferimento a compile-time
-    /// da questo assembly di test), quindi il tipo e il metodo privato sono risolti via reflection.
+    /// ResolveAIDifficulty e il setter di ActiveConfig sono privati: solo loro passano per reflection.
     /// </summary>
     public class TurnControllerResolveAIDifficultyTests
     {
-        private static Type _turnControllerType;
-        private static Type _gameSceneInitializerType;
-        private static PropertyInfo _activeConfigProperty;
-        private static MethodInfo _resolveAIDifficultyMethod;
+        private static readonly PropertyInfo _activeConfigProperty =
+            typeof(GameSceneInitializer).GetProperty(nameof(GameSceneInitializer.ActiveConfig), BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo _resolveAIDifficultyMethod =
+            typeof(TurnController).GetMethod("ResolveAIDifficulty", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        private object _previousActiveConfig;
+        private MatchConfig _previousActiveConfig;
         private GameObject _turnControllerGO;
 
         [SetUp]
         public void SetUp()
         {
-            _turnControllerType ??= FindType("Project51.Unity.TurnController");
-            _gameSceneInitializerType ??= FindType("Project51.Unity.GameSceneInitializer");
-
-            Assert.IsNotNull(_turnControllerType, "Project51.Unity.TurnController non trovato in nessun assembly caricato.");
-            Assert.IsNotNull(_gameSceneInitializerType, "Project51.Unity.GameSceneInitializer non trovato in nessun assembly caricato.");
-
-            _activeConfigProperty ??= _gameSceneInitializerType.GetProperty("ActiveConfig", BindingFlags.Public | BindingFlags.Static);
-            _resolveAIDifficultyMethod ??= _turnControllerType.GetMethod("ResolveAIDifficulty", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            Assert.IsNotNull(_activeConfigProperty, "GameSceneInitializer.ActiveConfig non trovato.");
             Assert.IsNotNull(_resolveAIDifficultyMethod, "TurnController.ResolveAIDifficulty non trovato.");
 
-            _previousActiveConfig = _activeConfigProperty.GetValue(null);
+            _previousActiveConfig = GameSceneInitializer.ActiveConfig;
             _turnControllerGO = new GameObject("TurnControllerResolveAIDifficultyTest");
         }
 
@@ -51,7 +39,7 @@ namespace Project51.Tests
                 UnityEngine.Object.DestroyImmediate(_turnControllerGO);
             }
 
-            SetActiveConfig(_previousActiveConfig as MatchConfig);
+            SetActiveConfig(_previousActiveConfig);
         }
 
         [Test]
@@ -84,7 +72,7 @@ namespace Project51.Tests
         {
             SetActiveConfig(null);
 
-            var turnController = _turnControllerGO.AddComponent(_turnControllerType);
+            var turnController = _turnControllerGO.AddComponent<TurnController>();
             var result = (AIDifficulty)_resolveAIDifficultyMethod.Invoke(turnController, null);
 
             // Default del campo [SerializeField] aiDifficulty in TurnController e' AIDifficulty.Medium.
@@ -95,7 +83,7 @@ namespace Project51.Tests
         {
             SetActiveConfig(new MatchConfig { BotDifficulty = botDifficulty });
 
-            var turnController = _turnControllerGO.AddComponent(_turnControllerType);
+            var turnController = _turnControllerGO.AddComponent<TurnController>();
             return (AIDifficulty)_resolveAIDifficultyMethod.Invoke(turnController, null);
         }
 
@@ -103,19 +91,5 @@ namespace Project51.Tests
         {
             _activeConfigProperty.GetSetMethod(nonPublic: true).Invoke(null, new object[] { config });
         }
-
-        private static Type FindType(string fullName)
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                var type = assembly.GetType(fullName);
-                if (type != null)
-                {
-                    return type;
-                }
-            }
-            return null;
-        }
     }
 }
-#endif

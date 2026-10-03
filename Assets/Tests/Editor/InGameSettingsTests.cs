@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using Project51.Unity;
@@ -107,27 +106,5 @@ namespace Project51.Tests
                 GameAudioPreferences.SetEnabled(master);
             }
         }
-
-        [Test]
-        public void BoxBlurKeepsFlatImagesAndSpreadsABrightPoint()
-        {
-            const int size = 9;
-            var flat = new Color32[size * size];
-            for (int i = 0; i < flat.Length; i++) flat[i] = new Color32(40, 80, 120, 255);
-            BackdropBlur.BoxBlur(flat, size, size, 2, 3);
-            foreach (var c in flat) Assert.AreEqual(new Color32(40, 80, 120, 255), c);
-
-            var point = new Color32[size * size];
-            for (int i = 0; i < point.Length; i++) point[i] = new Color32(0, 0, 0, 255);
-            point[4 * size + 4] = new Color32(255, 255, 255, 255);
-            BackdropBlur.BoxBlur(point, size, size, 1, 1);
-
-            Assert.Less(point[4 * size + 4].r, 255, "il punto luminoso si attenua");
-            Assert.Greater(point[4 * size + 5].r, 0, "e si spande ai vicini");
-            Assert.AreEqual(point[4 * size + 3].r, point[4 * size + 5].r, "in modo simmetrico");
-            Assert.AreEqual(point[3 * size + 4].r, point[5 * size + 4].r);
-            Assert.AreEqual(0, point[0].r, "senza toccare gli angoli lontani");
-        }
     }
 }
-#endif

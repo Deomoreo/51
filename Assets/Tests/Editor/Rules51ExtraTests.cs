@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using System.Linq;
@@ -8,41 +7,6 @@ namespace Project51.Tests
 {
     public class Rules51ExtraTests
     {
-        [Test]
-        public void Ace_Play_Captures_Single_Ace_When_Present()
-        {
-            var state = new GameState(2);
-            // Table has an Ace and another card
-            state.Table.Add(new Card(Suit.Coppe, 1));
-            state.Table.Add(new Card(Suit.Denari, 4));
-            state.Players[0].Hand.Add(new Card(Suit.Bastoni, 1)); // playing an ace
-
-            var moves = Rules51.GetValidMoves(state, 0);
-            Assert.IsTrue(moves.Any(m => m.PlayedCard.IsAce && m.Type == MoveType.AceCapture && m.CapturedCards.Count == 1 && m.CapturedCards[0].IsAce));
-        }
-
-        [Test]
-        public void Ace_Play_Captures_All_When_No_Aces_On_Table()
-        {
-            var state = new GameState(2);
-            state.Table.Add(new Card(Suit.Coppe, 4));
-            state.Table.Add(new Card(Suit.Denari, 6));
-            state.Players[0].Hand.Add(new Card(Suit.Bastoni, 1)); // playing an ace
-
-            var moves = Rules51.GetValidMoves(state, 0);
-            Assert.IsTrue(moves.Any(m => m.PlayedCard.IsAce && m.Type == MoveType.AceCapture && m.CapturedCards.Count == 2));
-        }
-
-        [Test]
-        public void Ace_Play_Is_PlayOnly_When_Table_Empty()
-        {
-            var state = new GameState(2);
-            state.Players[0].Hand.Add(new Card(Suit.Bastoni, 1)); // playing an ace
-
-            var moves = Rules51.GetValidMoves(state, 0);
-            Assert.IsTrue(moves.Any(m => m.PlayedCard.IsAce && m.Type == MoveType.PlayOnly));
-        }
-
         [Test]
         public void Forced_Capture_Prevents_PlayOnly_Moves()
         {
@@ -59,23 +23,6 @@ namespace Project51.Tests
             Assert.IsFalse(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(captureCard)));
             // The 3 of Spade cannot capture anything, so it remains discardable
             Assert.IsTrue(moves.Any(m => m.Type == MoveType.PlayOnly && m.PlayedCard.Equals(freeCard)));
-        }
-
-        [Test]
-        public void Scopa_Not_Counted_On_Last_Play()
-        {
-            var state = new GameState(2);
-            // Prepare end-of-deck, other player has no cards
-            state.Deck.Clear();
-            state.Players[0].Hand.Add(new Card(Suit.Denari, 5)); // will play to capture
-            state.Players[1].Hand.Clear();
-            state.Table.Add(new Card(Suit.Coppe, 5));
-
-            var move = new Move(0, new Card(Suit.Denari, 5), MoveType.CaptureEqual, new System.Collections.Generic.List<Card> { state.Table[0] });
-            Rules51.ApplyMove(state, move);
-
-            // Because this was the last play (deck empty and all hands empty after play), scopa should not be counted
-            Assert.AreEqual(0, state.Players[0].ScopaCount);
         }
 
         [Test]
@@ -103,4 +50,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif

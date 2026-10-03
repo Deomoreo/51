@@ -61,10 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\UI51\Editor\UI51MetaBuilder.cs" />
-    <Compile Include="Assets\Tests\Editor\Rules51ValidMovesTests.cs" />
-    <Compile Include="Assets\Tests\Editor\Rules51RestoredTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51SocialBuilder.cs" />
-    <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />
     <Compile Include="Assets\Editor\HomeAmbientBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51ProgressBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51Build.cs" />
@@ -81,9 +78,7 @@
     <Compile Include="Assets\Tests\Editor\NetworkAccusoSyncTests.cs" />
     <Compile Include="Assets\Editor\SoundLibraryBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51PrefabBuilder.cs" />
-    <Compile Include="Assets\Tests\Editor\MattaAccusiCombinationsTests.cs" />
     <Compile Include="Assets\Tests\Editor\FriendsChatTests.cs" />
-    <Compile Include="Assets\Tests\Editor\AceAndCaptureRulesTests.cs" />
     <Compile Include="Assets\Tests\Editor\RoundManagerHandNumberTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51AccessBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\MatchConfigStorageTests.cs" />
@@ -110,7 +105,6 @@
     <Compile Include="Assets\Tests\Editor\TurnControllerResolveAIDifficultyTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51HomeBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\AccountDeletionTests.cs" />
-    <Compile Include="Assets\Tests\Editor\PunteggioManagerTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51TableBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\ModerationViewTests.cs" />
     <Compile Include="Assets\Tests\Editor\AccusiCheckerTests.cs" />
@@ -127,7 +121,6 @@
     <Compile Include="Assets\UI51\Editor\UI51ImportBuilder.cs" />
     <Compile Include="Assets\UI51\Editor\UI51MatchBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\K7FlowTests.cs" />
-    <Compile Include="Assets\Tests\Editor\CirullaRulesTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ExternalDependencyManager\Editor\1.2.182\Google.PackageManagerResolver.dll" />

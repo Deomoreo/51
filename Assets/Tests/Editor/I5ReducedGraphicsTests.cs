@@ -47,32 +47,18 @@ public class I5ReducedGraphicsTests
             typeof(GamePreferences).GetField(field, BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, -1);
     }
 
-    private static bool Reduced()
-    {
-        var property = typeof(GamePreferences).GetProperty("ReducedGraphics");
-        Assert.IsNotNull(property, "I5 needs the shared reduced graphics preference.");
-        return (bool)property.GetValue(null);
-    }
-
-    private static void SetReduced(bool value)
-    {
-        var setter = typeof(GamePreferences).GetMethod("SetReducedGraphics");
-        Assert.IsNotNull(setter, "I5 needs the shared reduced graphics preference.");
-        setter.Invoke(null, new object[] { value });
-    }
-
     [TestCase("Settings_FastAnimations")]
     [TestCase("Settings_AnimazioniVeloci")]
     public void ExistingFastChoiceMigratesOnceAndKeepsAnimationsShort(string legacy)
     {
         PlayerPrefs.SetInt(legacy, 1);
-        Assert.IsTrue(Reduced());
+        Assert.IsTrue(GamePreferences.ReducedGraphics);
         Assert.AreEqual(GamePreferences.QualityLow, PlayerPrefs.GetInt(GamePreferences.GraphicsQualityKey, -1));
         Assert.Less(GamePreferences.Scaled(1f), 1f);
-        SetReduced(false);
+        GamePreferences.SetReducedGraphics(false);
         PlayerPrefs.SetInt(legacy, 1);
         ClearCache();
-        Assert.IsFalse(Reduced(), "An explicit new choice must win over old settings on restart.");
+        Assert.IsFalse(GamePreferences.ReducedGraphics, "An explicit new choice must win over old settings on restart.");
     }
 
     [Test]
@@ -96,29 +82,32 @@ public class I5ReducedGraphicsTests
     {
         PlayerPrefs.SetInt(keys[1], 0);
         PlayerPrefs.SetInt(keys[2], 1);
-        Assert.IsFalse(Reduced());
+        Assert.IsFalse(GamePreferences.ReducedGraphics);
     }
 
     [Test]
     public void ReducedGraphicsSuppressesNewFeedbackWithoutChangingVibration()
     {
         bool vibration = GamePreferences.VibrationEnabled;
-        int presented = 0;
+        int presented = 0, cleared = 0;
         System.Action<FeedbackKind, Vector2> listener = (kind, position) => presented++;
-        GameFeedback.SetParticlesEnabled(true);
+        System.Action onCleared = () => cleared++;
+        _ = GameFeedback.ParticlesEnabled; // binds the policy before subscribing
         GameFeedback.Presented += listener;
+        GameFeedback.ParticlesDisabled += onCleared;
         try
         {
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
+            Assert.AreEqual(1, cleared, "Turning reduced graphics on clears live particles once.");
             GameFeedback.Present(FeedbackKind.Scopa, false, Vector2.zero);
             Assert.AreEqual(0, presented);
             Assert.IsFalse(GameFeedback.ParticlesEnabled);
             Assert.AreEqual(vibration, GamePreferences.VibrationEnabled);
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             GameFeedback.Present(FeedbackKind.Scopa, false, Vector2.zero);
             Assert.AreEqual(1, presented);
         }
-        finally { GameFeedback.Presented -= listener; }
+        finally { GameFeedback.Presented -= listener; GameFeedback.ParticlesDisabled -= onCleared; }
     }
 
     [Test]
@@ -128,7 +117,7 @@ public class I5ReducedGraphicsTests
         try
         {
             go.SetActive(false);
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
             Assert.IsFalse(go.GetComponent<BackdropBlur>().Capture().MoveNext());
             Assert.IsFalse(go.GetComponent<RawImage>().enabled);
             Assert.IsNull(go.GetComponent<RawImage>().texture);
@@ -142,7 +131,7 @@ public class I5ReducedGraphicsTests
         var go = new GameObject("I5 card", typeof(SpriteRenderer), typeof(CardShaderEffect));
         try
         {
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             var renderer = go.GetComponent<SpriteRenderer>();
             var effect = go.GetComponent<CardShaderEffect>();
             // Plain MonoBehaviours do not receive OnEnable in EditMode fixtures.
@@ -151,11 +140,11 @@ public class I5ReducedGraphicsTests
             var original = renderer.sharedMaterial;
             effect.PlaySweep();
             Assert.AreNotSame(original, renderer.sharedMaterial);
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
             Assert.AreSame(original, renderer.sharedMaterial);
             effect.PlaySweep();
             Assert.AreSame(original, renderer.sharedMaterial);
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             effect.PlaySweep();
             Assert.AreNotSame(original, renderer.sharedMaterial);
         }
@@ -169,13 +158,13 @@ public class I5ReducedGraphicsTests
         var glow = new GameObject("I5 glow", typeof(RectTransform), typeof(Image), typeof(UIV2ShapeGlow));
         try
         {
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             glow.GetComponent<UIV2ShapeGlow>().Configure(source.GetComponent<Image>());
             Assert.IsTrue(glow.GetComponent<Image>().enabled);
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
             Assert.IsFalse(glow.GetComponent<Image>().enabled);
             Assert.IsTrue(source.GetComponent<Image>().enabled);
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             Assert.IsTrue(glow.GetComponent<Image>().enabled);
         }
         finally { Object.DestroyImmediate(glow); Object.DestroyImmediate(source); }
@@ -192,17 +181,17 @@ public class I5ReducedGraphicsTests
         var blur = go.GetComponent<BackdropBlur>();
         try
         {
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             Invoke(blur, "OnEnable");
             bool rendered = (bool)typeof(BackdropBlur).GetMethod("RenderBlur", BindingFlags.Instance | BindingFlags.NonPublic)
                 .Invoke(blur, new object[] { source, 16, 16 });
             Assert.IsTrue(rendered);
             var image = go.GetComponent<RawImage>();
             var snapshot = image.texture;
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
             Assert.IsFalse(image.enabled);
             Assert.IsNull(image.texture);
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             Assert.IsTrue(image.enabled);
             Assert.AreSame(snapshot, image.texture);
             Invoke(blur, "OnDisable");
@@ -224,20 +213,20 @@ public class I5ReducedGraphicsTests
         results.MatchPanel = go;
         try
         {
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             typeof(MatchResultsV2).GetField("finished", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(results, true);
             Invoke(results, "OnEnable");
             Invoke(results, "PlayConfetti");
             Assert.IsTrue(DOTween.IsTweening(piece.transform));
-            SetReduced(true);
+            GamePreferences.SetReducedGraphics(true);
             Assert.IsFalse(confetti.activeSelf);
             Assert.IsFalse(DOTween.IsTweening(piece.transform));
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(false);
             Assert.IsTrue(confetti.activeSelf);
             Assert.IsTrue(DOTween.IsTweening(piece.transform));
             go.SetActive(false);
-            SetReduced(true);
-            SetReduced(false);
+            GamePreferences.SetReducedGraphics(true);
+            GamePreferences.SetReducedGraphics(false);
             Assert.IsFalse(confetti.activeSelf);
         }
         finally { Invoke(results, "OnDisable"); Object.DestroyImmediate(go); }

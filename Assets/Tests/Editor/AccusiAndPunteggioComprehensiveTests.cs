@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using System.Collections.Generic;
@@ -6,208 +5,6 @@ using System.Linq;
 
 namespace Project51.Tests
 {
-    /// <summary>
-    /// Comprehensive tests for AccusiChecker - Cirulla and Decino detection.
-    /// </summary>
-    public class AccusiCheckerComprehensiveTests
-    {
-        #region Cirulla Tests
-
-        [Test]
-        public void Cirulla_Sum_Exactly_9_Returns_True()
-        {
-            // 3 + 3 + 3 = 9
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 3),
-                new Card(Suit.Coppe, 3),
-                new Card(Suit.Bastoni, 3)
-            };
-            Assert.IsTrue(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_Sum_Less_Than_9_Returns_True()
-        {
-            // 1 + 1 + 1 = 3
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 1),
-                new Card(Suit.Coppe, 1),
-                new Card(Suit.Bastoni, 1)
-            };
-            Assert.IsTrue(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_Sum_Greater_Than_9_Returns_False()
-        {
-            // 4 + 4 + 4 = 12
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 4),
-                new Card(Suit.Coppe, 4),
-                new Card(Suit.Bastoni, 4)
-            };
-            Assert.IsFalse(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_Matta_Counts_As_1()
-        {
-            // Matta (7 of Coppe) counts as 1 for Cirulla
-            // 1 + 4 + 4 = 9 (Matta as 1)
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Denari, 4),
-                new Card(Suit.Bastoni, 4)
-            };
-            Assert.IsTrue(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_Matta_As_1_Enables_Cirulla()
-        {
-            // Without Matta: 7 + 1 + 1 = 9 ?
-            // With Matta: 1 + 1 + 1 = 3 ?
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta counts as 1
-                new Card(Suit.Denari, 1),
-                new Card(Suit.Bastoni, 1)
-            };
-            Assert.IsTrue(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_Null_Hand_Returns_False()
-        {
-            Assert.IsFalse(AccusiChecker.IsCirulla(null));
-        }
-
-        [Test]
-        public void Cirulla_Wrong_Hand_Size_Returns_False()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 1),
-                new Card(Suit.Coppe, 1)
-            };
-            Assert.IsFalse(AccusiChecker.IsCirulla(hand));
-        }
-
-        [Test]
-        public void Cirulla_With_Face_Cards_Returns_False()
-        {
-            // 8 + 1 + 1 = 10 > 9
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 8), // Jack = 8
-                new Card(Suit.Coppe, 1),
-                new Card(Suit.Bastoni, 1)
-            };
-            Assert.IsFalse(AccusiChecker.IsCirulla(hand));
-        }
-
-        #endregion
-
-        #region Decino Tests
-
-        [Test]
-        public void Decino_Three_Same_Rank_Returns_True()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 5),
-                new Card(Suit.Coppe, 5),
-                new Card(Suit.Bastoni, 5)
-            };
-            Assert.IsTrue(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Three_Aces_Returns_True()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 1),
-                new Card(Suit.Coppe, 1),
-                new Card(Suit.Bastoni, 1)
-            };
-            Assert.IsTrue(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Three_Kings_Returns_True()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 10),
-                new Card(Suit.Coppe, 10),
-                new Card(Suit.Bastoni, 10)
-            };
-            Assert.IsTrue(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Pair_Plus_Matta_Returns_True()
-        {
-            // Matta completes a pair to make a trio
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Denari, 6),
-                new Card(Suit.Bastoni, 6)
-            };
-            Assert.IsTrue(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Different_Ranks_Returns_False()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 5),
-                new Card(Suit.Coppe, 6),
-                new Card(Suit.Bastoni, 7)
-            };
-            Assert.IsFalse(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Null_Hand_Returns_False()
-        {
-            Assert.IsFalse(AccusiChecker.IsDecino(null));
-        }
-
-        [Test]
-        public void Decino_Wrong_Hand_Size_Returns_False()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Denari, 5),
-                new Card(Suit.Coppe, 5)
-            };
-            Assert.IsFalse(AccusiChecker.IsDecino(hand));
-        }
-
-        [Test]
-        public void Decino_Matta_With_Non_Pair_Returns_False()
-        {
-            // Matta can't make a trio from different ranks
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Denari, 5),
-                new Card(Suit.Bastoni, 6)
-            };
-            Assert.IsFalse(AccusiChecker.IsDecino(hand));
-        }
-
-        #endregion
-    }
-
     /// <summary>
     /// Comprehensive tests for PunteggioManager - scoring calculations.
     /// </summary>
@@ -369,6 +166,16 @@ namespace Project51.Tests
             Assert.Greater(scores[0], scores[1]);
         }
 
+        [Test]
+        public void Primiera_Tie_Results_In_No_Point()
+        {
+            var state = new GameState(2);
+            state.Players[0].CapturedCards.AddRange(new[] { new Card(Suit.Denari,7), new Card(Suit.Coppe,6), new Card(Suit.Bastoni,5), new Card(Suit.Spade,4) });
+            state.Players[1].CapturedCards.AddRange(new[] { new Card(Suit.Denari,7), new Card(Suit.Coppe,6), new Card(Suit.Bastoni,5), new Card(Suit.Spade,4) });
+            var scores = PunteggioManager.CalculateSmazzataScores(state);
+            Assert.AreEqual(scores[0], scores[1]);
+        }
+
         #endregion
 
         #region Grande Tests
@@ -469,4 +276,3 @@ namespace Project51.Tests
         #endregion
     }
 }
-#endif

@@ -10,21 +10,13 @@ public class K7FlowTests
     // Uscendo dal Play non si ricarica il dominio: una partita online in Editor lascia GameModeService in multigiocatore.
     [SetUp] public void Offline() => GameModeService.Reset();
 
-    private static Type CoreType(string name)
-    {
-        var type = typeof(GamePreferences).Assembly.GetType("Project51.Core." + name);
-        Assert.IsNotNull(type, "K7 flow policy must be implemented.");
-        return type;
-    }
-    private static object Countdown() => Activator.CreateInstance(CoreType("RoundAdvanceCountdown"));
-    private static void Start(object timer) => timer.GetType().GetMethod("Start").Invoke(timer, null);
-    private static bool Advance(object timer, float delta, bool authority = true, bool blocked = false) =>
-        (bool)timer.GetType().GetMethod("Advance").Invoke(timer, new object[] { delta, authority, blocked });
+    private static bool Advance(RoundAdvanceCountdown timer, float delta, bool authority = true, bool blocked = false) =>
+        timer.Advance(delta, authority, blocked);
 
     [Test]
     public void RoundAdvancesExactlyOnceAfterTenVisibleSeconds()
     {
-        var timer = Countdown(); Start(timer);
+        var timer = new RoundAdvanceCountdown(); timer.Start();
         Assert.IsFalse(Advance(timer, 3f));
         Assert.IsFalse(Advance(timer, 6f));
         Assert.IsTrue(Advance(timer, 1f));
@@ -33,7 +25,7 @@ public class K7FlowTests
     [Test]
     public void ModalTimeDoesNotConsumeTheCountdown()
     {
-        var timer = Countdown(); Start(timer);
+        var timer = new RoundAdvanceCountdown(); timer.Start();
         Assert.IsFalse(Advance(timer, 3f));
         Assert.IsFalse(Advance(timer, 100f, blocked: true));
         Assert.IsFalse(Advance(timer, 6f));
@@ -42,14 +34,14 @@ public class K7FlowTests
     [Test]
     public void NewHostGetsFreshReadingTimeAndCancelPreventsHiddenAdvancement()
     {
-        var timer = Countdown(); Start(timer);
+        var timer = new RoundAdvanceCountdown(); timer.Start();
         Assert.IsFalse(Advance(timer, 9f));
         Assert.IsFalse(Advance(timer, 100f, authority: false));
         Assert.IsFalse(Advance(timer, 1f));
         Assert.IsFalse(Advance(timer, 8f));
         Assert.IsTrue(Advance(timer, 1f));
-        Start(timer);
-        timer.GetType().GetMethod("Cancel").Invoke(timer, null);
+        timer.Start();
+        timer.Cancel();
         Assert.IsFalse(Advance(timer, 100f));
     }
 

@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using NUnit.Framework;
 using Project51.Core;
 using System.Collections.Generic;
@@ -211,4 +210,3 @@ namespace Project51.Tests
         #endregion
     }
 }
-#endif

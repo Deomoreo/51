@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Reflection;
@@ -207,4 +206,3 @@ namespace Project51.Tests
         }
     }
 }
-#endif
