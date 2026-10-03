@@ -77,13 +77,6 @@ namespace Project51.Unity
             if (window != null) window.DOScale(0.94f, seconds).SetUpdate(true);
         }
 
-        /// <summary>Compatibilita': mostra e chiude da solo (usata dai vecchi richiami).</summary>
-        public IEnumerator ShowMessage(string message)
-        {
-            yield return Show(message, null);
-            HideAnimated();
-        }
-
         private void OnDestroy()
         {
             if (group != null) group.DOKill();

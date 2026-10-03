@@ -60,7 +60,7 @@ namespace Project51.Unity.UI
             var config = new MatchConfig
             {
                 Intent = MatchIntent.Training, Format = GameFormat.OneVsOne, BotDifficulty = BotDifficulty.Easy,
-                DeckBackId = CardDecks.SelectedId, Rules = MatchRules.Default.Clone(),
+                Rules = MatchRules.Default.Clone(),
             };
             config.Rules.CappottoEndsGameImmediately = false;
             config.Rules.CappottoBonusPoints = 0;

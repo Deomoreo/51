@@ -102,7 +102,6 @@ namespace Project51.Unity
 
         public event Action<CardView> OnCardClicked;
         public event Action<CardView> OnCardDoubleClicked;
-        public event Action<CardView, Vector3> OnDragReleased;
 
         /// <summary>Tocco su una carta che non si gioca (carte accusate di un altro): lo decide chi la mette in scena.</summary>
         public Action<CardView> Tapped;
@@ -216,7 +215,7 @@ namespace Project51.Unity
 
             displayScale = newDisplayScale;
 
-            if (!isSelected && !isDragging)
+            if (!isSelected)
             {
                 if (isMouseOver && enableHover)
                 {
@@ -239,14 +238,6 @@ namespace Project51.Unity
                 // giocava anche la carta sotto, inviando una seconda mossa diversa da quella scelta.
                 if (IsPointerOverUI()) return;
                 GameFeedback.TryHaptic(false);
-                var cam = Camera.main;
-                if (cam != null)
-                {
-                    var mp = Input.mousePosition;
-                    mp.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
-                    var world = cam.ScreenToWorldPoint(mp);
-                    dragOffset = world - transform.position;
-                }
 
                 // detect double click
                 float now = Time.time;
@@ -267,10 +258,6 @@ namespace Project51.Unity
                 Tapped(this);
             }
         }
-
-        private Vector3 dragOffset;
-        private bool isDragging = false;
-        [SerializeField] private bool allowDrag = false; // default: disable drag for human players
 
         /// <summary>
         /// Difensivo: OnMouseExit di Unity puo' non scattare in alcuni casi limite (focus perso,
@@ -385,7 +372,6 @@ namespace Project51.Unity
             }
             StopPoseAnimations();
             isSelected = false;
-            isDragging = false;
             transform.localScale = displayScale;
             transform.position = originalPosition;
             if (spriteRenderer != null) spriteRenderer.sortingOrder = originalSortingOrder;
@@ -444,7 +430,7 @@ namespace Project51.Unity
             // Mai sollevata (ingresso ignorato senza dito): nessuna posa da rimettere, e una carta in volo non va tirata a riposo.
             if (!wasOver) return;
 
-            if (!isDragging && enableHover)
+            if (enableHover)
             {
                 if (!isSelected)
                     AnimateHover(false);
@@ -458,34 +444,6 @@ namespace Project51.Unity
                         showingTemporaryValue = true;
                         SetMarkerVisible(markerRenderer != null && markerRenderer.sprite != null);
                     }
-                }
-            }
-        }
-
-        private void OnMouseDrag()
-        {
-            if (!isClickable) return;
-            if (!IsLocalPlayersTurn()) return;
-            if (!allowDrag) return;
-            var cam = Camera.main;
-            if (cam == null) return;
-            var mp = Input.mousePosition;
-            mp.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
-            var world = cam.ScreenToWorldPoint(mp);
-            transform.position = new Vector3(world.x - dragOffset.x, world.y - dragOffset.y, transform.position.z);
-            isDragging = true;
-        }
-
-        private void OnMouseUp()
-        {
-            if (isDragging)
-            {
-                isDragging = false;
-                transform.localScale = displayScale;
-                // notify listeners about drag release only if dragging allowed
-                if (allowDrag)
-                {
-                    OnDragReleased?.Invoke(this, transform.position);
                 }
             }
         }
@@ -539,7 +497,7 @@ namespace Project51.Unity
         /// </summary>
         public void SnapToRestPose()
         {
-            if (isSelected || isDragging) return;
+            if (isSelected) return;
             transform.position = originalPosition;
             transform.localScale = displayScale;
         }
@@ -642,7 +600,7 @@ namespace Project51.Unity
             }
 
             originalPosition = position;
-            if (!isSelected && !isDragging)
+            if (!isSelected)
             {
                 if (isMouseOver && enableHover)
                 {
@@ -663,7 +621,7 @@ namespace Project51.Unity
         {
             originalPosition = position;
             displayScale = new Vector3(Mathf.Max(0.01f, scale), Mathf.Max(0.01f, scale), 1f);
-            if (isSelected || isDragging) return;
+            if (isSelected) return;
             if (isMouseOver && enableHover) { AnimateHover(true); return; }
             StopPoseAnimations();
             transform.DOKill();
@@ -673,7 +631,7 @@ namespace Project51.Unity
 
         private void AnimateHover(bool enter)
         {
-            if (isSelected || isDragging) return;
+            if (isSelected) return;
             if (hoverCoroutine != null)
             {
                 StopCoroutine(hoverCoroutine);
@@ -708,10 +666,8 @@ namespace Project51.Unity
         {
             if (hoverCoroutine != null) StopCoroutine(hoverCoroutine);
             if (selectionCoroutine != null) StopCoroutine(selectionCoroutine);
-            if (hintBounceCoroutine != null) StopCoroutine(hintBounceCoroutine);
             hoverCoroutine = null;
             selectionCoroutine = null;
-            hintBounceCoroutine = null;
         }
 
         private Vector3 GetPoseScale()
@@ -865,18 +821,6 @@ namespace Project51.Unity
             EnsureMarkerRenderer();
             markerRenderer.sprite = marker;
             SetMarkerVisible(marker != null);
-        }
-
-        // Clear only the visual overlay (used on hover). Keeps the temp sprite cached for restore on exit.
-        public void ClearTemporaryOverlay()
-        {
-            CancelMattaAnimation();
-            showingTemporaryValue = false;
-            if (spriteRenderer != null && originalFaceSprite != null)
-            {
-                spriteRenderer.sprite = originalFaceSprite;
-            }
-            SetMarkerVisible(false);
         }
 
         // Permanently clear any temporary value and cache.
@@ -1039,8 +983,6 @@ namespace Project51.Unity
             moveHintGlow.gameObject.SetActive(true);
         }
 
-        public bool HasMoveHint => moveHintGlow != null && moveHintGlow.gameObject.activeSelf;
-
         // ==== Carte accusate: bordo pieno dietro alla carta (mockup Partita, Partita4) ====
         private SpriteRenderer outline;
         private static Sprite outlineSprite;
@@ -1155,92 +1097,6 @@ namespace Project51.Unity
             if (spriteRenderer == null || defaultCardBack == null) return;
             ClearTemporaryValue();
             spriteRenderer.sprite = defaultCardBack;
-        }
-
-        /// <summary>
-        /// Plays a bounce animation to indicate this card can be captured.
-        /// Used when player makes an invalid selection to suggest valid captures.
-        /// </summary>
-        /// <param name="delay">Delay before starting the animation (for sequential hints)</param>
-        /// <param name="bounceCount">Number of bounces</param>
-        public void PlayHintBounce(float delay = 0f, int bounceCount = 2)
-        {
-            if (hintBounceCoroutine != null)
-            {
-                StopCoroutine(hintBounceCoroutine);
-            }
-            hintBounceCoroutine = StartCoroutine(HintBounceCoroutine(delay, bounceCount));
-        }
-
-        /// <summary>
-        /// Stops any active hint bounce animation.
-        /// </summary>
-        public void StopHintBounce()
-        {
-            if (hintBounceCoroutine != null)
-            {
-                StopCoroutine(hintBounceCoroutine);
-                hintBounceCoroutine = null;
-            }
-            // Reset to original position if not selected
-            if (!isSelected)
-            {
-                transform.position = originalPosition;
-                transform.localScale = displayScale;
-            }
-        }
-
-        private Coroutine hintBounceCoroutine;
-
-        private System.Collections.IEnumerator HintBounceCoroutine(float delay, int bounceCount)
-        {
-            if (delay > 0f)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-
-            float bounceHeight = 0.15f;
-            float bounceDuration = 0.15f;
-            Vector3 startPos = transform.position;
-            Vector3 startScale = transform.localScale;
-
-            for (int i = 0; i < bounceCount; i++)
-            {
-                // Bounce up
-                float elapsed = 0f;
-                while (elapsed < bounceDuration)
-                {
-                    elapsed += Time.deltaTime;
-                    float t = elapsed / bounceDuration;
-                    float easeOut = 1f - (1f - t) * (1f - t);
-                    transform.position = startPos + Vector3.up * bounceHeight * easeOut;
-                    transform.localScale = Vector3.Lerp(startScale, startScale * 1.1f, easeOut);
-                    yield return null;
-                }
-
-                // Bounce down
-                elapsed = 0f;
-                while (elapsed < bounceDuration)
-                {
-                    elapsed += Time.deltaTime;
-                    float t = elapsed / bounceDuration;
-                    float easeIn = t * t;
-                    transform.position = startPos + Vector3.up * bounceHeight * (1f - easeIn);
-                    transform.localScale = Vector3.Lerp(startScale * 1.1f, startScale, easeIn);
-                    yield return null;
-                }
-
-                transform.position = startPos;
-                transform.localScale = startScale;
-
-                // Small pause between bounces
-                if (i < bounceCount - 1)
-                {
-                    yield return new WaitForSeconds(0.05f);
-                }
-            }
-
-            hintBounceCoroutine = null;
         }
     }
 }

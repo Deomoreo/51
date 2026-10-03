@@ -505,7 +505,7 @@ namespace Project51.Unity.UI
 
         /// <summary>
         /// Stessa convenzione a indice relativo gia' usata in
-        /// CapturedPileManager.MapToViewIndex e CardViewManager.RenderAIHandsDynamic
+        /// CardViewManager.RenderAIHandsDynamic
         /// (duplicata li' come qui: non
         /// esiste un helper condiviso nel progetto per questo calcolo).
         /// </summary>

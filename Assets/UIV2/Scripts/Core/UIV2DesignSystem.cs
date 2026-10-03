@@ -54,7 +54,7 @@ namespace Project51.UIV2.Core
                     Apply(root, theme);
                     break;
                 case "Canvas_Login":
-                    foreach (string panel in new[] { "LoginPanel", "RegisterPanel", "AccountPanel" })
+                    foreach (string panel in new[] { "RegisterPanel", "AccountPanel" })
                     {
                         var design = root.transform.Find(panel + "/Design");
                         if (design != null) Apply(design.gameObject, theme);

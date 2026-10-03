@@ -93,7 +93,6 @@ namespace Project51.UI51.EditorTools
 
         static LoginUi BuildLogin(Transform panel)
         {
-            HideChild(panel, "Design");
             var overlay = UI51Shape.Linear(
                 (UI51Tokens.Rgba(6, 14, 28, 0.22f), 0f), (UI51Tokens.Rgba(6, 14, 28, 0.08f), 0.26f),
                 (UI51Tokens.Rgba(5, 11, 24, 0.52f), 0.54f), (UI51Tokens.Rgba(4, 9, 20, 0.86f), 0.78f),
@@ -245,8 +244,6 @@ namespace Project51.UI51.EditorTools
         static LegalUi BuildLegal(LegalModalV2 legal)
         {
             var root = legal.transform;
-            HideChild(root, "Dim");
-            HideChild(root, "Design");
             var safe = BuildScreen(root, UI51Build.Sprite("Backgrounds", "home_bg_blur"), null);
             var ui = new LegalUi();
 
@@ -503,8 +500,6 @@ namespace Project51.UI51.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
 
             ui51.SetActive(true);
-            HideChild(view, "Background");
-            HideChild(view, "DesignArea");
             return true;
         }
 

@@ -156,8 +156,8 @@
     <Compile Include="Assets\Scripts\Networking\HomeConnectionWatcher.cs" />
     <Compile Include="Assets\UIV2\Scripts\Data\HomeViewData.cs" />
     <Compile Include="Assets\Scripts\UI\UI51MailItem.cs" />
-    <Compile Include="Assets\Scripts\UI\UI51TableMoments.cs" />
     <Compile Include="Assets\Scripts\UI\JoinRoomPopupUI.cs" />
+    <Compile Include="Assets\Scripts\UI\UI51TableMoments.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\MatchResultsV2.cs" />
     <Compile Include="Assets\Scripts\UI\UI51ServiceScreen.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionAccusiPanel.cs" />
@@ -207,8 +207,8 @@
     <Compile Include="Assets\Scripts\UI\BannerUI.cs" />
     <Compile Include="Assets\Scripts\UI\HomePanelUI.cs" />
     <Compile Include="Assets\Scripts\UI\BottomNavBarUI.cs" />
-    <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
     <Compile Include="Assets\Scripts\UI\UI51ChestView.cs" />
+    <Compile Include="Assets\Scripts\UI\PlayerDataProvider.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\NewsScreenV2.cs" />
     <Compile Include="Assets\Scripts\UI\TopBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\UI51RulesView.cs" />
@@ -217,9 +217,9 @@
     <Compile Include="Assets\UIV2\Scripts\Core\UIV2Theme.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\EmoticonPlayer.cs" />
     <Compile Include="Assets\Scripts\UI\UI51MailView.cs" />
+    <Compile Include="Assets\Scripts\UI\UI51TrophySummary.cs" />
     <Compile Include="Assets\UIV2\Scripts\Components\UIV2SelectorChip.cs" />
     <Compile Include="Assets\Scripts\UI\SafeAreaTopOffset.cs" />
-    <Compile Include="Assets\Scripts\UI\UI51TrophySummary.cs" />
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2MotionInstaller.cs" />
     <Compile Include="Assets\UI51\Scripts\Components\SegmentedTabs.cs" />
     <Compile Include="Assets\Scripts\UI\UITheme.cs" />

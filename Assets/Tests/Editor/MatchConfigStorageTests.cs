@@ -22,9 +22,6 @@ namespace Project51.Tests
                 int value = PlayerPrefs.GetInt(key);
                 restore.Add(() => { if (exists) PlayerPrefs.SetInt(capturedKey, value); else PlayerPrefs.DeleteKey(capturedKey); });
             }
-            bool deckExists = PlayerPrefs.HasKey("DeckBackId");
-            string deck = PlayerPrefs.GetString("DeckBackId");
-            restore.Add(() => { if (deckExists) PlayerPrefs.SetString("DeckBackId", deck); else PlayerPrefs.DeleteKey("DeckBackId"); });
             bool multiplierExists = PlayerPrefs.HasKey("MatchRules_AccusiMultiplier");
             float multiplier = PlayerPrefs.GetFloat("MatchRules_AccusiMultiplier");
             restore.Add(() => { if (multiplierExists) PlayerPrefs.SetFloat("MatchRules_AccusiMultiplier", multiplier); else PlayerPrefs.DeleteKey("MatchRules_AccusiMultiplier"); });
@@ -48,7 +45,6 @@ namespace Project51.Tests
                 Format = GameFormat.OneVsOne,
                 BotDifficulty = BotDifficulty.Hard,
                 TargetScore = 71,
-                DeckBackId = "test-deck",
                 Rules = new MatchRules
                 {
                     EnableAccusi = false,
@@ -62,7 +58,6 @@ namespace Project51.Tests
             Assert.AreEqual(GameFormat.OneVsOne, loaded.Format);
             Assert.AreEqual(BotDifficulty.Hard, loaded.BotDifficulty);
             Assert.AreEqual(71, loaded.TargetScore);
-            Assert.AreEqual("test-deck", loaded.DeckBackId);
             Assert.IsFalse(loaded.Rules.EnableAccusi);
             Assert.AreEqual(0.5f, loaded.Rules.AccusiPointMultiplier);
             Assert.IsFalse(loaded.Rules.CappottoEndsGameImmediately);

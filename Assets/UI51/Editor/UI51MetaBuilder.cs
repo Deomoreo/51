@@ -264,7 +264,6 @@ namespace Project51.UI51.EditorTools
         static void BuildDelete(DeleteAccountModalV2 modal)
         {
             var root = modal.transform;
-            UI51AccessBuilder.HideChild(root, "Design");
             var dim = root.Find("Dim");
             var dimImage = dim != null ? dim.GetComponent<Image>() : null;
             // Il mockup ha .55 con sfocatura: senza sfocatura serve un velo piu' scuro.

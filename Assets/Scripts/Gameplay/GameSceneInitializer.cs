@@ -318,7 +318,7 @@ namespace Project51.Unity
             if (_config.Intent == MatchIntent.Training)
             {
                 // Training: player 0 � umano, gli altri sono bot
-                provider = new TrainingGameModeProvider(_config.PlayerCount, _config.BotDifficulty);
+                provider = SinglePlayerProvider.Instance;
                 Debug.Log($"[GameSceneInitializer] Setup Training mode with {_config.PlayerCount} players, difficulty: {_config.BotDifficulty}");
             }
             else
@@ -508,18 +508,8 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Restituisce la configurazione corrente del match.
-        /// </summary>
-        public MatchConfig GetConfig() => _config;
-
-        /// <summary>
         /// Restituisce se siamo in modalit� training (vs bot).
         /// </summary>
         public bool IsTrainingMode => _config?.Intent == MatchIntent.Training;
-
-        /// <summary>
-        /// Restituisce se siamo in modalit� multiplayer.
-        /// </summary>
-        public bool IsMultiplayerMode => _config?.Intent != MatchIntent.Training;
     }
 }

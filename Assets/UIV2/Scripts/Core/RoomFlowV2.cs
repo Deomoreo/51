@@ -180,7 +180,6 @@ namespace Project51.UIV2.Core
             {
                 Intent = MatchIntent.PrivateRoom,
                 Format = format,
-                DeckBackId = CardDecks.SelectedId,
                 Rules = MatchRules.Default.Clone()
             };
             if (format == GameFormat.OneVsOne)

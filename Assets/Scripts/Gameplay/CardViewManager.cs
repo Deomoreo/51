@@ -13,24 +13,6 @@ namespace Project51.Unity
         [SerializeField] private TurnController turnController;
         [SerializeField] private GameObject cardViewPrefab;
         
-        /// <summary>
-        /// Sets the card view prefab at runtime. Useful for tests.
-        /// </summary>
-        public void SetCardViewPrefab(GameObject prefab)
-        {
-            cardViewPrefab = prefab;
-            // Set prefab at runtime
-        }
-        
-        /// <summary>
-        /// Sets the turn controller reference at runtime. Useful for tests.
-        /// </summary>
-        public void SetTurnController(TurnController controller)
-        {
-            turnController = controller;
-            // Set controller at runtime
-        }
-
         [Header("Layout Settings")]
         [SerializeField] private Transform tableCardContainer;
         [SerializeField] private Transform humanHandContainer;
@@ -119,18 +101,8 @@ namespace Project51.Unity
 
         public float GetTableCardScale(int totalCards = 1) => TableCardScale(totalCards);
 
-        /// <summary>
-        /// Scala carta-in-mano per un giocatore specifico: quella del giocatore locale
-        /// (piu' grande) o quella condivisa dagli avversari, a seconda di chi e' playerIndex.
-        /// </summary>
-        public float GetHandCardScale(int playerIndex) =>
-            GameModeService.Current.IsLocalPlayer(playerIndex) ? EffectiveLocalPlayerCardScale : EffectiveOpponentCardScale;
-
         [Header("Sprites (Optional)")]
-        [SerializeField] private Sprite[] cardSprites; // shared with CardSpriteProvider
         [SerializeField] private Sprite defaultCardBack;
-        [SerializeField] private bool enableSpriteDebug = false;
-        [SerializeField] private CardSpriteMapping[] explicitMappings;
         [Header("Matta")]
         [Tooltip("Alone dietro alla matta quando vale come un'altra carta (Bagliore morbido cerchio).")]
         [SerializeField] private Sprite mattaHaloSprite;
@@ -139,12 +111,6 @@ namespace Project51.Unity
         [SerializeField] private Sprite moveHintGlowSprite;
         [Header("UI")]
         [SerializeField] private MoveSelectionUI moveSelectionUI;
-        [Header("Feedback")]
-        [SerializeField] private AudioClip playSound;
-        [SerializeField] private float playSoundVolume = 0.7f;
-
-        private Dictionary<string, Sprite> spriteLookup = new Dictionary<string, Sprite>();
-        private Dictionary<(Suit suit, int rank), Sprite> explicitMapCache = new Dictionary<(Suit, int), Sprite>();
 
         private Dictionary<Card, CardView> activeCardViews = new Dictionary<Card, CardView>();
 
@@ -213,47 +179,9 @@ namespace Project51.Unity
 
         private Camera layoutCamera;
 
-        /// <summary>
-        /// Gets all currently active CardViews. Useful for tests.
-        /// </summary>
-        public IEnumerable<CardView> GetActiveCardViews()
-        {
-            return activeCardViews.Values.Where(v => v != null);
-        }
-
-        // Selection mode state: when human selects a card to play and chooses table cards
-        private bool isSelecting = false;
-        private Card selectionPlayedCard = null;
-        private List<Card> selectionTableCards = new List<Card>();
         // Visual helpers for alternative highlighting
         private List<Card> currentlyHighlightedCards = new List<Card>();
         private Card chooserCard; // carta della mano che ha aperto il vassoio della presa
-        private bool helpShownForCurrentSelection = false;
-
-        // Helper: expected order of suits in cardSprites should match this enum ordering
-        private int SuitToIndex(Suit suit)
-        {
-            switch (suit)
-            {
-                case Suit.Denari: return 0;
-                case Suit.Coppe: return 1;
-                case Suit.Bastoni: return 2;
-                case Suit.Spade: return 3;
-                default: return 0;
-            }
-        }
-
-        private void BuildExplicitMapCache()
-        {
-            explicitMapCache.Clear();
-            if (explicitMappings == null) return;
-            foreach (var m in explicitMappings)
-            {
-                if (m.Sprite == null) continue;
-                var key = (m.Suit, m.Rank);
-                explicitMapCache[key] = m.Sprite;
-            }
-        }
 
         /// <summary>
         /// Renders non-local players' hands around the table (face-down by default).
@@ -447,153 +375,13 @@ namespace Project51.Unity
             if (owner >= 0 && owner != GameModeService.Current.LocalPlayerIndex) AccusedHandTapped?.Invoke(owner);
         }
 
-        /// <summary>
-        /// Gets the sprite for a specific card. Public for use by other UI components.
-        /// </summary>
-        /// <summary>
-        /// Carica cardSprites da Resources/Cards se non ancora popolato (assegnato in Inspector
-        /// o gia' caricato in precedenza). Prima questo accadeva SOLO dentro Start(): se un
-        /// chiamante esterno (es. TurnController.StartNewGame(), chiamato direttamente da
-        /// GameSceneInitializer PRIMA che Start() di questo componente sia mai girato) invocava
-        /// ForceRefresh() abbastanza presto, cardSprites era ancora vuoto - le carte create in
-        /// quel momento restavano bloccate con lo sprite placeholder per sempre, perche' il
-        /// render delle carte in mano (a differenza di tavolo/avversari, che ri-controllano lo
-        /// sprite ad ogni refresh per gestire il flip face-down->face-up) non lo ricontrolla piu'
-        /// una volta creata la view (bug segnalato: "le mie carte sono rettangoli piccoli senza
-        /// immagine, le altre sono normali"). GetSpriteForCard ora e' autosufficiente indipendentemente
-        /// da quando/da chi viene chiamato per primo.
-        /// </summary>
-        private void EnsureCardSpritesLoaded()
-        {
-            if (cardSprites != null && cardSprites.Length > 0) return;
-
-            var loaded = Resources.LoadAll<Sprite>("Cards");
-            if (loaded != null && loaded.Length > 0)
-            {
-                cardSprites = loaded;
-            }
-        }
-
         private CardDeckDefinition matchDeck;
         private CardDeckDefinition MatchDeck => matchDeck != null ? matchDeck :
             (matchDeck = CardDecks.LoadForMatch());
 
         public Sprite GetSpriteForCard(Card card)
         {
-            var selectedFace = MatchDeck != null ? MatchDeck.GetFace(card) : null;
-            if (selectedFace != null) return selectedFace;
-            // 1) Do NOT rely on array index ordering; many packs are unordered.
-            // Prefer explicit mappings or name-based resolution.
-
-            EnsureCardSpritesLoaded();
-
-            // 2) Name-based fallback for renamed assets (e.g., Bastoni_1, Coppe_7, Spade_Re, Denari_Asso)
-            if (spriteLookup == null || spriteLookup.Count == 0)
-            {
-                PopulateSpriteLookup();
-            }
-            string suitName = card.Suit.ToString().ToLowerInvariant();
-            string rankNum = card.Rank.ToString();
-            // Common keys
-            var candidates = new List<string>
-            {
-                $"{suitName}_{rankNum}",
-                $"{suitName}{rankNum}"
-            };
-            // Figure names
-            switch (card.Rank)
-            {
-                case 1: candidates.AddRange(new[]{ $"{suitName}_asso", $"{suitName}_ace" }); break;
-                case 8: candidates.AddRange(new[]{ $"{suitName}_fante", $"{suitName}_jack" }); break;
-                case 9: candidates.AddRange(new[]{ $"{suitName}_cavallo", $"{suitName}_queen" }); break;
-                case 10: candidates.AddRange(new[]{ $"{suitName}_re", $"{suitName}_king" }); break;
-            }
-            foreach (var key in candidates)
-            {
-                var k = key.ToLowerInvariant();
-                if (spriteLookup.TryGetValue(k, out var s)) return s;
-            }
-
-            return null;
-        }
-
-        [System.Serializable]
-        private struct CardSpriteMapping
-        {
-            public Suit Suit;
-            public int Rank;
-            public Sprite Sprite;
-        }
-
-        private void PopulateSpriteLookup()
-        {
-            spriteLookup.Clear();
-            if (cardSprites == null) return;
-            // Known suit and rank synonyms to help parse file names
-            var suitCanonical = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
-            {
-                { "denari", "denari" }, { "diamonds", "denari" }, { "d", "denari" },
-                { "coppe", "coppe" }, { "hearts", "coppe" }, { "c", "coppe" },
-                { "bastoni", "bastoni" }, { "clubs", "bastoni" }, { "b", "bastoni" },
-                { "spade", "spade" }, { "spades", "spade" }, { "s", "spade" }
-            };
-
-            var rankSynonyms = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase)
-            {
-                { "1", 1 }, { "01", 1 }, { "ace", 1 }, { "asso", 1 }, { "a", 1 },
-                { "2", 2 }, { "3", 3 }, { "4", 4 }, { "5", 5 }, { "6", 6 }, { "7", 7 },
-                { "8", 8 }, { "jack", 8 }, { "fante", 8 }, { "j", 8 },
-                { "9", 9 }, { "horse", 9 }, { "cavallo", 9 },
-                { "10", 10 }, { "king", 10 }, { "re", 10 }, { "k", 10 }
-            };
-
-            foreach (var s in cardSprites)
-            {
-                if (s == null) continue;
-                var raw = s.name ?? string.Empty;
-                var name = raw.ToLowerInvariant();
-
-                // add the raw name and some normalized variants
-                void AddKey(string k)
-                {
-                    var kk = k.ToLowerInvariant();
-                    if (!spriteLookup.ContainsKey(kk))
-                        spriteLookup[kk] = s;
-                }
-
-                AddKey(name);
-                AddKey(name.Replace(" ", ""));
-                AddKey(name.Replace("_", ""));
-                AddKey(name.Replace("-", ""));
-
-                // Tokenize by non-alphanumeric to try to find suit and rank
-                var tokens = System.Text.RegularExpressions.Regex.Split(name, "[^a-z0-9]+");
-                string foundSuit = null;
-                string foundRank = null;
-
-                foreach (var t in tokens)
-                {
-                    if (string.IsNullOrWhiteSpace(t)) continue;
-                    if (foundSuit == null && suitCanonical.TryGetValue(t, out var canonicalSuit))
-                    {
-                        foundSuit = canonicalSuit;
-                    }
-
-                    if (foundRank == null && rankSynonyms.TryGetValue(t, out var rank))
-                    {
-                        foundRank = rank.ToString();
-                    }
-                }
-
-                if (foundSuit != null && foundRank != null)
-                {
-                    AddKey($"{foundSuit}_{foundRank}");
-                    AddKey($"{foundSuit}{foundRank}");
-                    AddKey($"{foundRank}_{foundSuit}");
-                    AddKey($"{foundRank}{foundSuit}");
-                }
-                // skip per-card cache population; rely on provider
-            }
+            return MatchDeck != null ? MatchDeck.GetFace(card) : null;
         }
 
         private void Start()
@@ -610,18 +398,7 @@ namespace Project51.Unity
             
             CacheLayoutCamera();
 
-            // reset name lookup cache on scene start
-            spriteLookup.Clear();
-
-            // Auto-load sprites if not assigned
-            EnsureCardSpritesLoaded();
-
-            // Build explicit mapping cache from inspector entries
-            BuildExplicitMapCache();
-
             GamePreferences.Changed += OnGamePreferencesChanged;
-
-            // No global provider usage; mapping handled locally
 
             // Log prefab status for debugging
             if (cardViewPrefab == null)
@@ -1280,11 +1057,8 @@ namespace Project51.Unity
                     var view = CreateCardView(card, faceUp: true, clickable: false);
                     if (view != null)
                     {
-                        // Hook clicks for table cards so they can be selected during manual selection mode
-                        view.OnCardClicked += OnTableCardClicked;
-                        // Ensure table cards are not clickable unless selection mode is active
+                        // Table cards are never clicked or hovered
                         view.IsClickable = false;
-                        // Disable hover by default - only enabled during selection mode
                         view.EnableHover = false;
                         activeCardViews[card] = view;
                         cardView = view;
@@ -1338,26 +1112,6 @@ namespace Project51.Unity
             // Table render does not apply Matta visual
         }
 
-        /// <summary>
-        /// Updates interactivity (clickable and hover) for all table cards based on selection mode.
-        /// Called when entering/exiting selection mode.
-        /// </summary>
-        private void UpdateTableCardsInteractivity()
-        {
-            if (turnController == null || turnController.GameState == null) return;
-            
-            var tableCards = turnController.GameState.Table ?? new List<Card>();
-            foreach (var c in tableCards)
-            {
-                if (activeCardViews.TryGetValue(c, out var view))
-                {
-                    // Only enable interactivity during selection mode
-                    view.IsClickable = isSelecting;
-                    view.EnableHover = isSelecting;
-                }
-            }
-        }
-
         private void ApplyMattaSpecialVisual(List<Card> handCards)
         {
             if (handCards == null) return;
@@ -1381,67 +1135,6 @@ namespace Project51.Unity
             }
         }
 
-        private void OnTableCardClicked(CardView tableCardView)
-        {
-            if (!IsMyTurnToPlay) return;
-
-            if (!isSelecting)
-            {
-                // ignore table clicks when not selecting
-                return;
-            }
-
-            var card = tableCardView.Card;
-            if (selectionTableCards.Contains(card))
-            {
-                selectionTableCards.Remove(card);
-                tableCardView.SetSelected(false);
-            }
-            else
-            {
-                selectionTableCards.Add(card);
-                tableCardView.SetSelected(true);
-            }
-
-            // update message text in UI if available
-            if (moveSelectionUI != null)
-            {
-                // If selection is invalid (not matching any valid capture subset), show suggestion arrows instead of message
-                var validMoves = turnController.GetMovesForCard(selectionPlayedCard);
-                var matching = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, selectionTableCards);
-                if (matching.Count == 0)
-                {
-                    // show suggestion: highlight all possible captures for the played card
-                    // only show help on the first wrong selection
-                    if (GamePreferences.MoveHints && !helpShownForCurrentSelection)
-                    {
-                        var allMatches = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, null);
-                        if (allMatches.Count > 0)
-                        {
-                            helpShownForCurrentSelection = true;
-                            // highlight first alternative
-                            HighlightAlternative(allMatches, 0, null);
-                        }
-                    }
-                    else
-                    {
-                        var names = selectionTableCards.Select(c => c.ToString()).ToList();
-                        var msg = names.Count == 0 ? "Selected: (none)" : "Selected: " + string.Join(", ", names);
-                        moveSelectionUI.ShowInvalid(msg, 0.9f);
-                    }
-                }
-                else
-                {
-                    var names = selectionTableCards.Select(c => c.ToString()).ToList();
-                    var msg = names.Count == 0 ? "Selected: (none)" : "Selected: " + string.Join(", ", names);
-                    moveSelectionUI.ShowInvalid(msg, 0.9f);
-                }
-            }
-            
-            // Update hover state for all table cards based on selection mode
-            UpdateTableCardsInteractivity();
-        }
-
         private void HighlightAlternative(List<Move> moves, int hoveredIndex, CardView contextPlayedCard)
         {
             ClearArrowsAndHighlights();
@@ -1461,69 +1154,6 @@ namespace Project51.Unity
 
             // Niente piu' quadratini gialli sopra le carte: restavano a schermo se il pannello si
             // chiudeva senza PointerExit (tocco su mobile). Basta il sollevamento delle carte.
-        }
-
-        /// <summary>
-        /// Shows sequential bounce animation on all valid capture options.
-        /// Used when player makes an invalid selection to show them what cards can be captured.
-        /// </summary>
-        /// <param name="moves">List of valid moves to highlight</param>
-        /// <param name="delayBetweenMoves">Delay between showing each move option</param>
-        public void ShowSequentialCaptureHints(List<Move> moves, float delayBetweenMoves = 0.6f)
-        {
-            if (moves == null || moves.Count == 0) return;
-
-            // Stop any existing hint animations
-            StopAllHintAnimations();
-
-            // Get unique capture sets
-            var seenSets = new HashSet<string>();
-            var uniqueMoves = new List<Move>();
-            
-            foreach (var move in moves.Where(m => m.Type != MoveType.PlayOnly))
-            {
-                var setKey = string.Join("|", (move.CapturedCards ?? new List<Card>())
-                    .Select(c => c.ToString()).OrderBy(s => s));
-                
-                if (!seenSets.Contains(setKey))
-                {
-                    seenSets.Add(setKey);
-                    uniqueMoves.Add(move);
-                }
-            }
-
-            // Play bounce animations with sequential delays
-            float currentDelay = 0f;
-            foreach (var move in uniqueMoves)
-            {
-                if (move.CapturedCards == null) continue;
-                
-                foreach (var card in move.CapturedCards)
-                {
-                    if (activeCardViews.TryGetValue(card, out var view))
-                    {
-                        view.PlayHintBounce(currentDelay, 2);
-                    }
-                }
-                
-                currentDelay += delayBetweenMoves;
-            }
-        }
-
-        /// <summary>
-        /// Stops all hint bounce animations on table cards.
-        /// </summary>
-        public void StopAllHintAnimations()
-        {
-            if (turnController?.GameState?.Table == null) return;
-            
-            foreach (var card in turnController.GameState.Table)
-            {
-                if (activeCardViews.TryGetValue(card, out var view))
-                {
-                    view.StopHintBounce();
-                }
-            }
         }
 
         // CreateTooltip method removed - tooltips caused memory leaks and visual clutter
@@ -1576,7 +1206,6 @@ namespace Project51.Unity
                         // Hook UI events
                         view.OnCardClicked += OnHumanCardClicked;
                         view.OnCardDoubleClicked += OnHumanCardDoubleClicked;
-                        // Do NOT subscribe to OnDragReleased for human cards: drag-to-play UI disabled for human
 
                         // Human cards: clickable and show hover overlay
                         view.IsClickable = IsMyTurnToPlay;
@@ -1774,52 +1403,6 @@ namespace Project51.Unity
             turnController.OnPlayerDoubleClick(clickedCardView.Card);
         }
 
-        private void OnHumanCardDragReleased(CardView cardView, Vector3 worldPos)
-        {
-            if (!IsMyTurnToPlay) return;
-            // Use a Physics2D overlap to detect table card colliders under the release point.
-            var targets = new List<Card>();
-            Vector2 point = new Vector2(worldPos.x, worldPos.y);
-            const float overlapRadius = 0.35f; // tighter radius for precise drops
-            var hits = Physics2D.OverlapCircleAll(point, overlapRadius);
-            if (hits != null && hits.Length > 0)
-            {
-                foreach (var hit in hits)
-                {
-                    if (hit == null) continue;
-                    var view = hit.GetComponent<CardView>();
-                    if (view == null) continue;
-                    // Only consider cards that are currently on the table
-                    if (turnController.GameState.Table.Contains(view.Card))
-                        targets.Add(view.Card);
-                }
-            }
-
-            // Fallback: if no collider hit, pick nearest table card within a larger radius
-            if (targets.Count == 0)
-            {
-                float fallbackRadius = 0.6f;
-                var tableCards = turnController.GameState.Table;
-                Card nearest = null;
-                float bestDist = fallbackRadius;
-                foreach (var kv in activeCardViews)
-                {
-                    var v = kv.Value;
-                    if (v == null) continue;
-                    if (!tableCards.Contains(v.Card)) continue;
-                    float d = Vector3.Distance(v.transform.position, worldPos);
-                    if (d <= bestDist)
-                    {
-                        bestDist = d;
-                        nearest = v.Card;
-                    }
-                }
-                if (nearest != null) targets.Add(nearest);
-            }
-
-            turnController.OnPlayerDragPlay(cardView.Card, targets);
-        }
-
         /// <summary>
         /// Creates a new CardView instance.
         /// </summary>
@@ -1854,7 +1437,7 @@ namespace Project51.Unity
                 view.SetDefaultBack(selectedBack);
             }
 
-            // Get correct sprite for this card if cardSprites has been populated
+            // Face sprite from the match deck
             Sprite cardSprite = GetSpriteForCard(card);
 
             view.Initialize(card, cardSprite, faceUp);
@@ -2076,134 +1659,6 @@ namespace Project51.Unity
             var tableCount = turnController != null && turnController.GameState != null ? turnController.GameState.Table.Count : -1;
             string cards = count == 1 ? "Prendi 1 carta" : $"Prendi {count} carte";
             return count == tableCount ? cards + " - pulisci il tavolo" : cards;
-        }
-
-        private void EnterSelectionMode(CardView clickedCardView)
-        {
-            // begin selection: store played card and enable table cards selection
-            isSelecting = true;
-            // reset help state for this new selection
-            helpShownForCurrentSelection = false;
-            ClearArrowsAndHighlights();
-            selectionPlayedCard = clickedCardView.Card;
-            selectionTableCards.Clear();
-
-            // visually select the played card
-            foreach (var kv in activeCardViews)
-            {
-                if (kv.Value == null) continue;
-                kv.Value.SetSelected(kv.Value == clickedCardView);
-            }
-
-            // Enable interactivity for table cards (clickable and hover)
-            UpdateTableCardsInteractivity();
-
-            // show confirm/cancel UI
-            if (moveSelectionUI != null)
-            {
-                // do not auto-hide on choose so Confirm/Cancel keep the panel visible for invalid selections
-                moveSelectionUI.ShowMoves(new List<string> { "Confirm", "Cancel" }, idx =>
-                {
-                    if (idx == 0)
-                    {
-                        // confirm
-                        TryConfirmSelection();
-                    }
-                    else
-                    {
-                        // cancel
-                        CancelSelection();
-                    }
-                }, false);
-            }
-        }
-
-        private void TryConfirmSelection()
-        {
-            // validate with rules engine
-            var matches = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, selectionTableCards);
-            if (matches.Count == 1)
-            {
-                // execute move (only now play animation / apply)
-                turnController.ExecuteMove(matches[0]);
-                // clear visuals after successful execution
-                ClearArrowsAndHighlights();
-                CancelSelection();
-                return;
-            }
-            else if (matches.Count > 1)
-            {
-                // present alternatives
-                if (moveSelectionUI != null)
-                {
-                    var desc = matches.Select(m => m.ToString()).ToList();
-                    moveSelectionUI.ShowMoves(desc, idx =>
-                    {
-                        if (idx >= 0 && idx < matches.Count)
-                        {
-                            turnController.ExecuteMove(matches[idx]);
-                        }
-                        CancelSelection();
-                    }, false, hoveredIndex => HighlightAlternative(matches, hoveredIndex, activeCardViews.ContainsKey(selectionPlayedCard) ? activeCardViews[selectionPlayedCard] : null));
-                }
-                else
-                {
-                    turnController.ExecuteMove(matches[0]);
-                    CancelSelection();
-                }
-                return;
-            }
-
-            // no matches
-            if (moveSelectionUI != null)
-            {
-                // Deselect currently selected table cards and keep selection mode active so player can retry
-                foreach (var c in selectionTableCards.ToList())
-                {
-                    if (activeCardViews.TryGetValue(c, out var v)) v.SetSelected(false);
-                }
-                selectionTableCards.Clear();
-
-                // Show help markers on first invalid confirm, otherwise show an invalid message
-                var allMatches = Rules51.GetMatchingMovesFromSelection(turnController.GameState, 0, selectionPlayedCard, null);
-                if (GamePreferences.MoveHints && !helpShownForCurrentSelection && allMatches.Count > 0)
-                {
-                    helpShownForCurrentSelection = true;
-                    HighlightAlternative(allMatches, 0, null);
-                }
-                else
-                {
-                    moveSelectionUI.ShowInvalid("Invalid selection");
-                }
-            }
-        }
-
-        private void CancelSelection()
-        {
-            isSelecting = false;
-            selectionPlayedCard = null;
-            selectionTableCards.Clear();
-
-            // reset visuals and interactivity
-            foreach (var kv in activeCardViews)
-            {
-                var v = kv.Value;
-                if (v == null) continue;
-                v.SetSelected(false);
-            }
-            
-            // Disable interactivity for table cards when exiting selection mode
-            UpdateTableCardsInteractivity();
-
-            if (moveSelectionUI != null)
-                moveSelectionUI.Hide();
-        }
-
-        // Helper to retrieve a sprite for a suit/rank, used by Matta special visual.
-        private Sprite GetSpriteForRank(int rank, Suit suit)
-        {
-            var tmp = new Card(suit, rank);
-            return GetSpriteForCard(tmp);
         }
     }
 }

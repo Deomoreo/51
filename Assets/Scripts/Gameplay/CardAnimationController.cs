@@ -18,7 +18,6 @@ namespace Project51.Unity
         [SerializeField] private float playDuration = 0.35f;
         [SerializeField] private float capturePreviewDuration = 0.45f;
         [SerializeField] private float captureDuration = 0.4f;
-        [SerializeField] private float flipDuration = 0.2f;
         [SerializeField] private float dealRevealDuration = 0.22f;
         [SerializeField] private float dealRevealStagger = 0.045f;
 
@@ -248,36 +247,8 @@ namespace Project51.Unity
                 .AppendInterval(capturePreviewDuration));
         }
 
-        public Sequence PlayDealtCardsReveal(IReadOnlyList<CardView> cardViews)
-        {
-            if (cardViews == null || cardViews.Count == 0)
-            {
-                return CreateCompletedSequence(null);
-            }
-
-            var sequence = DOTween.Sequence().SetTarget(this);
-            for (int i = 0; i < cardViews.Count; i++)
-            {
-                var cardView = cardViews[i];
-                if (cardView == null)
-                {
-                    continue;
-                }
-
-                Transform cardTransform = cardView.transform;
-                Vector3 originalScale = cardTransform.localScale;
-
-                float startAt = i * dealRevealStagger;
-                sequence.InsertCallback(startAt, () => cardTransform.localScale = originalScale * 0.12f);
-                sequence.Insert(startAt, cardTransform.DOScale(originalScale, dealRevealDuration).SetEase(Ease.OutBack));
-            }
-
-            PlayDealSound(cardViews.Count, dealRevealStagger);
-            return Paced(sequence);
-        }
-
         /// <summary>
-        /// Come PlayDealtCardsReveal, ma le carte partono visivamente dalla posizione del
+        /// Rivela le carte distribuite partendo visivamente dalla posizione del
         /// mazziere (originPosition) invece di comparire ferme nella posizione finale - usata
         /// per l'animazione di distribuzione a inizio smazzata e ad ogni redeal (mano + carte
         /// tavolo). Le carte devono essere gia' state "staged" da
@@ -372,40 +343,6 @@ namespace Project51.Unity
             }
 
             GameAudio.Play(SoundId.CardCapture);
-            return Paced(sequence);
-        }
-
-        public Sequence FlipCard(SpriteRenderer renderer, Sprite frontSprite, Action onComplete = null)
-        {
-            if (renderer == null)
-            {
-                return CreateCompletedSequence(onComplete);
-            }
-
-            Transform cardTransform = renderer.transform;
-            KillTweensOn(cardTransform);
-
-            Vector3 originalScale = cardTransform.localScale;
-            Sequence sequence = DOTween.Sequence()
-                .SetTarget(cardTransform)
-                .Append(cardTransform.DOScaleX(0f, flipDuration * 0.5f).SetEase(Ease.InQuad))
-                .AppendCallback(() =>
-                {
-                    if (frontSprite != null)
-                    {
-                        renderer.sprite = frontSprite;
-                    }
-                })
-                .Append(cardTransform.DOScaleX(originalScale.x, flipDuration * 0.5f).SetEase(Ease.OutQuad));
-
-            sequence.OnComplete(() =>
-            {
-                if (onComplete != null)
-                {
-                    onComplete();
-                }
-            });
-            sequence.OnKill(() => cardTransform.localScale = originalScale);
             return Paced(sequence);
         }
 

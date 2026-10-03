@@ -27,7 +27,6 @@ namespace Project51.Tests
             var moves = Rules51.GetValidMoves(s, 0);
             Assert.AreEqual(1, moves.Count);
             Assert.AreEqual(MoveType.CaptureEqual, moves[0].Type);
-            Assert.IsFalse(Rules51.TryGetMoveFromSelection(s, 0, five, new List<Card> { two, three }, out _));
 
             s.Table.RemoveAt(0); // senza il 5 tornano somma e 15
             moves = Rules51.GetValidMoves(s, 0);

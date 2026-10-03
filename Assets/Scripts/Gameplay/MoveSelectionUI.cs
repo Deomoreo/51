@@ -69,10 +69,8 @@ namespace Project51.Unity
 
         [Header("Legacy (nascosti, restano per compatibilita' con la scena)")]
         [SerializeField] private RectTransform container;
-        [SerializeField] private GameObject buttonPrefab;
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text messageText;
-        [SerializeField] private Color invalidMessageColor = new Color(1f, 0.3f, 0.3f);
 
         [Header("Grafica V2")]
         [SerializeField] private TMP_FontAsset font;
@@ -228,19 +226,6 @@ namespace Project51.Unity
             sheetGroup.alpha = 0f;
             DOTween.To(() => sheet.anchoredPosition.y, y => sheet.anchoredPosition = new Vector2(0f, y), 24f, 0.18f).SetEase(Ease.OutQuad).SetTarget(sheet);
             DOTween.To(() => sheetGroup.alpha, a => sheetGroup.alpha = a, 1f, 0.18f).SetTarget(sheet);
-        }
-
-        /// <summary>Compatibilita' con i vecchi chiamanti: opzioni solo testo.</summary>
-        public void ShowMoves(List<string> moveDescriptions, Action<int> onChoose, bool autoHideOnChoose = true, Action<int> onHover = null, List<Sprite> icons = null)
-        {
-            if (moveDescriptions == null || moveDescriptions.Count == 0) return;
-            var choices = new List<CaptureChoice>();
-            for (int i = 0; i < moveDescriptions.Count; i++)
-            {
-                var cards = icons != null && i < icons.Count && icons[i] != null ? new List<Sprite> { icons[i] } : null;
-                choices.Add(new CaptureChoice { Title = moveDescriptions[i], Cards = cards });
-            }
-            ShowCaptureChoices(choices, onChoose, onHover, null, moveDescriptions.Count == 1 ? "SCEGLI MOSSA" : "PIÙ MOSSE DISPONIBILI");
         }
 
         public void ShowInvalid(string message, float duration = 1.5f)

@@ -133,7 +133,6 @@ namespace Project51.UIV2.Core
         {
             if (!showingHome || !CanNavigate() || pager.IsMoving) return;
             var config = modes.CurrentSelection.Clone();
-            config.DeckBackId = CardDecks.SelectedId;
             launcher.Launch(config);
         }
 

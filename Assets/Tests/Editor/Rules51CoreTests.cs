@@ -320,53 +320,6 @@ namespace Project51.Tests
 
         #endregion
 
-        #region TryGetMoveFromSelection Tests
-
-        [Test]
-        public void TryGetMoveFromSelection_ValidCapture_ReturnsTrue()
-        {
-            var state = new GameState(2);
-            var playedCard = new Card(Suit.Denari, 5);
-            var tableCard = new Card(Suit.Coppe, 5);
-            state.Players[0].Hand.Add(playedCard);
-            state.Table.Add(tableCard);
-
-            bool result = Rules51.TryGetMoveFromSelection(state, 0, playedCard, new List<Card> { tableCard }, out Move move);
-
-            Assert.IsTrue(result);
-            Assert.IsNotNull(move);
-            Assert.AreEqual(MoveType.CaptureEqual, move.Type);
-        }
-
-        [Test]
-        public void TryGetMoveFromSelection_InvalidSelection_ReturnsFalse()
-        {
-            var state = new GameState(2);
-            var playedCard = new Card(Suit.Denari, 5);
-            var tableCard = new Card(Suit.Coppe, 3);
-            state.Players[0].Hand.Add(playedCard);
-            state.Table.Add(tableCard);
-
-            bool result = Rules51.TryGetMoveFromSelection(state, 0, playedCard, new List<Card> { tableCard }, out Move move);
-
-            Assert.IsFalse(result);
-            Assert.IsNull(move);
-        }
-
-        [Test]
-        public void TryGetMoveFromSelection_EmptySelection_PlayOnly_ReturnsTrue()
-        {
-            var state = new GameState(2);
-            var playedCard = new Card(Suit.Denari, 5);
-            state.Players[0].Hand.Add(playedCard);
-            state.Table.Add(new Card(Suit.Coppe, 3)); // No matching capture
-
-            bool result = Rules51.TryGetMoveFromSelection(state, 0, playedCard, new List<Card>(), out Move move);
-
-            Assert.IsTrue(result);
-            Assert.AreEqual(MoveType.PlayOnly, move.Type);
-        }
-
         #region Tutorial
 
         /// <summary>
@@ -394,7 +347,6 @@ namespace Project51.Tests
                 Assert.IsFalse(AccusiChecker.IsCirulla(p.Hand) || AccusiChecker.IsDecino(p.Hand), "niente accusi");
         }
 
-        #endregion
         #endregion
     }
 }

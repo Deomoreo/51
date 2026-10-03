@@ -40,11 +40,6 @@ namespace Project51.Core
         public bool IsHost { get; set; }
 
         /// <summary>
-        /// ID del back del mazzo selezionato.
-        /// </summary>
-        public string DeckBackId { get; set; } = "default";
-
-        /// <summary>
         /// Optional rules tweaks for specific modes (e.g. 1v1).
         /// If null, defaults are used.
         /// </summary>
@@ -74,7 +69,6 @@ namespace Project51.Core
                 TargetScore = TargetScore,
                 RoomCode = RoomCode,
                 IsHost = IsHost,
-                DeckBackId = DeckBackId,
                 Rules = Rules != null ? Rules.Clone() : MatchRules.Default
             };
         }
@@ -147,7 +141,6 @@ namespace Project51.Core
         private const string KEY_FORMAT = "GameFormat";
         private const string KEY_DIFFICULTY = "BotDifficulty";
         private const string KEY_TARGET = "TargetScore";
-        private const string KEY_DECK = "DeckBackId";
         private const string KEY_ACCUSI = "MatchRules_EnableAccusi";
         private const string KEY_ACCUSI_MULTIPLIER = "MatchRules_AccusiMultiplier";
         private const string KEY_CAPPOTTO_IMMEDIATE = "MatchRules_CappottoImmediate";
@@ -164,7 +157,6 @@ namespace Project51.Core
             UnityEngine.PlayerPrefs.SetInt(KEY_FORMAT, (int)config.Format);
             UnityEngine.PlayerPrefs.SetInt(KEY_DIFFICULTY, (int)config.BotDifficulty);
             UnityEngine.PlayerPrefs.SetInt(KEY_TARGET, config.TargetScore);
-            UnityEngine.PlayerPrefs.SetString(KEY_DECK, config.DeckBackId ?? "default");
             var rules = config.Rules ?? MatchRules.Default;
             UnityEngine.PlayerPrefs.SetInt(KEY_ACCUSI, rules.EnableAccusi ? 1 : 0);
             UnityEngine.PlayerPrefs.SetFloat(KEY_ACCUSI_MULTIPLIER, rules.AccusiPointMultiplier);
@@ -184,7 +176,6 @@ namespace Project51.Core
                 Format = (GameFormat)UnityEngine.PlayerPrefs.GetInt(KEY_FORMAT, (int)GameFormat.FourPlayers),
                 BotDifficulty = (BotDifficulty)UnityEngine.PlayerPrefs.GetInt(KEY_DIFFICULTY, (int)BotDifficulty.Medium),
                 TargetScore = UnityEngine.PlayerPrefs.GetInt(KEY_TARGET, 51),
-                DeckBackId = UnityEngine.PlayerPrefs.GetString(KEY_DECK, "default"),
                 Rules = new MatchRules
                 {
                     EnableAccusi = UnityEngine.PlayerPrefs.GetInt(KEY_ACCUSI, MatchRules.Default.EnableAccusi ? 1 : 0) != 0,
@@ -204,36 +195,11 @@ namespace Project51.Core
             UnityEngine.PlayerPrefs.DeleteKey(KEY_FORMAT);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_DIFFICULTY);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_TARGET);
-            UnityEngine.PlayerPrefs.DeleteKey(KEY_DECK);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_ACCUSI);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_ACCUSI_MULTIPLIER);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_CAPPOTTO_IMMEDIATE);
             UnityEngine.PlayerPrefs.DeleteKey(KEY_CAPPOTTO_BONUS);
         }
-    }
-
-    /// <summary>
-    /// Implementazione di IGameModeProvider per le partite vs Bot.
-    /// </summary>
-    public class TrainingGameModeProvider : IGameModeProvider
-    {
-        private readonly int _numPlayers;
-        private readonly BotDifficulty _difficulty;
-
-        public TrainingGameModeProvider(int numPlayers, BotDifficulty difficulty = BotDifficulty.Medium)
-        {
-            _numPlayers = numPlayers;
-            _difficulty = difficulty;
-        }
-
-        public bool IsMultiplayer => false;
-        public bool IsMasterClient => true;
-        public int LocalPlayerIndex => 0;
-        public BotDifficulty BotDifficulty => _difficulty;
-
-        public bool IsLocalPlayer(int playerIndex) => playerIndex == 0;
-        public bool IsHumanPlayer(int playerIndex) => playerIndex == 0;
-        public bool IsBotPlayer(int playerIndex) => playerIndex != 0;
     }
 
     /// <summary>

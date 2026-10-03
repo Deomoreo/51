@@ -12,23 +12,10 @@ namespace Project51.Unity
     /// </summary>
     public class TurnController : MonoBehaviour
     {
-        [Header("UI")]
-        [SerializeField] private MoveSelectionUI moveSelectionUI;
-        [SerializeField] private RoundEndPanel roundEndPanel;
-        
         [Header("Managers (Optional - Auto-Find)")]
         [SerializeField] private CardViewManager cardViewManager;
-        [SerializeField] private CapturedPileManager capturedPileManager;
         [SerializeField] private CardAnimationController cardAnimationController;
         
-        /// <summary>
-        /// Sets the CardViewManager reference at runtime. Useful for tests.
-        /// </summary>
-        public void SetCardViewManager(CardViewManager manager)
-        {
-            cardViewManager = manager;
-        }
-
         /// <summary>
         /// Imposta lo stato di gioco ricevuto dalla rete e inizializza RoundManager per il client.
         /// Sostituisce il precedente accesso via reflection da NetworkGameController.
@@ -471,11 +458,6 @@ namespace Project51.Unity
                 cardViewManager = FindObjectOfType<CardViewManager>();
             }
             
-            if (capturedPileManager == null)
-            {
-                capturedPileManager = FindObjectOfType<CapturedPileManager>();
-            }
-
             if (cardAnimationController == null)
             {
                 cardAnimationController = FindObjectOfType<CardAnimationController>();
@@ -532,46 +514,6 @@ namespace Project51.Unity
             }
         }
 
-        // ==== QA Helpers (Context Menu) ====
-        [ContextMenu("Setup Matta: Decino in mano (coppia)")]
-        private void SetupMattaDecino_Context()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Bastoni, 6),
-                new Card(Suit.Denari, 6), // coppia -> decino
-            };
-            var table = new List<Card>();
-            SetupScenarioForCurrentPlayer(hand, table);
-        }
-
-        [ContextMenu("Setup Matta: Accuso in mano (somma<=9)")]
-        private void SetupMattaAceCapture_Context()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Bastoni, 5),
-                new Card(Suit.Denari, 3), // 5+3+1=9 -> accuso
-            };
-            var table = new List<Card>();
-            SetupScenarioForCurrentPlayer(hand, table);
-        }
-
-        [ContextMenu("Setup Matta: Nessun hint (no decino/accuso)")]
-        private void SetupMattaCapture15_Context()
-        {
-            var hand = new List<Card>
-            {
-                new Card(Suit.Coppe, 7), // Matta
-                new Card(Suit.Bastoni, 6),
-                new Card(Suit.Denari, 3), // 6+3+1=10 -> nessun accuso e non è coppia
-            };
-            var table = new List<Card>();
-            SetupScenarioForCurrentPlayer(hand, table);
-        }
-
     /// <summary>
     /// Starts a new game of Cirulla/51.
     /// </summary>
@@ -597,7 +539,7 @@ namespace Project51.Unity
         // GameSceneInitializer.Start() chiama StartNewGame() DIRETTAMENTE, come normale metodo -
         // non tramite il ciclo di vita Unity - e questo puo' succedere PRIMA che
         // TurnController.Start() sia mai girato (confermato dai log: "deferring game start" arriva
-        // DOPO "GameState created"). cardViewManager/capturedPileManager/cardAnimationController
+        // DOPO "GameState created"). cardViewManager/cardAnimationController
         // non sono assegnati in Inspector su questo prefab (fileID: 0), quindi dipendono
         // interamente dal fallback FindObjectOfType di Start() - se non e' ancora girato, erano
         // null qui, e ogni blocco "if (cardViewManager != null)" piu' sotto veniva saltato in
@@ -606,7 +548,6 @@ namespace Project51.Unity
         // qui per essere sicuri che questi riferimenti esistano indipendentemente da chi chiama
         // StartNewGame() per primo.
         if (cardViewManager == null) cardViewManager = FindObjectOfType<CardViewManager>();
-        if (capturedPileManager == null) capturedPileManager = FindObjectOfType<CapturedPileManager>();
         if (cardAnimationController == null)
         {
             cardAnimationController = FindObjectOfType<CardAnimationController>();
@@ -1637,12 +1578,6 @@ namespace Project51.Unity
                 cardViewManager.ForceRefresh();
             }
             
-            // Refresh captured piles visuals after move
-            if (capturedPileManager != null)
-            {
-                capturedPileManager.ForceRefresh();
-            }
-            
             // Notify listeners that a move was executed so they can animate
             OnMoveExecuted?.Invoke(move);
 
@@ -1668,30 +1603,6 @@ namespace Project51.Unity
                     Invoke(nameof(ExecuteAITurn), GamePreferences.Scaled(aiMoveDelay));
                 }
             }
-        }
-
-        /// <summary>
-        /// Deals 3 new cards to each player from the deck (no new table cards).
-        /// Legacy helper retained for QA scenarios.
-        /// </summary>
-        private void DealNewHands()
-        {
-            int firstPlayerIndex = (gameState.DealerIndex - 1 + gameState.NumPlayers) % gameState.NumPlayers;
-            for (int round = 0; round < 3; round++)
-            {
-                for (int offset = 0; offset < gameState.NumPlayers; offset++)
-                {
-                    int playerIndex = (firstPlayerIndex + offset) % gameState.NumPlayers;
-                    if (gameState.Deck.Count > 0)
-                    {
-                        var card = gameState.Deck[0];
-                        gameState.Deck.RemoveAt(0);
-                        gameState.Players[playerIndex].Hand.Add(card);
-                    }
-                }
-            }
-
-            HandleNewHandsDealt();
         }
 
         private void HandleNewHandsDealt()
@@ -1786,11 +1697,6 @@ namespace Project51.Unity
                 // Niente finestra se la mano nuova ha dato i Tre assi (partita gia' chiusa).
                 if (!gameState.RoundEnded) yield return RunAccusoWindowCoroutine(refreshVisualsOnAutoDeclare: true);
 
-                if (capturedPileManager != null)
-                {
-                    capturedPileManager.ForceRefresh();
-                }
-
                 if (cardViewManager != null)
                 {
                     cardViewManager.ForceRefresh();
@@ -1838,37 +1744,6 @@ namespace Project51.Unity
                     Invoke(nameof(ExecuteAITurn), GamePreferences.Scaled(aiMoveDelay));
                 }
             }
-        }
-
-        /// <summary>
-        /// Ends the current round, assigns remaining table cards, and computes scores.
-        /// </summary>
-        private void EndRound()
-        {
-            // round ended, computing scores
-
-            // Assign remaining table cards to last capture player
-            if (gameState.LastCapturePlayerIndex >= 0 && gameState.Table.Count > 0)
-            {
-                var lastCapturePlayer = gameState.Players[gameState.LastCapturePlayerIndex];
-                foreach (var card in gameState.Table)
-                {
-                    lastCapturePlayer.CapturedCards.Add(card);
-                }
-                gameState.Table.Clear();
-
-                // remaining table cards assigned
-            }
-
-            // TODO: Implement full scoring (Scopa, Sette Bello, Primiera, Denari, Cards, Grande, Piccola, Cappotto)
-            // For now, just log captured cards and Scopa counts
-            for (int i = 0; i < gameState.NumPlayers; i++)
-            {
-                var player = gameState.Players[i];
-                // player capture/scopa summary
-            }
-
-            gameState.RoundEnded = true;
         }
 
         /// <summary>
@@ -1963,11 +1838,6 @@ namespace Project51.Unity
                 return;
             }
 
-            // Refresh piles to show accusi badges/updates
-            if (capturedPileManager != null)
-            {
-                capturedPileManager.ForceRefresh();
-            }
             // Force card view refresh so hands with accuso are shown face-up
             if (cardViewManager != null)
             {
@@ -2066,37 +1936,19 @@ namespace Project51.Unity
         }
 
         /// <summary>
-        /// Shows the round end panel with scores.
+        /// Shows the round results through GamePresentation (UI51 results view).
         /// </summary>
         private void ShowRoundEndPanel()
         {
-            if (roundEndPanel != null)
-            {
-                roundEndPanel.OnContinueClicked += OnRoundEndContinue;
-                roundEndPanel.OnMainMenuClicked += OnRoundEndMainMenu;
-                roundEndPanel.Show(gameState);
-            }
-            else
-            {
-                // Fallback: log scores to console
-                var scores = PunteggioManager.CalculateSmazzataScores(gameState);
-                for (int i = 0; i < gameState.NumPlayers; i++)
-                {
-                    Debug.Log($"Player {i}: {scores[i]} points (Scope: {gameState.Players[i].ScopaCount})");
-                }
-            }
+            if (!GamePresentation.ShowRound(gameState, OnRoundEndContinue, OnRoundEndMainMenu))
+                Debug.LogError("[TurnController] No round results view");
         }
 
         private void OnRoundEndContinue()
         {
-            if (roundEndPanel != null)
-            {
-                roundEndPanel.OnContinueClicked -= OnRoundEndContinue;
-                roundEndPanel.OnMainMenuClicked -= OnRoundEndMainMenu;
-                roundEndPanel.Hide();
-            }
+            GamePresentation.CloseResults();
 
-            // In multiplayer, il bottone "Continua" e' cliccabile su OGNI client (RoundEndPanel
+            // In multiplayer, il bottone "Continua" e' cliccabile su OGNI client (il pannello
             // non ha idea di chi sia il Master). Solo il Master deve davvero far partire la
             // mano successiva (mazzo nuovo + broadcast): gli altri client si limitano a chiudere
             // il pannello e aspettano il GameState che arrivera' via RPC quando il Master premera'
@@ -2115,13 +1967,8 @@ namespace Project51.Unity
 
         private void OnRoundEndMainMenu()
         {
-            if (roundEndPanel != null)
-            {
-                roundEndPanel.OnContinueClicked -= OnRoundEndContinue;
-                roundEndPanel.OnMainMenuClicked -= OnRoundEndMainMenu;
-                roundEndPanel.Hide();
-            }
-            
+            GamePresentation.CloseResults();
+
             // Use AppFlowManager for centralized navigation
                     AppFlowManager.GoToMainMenu();
         }
@@ -2220,65 +2067,6 @@ namespace Project51.Unity
             // Solo uno scarto davvero valido (mai forzato: l'altro client lo rifiuterebbe).
             var playOnly = moves.FirstOrDefault(m => m.Type == MoveType.PlayOnly);
             if (playOnly != null) ExecuteMove(playOnly);
-        }
-
-        /// <summary>
-        /// Called by UI when the player confirms a specific move for a selected card (index into moves list).
-        /// </summary>
-        public void OnPlayerConfirmMove(Card card, int moveIndex)
-        {
-            var moves = GetMovesForCard(card);
-            if (moveIndex < 0 || moveIndex >= moves.Count) { return; }
-            ExecuteMove(moves[moveIndex]);
-        }
-
-        /// <summary>
-        /// Called by UI when the player drags a card onto table and releases over a set of table cards.
-        /// The UI should provide the list of table cards targeted for capture (may be empty).
-        /// </summary>
-        public void OnPlayerDragPlay(Card playedCard, List<Card> targetTableCards)
-        {
-            var moves = GetMovesForCard(playedCard);
-            if (moves == null || moves.Count == 0) { return; }
-            // Let the rules engine validate the manual selection (handles matta, forced-capture rules, ace rules, etc.)
-            var matches = Rules51.GetMatchingMovesFromSelection(gameState, gameState.CurrentPlayerIndex, playedCard, targetTableCards);
-            if (matches.Count == 1)
-            {
-                ExecuteMove(matches[0]);
-                return;
-            }
-            else if (matches.Count > 1)
-            {
-                // Multiple equivalent moves (e.g., matta assignments). Let the player choose.
-                if (moveSelectionUI != null)
-                {
-                    var desc = matches.Select(m => m.ToString()).ToList();
-                    moveSelectionUI.ShowMoves(desc, idx =>
-                    {
-                        if (idx >= 0 && idx < matches.Count)
-                        {
-                            ExecuteMove(matches[idx]);
-                        }
-                    });
-                    return;
-                }
-                else
-                {
-                    // fallback: choose first
-                    ExecuteMove(matches[0]);
-                    return;
-                }
-            }
-
-            // No matches -> show invalid feedback
-            if (moveSelectionUI != null)
-            {
-                moveSelectionUI.ShowInvalid("Invalid selection");
-            }
-            else
-            {
-                // dragged play did not match any valid move
-            }
         }
     }
 }

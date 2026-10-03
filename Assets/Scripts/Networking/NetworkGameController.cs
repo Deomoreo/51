@@ -84,8 +84,6 @@ namespace Project51.Networking
             // e la dichiarazione era manuale (arrivata da un altro client), il fallback automatico
             // di fine finestra (CheckAndDeclareAccusiForAllPlayers) non deve ridichiararlo.
             turnController.MarkAccusoResolved(playerIndex);
-            var pileMgr = FindObjectOfType<CapturedPileManager>();
-            pileMgr?.ForceRefresh();
 
             // CRITICO: sul Master il "giro" delle carte (face-down -> face-up) succede subito perche'
             // CheckAndDeclareAccusiForAllPlayers() chiama gia' cardViewManager.ForceRefresh() in modo

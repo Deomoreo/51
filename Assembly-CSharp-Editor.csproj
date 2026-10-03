@@ -118,7 +118,6 @@
     <Compile Include="Assets\UI51\Editor\UI51SystemBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\K4UIShaderTests.cs" />
     <Compile Include="Assets\Tests\Editor\UI51FoundationTests.cs" />
-    <Compile Include="Assets\Tests\Editor\PlayerSelectionTests.cs" />
     <Compile Include="Assets\Tests\Editor\I5ReducedGraphicsTests.cs" />
     <Compile Include="Assets\Tests\Editor\ServiceGateTests.cs" />
     <Compile Include="Assets\Tests\Editor\MatchScoreTests.cs" />
