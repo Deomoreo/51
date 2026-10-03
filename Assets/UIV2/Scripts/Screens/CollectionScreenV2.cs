@@ -1,7 +1,5 @@
 using System;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using Project51.UI51;
 
 namespace Project51.UIV2.Screens
@@ -24,9 +22,6 @@ namespace Project51.UIV2.Screens
         [Serializable]
         public class TabRefs
         {
-            public Button Button;
-            public Image Background;
-            public TMP_Text Label;
             public GameObject Panel;
         }
 
@@ -34,14 +29,6 @@ namespace Project51.UIV2.Screens
         [SerializeField] private CollectionDecksPanel decksPanel;
         [SerializeField] private CollectionEmoticonsPanel emoticonsPanel;
         [SerializeField] private CollectionAccusiPanel accusiPanel;
-
-        [Header("Stato tab: btn_teal selezionata, btn_gray_small normale")]
-        [SerializeField] private Sprite selectedTabSprite;
-        [SerializeField] private Sprite normalTabSprite;
-        [SerializeField] private float selectedTabPixelsPerUnit = 1f;
-        [SerializeField] private float normalTabPixelsPerUnit = 1f;
-        [SerializeField] private Color selectedLabelColor = Color.white;
-        [SerializeField] private Color normalLabelColor = Color.white;
         [SerializeField] private CollectionTab initialTab = CollectionTab.Decks;
 
         [Header("UI51 (facoltativo): schede a segmenti, col conteggio accanto al nome")]
@@ -59,14 +46,6 @@ namespace Project51.UIV2.Screens
 
         private void Awake()
         {
-            if (tabs != null)
-            {
-                for (int i = 0; i < tabs.Length; i++)
-                {
-                    var tab = (CollectionTab)i;
-                    if (tabs[i] != null && tabs[i].Button != null) tabs[i].Button.onClick.AddListener(() => SetTab(tab));
-                }
-            }
             if (segmentedTabs != null) segmentedTabs.onTabChanged.AddListener(index => SetTab((CollectionTab)index));
             ApplyTab(initialTab);
         }
@@ -96,13 +75,6 @@ namespace Project51.UIV2.Screens
             segmentedTabs.Select((int)CurrentTab, false);
         }
 
-        public void SetTabInteractable(CollectionTab tab, bool interactable)
-        {
-            int index = (int)tab;
-            if (tabs != null && index >= 0 && index < tabs.Length && tabs[index]?.Button != null)
-                tabs[index].Button.interactable = interactable;
-        }
-
         public void SetTab(CollectionTab tab)
         {
             bool changed = tab != CurrentTab;
@@ -117,20 +89,7 @@ namespace Project51.UIV2.Screens
             if (tabs == null) return;
 
             for (int i = 0; i < tabs.Length; i++)
-            {
-                var refs = tabs[i];
-                if (refs == null) continue;
-
-                bool selected = i == (int)tab;
-                if (refs.Background != null)
-                {
-                    var sprite = selected ? selectedTabSprite : normalTabSprite;
-                    if (sprite != null) refs.Background.sprite = sprite;
-                    refs.Background.pixelsPerUnitMultiplier = selected ? selectedTabPixelsPerUnit : normalTabPixelsPerUnit;
-                }
-                if (refs.Label != null) refs.Label.color = selected ? selectedLabelColor : normalLabelColor;
-                if (refs.Panel != null) refs.Panel.SetActive(selected);
-            }
+                if (tabs[i]?.Panel != null) tabs[i].Panel.SetActive(i == (int)tab);
         }
     }
 }

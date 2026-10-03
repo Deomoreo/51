@@ -9,12 +9,11 @@ namespace Project51.UIV2.Screens
     /// <summary>
     /// Prima schermata reale della UI V2. Non possiede un proprio TopBar/BottomNav (restano
     /// globali su UIV2_Root, riusati cosi' come sono) - gestisce solo il contenuto sotto la
-    /// top bar: sfondo/video placeholder, quick action a destra, selettori Modalita'/Mazzo,
+    /// top bar: quick action a destra, selettori Modalita'/Mazzo,
     /// CTA GIOCA.
     /// </summary>
     public class HomeScreenV2 : MonoBehaviour
     {
-        [SerializeField] private RawImage backgroundVideoSlot;
         [SerializeField] private UIV2QuickActionButton rewardsButton;
         [SerializeField] private UIV2QuickActionButton rankingButton;
         [SerializeField] private UIV2QuickActionButton mailButton;
@@ -137,17 +136,6 @@ namespace Project51.UIV2.Screens
                 var button = action.Button;
                 if (button != null) button.interactable = interactable;
             }
-        }
-
-        /// <summary>
-        /// Hook per il futuro VideoPlayer/RenderTexture sull'area centrale - finche' non
-        /// viene chiamato resta il placeholder neutro (vedi builder: VideoPlaceholderMarker).
-        /// </summary>
-        public void SetBackgroundVideoTexture(Texture texture)
-        {
-            if (backgroundVideoSlot == null) return;
-            backgroundVideoSlot.texture = texture;
-            backgroundVideoSlot.enabled = texture != null;
         }
     }
 }

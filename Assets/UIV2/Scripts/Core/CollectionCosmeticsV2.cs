@@ -28,7 +28,6 @@ namespace Project51.UIV2.Core
         private static void Save(int[] indices){PlayerPrefs.SetString("Collection.Emoticons",string.Join(",",indices));PlayerPrefs.Save();}
         private void Start()
         {
-            Screen.SetTabInteractable(CollectionTab.Emoticons,true);Screen.SetTabInteractable(CollectionTab.Accusi,true);
             Screen.EmoticonsPanel.OnEmoticonPressed+=Select;
             Screen.EmoticonsPanel.OnRemovePressed+=RemoveItem;
             Screen.AccusiPanel.OnPreviewPressed+=ShowPreview;

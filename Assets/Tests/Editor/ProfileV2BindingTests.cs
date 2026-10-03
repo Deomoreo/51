@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using Project51.Auth;
+using Project51.UIV2.Components;
 using Project51.UIV2.Data;
 using Project51.UIV2.Screens;
 using TMPro;
@@ -15,12 +16,33 @@ namespace Project51.Tests
         private GameObject instance;
         private ProfileScreenV2 screen;
 
+        // Costruito in codice: il vecchio ProfileScreenV2.prefab non esiste piu' (Fase 10), la scena usa la UI51.
         [SetUp]
         public void SetUp()
         {
-            instance = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/UIV2/Prefabs/Screens/ProfileScreenV2.prefab"));
-            screen = instance.GetComponent<ProfileScreenV2>();
+            instance = new GameObject("ProfileScreenV2", typeof(RectTransform));
+            screen = instance.AddComponent<ProfileScreenV2>();
+            var so = new SerializedObject(screen);
+            foreach (var field in new[] { "matchesTile", "winsTile", "winRateTile", "scopasTile", "settebelloTile", "pointRecordTile" })
+            {
+                var tile = Child(field).AddComponent<UIV2StatTile>();
+                var value = Child("ValueLabel", tile.transform).AddComponent<TextMeshProUGUI>();
+                var tileSo = new SerializedObject(tile);
+                tileSo.FindProperty("valueLabel").objectReferenceValue = value;
+                tileSo.ApplyModifiedPropertiesWithoutUndo();
+                so.FindProperty(field).objectReferenceValue = tile;
+            }
+            so.FindProperty("xpBar").objectReferenceValue = Child("XpBar").AddComponent<UIV2ProgressBar>();
+            so.FindProperty("xpLabel").objectReferenceValue = Child("XpLabel").AddComponent<TextMeshProUGUI>();
+            so.FindProperty("registerButton").objectReferenceValue = Child("Register").AddComponent<UIV2Button>();
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private GameObject Child(string name, Transform parent = null)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent != null ? parent : instance.transform, false);
+            return go;
         }
 
         [TearDown]

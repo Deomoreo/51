@@ -81,8 +81,6 @@ namespace Project51.UI51.EditorTools
         static void BuildTopBar(UIV2TopBar topBar)
         {
             var c = Container(topBar.transform);
-            UI51AccessBuilder.HideChild(topBar.transform, "ProfileGroup");
-            UI51AccessBuilder.HideChild(topBar.transform, "ResourceRow");
 
             // Account
             var account = UI51AccessBuilder.TopBand(UI51Build.Child(c, "Account"), 20f, 20f, 22f, 58f);
@@ -177,8 +175,6 @@ namespace Project51.UI51.EditorTools
         static void BuildHome(HomeScreenV2 home)
         {
             var c = Container(home.transform);
-            UI51AccessBuilder.HideChild(home.transform, "QuickActionsColumn");
-            UI51AccessBuilder.HideChild(home.transform, "BottomControlsGroup");
             // L'Image resta (bersaglio dello swipe tra pagine), solo trasparente.
             var bg = home.GetComponent<Image>();
             if (bg != null) bg.color = Color.clear;
@@ -323,8 +319,6 @@ namespace Project51.UI51.EditorTools
         static void BuildNav(UIV2BottomNav nav)
         {
             var c = Container(nav.transform);
-            foreach (var old in new[] { "SafeAreaFill", "GiocaSlot", "CardsSlot", "ShopSlot", "ProfileSlot" })
-                UI51AccessBuilder.HideChild(nav.transform, old);
             var navImage = nav.GetComponent<Image>();
             if (navImage != null) navImage.enabled = false;
 

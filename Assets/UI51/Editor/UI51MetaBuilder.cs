@@ -724,7 +724,6 @@ namespace Project51.UI51.EditorTools
             // Monete e gemme del mockup non ci sono: l'economia non esiste.
             var header = PageHeader(topBar.transform.parent, "UI51CollectionHeader", "Collezione", "Personalizza il tuo modo di giocare");
 
-            UI51AccessBuilder.HideChild(screen.transform, "TabsRow");
             var tabsRt = UI51Build.Child(UI51HomeBuilder.Container(screen.transform), "Tabs");
             UI51PrefabBuilder.BuildTabs(tabsRt.gameObject);
             UI51AccessBuilder.TopBand(tabsRt, 20f, 20f, 0f, 46f);
@@ -752,7 +751,6 @@ namespace Project51.UI51.EditorTools
                 names.arraySize = CollectionTabs.Length;
                 for (int i = 0; i < CollectionTabs.Length; i++) names.GetArrayElementAtIndex(i).stringValue = CollectionTabs[i];
             });
-            UI51AccessBuilder.HideChild(screen.EmoticonsPanel.transform, "Feedback");
             UI51Build.Wire(cosmetics, so =>
             {
                 UI51Build.Ref(so, "Feedback", hint);
@@ -1034,11 +1032,10 @@ namespace Project51.UI51.EditorTools
 
         /// <summary>
         /// Contenuto di una pagina che scorre: una colonna larga 390 e scalata (la pagina e' in unita' 1080),
-        /// al posto del vecchio Content che resta spento.
+        /// al posto del vecchio Content (tolto in Fase 10).
         /// </summary>
         static RectTransform ScrollColumn(ScrollRect scroll)
         {
-            UI51AccessBuilder.HideChild(scroll.viewport, "Content");
             var content = UI51Build.Child(scroll.viewport, "UI51");
             content.anchorMin = content.anchorMax = content.pivot = new Vector2(0.5f, 1f);
             content.sizeDelta = new Vector2(390f, 0f);

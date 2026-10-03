@@ -67,8 +67,6 @@ namespace Project51.UIV2.Core
             if (collection != null)
             {
                 collection.DecksPanel.OnDeckActionPressed += SelectDeck;
-                collection.SetTabInteractable(CollectionTab.Emoticons, true);
-                collection.SetTabInteractable(CollectionTab.Accusi, true);
                 collection.DecksPanel.SetFooter(string.Empty);
             }
             quickPanels.SelectionChanged += SelectionChanged;

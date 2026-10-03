@@ -13,27 +13,6 @@ namespace Project51.Tests
     {
         private static UIV2Theme Theme => AssetDatabase.LoadAssetAtPath<UIV2Theme>("Assets/UIV2/Art/UIV2Theme.asset");
 
-        [TestCase("CollectionScreenV2")]
-        [TestCase("ProfileScreenV2")]
-        public void SavedScreenProgressRemainsContrastedAfterStyling(string screen)
-        {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UIV2/Prefabs/Screens/" + screen + ".prefab");
-            var instance = Object.Instantiate(prefab);
-            try
-            {
-                UIV2DesignSystem.Apply(instance, Theme);
-                var bars = instance.GetComponentsInChildren<UIV2ProgressBar>(true);
-                Assert.IsNotEmpty(bars);
-                foreach (var bar in bars)
-                {
-                    var field = new SerializedObject(bar).FindProperty("fillRect");
-                    var fill = ((RectTransform)field.objectReferenceValue).GetComponent<Image>();
-                    Assert.AreNotEqual(Theme.PanelBlue, fill.color, "Visible progress must stand out from panel: " + bar.name);
-                }
-            }
-            finally { Object.DestroyImmediate(instance); }
-        }
-
         [Test]
         public void SceneStylingLeavesProgressFillVisibleAndRecognizesModalChildren()
         {
