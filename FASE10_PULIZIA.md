@@ -1,6 +1,6 @@
 # Fase 10, Pulizia: lista da confermare (02/10, versione 2.63)
 
-Niente è stato ancora cancellato o modificato. Ogni blocco parte solo col tuo sì.
+**Fatta nella 2.64 (03/10)** seguendo `FASE10_PIANO.md` e `FASE10_DECISIONI.md`: questa era la prima lista, superata dal piano.
 Per ogni voce ho controllato chi la usa ancora: riferimenti nelle scene (dal vivo in Unity), nei prefab e nel codice.
 
 **Fuori dalla pulizia, restano:** tutto UI51 (script, builder, prefab, `UI51_Gallery.unity`), gli SDK esterni (PlayFab, Photon, Google Play),
