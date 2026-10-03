@@ -60,11 +60,6 @@ namespace Project51.Auth
         
         #region Events
         
-        /// <summary>Vecchio ingresso da ospite: qui nessuno lo alza piu', resta finche' TapToEnterUI/StartScreenV2 vi si iscrivono (Fase 10 B7H).</summary>
-#pragma warning disable 0067
-        public event Action OnPlayPressed;
-#pragma warning restore 0067
-
         /// <summary>Invocato quando l'utente chiude l'UI auth senza entrare nel gioco.</summary>
         public event Action OnClosed;
         

@@ -26,7 +26,6 @@ namespace Project51.UIV2.Core
 
         private void Start()
         {
-            AuthUI.OnPlayPressed += Enter;
             AuthUI.OnLoginSuccess += Enter;
             AuthUI.OnRegistrationSuccess += Enter;
             AuthUI.OnClosed += AuthClosed;
@@ -70,7 +69,7 @@ namespace Project51.UIV2.Core
         private void OnDestroy()
         {
             if (AuthUI == null) return;
-            AuthUI.OnPlayPressed -= Enter; AuthUI.OnLoginSuccess -= Enter;
+            AuthUI.OnLoginSuccess -= Enter;
             AuthUI.OnRegistrationSuccess -= Enter; AuthUI.OnClosed -= AuthClosed;
         }
     }

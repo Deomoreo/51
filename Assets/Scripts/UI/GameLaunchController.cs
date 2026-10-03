@@ -10,39 +10,15 @@ namespace Project51.Unity
 {
     /// <summary>
     /// Controller principale per il flusso dalla Home al Game.
-    /// Coordina: ModalitySelector ? MatchmakingManager ? Game Scene
+    /// Coordina: Home (QuickSelectionPanels/RoomFlowV2) -> MatchmakingManager -> GameScene
     /// </summary>
     public class GameLaunchController : MonoBehaviour
     {
-        [Header("UI References")]
-        [SerializeField] private ModalitySelectorPanelUI modalityPanel;
-
-        [Header("Scene Names")]
-        // NOTE: WaitingRoom e LobbyScene NON esistono come scene separate: la waiting room e' un
-        // overlay dentro MainMenu.unity. La scena di destinazione per QUALSIASI intent, una volta
-        // che la partita puo' iniziare, e' sempre GameScene. Non puntare piu' a nomi di scena inesistenti
-        // (causava un PhotonNetwork.LoadLevel/SceneManager.LoadScene silenzioso su una scena assente:
-        // "la partita non parte mai" anche a stanza piena).
-        [SerializeField] private string trainingSceneName = "GameScene";
-        [SerializeField] private string quickMatchSceneName = "GameScene";
-        [SerializeField] private string privateRoomSceneName = "GameScene";
-
         [Header("Debug")]
         [SerializeField] private bool logEvents = true;
 
         // Configurazione corrente
         private MatchConfig _pendingConfig;
-
-        private void Awake()
-        {
-            // Subscribe agli eventi del ModalitySelector
-            if (modalityPanel != null)
-            {
-                modalityPanel.OnConfigSelected += OnModalityConfigSelected;
-                modalityPanel.OnCreatePrivateRoomSelected += OnCreatePrivateRoomRequested;
-                modalityPanel.OnJoinPrivateRoomSelected += OnJoinPrivateRoomSelectedFromPanel;
-            }
-        }
 
         private bool _matchmakingEventsSubscribed;
 
@@ -78,69 +54,6 @@ namespace Project51.Unity
             MatchmakingManager.Instance.OnMatchFound += OnMatchFound;
             _matchmakingEventsSubscribed = true;
         }
-
-        private void OnDestroy()
-        {
-            if (modalityPanel != null)
-            {
-                modalityPanel.OnConfigSelected -= OnModalityConfigSelected;
-                modalityPanel.OnCreatePrivateRoomSelected -= OnCreatePrivateRoomRequested;
-                modalityPanel.OnJoinPrivateRoomSelected -= OnJoinPrivateRoomSelectedFromPanel;
-            }
-        }
-
-        #region Modality Selection
-
-        private void OnModalityConfigSelected(MatchConfig config)
-        {
-            if (logEvents)
-                Debug.Log($"[GameLaunchController] Config selected: {config}");
-
-            _pendingConfig = config;
-
-            switch (config.Intent)
-            {
-                case MatchIntent.Training:
-                    StartTrainingMatch(config);
-                    break;
-
-                case MatchIntent.QuickMatch:
-                    StartQuickMatch(config);
-                    break;
-
-                case MatchIntent.PrivateRoom:
-                    // Questo non dovrebbe pi� accadere - ora usiamo eventi separati
-                    if (config.IsHost)
-                        CreatePrivateRoom(config);
-                    break;
-            }
-        }
-
-        private void OnCreatePrivateRoomRequested(MatchConfig config)
-        {
-            if (logEvents)
-                Debug.Log($"[GameLaunchController] Create private room requested: {config}");
-
-            _pendingConfig = config;
-            CreatePrivateRoom(config);
-        }
-
-        private void OnJoinPrivateRoomRequested(MatchConfig config)
-        {
-            if (logEvents)
-                Debug.Log("[GameLaunchController] Join private room requested");
-
-            _pendingConfig = config;
-        }
-
-        private void OnJoinPrivateRoomSelectedFromPanel()
-        {
-            // OnJoinPrivateRoomSelected non porta la MatchConfig (a differenza di OnCreatePrivateRoomSelected):
-            // Select_JoinPrivateRoom() valorizza pero' CurrentSelection subito prima di invocare l'evento.
-            OnJoinPrivateRoomRequested(modalityPanel.CurrentSelection);
-        }
-
-        #endregion
 
         #region Training (Bot)
 
@@ -287,34 +200,16 @@ namespace Project51.Unity
         private System.Collections.IEnumerator LoadGameSceneAfterTransition(MatchConfig config)
         {
             yield return new WaitForSecondsRealtime(0.35f);
-            GoToGameScene(config);
+            GoToSceneForConfig(config);
         }
 
         #endregion
 
         #region Scene Loading
 
-        private string GetSceneNameForConfig(MatchConfig config)
-        {
-            if (config == null)
-                return trainingSceneName;
-
-            switch (config.Intent)
-            {
-                case MatchIntent.Training:
-                    return trainingSceneName;
-                case MatchIntent.QuickMatch:
-                    return quickMatchSceneName;
-                case MatchIntent.PrivateRoom:
-                    return privateRoomSceneName;
-                default:
-                    return trainingSceneName;
-            }
-        }
-
         private void GoToSceneForConfig(MatchConfig config)
         {
-            string sceneName = GetSceneNameForConfig(config);
+            string sceneName = AppFlowManager.SCENE_GAME;
 
             // Salva la config per la scena di gioco usando il helper in Core
             MatchConfigStorage.Save(config);
@@ -333,12 +228,6 @@ namespace Project51.Unity
             {
                 PhotonNetwork.LoadLevel(sceneName);
             }
-        }
-
-        // Backward compatibility: keep the old name used by other code paths.
-        private void GoToGameScene(MatchConfig config)
-        {
-            GoToSceneForConfig(config);
         }
 
         #endregion

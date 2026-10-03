@@ -16,7 +16,6 @@ namespace Project51.UIV2.Core
     public sealed class HomeV2Integration : MonoBehaviour
     {
         [SerializeField] private Canvas homeCanvas;
-        [SerializeField] private CanvasGroup homeContent;
         [SerializeField] private HomeScreenV2 home;
         [SerializeField] private CollectionScreenV2 collection;
         [SerializeField] private ProfileScreenV2 profile;
@@ -25,10 +24,6 @@ namespace Project51.UIV2.Core
         [SerializeField] private UIV2TopBar topBar;
         [SerializeField] private UIV2BottomNav navigation;
         [SerializeField] private GameLaunchController launcher;
-        [SerializeField] private ModalitySelectorPanelUI modes;
-        [SerializeField] private PanelSwipeController legacyPages;
-        [SerializeField] private BottomNavBarUI legacyNavigation;
-        [SerializeField] private CanvasGroup[] legacyVisuals;
         [SerializeField] private UIV2Pager pager;
         [SerializeField] private QuickSelectionPanels quickPanels;
         [SerializeField] private StartScreenV2 startScreen;
@@ -39,7 +34,6 @@ namespace Project51.UIV2.Core
         [SerializeField] private CanvasGroup topBarGroup;
         [SerializeField] private CanvasGroup[] pageHeaders;
 
-        private static MatchConfig sessionSelection;
         private AuthBootstrapper auth;
         private PlayerProgressLocal progress;
         private bool showingHome;
@@ -47,13 +41,9 @@ namespace Project51.UIV2.Core
         private bool loadingProfile;
         private Tween ambientFade;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetSession() => sessionSelection = null;
-
         private void Start()
         {
-            if (home == null || launcher == null || modes == null || homeCanvas == null
-                || navigation == null || legacyPages == null || legacyNavigation == null)
+            if (home == null || launcher == null || homeCanvas == null || navigation == null || quickPanels == null)
             {
                 Debug.LogError("[HomeV2Integration] MainMenu references are incomplete.", this);
                 enabled = false;
@@ -81,8 +71,7 @@ namespace Project51.UIV2.Core
                 collection.SetTabInteractable(CollectionTab.Accusi, true);
                 collection.DecksPanel.SetFooter(string.Empty);
             }
-            modes.OnSelectionChanged += SelectionChanged;
-            modes.OnVisibilityChanged += ModeVisibilityChanged;
+            quickPanels.SelectionChanged += SelectionChanged;
             navigation.OnItemSelected += Navigate;
             pager.CanNavigate = CanNavigate;
             pager.OnPageChanged += PageChanged;
@@ -93,12 +82,7 @@ namespace Project51.UIV2.Core
                 new UIV2NavItemData { Id = "shop", Label = "Negozio" },
                 new UIV2NavItemData { Id = "profile", Label = "Profilo" }
             });
-            modes.SetSelection(sessionSelection ?? new MatchConfig
-            {
-                Intent = MatchIntent.Training,
-                Format = GameFormat.FourPlayers,
-                BotDifficulty = BotDifficulty.Medium
-            });
+            home.SetMode(quickPanels.ModeOption(quickPanels.Selection));
             home.SetPendingActionsInteractable(false);
             home.SetDeckInteractable(collection != null);
             RefreshDecks();
@@ -123,16 +107,13 @@ namespace Project51.UIV2.Core
             progress = PlayerProgressLocal.Instance;
             if (progress != null) progress.OnExpChanged += ExpChanged;
             RefreshProfile();
-            // Spenti davvero (non solo trasparenti): niente disegno invisibile a tutto schermo ne' Update della vecchia HUD.
-            foreach (var group in legacyVisuals)
-                if (group != null) group.gameObject.SetActive(false);
             PageChanged(0);
         }
 
         private void Play()
         {
             if (!showingHome || !CanNavigate() || pager.IsMoving) return;
-            var config = modes.CurrentSelection.Clone();
+            var config = quickPanels.Selection.Clone();
             launcher.Launch(config);
         }
 
@@ -216,11 +197,7 @@ namespace Project51.UIV2.Core
             collection.SetTabCount(CollectionTab.Decks, decks.Count.ToString());
         }
 
-        private void SelectionChanged(MatchConfig config)
-        {
-            sessionSelection = config.Clone();
-            home.SetMode(quickPanels.ModeOption(config));
-        }
+        private void SelectionChanged(MatchConfig config) => home.SetMode(quickPanels.ModeOption(config));
 
         private void Navigate(int index)
         {
@@ -231,7 +208,7 @@ namespace Project51.UIV2.Core
         private bool CanNavigate()
         {
             if(quickPanels.RoomFlow!=null&&quickPanels.RoomFlow.IsOpen)return false;
-            if (modes.IsOpen || quickPanels.IsOpen || (settings != null && settings.IsOpen)) return false;
+            if (quickPanels.IsOpen || (settings != null && settings.IsOpen)) return false;
             if (profileEditor != null && profileEditor.IsOpen) return false;
             if (AppLoadingView.Instance != null && AppLoadingView.Instance.IsVisible) return false;
             if (startScreen != null && startScreen.View.blocksRaycasts) return false;
@@ -275,14 +252,6 @@ namespace Project51.UIV2.Core
             if (on) homeAmbient.gameObject.SetActive(true);
             ambientFade = homeAmbient.DOFade(on ? 1f : 0f, UIV2Motion.Page).SetUpdate(true)
                 .OnComplete(() => { ambientFade = null; homeAmbient.gameObject.SetActive(on); });
-        }
-
-        private void ModeVisibilityChanged(bool visible)
-        {
-            // Separate from the root CanvasGroup, which belongs to the authentication gate.
-            if (homeContent == null) return;
-            homeContent.interactable = !visible;
-            homeContent.blocksRaycasts = !visible;
         }
 
         private void DisplayNameChanged(string unused) => RefreshProfile();
@@ -383,11 +352,7 @@ namespace Project51.UIV2.Core
                 foreach (var header in pageHeaders)
                     if (header != null) header.DOKill();
             if (collection != null) collection.DecksPanel.OnDeckActionPressed -= SelectDeck;
-            if (modes != null)
-            {
-                modes.OnSelectionChanged -= SelectionChanged;
-                modes.OnVisibilityChanged -= ModeVisibilityChanged;
-            }
+            if (quickPanels != null) quickPanels.SelectionChanged -= SelectionChanged;
             if (navigation != null) navigation.OnItemSelected -= Navigate;
             if (pager != null) { pager.OnPageChanged -= PageChanged; pager.CanNavigate = null; }
             UIV2Motion.Cancel(ref ambientFade);

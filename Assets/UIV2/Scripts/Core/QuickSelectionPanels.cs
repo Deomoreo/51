@@ -11,7 +11,6 @@ namespace Project51.UIV2.Core
     {
         public AnimatedModalV2 DeckModal;
         public AnimatedModalV2 ModeModal;
-        public ModalitySelectorPanelUI Modes;
         public Button[] DeckButtons;
         public TMP_Text Caption;
         public Button Confirm;
@@ -35,6 +34,27 @@ namespace Project51.UIV2.Core
         private float modeScrollHeight;
         private string pendingDeck;
         public bool IsOpen => DeckModal.IsOpen || ModeModal.IsOpen;
+
+        // Scelta di partita della Home: statica, cosi' resta tra MainMenu e tavolo per tutta la sessione.
+        private static MatchConfig selection;
+        public event System.Action<MatchConfig> SelectionChanged;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSelection() => selection = null;
+
+        /// <summary>Scelta corrente; all'avvio Allenamento 1v3, bot Medio.</summary>
+        public MatchConfig Selection => selection ?? (selection = new MatchConfig
+        {
+            Intent = MatchIntent.Training, Format = GameFormat.FourPlayers, BotDifficulty = BotDifficulty.Medium,
+            Rules = MatchRules.Default.Clone()
+        });
+
+        private void Select(MatchConfig config)
+        {
+            selection = config.Clone();
+            SelectionChanged?.Invoke(selection);
+            RefreshMode();
+        }
 
         private void Awake()
         {
@@ -99,25 +119,17 @@ namespace Project51.UIV2.Core
         /// </summary>
         private void OpenRoomFlow(bool create)
         {
-            bool inline = PrivateFormats != null && PrivateFormats.Length > 0 && PrivateCode != null;
-            if (inline && !create && !RoomFlowV2.IsValidCode(RoomFlowV2.NormalizeCode(PrivateCode.text)))
+            if (!create && !RoomFlowV2.IsValidCode(RoomFlowV2.NormalizeCode(PrivateCode.text)))
             {
                 Project51.UI51.UIAnim.ShakeX((RectTransform)PrivateCode.transform); // meno di 5 caratteri: resta qui
                 return;
             }
             ModeModal.Close();
-            if (RoomFlow == null)
-            {
-                if (create) Modes.Select_CreatePrivateRoom(); else Modes.Select_JoinPrivateRoom();
-                return;
-            }
             // Prima di partire (un ingresso rifiutato torna subito qui), e sulla scheda Stanza privata: la scelta in corso puo'
             // essere Online o Allenamento, ma si era qui.
             RoomFlow.ReturnOnCancel = () => { ShowModes(); ShowTab(2); };
-            if (inline && create) RoomFlow.CreateNow();
-            else if (inline) RoomFlow.JoinCode(PrivateCode.text);
-            else if (create) RoomFlow.OpenCreate();
-            else RoomFlow.OpenJoin();
+            if (create) RoomFlow.CreateNow();
+            else RoomFlow.JoinCode(PrivateCode.text);
         }
 
         public void OpenDecks()
@@ -145,7 +157,7 @@ namespace Project51.UIV2.Core
         /// <summary>"GIOCA CONTRO I BOT" della Sospensione: Modalita' sulla scheda Allenamento, col formato che era scelto.</summary>
         public void OpenTraining()
         {
-            var c = Modes.CurrentSelection;
+            var c = Selection;
             int format = c.Format == GameFormat.OneVsOne ? 0 : c.Format == GameFormat.TwoVsTwo ? 1 : 2;
             if (c.Intent != MatchIntent.Training) ChooseMode(3 + format);
             if (!ModeModal.IsOpen) ShowModes();
@@ -160,22 +172,22 @@ namespace Project51.UIV2.Core
         private void ShowModes()
         {
             ModeModal.Open(); ModeScroll.verticalNormalizedPosition = 1; RefreshMode();
-            var intent = Modes.CurrentSelection.Intent;
+            var intent = Selection.Intent;
             ShowTab(intent == MatchIntent.Training ? 1 : intent == MatchIntent.PrivateRoom ? 2 : 0);
         }
         private void ChooseMode(int index)
         {
             var config = new MatchConfig { Intent = index < 3 ? MatchIntent.QuickMatch : MatchIntent.Training,
-                Format = Formats[index % 3], BotDifficulty = Modes.CurrentSelection.BotDifficulty,
+                Format = Formats[index % 3], BotDifficulty = Selection.BotDifficulty,
                 Rules = MatchRules.Default.Clone() };
             if (config.Format == GameFormat.OneVsOne) { config.Rules.CappottoEndsGameImmediately = false; config.Rules.CappottoBonusPoints = 0; }
-            Modes.SetSelection(config); RefreshMode();
+            Select(config);
         }
         private void ChooseDifficulty(int index)
         {
-            var config = Modes.CurrentSelection.Clone();
+            var config = Selection.Clone();
             config.BotDifficulty = new[] { BotDifficulty.Easy, BotDifficulty.Medium, BotDifficulty.Hard }[index];
-            Modes.SetSelection(config); RefreshMode();
+            Select(config);
         }
         private static int ModeIndex(MatchConfig c)
         {
@@ -206,7 +218,7 @@ namespace Project51.UIV2.Core
 
         private void RefreshMode()
         {
-            var c = Modes.CurrentSelection;
+            var c = Selection;
             int selected = ModeIndex(c);
             for (int i = 0; i < ModeButtons.Length; i++) ModeButtons[i].GetComponent<SelectableToggleItem>().SetSelected(i == selected);
             var levels = new[] { BotDifficulty.Easy, BotDifficulty.Medium, BotDifficulty.Hard };

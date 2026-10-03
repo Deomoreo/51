@@ -212,29 +212,6 @@ public class I5ReducedGraphicsTests
     }
 
     [Test]
-    public void ReducedLegacyFoilReplacesAuthoredShaderAtStartupAndRestoresIt()
-    {
-        var go = new GameObject("I5 authored foil", typeof(RectTransform), typeof(Image));
-        var authored = new Material(Resources.Load<Shader>("K4/UISurface"));
-        var foil = go.AddComponent<UICardHoloFoilDriver>();
-        try
-        {
-            go.GetComponent<Image>().material = authored;
-            typeof(UICardHoloFoilDriver).GetField("enableIdleFloat", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(foil, false);
-            typeof(UICardHoloFoilDriver).GetField("enableShadow", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(foil, false);
-            SetReduced(true);
-            Invoke(foil, "Awake");
-            Invoke(foil, "OnEnable");
-            Assert.AreEqual("UI/Default", go.GetComponent<Image>().material.shader.name);
-            SetReduced(false);
-            Assert.AreSame(authored.shader, go.GetComponent<Image>().material.shader);
-            SetReduced(true);
-            Assert.AreEqual("UI/Default", go.GetComponent<Image>().material.shader.name);
-        }
-        finally { Invoke(foil, "OnDisable"); Object.DestroyImmediate(go); Object.DestroyImmediate(authored); }
-    }
-
-    [Test]
     public void ReducingResultsStopsLoopingConfettiAndRestoresOnlyWhileVisible()
     {
         var go = new GameObject("I5 results");
