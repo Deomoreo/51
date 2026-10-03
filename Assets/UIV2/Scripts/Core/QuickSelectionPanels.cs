@@ -13,7 +13,6 @@ namespace Project51.UIV2.Core
         public AnimatedModalV2 ModeModal;
         public ModalitySelectorPanelUI Modes;
         public Button[] DeckButtons;
-        public Image[] Fan;
         public TMP_Text Caption;
         public Button Confirm;
         public Button[] ModeButtons;
@@ -134,7 +133,6 @@ namespace Project51.UIV2.Core
             if (index < 0 || index >= entries.Count) return;
             var entry = entries[index]; pendingDeck = entry.Id;
             Caption.text = string.IsNullOrEmpty(entry.Subtitle) ? entry.DisplayName : entry.DisplayName + " · " + entry.Subtitle;
-            foreach (var image in Fan) { image.sprite = entry.Artwork; image.preserveAspect = true; }
             for (int i = 0; i < DeckButtons.Length; i++) DeckButtons[i].GetComponent<SelectableToggleItem>().SetSelected(i == index);
         }
         public void ConfirmDeck() { if (CardDecks.Select(pendingDeck)) DeckModal.Close(); }

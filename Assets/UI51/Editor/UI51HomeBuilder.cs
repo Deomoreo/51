@@ -600,7 +600,6 @@ namespace Project51.UI51.EditorTools
             UI51Build.Wire(panels, so =>
             {
                 UI51AccessBuilder.SetArray(so, "DeckButtons", buttons);
-                UI51AccessBuilder.SetArray(so, "Fan");
                 UI51Build.Ref(so, "Caption", caption);
                 UI51Build.Ref(so, "Confirm", confirm);
             });

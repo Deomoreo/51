@@ -78,14 +78,12 @@ public class K6FeedbackTests
     [Test]
     public void ConsecutiveAccusiKeepBothCallbacksAndSecondSlamDoesNotRepeatThem()
     {
-        var go = new GameObject("K6 accusi", typeof(RectTransform), typeof(CanvasGroup));
+        var go = new GameObject("K6 accusi", typeof(RectTransform));
         var caption = new GameObject("Caption", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
         caption.transform.SetParent(go.transform);
         try
         {
             var impact = go.AddComponent<AccusoImpactV2>();
-            impact.Group = go.GetComponent<CanvasGroup>();
-            impact.Fist = (RectTransform)go.transform;
             impact.Caption = caption.GetComponent<TMPro.TMP_Text>();
             int local = 0, remote = 0;
             impact.Play("Local", null, () => local++);

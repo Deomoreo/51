@@ -9,15 +9,11 @@ namespace Project51.Unity.UI
     /// <summary>
     /// Testi dinamici della barra superiore del tavolo. Aspetto UI51 (Fase 5): pillola del punteggio
     /// "TU 34 - A 51 - MARCO 29" con i totali di partita; tutti contro tutti a 4 (Fase 6) "TU - A 51" e i tre
-    /// rivali in ordine di posto, con i segmenti piu' stretti. I vecchi testi "Mano X di Y" e
-    /// "Carte rimaste N" restano collegati ma spenti in scena.
+    /// rivali in ordine di posto, con i segmenti piu' stretti.
     /// </summary>
     public class TableTopBarController : MonoBehaviour
     {
-        [SerializeField] private TMP_Text handText;
-        [SerializeField] private TMP_Text cardsLeftText;
-
-        [Header("UI51 (opzionali): pillola del punteggio")]
+        [Header("UI51: pillola del punteggio")]
         [SerializeField] private TMP_Text myLabel;
         [SerializeField] private TMP_Text myScore;
         [SerializeField] private TMP_Text targetScore;
@@ -53,18 +49,7 @@ namespace Project51.Unity.UI
             }
             if (turnController == null) return;
 
-            var roundManager = turnController.RoundManager;
-            if (handText != null && roundManager != null)
-            {
-                handText.text = $"Mano {roundManager.CurrentHandNumber} di {roundManager.TotalHands}";
-            }
-
             var state = turnController.GameState;
-            if (cardsLeftText != null && state != null)
-            {
-                cardsLeftText.text = $"Carte rimaste {state.Deck.Count}";
-            }
-
             if (state == null) return;
             // Tre assi: il punteggio cambia appena distribuito; resta com'era finche' le carte volano, poi lo svela TRE ASSI!.
             if (turnController.IsDealInProgress && state.RoundEnded && RoundManager.TreAssiHolder(state) >= 0) return;

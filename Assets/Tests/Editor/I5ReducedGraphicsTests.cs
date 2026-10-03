@@ -345,13 +345,9 @@ public class I5ReducedGraphicsTests
         yield return new WaitForSecondsRealtime(.3f);
         table.Open();
         yield return new WaitForSecondsRealtime(.3f);
-        // UI51 (Fase 5 S9): il vecchio interruttore resta spento in scena, si tocca quello nuovo.
-        System.Action flip = () =>
-        {
-            if (table.GraphicsSwitch != null) table.GraphicsSwitch.Toggle();
-            else table.FastAnimations.GetComponent<Button>().onClick.Invoke();
-        };
-        Assert.IsTrue(table.GraphicsSwitch != null ? table.GraphicsSwitch.isOn : table.FastAnimations.IsOn);
+        Assert.IsNotNull(table.GraphicsSwitch);
+        System.Action flip = () => table.GraphicsSwitch.Toggle();
+        Assert.IsTrue(table.GraphicsSwitch.isOn);
         Assert.IsFalse(table.Blur.HasSnapshot);
         Assert.IsFalse(table.Blur.GetComponent<RawImage>().enabled);
         flip();

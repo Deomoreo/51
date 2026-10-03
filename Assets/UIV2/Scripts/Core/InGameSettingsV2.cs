@@ -13,31 +13,20 @@ namespace Project51.UIV2.Core
     /// Impostazioni in partita, aperte dall'ingranaggio del tavolo: musica, effetti, vibrazione
     /// (GameAudioPreferences, GamePreferences), grafica ridotta e suggerimenti mosse.
     /// La partita non si ferma: dietro al pannello c'e' una foto sfocata del tavolo.
-    /// UI51 Fase 5 (S9, Tools/UI51/Build Fase 5): foglio dal basso UI51Options dentro Panel (il vecchio
-    /// disegno resta spento con i suoi riferimenti) e finestra "Abbandonare la partita?" (OpenLeave, dal
-    /// pulsante Abbandona della barra in alto). Senza i nodi UI51 resta il vecchio pannello V2 con
-    /// "Abbandona partita" a doppio tocco.
+    /// UI51 Fase 5 (S9, Tools/UI51/Build Fase 5): foglio dal basso UI51Options dentro Panel e finestra
+    /// "Abbandonare la partita?" (OpenLeave, dal pulsante Abbandona della barra in alto).
     /// </summary>
     public sealed class InGameSettingsV2 : MonoBehaviour
     {
         public GameObject Panel;
         public CanvasGroup Group;
-        public RectTransform Window;
         public BackdropBlur Blur;
         public Button OpenButton;
         public Button Close;
         [Tooltip("Tocco fuori dalla cornice: chiude come la X.")]
         public Button Backdrop;
-        public SimpleToggleSwitch FastAnimations;
-        public SimpleToggleSwitch MoveHints;
-        public SimpleToggleSwitch Music;
-        public SimpleToggleSwitch Effects;
-        public SimpleToggleSwitch Vibration;
-        public Button Abandon;
-        public TMP_Text AbandonTitle;
-        public TMP_Text AbandonSubtitle;
 
-        [Header("UI51 (opzionali)")]
+        [Header("UI51")]
         public RectTransform Sheet;
         public UI51Toggle MusicSwitch;
         public UI51Toggle EffectsSwitch;
@@ -52,12 +41,7 @@ namespace Project51.UIV2.Core
         /// <summary>Avviso di moderazione (scelta dell'utente 01/10: si dice e basta, senza contare quanti ne mancano).</summary>
         public const string AbandonWarning = "Chi abbandona spesso le partite online viene sospeso per un po’.";
 
-        private const float ConfirmSeconds = 3f;
-        private const string AbandonTitleText = "Abbandona partita";
-        private const string AbandonSubtitleText = "Conta come sconfitta";
-
         private bool opening;
-        private float confirmUntil = -1f;
         private AnimatedModalV2 panelMotion;
         private bool lastReducedGraphics;
         private CanvasGroup captureMask;
@@ -77,15 +61,7 @@ namespace Project51.UIV2.Core
             if (OpenButton != null) OpenButton.onClick.AddListener(Open);
             Close.onClick.AddListener(Hide);
             if (Backdrop != null) Backdrop.onClick.AddListener(Hide);
-            Abandon.onClick.AddListener(OnAbandon);
-            EnsureReducedGraphicsToggle();
-            FastAnimations.OnChanged += GamePreferences.SetReducedGraphics;
             GamePreferences.Changed += RefreshGraphicsChoice;
-            MoveHints.OnChanged += GamePreferences.SetMoveHints;
-            Music.OnChanged += GameAudioPreferences.SetMusicEnabled;
-            Effects.OnChanged += GameAudioPreferences.SetEffectsEnabled;
-            EnsureVibrationToggle();
-            if (Vibration != null) Vibration.OnChanged += GamePreferences.SetVibrationEnabled;
             Panel.SetActive(false);
         }
 
@@ -101,10 +77,6 @@ namespace Project51.UIV2.Core
         {
             opening = true;
             RefreshGraphicsChoice();
-            MoveHints.SetOn(GamePreferences.MoveHints);
-            Music.SetOn(GameAudioPreferences.MusicChoice);
-            Effects.SetOn(GameAudioPreferences.EffectsChoice);
-            if (Vibration != null) Vibration.SetOn(GamePreferences.VibrationEnabled);
             if (MusicSwitch != null)
             {
                 GameAudioPreferences.FoldMasterIntoChannels(); // come le Impostazioni della Home
@@ -113,7 +85,6 @@ namespace Project51.UIV2.Core
             if (EffectsSwitch != null) EffectsSwitch.SetIsOn(GameAudioPreferences.EffectsChoice, false, false);
             if (VibrationSwitch != null) VibrationSwitch.SetIsOn(GamePreferences.VibrationEnabled, false, false);
             if (HintsSwitch != null) HintsSwitch.SetIsOn(GamePreferences.MoveHints, false, false);
-            ResetAbandon();
 
             // Il pannello c'e' gia' (blocca i tocchi) ma e' trasparente: la foto del tavolo non lo contiene.
             if (panelMotion == null)
@@ -121,7 +92,7 @@ namespace Project51.UIV2.Core
                 panelMotion = Panel.GetComponent<AnimatedModalV2>();
                 if (panelMotion == null) panelMotion = Panel.AddComponent<AnimatedModalV2>();
                 panelMotion.Group = Group;
-                panelMotion.Frame = Window;
+                panelMotion.Frame = null; // solo dissolvenza: il foglio UI51 sale da se' (UIAnim.SheetUp)
                 panelMotion.HandleEscape = false;
             }
             Group.alpha = 0f;
@@ -155,26 +126,9 @@ namespace Project51.UIV2.Core
             else Panel.SetActive(false);
         }
 
-        private void OnAbandon()
-        {
-            // Primo tocco: chiede conferma. Secondo tocco entro 3 secondi: esce dalla partita.
-            if (Time.unscaledTime > confirmUntil)
-            {
-                confirmUntil = Time.unscaledTime + ConfirmSeconds;
-                AbandonTitle.text = "Tocca di nuovo per uscire";
-                AbandonSubtitle.text = "La partita conta come sconfitta";
-                return;
-            }
-
-            confirmUntil = -1f;
-            Abandon.interactable = false;
-            ConfirmLeave();
-        }
-
-        /// <summary>Pulsante Abbandona della barra in alto: finestra di conferma (senza, il vecchio pannello).</summary>
+        /// <summary>Pulsante Abbandona della barra in alto: finestra di conferma.</summary>
         public void OpenLeave()
         {
-            if (LeaveDialog == null) { Open(); return; }
             if (IsLeaveOpen || leaving) return;
             var mode = GameModeService.Current;
             var cfg = GameSceneInitializer.ActiveConfig;
@@ -232,20 +186,11 @@ namespace Project51.UIV2.Core
             return players == 2 ? LeaveLost + " La vittoria andrà a " + nameOf(1 - local) + "." : LeaveLost;
         }
 
-        private void ResetAbandon()
-        {
-            confirmUntil = -1f;
-            Abandon.interactable = true;
-            AbandonTitle.text = AbandonTitleText;
-            AbandonSubtitle.text = AbandonSubtitleText;
-        }
-
         private void RefreshGraphicsChoice()
         {
             bool reduced = GamePreferences.ReducedGraphics;
             bool restore = lastReducedGraphics && !reduced;
             lastReducedGraphics = reduced;
-            if (FastAnimations != null) FastAnimations.SetOn(reduced);
             if (GraphicsSwitch != null) GraphicsSwitch.SetIsOn(reduced, false);
             // A panel opened while reduced has no snapshot to restore. Hide its parent
             // for the capture so the modal's own entrance tween cannot enter the photo.
@@ -278,63 +223,16 @@ namespace Project51.UIV2.Core
             RestoreCaptureVisibility();
         }
 
-        // Keep the serialized FastAnimations reference so existing scenes remain wired.
-        public void EnsureReducedGraphicsToggle()
-        {
-            if (FastAnimations == null) return;
-            var row = FastAnimations.transform.parent;
-            row.Find("Title").GetComponent<TMP_Text>().text = "Grafica ridotta";
-            row.Find("Subtitle").GetComponent<TMP_Text>().text = "Meno effetti e animazioni più brevi";
-            RefreshGraphicsChoice();
-        }
-
-        /// <summary>Targeted upgrade shared by the builder and existing scenes at runtime.</summary>
-        public void EnsureVibrationToggle()
-        {
-            if (Vibration != null || Effects == null) return;
-            var source = (RectTransform)Effects.transform.parent;
-            var existing = source.parent.Find("Vibration");
-            if (existing != null) { Vibration = existing.GetComponentInChildren<SimpleToggleSwitch>(true); return; }
-            const float step = 118f;
-            var clone = Instantiate(source.gameObject, source.parent);
-            clone.name = "Vibration";
-            var row = (RectTransform)clone.transform;
-            row.anchoredPosition = source.anchoredPosition + Vector2.down * step;
-            foreach (Transform child in source.parent)
-            {
-                if (child == row) continue;
-                var rect = child as RectTransform;
-                if (rect == null) continue;
-                if (child.name == "Frame")
-                {
-                    rect.sizeDelta += Vector2.up * step;
-                    rect.anchoredPosition += Vector2.down * step * (1f - rect.pivot.y);
-                }
-                else if (rect.anchoredPosition.y < source.anchoredPosition.y - 1f)
-                    rect.anchoredPosition += Vector2.down * step;
-            }
-            row.Find("Title").GetComponent<TMP_Text>().text = "Vibrazione";
-            row.Find("Subtitle").GetComponent<TMP_Text>().text = "Tocchi e momenti importanti";
-            Vibration = row.GetComponentInChildren<SimpleToggleSwitch>(true);
-            Vibration.SetOn(GamePreferences.VibrationEnabled);
-        }
-
         private void Update()
         {
             if (IsLeaveOpen && Input.GetKeyDown(KeyCode.Escape)) { CloseLeave(); return; }
             if (!IsOpen) return;
-            if (confirmUntil > 0f && Time.unscaledTime > confirmUntil) ResetAbandon();
             if (Input.GetKeyDown(KeyCode.Escape)) Hide();
         }
 
         private void OnDestroy()
         {
-            if (FastAnimations != null) FastAnimations.OnChanged -= GamePreferences.SetReducedGraphics;
             GamePreferences.Changed -= RefreshGraphicsChoice;
-            MoveHints.OnChanged -= GamePreferences.SetMoveHints;
-            Music.OnChanged -= GameAudioPreferences.SetMusicEnabled;
-            Effects.OnChanged -= GameAudioPreferences.SetEffectsEnabled;
-            if (Vibration != null) Vibration.OnChanged -= GamePreferences.SetVibrationEnabled;
         }
     }
 }

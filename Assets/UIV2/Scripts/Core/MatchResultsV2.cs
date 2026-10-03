@@ -23,42 +23,18 @@ namespace Project51.UIV2.Core
     {
         [Header("Fine smazzata")]
         public GameObject RoundPanel;
-        public TMP_Text RoundSubtitle;
-        public ResultRowV2[] RoundRows;
-        /// <summary>Vincitori di Carte, Denari, Settebello, Primiera (in quest'ordine).</summary>
-        public TMP_Text[] AwardWinners;
         public Button RoundContinue;
         public TMP_Text RoundContinueLabel;
-        public Button RoundExit;
-        [Tooltip("Tavolo sfocato dietro al fine smazzata (G6). Costruito da Tools/UIV2/Build Round Results Blur.")]
-        public BackdropBlur RoundBlur;
 
         [Header("Fine partita")]
         public GameObject MatchPanel;
-        public TMP_Text MatchTitle;
-        public TMP_Text MatchWinnerLine;
-        public ResultRowV2[] MatchRows;
-        public TMP_Text[] DetailLabels;
-        public TMP_Text[] DetailValues;
-        public TMP_Text DetailTotal;
         public Button Rematch;
         public TMP_Text RematchLabel;
         public Button MatchMenu;
         public RectTransform ConfettiRoot;
-        /// <summary>Scoppio di luce dal trofeo quando vince il giocatore locale (C6).</summary>
-        public UIV2MoteField TrophyBurst;
-
-        [Header("Esperienza (E1)")]
-        public GameObject XpRow;
-        public TMP_Text XpGainLabel;
-        public UIV2ProgressBar XpBar;
-        public TMP_Text XpLevelLabel;
-        public Image XpFlash;
-        /// <summary>Scoppio di luce sulla barra quando si sale di livello.</summary>
-        public UIV2MoteField XpBurst;
 
         [Header("UI51 Fase 7")]
-        [Tooltip("Grafica dei mockup FineSmazzata/FinePartita (UI51TableBuilder.BuildResults). Vuoto = vecchi pannelli.")]
+        [Tooltip("Grafica dei mockup FineSmazzata/FinePartita (UI51ResultsBuilder).")]
         public Project51.Unity.UI.UI51ResultsView View;
 
         private Action next, menu;
@@ -72,7 +48,6 @@ namespace Project51.UIV2.Core
         private GameState countedState, recordedState;
         private int matchScope, matchAccusi, matchSettebelli, xpFrom = -1, xpTo;
         private bool guestXp;
-        private Tween xpTween;
         // Vittoria per abbandono (scelta dell'utente 01/10): senza piu' avversari umani al tavolo vince chi resta. Statici per RecordAbandon.
         private static GameState forfeitState;
         private static string forfeitOpponent;
@@ -95,7 +70,6 @@ namespace Project51.UIV2.Core
             RoundContinue.onClick.AddListener(Next);
             Rematch.onClick.AddListener(Next);
             // Il fine smazzata del mockup 13 non ha un'uscita: si abbandona dalle Impostazioni in partita.
-            if (RoundExit != null) RoundExit.onClick.AddListener(Exit);
             MatchMenu.onClick.AddListener(Exit);
             RoundPanel.SetActive(false);
             MatchPanel.SetActive(false);
@@ -119,47 +93,24 @@ namespace Project51.UIV2.Core
             clicked = false;
             int target = (GameSceneInitializer.ActiveConfig ?? new MatchConfig()).TargetScore;
             var totals = MatchScore.Totals(state);
-            var round = MatchScore.RoundScores(state);
             finished = forfeit || MatchScore.IsFinished(state, target);
             int localEntry = MatchScore.EntryOf(state, GameModeService.Current.LocalPlayerIndex);
             var order = Enumerable.Range(0, totals.Length).OrderByDescending(e => totals[e]).ToArray();
-            var rows = finished ? MatchRows : RoundRows;
             CountLocalBonuses(state);
             int winner = forfeit ? localEntry : order[0];
             wonMatch = finished && winner == localEntry;
             if (finished && recordedState != state) RecordMatch(wonMatch);
 
-            for (int row = 0; row < rows.Length; row++)
+            if (finished)
             {
-                if (row >= order.Length) { rows[row].gameObject.SetActive(false); continue; }
-                int entry = order[row];
-                string delta = (MatchScore.IsCappotto(round[entry]) ? "Cappotto" : "+" + round[entry]) + " questa smazzata";
-                rows[row].Bind(row + 1, EntryName(state, entry), delta, totals[entry], target,
-                    MatchScore.IsCappotto(totals[entry]), winner: finished && row == 0);
+                View.BindMatch(state, localEntry, winner, matchScope, matchAccusi, matchSettebelli);
+                if (forfeit) View.SetModeCaption(state.TeamMode || MatchScore.EntryCount(state) > 2 ? "GLI AVVERSARI HANNO ABBANDONATO" : "L'AVVERSARIO HA ABBANDONATO");
             }
-
-            if (View != null)
-            {
-                if (finished)
-                {
-                    View.BindMatch(state, localEntry, winner, matchScope, matchAccusi, matchSettebelli);
-                    if (forfeit) View.SetModeCaption(state.TeamMode || MatchScore.EntryCount(state) > 2 ? "GLI AVVERSARI HANNO ABBANDONATO" : "L'AVVERSARIO HA ABBANDONATO");
-                }
-                else View.BindRound(state, target, localEntry);
-            }
-            else
-            {
-                var breakdown = PunteggioManager.CalculateBreakdown(state);
-                if (finished) BindMatchEnd(state, breakdown, totals, winner, localEntry);
-                else BindRoundEnd(state, breakdown);
-            }
+            else View.BindRound(state, target, localEntry);
 
             RefreshContinue();
             (finished ? RoundPanel : MatchPanel).SetActive(false);
-            int token = ++showToken;
-            // Il fine partita e' a schermo intero con fondo pieno: la sfocatura servirebbe solo al fine smazzata.
-            if (!finished && RoundBlur != null) StartCoroutine(RevealAfterBlur(token, localEntry, winner));
-            else Reveal(localEntry, winner);
+            Reveal(localEntry, winner);
         }
 
         /// <summary>
@@ -298,15 +249,7 @@ namespace Project51.UIV2.Core
             return hadOpponent;
         }
 
-        private int showToken;
         private int captionSeconds = int.MinValue; // ultimo conto scritto sotto PROSSIMA SMAZZATA
-
-        /// <summary>La foto del tavolo va scattata prima che il pannello compaia, poi si mostra tutto insieme.</summary>
-        private System.Collections.IEnumerator RevealAfterBlur(int token, int localEntry, int winner)
-        {
-            yield return RoundBlur.Capture();
-            if (token == showToken) Reveal(localEntry, winner); // nel frattempo Hide() o un nuovo Show()
-        }
 
         private void Reveal(int localEntry, int winner)
         {
@@ -316,19 +259,15 @@ namespace Project51.UIV2.Core
             var group = panel.GetComponent<CanvasGroup>();
             group.alpha = 0f;
             group.DOFade(1f, UIV2Motion.Enter).SetUpdate(true).SetLink(panel);
-            foreach (var row in finished ? MatchRows : RoundRows)
-                if (row != null && row.gameObject.activeInHierarchy) row.AnimateScore();
             // ShowXp prima delle entrate: fissa l'altezza delle ricompense e sposta le statistiche, che FadeUp poi prende come posa di riposo.
             if (finished) ShowXp();
-            if (View != null) View.Play(finished);
+            View.Play(finished);
             if (Confetti) PlayConfetti();
             if (finished && winner == localEntry && celebratedState != shownState)
             {
                 celebratedState = shownState;
                 GameFeedback.Present(FeedbackKind.Victory, true, new Vector2(.5f, .72f));
             }
-            if (finished && winner == localEntry && TrophyBurst != null)
-                DOVirtual.DelayedCall(0.25f, TrophyBurst.Burst).SetUpdate(true).SetLink(panel);
             if (!finished) GameAudio.PlayUi(SoundId.PopupOpen);
             else GameAudio.Play(winner == localEntry ? SoundId.Victory : SoundId.Defeat);
         }
@@ -381,7 +320,7 @@ namespace Project51.UIV2.Core
             if (!guest)
                 RewardsService.MatchReward(won, training, matchScope, matchAccusi,
                     r => { if (cloud != null) cloud.ApplyServerStats(r); coinReward = r; if (this != null) ServerXp(r); },
-                    _ => { coinFailed = true; if (this != null && View != null) View.ShowCoins(null, true); },
+                    _ => { coinFailed = true; if (this != null) View.ShowCoins(null, true); },
                     Forfeit ? forfeitOpponent ?? "" : null, Forfeit && PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : null, forfeitActor);
             forfeitOpponent = null; // la rivincita parte pulita
             forfeitActor = 0;
@@ -396,7 +335,6 @@ namespace Project51.UIV2.Core
             int from = r.statistiche ? r.esperienza - r.xp : xpFrom, to = r.statistiche ? r.esperienza : xpFrom;
             bool changed = xpFrom >= 0 && recordedState == shownState && (from != xpFrom || to != xpTo);
             if (changed) { xpFrom = from; xpTo = to; }
-            if (View == null) { if (changed && MatchPanel != null && MatchPanel.activeInHierarchy) ShowXp(); return; }
             if (changed && MatchPanel != null && MatchPanel.activeInHierarchy) View.SetXp(xpFrom, xpTo);
             View.ShowCoins(r);
         }
@@ -418,95 +356,11 @@ namespace Project51.UIV2.Core
                 RewardsService.MatchQuit(cloud.ApplyServerStats);
         }
 
-        /// <summary>Riga "+XP": la barra si riempie rallentando, lampeggia alla fine e scoppia a ogni livello.</summary>
+        /// <summary>Riga "+XP" e monete del fine partita.</summary>
         private void ShowXp()
         {
-            xpTween?.Kill();
-            if (View != null)
-            {
-                View.ShowXp(xpFrom, xpTo, guestXp);
-                if (!guestXp) View.ShowCoins(coinReward, coinFailed);
-                return;
-            }
-            if (XpRow == null) return;
-            XpRow.SetActive(xpFrom >= 0);
-            if (xpFrom < 0) return;
-            XpBar.gameObject.SetActive(!guestXp);
-            XpLevelLabel.gameObject.SetActive(!guestXp);
-            XpGainLabel.enableWordWrapping = false;
-            XpGainLabel.text = guestXp ? "Registrati per guadagnare XP" : "+" + (xpTo - xpFrom) + " XP";
-            if (guestXp) return;
-            XpFlash.DOKill();
-            XpFlash.color = new Color(XpFlash.color.r, XpFlash.color.g, XpFlash.color.b, 0f);
-            if (GamePreferences.ReducedGraphics) { SetXp(xpTo); return; }
-            SetXp(xpFrom);
-            int level = PlayerXp.LevelOf(xpFrom);
-            xpTween = DOVirtual.Float(xpFrom, xpTo, 1.2f, v =>
-                {
-                    int total = Mathf.RoundToInt(v);
-                    SetXp(total);
-                    if (PlayerXp.LevelOf(total) == level) return;
-                    level = PlayerXp.LevelOf(total);
-                    XpLevelLabel.transform.DOKill(true);
-                    XpLevelLabel.transform.DOPunchScale(Vector3.one * .35f, .45f, 6).SetUpdate(true).SetLink(XpRow);
-                    if (XpBurst != null) XpBurst.Burst();
-                })
-                .SetDelay(.45f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(XpRow)
-                .OnComplete(() => XpFlash.DOFade(.6f, .12f).SetLoops(2, LoopType.Yoyo).SetUpdate(true).SetLink(XpRow));
-        }
-
-        private void SetXp(int total)
-        {
-            int level = PlayerXp.LevelOf(total);
-            XpBar.SetProgress(PlayerXp.XpInLevel(total), PlayerXp.XpToNext(level), animate: false);
-            XpLevelLabel.text = "Liv. " + level;
-        }
-
-        private void BindRoundEnd(GameState state, SmazzataScore[] breakdown)
-        {
-            RoundSubtitle.text = "Smazzata " + state.RoundIndex + "  ·  mazzo esaurito";
-            Func<Func<SmazzataScore, bool>, string> awarded = won =>
-            {
-                var names = Enumerable.Range(0, breakdown.Length).Where(e => won(breakdown[e])).Select(e => EntryName(state, e)).ToArray();
-                return names.Length == 0 ? "Nessuno" : string.Join(", ", names);
-            };
-            AwardWinners[0].text = awarded(x => x.WonCards);
-            AwardWinners[1].text = awarded(x => x.WonDenari);
-            AwardWinners[2].text = awarded(x => x.HasSetteBello);
-            AwardWinners[3].text = awarded(x => x.WonPrimiera);
-        }
-
-        private void BindMatchEnd(GameState state, SmazzataScore[] breakdown, int[] totals, int winner, int localEntry)
-        {
-            bool won = winner == localEntry;
-            MatchTitle.text = won ? "HAI VINTO!" : "FINE PARTITA";
-            MatchWinnerLine.text = EntryName(state, winner) + "  ·  "
-                + (MatchScore.IsCappotto(totals[winner]) ? "Cappotto" : totals[winner] + " punti");
-
-            // Dettaglio dell'ultima smazzata per il giocatore (o la coppia) locale.
-            var d = breakdown[Mathf.Clamp(localEntry, 0, breakdown.Length - 1)];
-            int bonus = (d.HasGrande ? 5 : 0) + (d.HasPiccola ? 3 + d.PiccolaExtras : 0);
-            var lines = new[]
-            {
-                ("Carte (" + d.CardCount + " su 40)", d.WonCards ? 1 : 0),
-                ("Denari (" + d.DenariCount + " su 10)", d.WonDenari ? 1 : 0),
-                ("Settebello", d.HasSetteBello ? 1 : 0),
-                ("Primiera", d.WonPrimiera ? 1 : 0),
-                ("Scope", d.ScopaCount),
-                ("Accusi", d.AccusiPoints),
-                ("Grande e Piccola", bonus)
-            };
-            for (int i = 0; i < DetailLabels.Length; i++)
-            {
-                // La riga Grande/Piccola compare solo se ha dato punti, come nel mockup a 6 righe.
-                bool show = i < lines.Length && (i < 6 || lines[i].Item2 > 0);
-                DetailLabels[i].gameObject.SetActive(show);
-                DetailValues[i].gameObject.SetActive(show);
-                if (!show) continue;
-                DetailLabels[i].text = lines[i].Item1;
-                DetailValues[i].text = "+" + lines[i].Item2;
-            }
-            DetailTotal.text = "+" + (d.Points + d.AccusiPoints);
+            View.ShowXp(xpFrom, xpTo, guestXp);
+            if (!guestXp) View.ShowCoins(coinReward, coinFailed);
         }
 
         private void PlayConfetti()
@@ -563,17 +417,16 @@ namespace Project51.UIV2.Core
         private void RefreshContinue()
         {
             bool canAdvance = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
-            string label = NoRematch ? "TORNA ALLA HOME" : canAdvance ? (finished ? "RIVINCITA" : View != null ? "PROSSIMA SMAZZATA" : autoAdvance.IsRunning
-                ? "CONTINUA · " + Mathf.CeilToInt(autoAdvance.Remaining) + "s" : "CONTINUA") : "ATTENDI L'HOST";
+            string label = NoRematch ? "TORNA ALLA HOME" : canAdvance ? (finished ? "RIVINCITA" : "PROSSIMA SMAZZATA") : "ATTENDI L'HOST";
             // UI51: il conto sta sotto il pulsante ("Si riparte da sola tra N secondi"), solo per chi fa proseguire.
             int seconds = canAdvance && autoAdvance.IsRunning ? Mathf.CeilToInt(autoAdvance.Remaining) : -1;
-            if (View != null && !finished && seconds != captionSeconds)
+            if (!finished && seconds != captionSeconds)
             {
                 captionSeconds = seconds;
                 View.SetRoundCaption(seconds >= 0 ? "Si riparte da sola tra " + seconds + " secondi" : null);
             }
             // UI51: senza rivincita resta solo "Torna alla Home" in fondo, non due pulsanti uguali.
-            if (finished && View != null && Rematch.gameObject.activeSelf == NoRematch) Rematch.gameObject.SetActive(!NoRematch);
+            if (finished && Rematch.gameObject.activeSelf == NoRematch) Rematch.gameObject.SetActive(!NoRematch);
             var button = finished ? Rematch : RoundContinue;
             var text = finished ? RematchLabel : RoundContinueLabel;
             button.interactable = canAdvance || NoRematch;
@@ -634,14 +487,12 @@ namespace Project51.UIV2.Core
         public void Hide()
         {
             autoAdvance.Cancel();
-            showToken++; // annulla un fine smazzata ancora in attesa della foto sfocata
             foreach (var panel in new[] { RoundPanel, MatchPanel })
             {
                 panel.GetComponent<CanvasGroup>().DOKill();
                 panel.SetActive(false);
             }
             StopConfetti();
-            xpTween?.Kill();
         }
 
         // 3 tempi scaduti di fila (TurnController.InactiveTooLong): si esce come con Abbandona, conta come abbandono e il posto passa al bot.

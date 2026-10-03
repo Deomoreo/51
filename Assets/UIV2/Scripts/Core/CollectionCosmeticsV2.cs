@@ -12,9 +12,8 @@ namespace Project51.UIV2.Core
         public CollectionScreenV2 Screen;
         public Sprite[] Emoticons;
         public TMP_Text Feedback;
-        public AccusoImpactV2 Preview;
         public Sprite PugnoArtwork;
-        [Tooltip("UI51 (facoltativo): il pugno della scheda Accuso. Se c'e', ANTEPRIMA lo fa battere sul posto invece di aprire l'animazione del tavolo.")]
+        [Tooltip("UI51: il pugno della scheda Accuso, che ANTEPRIMA fa battere sul posto.")]
         public RectTransform PreviewFist;
         public static readonly string[] Names = { "Risata", "Arrabbiato", "Sorpreso", "Pensieroso", "Triste", "Furbo" };
         public static int[] Equipped => PlayerPrefs.GetString("Collection.Emoticons", "0,1,2").Split(',')
@@ -39,7 +38,7 @@ namespace Project51.UIV2.Core
         public static bool Toggle(int index){if(!Equipped.Contains(index))return Equip(index);Remove(index);return true;}
         private void Select(CollectionItemViewData item){if(Toggle(int.Parse(item.Id)))Refresh();}
         private void RemoveItem(CollectionItemViewData item){Remove(int.Parse(item.Id));Refresh();}
-        private void ShowPreview(AccusoViewData item){if(PreviewFist!=null)UIAnim.Thump(PreviewFist);else Preview.Play("PUGNO SUL TAVOLO",null);}
+        private void ShowPreview(AccusoViewData item){if(PreviewFist!=null)UIAnim.Thump(PreviewFist);}
         public void Refresh()
         {
             var equipped=Equipped;

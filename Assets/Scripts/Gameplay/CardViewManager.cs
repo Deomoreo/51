@@ -698,12 +698,6 @@ namespace Project51.Unity
             return true;
         }
 
-        /// <summary>Offset del mazzetto prese rispetto al centro del banner, in pixel mockup (y verso il basso).</summary>
-        public static Vector2 GetCapturedPileDesignOffset(int slot)
-        {
-            return CapturedPileOffsetsBySlot[Mathf.Clamp(slot, 0, 3)];
-        }
-
         private bool TryGetBannerHandCenter(int slot, out Vector3 center, out RectTransform rect)
         {
             center = Vector3.zero;

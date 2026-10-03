@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -11,15 +10,12 @@ namespace Project51.Unity
 {
     /// <summary>
     /// Controller principale per il flusso dalla Home al Game.
-    /// Coordina: ModalitySelector ? MatchmakingManager ? WaitingRoom ? Game Scene
+    /// Coordina: ModalitySelector ? MatchmakingManager ? Game Scene
     /// </summary>
     public class GameLaunchController : MonoBehaviour
     {
         [Header("UI References")]
         [SerializeField] private ModalitySelectorPanelUI modalityPanel;
-        [SerializeField] private WaitingRoomUI waitingRoomUI;
-        [SerializeField] private JoinRoomPopupUI joinRoomPopup;
-        [SerializeField] private MatchmakingStatusUI matchmakingStatusUI;
 
         [Header("Scene Names")]
         // NOTE: WaitingRoom e LobbyScene NON esistono come scene separate: la waiting room e' un
@@ -31,18 +27,11 @@ namespace Project51.Unity
         [SerializeField] private string quickMatchSceneName = "GameScene";
         [SerializeField] private string privateRoomSceneName = "GameScene";
 
-        [Header("Fake Matchmaking (temporary)")]
-        [Tooltip("For now, simulate matchmaking/loading even for offline training.")]
-        [SerializeField] private bool useFakeMatchmakingForTraining = true;
-        [SerializeField] private float fakePhase1Duration = 0.6f;
-        [SerializeField] private float fakePhase2Duration = 0.8f;
-
         [Header("Debug")]
         [SerializeField] private bool logEvents = true;
 
         // Configurazione corrente
         private MatchConfig _pendingConfig;
-        private Coroutine _fakeRoutine;
 
         private void Awake()
         {
@@ -52,25 +41,6 @@ namespace Project51.Unity
                 modalityPanel.OnConfigSelected += OnModalityConfigSelected;
                 modalityPanel.OnCreatePrivateRoomSelected += OnCreatePrivateRoomRequested;
                 modalityPanel.OnJoinPrivateRoomSelected += OnJoinPrivateRoomSelectedFromPanel;
-            }
-
-            // Subscribe agli eventi del WaitingRoom
-            if (waitingRoomUI != null)
-            {
-                waitingRoomUI.OnStartRequested += OnWaitingRoomStartRequested;
-                waitingRoomUI.OnLeaveRequested += OnWaitingRoomLeaveRequested;
-            }
-
-            // Subscribe agli eventi del JoinRoomPopup
-            if (joinRoomPopup != null)
-            {
-                joinRoomPopup.OnJoinRequested += OnJoinRoomCodeEntered;
-            }
-
-            // Subscribe agli eventi del MatchmakingStatusUI
-            if (matchmakingStatusUI != null)
-            {
-                matchmakingStatusUI.OnCancelRequested += OnMatchmakingCancelRequested;
             }
         }
 
@@ -85,11 +55,8 @@ namespace Project51.Unity
         {
             if (_matchmakingEventsSubscribed && MatchmakingManager.Instance != null)
             {
-                MatchmakingManager.Instance.OnStateChanged -= OnMatchmakingStateChanged;
                 MatchmakingManager.Instance.OnError -= OnMatchmakingError;
                 MatchmakingManager.Instance.OnMatchFound -= OnMatchFound;
-                MatchmakingManager.Instance.OnRoomCreated -= OnPrivateRoomCreated;
-                MatchmakingManager.Instance.OnRoomJoined -= OnPrivateRoomJoined;
             }
             _matchmakingEventsSubscribed = false;
         }
@@ -107,11 +74,8 @@ namespace Project51.Unity
             if (_matchmakingEventsSubscribed || MatchmakingManager.Instance == null)
                 return;
 
-            MatchmakingManager.Instance.OnStateChanged += OnMatchmakingStateChanged;
             MatchmakingManager.Instance.OnError += OnMatchmakingError;
             MatchmakingManager.Instance.OnMatchFound += OnMatchFound;
-            MatchmakingManager.Instance.OnRoomCreated += OnPrivateRoomCreated;
-            MatchmakingManager.Instance.OnRoomJoined += OnPrivateRoomJoined;
             _matchmakingEventsSubscribed = true;
         }
 
@@ -123,15 +87,6 @@ namespace Project51.Unity
                 modalityPanel.OnCreatePrivateRoomSelected -= OnCreatePrivateRoomRequested;
                 modalityPanel.OnJoinPrivateRoomSelected -= OnJoinPrivateRoomSelectedFromPanel;
             }
-            if (waitingRoomUI != null)
-            {
-                waitingRoomUI.OnStartRequested -= OnWaitingRoomStartRequested;
-                waitingRoomUI.OnLeaveRequested -= OnWaitingRoomLeaveRequested;
-            }
-            if (joinRoomPopup != null)
-                joinRoomPopup.OnJoinRequested -= OnJoinRoomCodeEntered;
-            if (matchmakingStatusUI != null)
-                matchmakingStatusUI.OnCancelRequested -= OnMatchmakingCancelRequested;
         }
 
         #region Modality Selection
@@ -157,8 +112,6 @@ namespace Project51.Unity
                     // Questo non dovrebbe pi� accadere - ora usiamo eventi separati
                     if (config.IsHost)
                         CreatePrivateRoom(config);
-                    else
-                        ShowJoinRoomPopup();
                     break;
             }
         }
@@ -178,7 +131,6 @@ namespace Project51.Unity
                 Debug.Log("[GameLaunchController] Join private room requested");
 
             _pendingConfig = config;
-            ShowJoinRoomPopup();
         }
 
         private void OnJoinPrivateRoomSelectedFromPanel()
@@ -202,19 +154,12 @@ namespace Project51.Unity
             if (config == null)
             {
                 Debug.LogWarning("[GameLaunchController] Training config is null.");
-                ShowMatchmakingStatus("Errore", "Config mancante");
                 return;
             }
 
             if (AppLoading.IsAvailable)
             {
                 GoToSceneForConfig(config);
-                return;
-            }
-
-            if (useFakeMatchmakingForTraining)
-            {
-                StartFakeMatchmakingAndLoad(config);
                 return;
             }
 
@@ -229,38 +174,6 @@ namespace Project51.Unity
                 // Fallback: vai direttamente alla scena
                 GoToSceneForConfig(config);
             }
-        }
-
-        #endregion
-
-        #region Fake Matchmaking
-
-        private void StartFakeMatchmakingAndLoad(MatchConfig config)
-        {
-            StopFakeMatchmaking();
-            _fakeRoutine = StartCoroutine(FakeMatchmakingCoroutine(config));
-        }
-
-        private void StopFakeMatchmaking()
-        {
-            if (_fakeRoutine != null)
-            {
-                StopCoroutine(_fakeRoutine);
-                _fakeRoutine = null;
-            }
-        }
-
-        private IEnumerator FakeMatchmakingCoroutine(MatchConfig config)
-        {
-            ShowMatchmakingStatus("Preparazione partita...", "Connessione...");
-            yield return new WaitForSecondsRealtime(Mathf.Max(0f, fakePhase1Duration));
-
-            UpdateMatchmakingStatus("Preparazione partita...", "Caricamento...");
-            yield return new WaitForSecondsRealtime(Mathf.Max(0f, fakePhase2Duration));
-
-            HideMatchmakingStatus();
-            GoToSceneForConfig(config);
-            _fakeRoutine = null;
         }
 
         #endregion
@@ -292,7 +205,6 @@ namespace Project51.Unity
         private void StartQuickMatchNow(MatchConfig config)
         {
             if (this == null) return;
-            ShowMatchmakingStatus("Connessione in corso...");
 
             if (MatchmakingManager.Instance != null)
             {
@@ -302,7 +214,6 @@ namespace Project51.Unity
             else
             {
                 Debug.LogError("[GameLaunchController] MatchmakingManager not found!");
-                HideMatchmakingStatus();
             }
         }
 
@@ -328,23 +239,10 @@ namespace Project51.Unity
             if (logEvents)
                 Debug.Log("[GameLaunchController] Creating private room...");
 
-            ShowMatchmakingStatus("Creazione stanza...");
-
             if (MatchmakingManager.Instance != null)
             {
                 EnsureMatchmakingSubscription();
                 MatchmakingManager.Instance.CreatePrivateRoom(cfg);
-            }
-        }
-
-        /// <summary>
-        /// Mostra il popup per inserire il codice stanza.
-        /// </summary>
-        public void ShowJoinRoomPopup()
-        {
-            if (joinRoomPopup != null)
-            {
-                joinRoomPopup.Show();
             }
         }
 
@@ -354,21 +252,11 @@ namespace Project51.Unity
             WhenOnlineAllowed(() => JoinRoomNow(roomCode), blocked);
         }
 
-        private void OnJoinRoomCodeEntered(string roomCode)
-        {
-            WhenOnlineAllowed(() => JoinRoomNow(roomCode));
-        }
-
         private void JoinRoomNow(string roomCode)
         {
             if (this == null) return;
             if (logEvents)
                 Debug.Log($"[GameLaunchController] Joining room: {roomCode}");
-
-            if (joinRoomPopup != null)
-                joinRoomPopup.Hide();
-
-            ShowMatchmakingStatus("Connessione alla stanza...");
 
             if (MatchmakingManager.Instance != null)
             {
@@ -377,100 +265,13 @@ namespace Project51.Unity
             }
         }
 
-        private void OnPrivateRoomCreated(string roomCode)
-        {
-            if (logEvents)
-                Debug.Log($"[GameLaunchController] Private room created: {roomCode}");
-
-            HideMatchmakingStatus();
-            ShowWaitingRoom(roomCode, isHost: true);
-        }
-
-        private void OnPrivateRoomJoined()
-        {
-            if (logEvents)
-                Debug.Log("[GameLaunchController] Joined private room");
-
-            HideMatchmakingStatus();
-
-            string roomCode = MatchmakingManager.Instance?.CurrentConfig?.RoomCode ?? "???";
-            ShowWaitingRoom(roomCode, isHost: false);
-        }
-
-        private void ShowWaitingRoom(string roomCode, bool isHost)
-        {
-            if (waitingRoomUI != null)
-            {
-                waitingRoomUI.gameObject.SetActive(true);
-                int requiredPlayers = MatchmakingManager.Instance?.CurrentConfig?.PlayerCount ?? _pendingConfig?.PlayerCount ?? 4;
-                waitingRoomUI.Initialize(roomCode, isHost, requiredPlayers);
-            }
-        }
-
-        private void OnWaitingRoomStartRequested()
-        {
-            if (logEvents)
-                Debug.Log("[GameLaunchController] Host starting game...");
-
-            if (MatchmakingManager.Instance != null)
-            {
-                MatchmakingManager.Instance.StartGame();
-            }
-        }
-
-        private void OnWaitingRoomLeaveRequested()
-        {
-            if (logEvents)
-                Debug.Log("[GameLaunchController] Leaving waiting room...");
-
-            if (waitingRoomUI != null)
-                waitingRoomUI.Hide();
-
-            if (MatchmakingManager.Instance != null)
-                MatchmakingManager.Instance.LeaveRoom();
-        }
-
         #endregion
 
         #region Matchmaking Callbacks
 
-        private void OnMatchmakingStateChanged(MatchmakingState state)
-        {
-            if (logEvents)
-                Debug.Log($"[GameLaunchController] Matchmaking state: {state}");
-
-            switch (state)
-            {
-                case MatchmakingState.Searching:
-                    UpdateMatchmakingStatus("Ricerca partita...", "Attendere...");
-                    break;
-                case MatchmakingState.WaitingForPlayers:
-                    int currentPlayers = PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.PlayerCount : 0;
-                    int maxPlayers = PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.MaxPlayers : 4;
-                    UpdateMatchmakingStatus("In attesa di giocatori...", $"Giocatori: {currentPlayers}/{maxPlayers}");
-                    break;
-                case MatchmakingState.Starting:
-                    UpdateMatchmakingStatus("Partita trovata!", "Caricamento...");
-                    break;
-                case MatchmakingState.Idle:
-                    HideMatchmakingStatus();
-                    break;
-            }
-        }
-
         private void OnMatchmakingError(string error)
         {
             Debug.LogWarning($"[GameLaunchController] Matchmaking error: {error}");
-
-            if (matchmakingStatusUI != null)
-            {
-                matchmakingStatusUI.ShowError(error);
-            }
-
-            if (joinRoomPopup != null && joinRoomPopup.gameObject.activeInHierarchy)
-            {
-                joinRoomPopup.ShowError(error);
-            }
         }
 
         private void OnMatchFound()
@@ -478,57 +279,15 @@ namespace Project51.Unity
             if (logEvents)
                 Debug.Log("[GameLaunchController] Match found! Loading game scene...");
 
-            if (waitingRoomUI != null)
-                waitingRoomUI.Hide();
-
-            // Caricare la scena subito dopo waitingRoomUI.Hide() tagliava via la sua animazione
-            // di uscita (0.2s) a meta': PhotonNetwork.LoadLevel/SceneManager.LoadScene non aspettano
-            // nessun fade. Mostriamo un breve step "Caricamento..." (gia' usato dal fake-matchmaking
-            // del training) e diamo il tempo all'animazione di finire prima di cambiare scena.
-            ShowMatchmakingStatus("Partita trovata!", "Caricamento...");
+            // Breve attesa prima di cambiare scena: PhotonNetwork.LoadLevel/SceneManager.LoadScene
+            // non aspettano nessun fade, cosi' l'uscita della lobby finisce prima del cambio scena.
             StartCoroutine(LoadGameSceneAfterTransition(MatchmakingManager.Instance?.CurrentConfig ?? _pendingConfig));
         }
 
         private System.Collections.IEnumerator LoadGameSceneAfterTransition(MatchConfig config)
         {
             yield return new WaitForSecondsRealtime(0.35f);
-            HideMatchmakingStatus();
             GoToGameScene(config);
-        }
-
-        private void OnMatchmakingCancelRequested()
-        {
-            if (logEvents)
-                Debug.Log("[GameLaunchController] Matchmaking cancelled by user");
-
-            StopFakeMatchmaking();
-
-            if (MatchmakingManager.Instance != null)
-                MatchmakingManager.Instance.Cancel();
-
-            HideMatchmakingStatus();
-        }
-
-        #endregion
-
-        #region UI Helpers
-
-        private void ShowMatchmakingStatus(string status, string detail = "")
-        {
-            if (matchmakingStatusUI != null)
-                matchmakingStatusUI.Show(status, detail);
-        }
-
-        private void UpdateMatchmakingStatus(string status, string detail = "")
-        {
-            if (matchmakingStatusUI != null)
-                matchmakingStatusUI.UpdateStatus(status, detail);
-        }
-
-        private void HideMatchmakingStatus()
-        {
-            if (matchmakingStatusUI != null)
-                matchmakingStatusUI.Hide();
         }
 
         #endregion
@@ -612,8 +371,6 @@ namespace Project51.Unity
                 case MatchIntent.PrivateRoom:
                     if (config.IsHost)
                         CreatePrivateRoom(config);
-                    else
-                        ShowJoinRoomPopup();
                     break;
                 default:
                     Debug.LogWarning($"[GameLaunchController] Unsupported intent: {config.Intent}");

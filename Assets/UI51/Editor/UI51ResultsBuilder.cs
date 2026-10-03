@@ -60,8 +60,6 @@ namespace Project51.UI51.EditorTools
             UI51Build.Wire(results, so =>
             {
                 UI51Build.Ref(so, "View", view);
-                UI51Build.Ref(so, "RoundBlur", null); // niente foto del tavolo: fondo del mockup
-                UI51Build.Ref(so, "TrophyBurst", null);
             });
             foreach (var name in new[] { "Blur", "Veil", "Dim", "Design" })
             {

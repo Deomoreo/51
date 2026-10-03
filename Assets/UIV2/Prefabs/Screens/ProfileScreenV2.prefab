@@ -1728,6 +1728,17 @@ MonoBehaviour:
   trophyPrefab: {fileID: 5437295656752330822, guid: 400ce64721ec6554383f669e154a23b0, type: 3}
   registerButton: {fileID: 6432648171621938251}
   shareButton: {fileID: 5349305347361384557}
+  accountGroup: {fileID: 0}
+  guestGroup: {fileID: 0}
+  guestNameLabel: {fileID: 0}
+  avatar: {fileID: 0}
+  banner: {fileID: 0}
+  levelLabel: {fileID: 0}
+  titleLabel: {fileID: 0}
+  idLabel: {fileID: 0}
+  xpHintLabel: {fileID: 0}
+  editButton: {fileID: 0}
+  loginButton: {fileID: 0}
 --- !u!1 &4527354393546024464
 GameObject:
   m_ObjectHideFlags: 0
@@ -1894,7 +1905,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 8544744830598703090}
   captionLabel: {fileID: 8352581780460496005}
 --- !u!1 &4830538974172991474
@@ -3446,7 +3456,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 4181799424922176858}
   captionLabel: {fileID: 1444527942184900086}
 --- !u!1 &6768797682382602392
@@ -3540,7 +3549,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 1051671995769568270}
   captionLabel: {fileID: 5166977808265350256}
 --- !u!1 &7387876317576838189
@@ -3934,7 +3942,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 5404850191347428593}
   captionLabel: {fileID: 8116029782608212931}
 --- !u!1 &8070106528370790142
@@ -4386,7 +4393,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 7003678231220758712}
   captionLabel: {fileID: 4576465474408182773}
 --- !u!1 &8566429224662895756
@@ -4837,7 +4843,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e16925ff39e90bf4db831e9f08c6d92f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  icon: {fileID: 0}
   valueLabel: {fileID: 6936396437917217300}
   captionLabel: {fileID: 2188070246967220948}
 --- !u!1 &9090027506464880264

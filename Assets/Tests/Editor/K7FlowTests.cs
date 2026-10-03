@@ -53,42 +53,7 @@ public class K7FlowTests
         Assert.IsFalse(Advance(timer, 100f));
     }
 
-    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
-    public void RouletteSpinIsShortAndStillSelectsTheSuppliedDealer(int winner)
-    {
-        var root = new GameObject("K7 roulette");
-        var controller = root.AddComponent<DealerRouletteController>();
-        var panel = new GameObject("Panel"); panel.transform.SetParent(root.transform);
-        var slots = new GameObject[4]; var trophies = new GameObject[4];
-        for (int i = 0; i < 4; i++)
-        {
-            slots[i] = new GameObject("Slot" + i); slots[i].transform.SetParent(panel.transform);
-            trophies[i] = new GameObject("Winner" + i); trophies[i].transform.SetParent(slots[i].transform);
-        }
-        void Set(string name, object data) => typeof(DealerRouletteController).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, data);
-        Set("panelRoot", panel); Set("slotRoots", slots); Set("slotTrophies", trophies);
-        // Existing scenes retain their old serialized values; runtime must cap them.
-        Set("startDelaySeconds", .5f); Set("minStepDelay", .16f); Set("maxStepDelay", .5f);
-        try
-        {
-            float spin = 0f;
-            var routine = controller.PlayRoulette(new[] { "Tu", "A", "B", "C" }, winner, 4);
-            int guard = 0;
-            while (routine.MoveNext() && guard++ < 40)
-            {
-                if (routine.Current is WaitForSeconds wait)
-                    spin += (float)typeof(WaitForSeconds).GetField("m_Seconds", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(wait);
-                else if (routine.Current == null) Set("continuePressed", true);
-            }
-            Assert.Less(guard, 40);
-            Assert.Less(spin, 2f, "Cosmetic roulette must not retain the old multi-loop wait.");
-            for (int i = 0; i < 4; i++) Assert.AreEqual(i == winner, trophies[i].activeSelf);
-            Assert.IsFalse(panel.activeSelf);
-        }
-        finally { UnityEngine.Object.DestroyImmediate(root); }
-    }
-
-    // UI51 Fase 5 S10 e Fase 6: in 1v1 e a 4 gira la ruota del mockup al posto del vecchio pannello; offline AL TAVOLO
+    // UI51 Fase 5 S10 e Fase 6: in 1v1 e a 4 gira la ruota del mockup; offline AL TAVOLO
     // chiude subito. Il mazziere arriva come spicchio: in 1v1 i posti 0 e 2 sono gli spicchi 0 e 1.
     [TestCase(2, 0)] [TestCase(2, 2)] [TestCase(4, 1)] [TestCase(4, 3)]
     public void TheWheelShowsAndHandsBackOnContinue(int players, int winner)
@@ -97,11 +62,8 @@ public class K7FlowTests
         var controller = root.AddComponent<DealerRouletteController>();
         var panel = new GameObject("Panel"); panel.transform.SetParent(root.transform);
         var wheel = new GameObject("UI51"); wheel.transform.SetParent(panel.transform);
-        var design = new GameObject("Design"); design.transform.SetParent(panel.transform);
-        var slots = new GameObject[4];
-        for (int i = 0; i < 4; i++) { slots[i] = new GameObject("Slot" + i); slots[i].transform.SetParent(design.transform); }
         void Set(string name, object data) => typeof(DealerRouletteController).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, data);
-        Set("panelRoot", panel); Set("slotRoots", slots); Set("ui51Wheel", wheel); Set("legacyOnly", new[] { design });
+        Set("panelRoot", panel); Set("ui51Wheel", wheel);
         try
         {
             var routine = controller.PlayRoulette(new[] { "Tu", "Bot 2", "Bot 3", "Bot 4" }, winner, players, players == 4);
@@ -109,7 +71,6 @@ public class K7FlowTests
             var wait = (System.Collections.IEnumerator)routine.Current;
             Assert.IsTrue(wait.MoveNext());
             Assert.IsTrue(panel.activeSelf && wheel.activeSelf, "ruota accesa");
-            Assert.IsFalse(design.activeSelf, "vecchio pannello spento");
             Assert.AreEqual(players, controller.WheelPlayers);
             Assert.AreEqual(players == 2 ? winner / 2 : winner, controller.WheelDealer);
             Assert.AreEqual(winner == 0, controller.WheelLocalDealer);

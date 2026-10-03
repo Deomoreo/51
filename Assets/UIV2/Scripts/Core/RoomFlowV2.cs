@@ -98,7 +98,7 @@ namespace Project51.UIV2.Core
                 v.Share.onClick.AddListener(ShareCode);
             }
             HostView.StartButton.onClick.AddListener(StartMatch);
-            foreach (var button in CloseButtons) button.onClick.AddListener(Cancel);
+            foreach (var button in CloseButtons) if (button != null) button.onClick.AddListener(Cancel);
             RoomError.Alt.onClick.AddListener(PlayOnline);
             for (int i = 0; i < Formats.Length; i++)
             {

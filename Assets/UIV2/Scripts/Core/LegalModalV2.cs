@@ -15,8 +15,6 @@ namespace Project51.UIV2.Core
         public TMP_Text Title;
         public TMP_Text Body;
         public ScrollRect Scroll;
-        [Tooltip("Apre la versione pubblicata sul sito (AppConfig). Nascosto se l'indirizzo non e' configurato.")]
-        public Button OpenOnWeb;
 
         [Header("Documenti (Assets/Legal)")]
         public TextAsset Terms;
@@ -33,16 +31,14 @@ namespace Project51.UIV2.Core
         private static readonly Regex Heading = new Regex(@"^##\s*(?:(\d+)\.\s*)?(.+)$");
         private readonly List<GameObject> spawned = new List<GameObject>();
         private readonly Dictionary<string, RectTransform> byNumber = new Dictionary<string, RectTransform>();
-        private string currentUrl;
 
         private void Awake()
         {
-            if (OpenOnWeb != null) OpenOnWeb.onClick.AddListener(OpenCurrentUrl);
             if (Understood != null && Modal != null) Understood.onClick.AddListener(Modal.Close);
         }
 
-        public void ShowTerms() => Show("Termini di servizio", Terms, AppConfig.Terms);
-        public void ShowPrivacy() => Show("Privacy Policy", Privacy, AppConfig.Privacy);
+        public void ShowTerms() => Show("Termini di servizio", Terms);
+        public void ShowPrivacy() => Show("Privacy Policy", Privacy);
 
         /// <summary>Termini aperti direttamente su una sezione ("3" = Regole di comportamento, dalla Sospensione).</summary>
         public void ShowTerms(string section)
@@ -53,14 +49,12 @@ namespace Project51.UIV2.Core
                 DOVirtual.DelayedCall(0.4f, () => ScrollTo(target), true).SetLink(target.gameObject);
         }
 
-        private void Show(string title, TextAsset document, string url)
+        private void Show(string title, TextAsset document)
         {
             if (Modal == null) return;
             if (Title != null) Title.text = title;
             if (SectionTemplate != null && document != null) Fill(document.text);
             else if (Body != null) Body.text = document != null ? LegalDocuments.Format(document) : "Testo non disponibile in questa versione dell'app.";
-            currentUrl = url;
-            if (OpenOnWeb != null) OpenOnWeb.gameObject.SetActive(!string.IsNullOrEmpty(url));
             if (UIV2ModalHost.Instance != null) UIV2ModalHost.Instance.Open(Modal); else Modal.Open();
             if (Scroll != null) { Canvas.ForceUpdateCanvases(); Scroll.verticalNormalizedPosition = 1f; }
         }
@@ -153,7 +147,5 @@ namespace Project51.UIV2.Core
                 })
                 .SetEase(Ease.OutCubic).SetUpdate(true).SetTarget(content).SetLink(content.gameObject);
         }
-
-        private void OpenCurrentUrl() { if (!string.IsNullOrEmpty(currentUrl)) Application.OpenURL(currentUrl); }
     }
 }

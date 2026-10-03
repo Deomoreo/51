@@ -62,7 +62,6 @@
   <ItemGroup>
     <Compile Include="Assets\UI51\Editor\UI51MetaBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51ValidMovesTests.cs" />
-    <Compile Include="Assets\Editor\LobbyPrefabBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\Rules51RestoredTests.cs" />
     <Compile Include="Assets\UI51\Editor\UI51SocialBuilder.cs" />
     <Compile Include="Assets\Tests\Editor\MattaVisualHintsTests.cs" />

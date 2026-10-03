@@ -10,16 +10,7 @@ namespace Project51.UIV2.Core
     public sealed class StartScreenV2 : MonoBehaviour
     {
         public CanvasGroup View;
-        public Button GuestButton;
-        public Button LoginButton;
-        public Button RegisterButton;
-        public Button OptionsButton;
         public AuthUIController AuthUI;
-        public SettingsV2Integration Settings;
-        public Canvas SettingsCanvas;
-        [Tooltip("Pulsante Novita' in alto e la pagina che apre (Tools/UIV2/Build News Screen).")]
-        public Button NewsButton;
-        public NewsScreenV2 News;
         [Tooltip("UI51 Fase 12: Benvenuto al primo ingresso e Regole al ritorno da \"Leggi tutte le regole\" del tutorial.")]
         public Project51.Unity.UI.UI51WelcomeView Welcome;
         public Project51.Unity.UI.UI51RulesView Rules;
@@ -35,11 +26,6 @@ namespace Project51.UIV2.Core
 
         private void Start()
         {
-            GuestButton.onClick.AddListener(Guest);
-            LoginButton.onClick.AddListener(Login);
-            RegisterButton.onClick.AddListener(Register);
-            OptionsButton.onClick.AddListener(Options);
-            if (NewsButton != null && News != null) NewsButton.onClick.AddListener(News.Open);
             AuthUI.OnPlayPressed += Enter;
             AuthUI.OnLoginSuccess += Enter;
             AuthUI.OnRegistrationSuccess += Enter;
@@ -48,7 +34,6 @@ namespace Project51.UIV2.Core
             if (AppFlowManager.ConsumeReturnToHome()) CompleteEntrance();
             else { View.alpha = 0; View.blocksRaycasts = false; View.interactable = false; Login(); }
         }
-        private void Guest() => PlayAsGuest();
 
         /// <summary>Identita' ospite temporanea e ingresso in Home. Anche dal pulsante "Accedi come ospite" della schermata Accesso (mockup 23).</summary>
         public void PlayAsGuest()
@@ -57,8 +42,6 @@ namespace Project51.UIV2.Core
             Enter();
         }
         private void Login() { AuthUI.ShowAuthUI(); AuthUI.ShowLoginPanel(); }
-        private void Register() { AuthUI.ShowAuthUI(); AuthUI.ShowRegisterPanel(); }
-        private void Options() { Settings.Open(); SettingsCanvas.overrideSorting = true; SettingsCanvas.sortingOrder = 1500; }
         private void AuthClosed() { if (!entered) Login(); }
         private void Enter()
         {
@@ -68,7 +51,7 @@ namespace Project51.UIV2.Core
         private void CompleteEntrance()
         {
             if (this == null) return; // rientro al tavolo finito prima: MainMenu non c'e' piu'
-            entered = true; AuthUI.HideAuthUI(); SettingsCanvas.sortingOrder = 20;
+            entered = true; AuthUI.HideAuthUI();
             View.alpha = 0; View.blocksRaycasts = false; View.interactable = false;
             if (Project51.Unity.UI.UI51TutorialView.OpenRulesOnReturn && Rules != null)
             {

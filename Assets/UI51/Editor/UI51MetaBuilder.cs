@@ -77,8 +77,6 @@ namespace Project51.UI51.EditorTools
 
         static void BuildSettings(SettingsV2Integration settings, Transform panel, LegalModalV2 legal)
         {
-            UI51AccessBuilder.HideChild(panel, "DimBackground");
-            UI51AccessBuilder.HideChild(panel, "PanelFrame");
             var safe = UI51AccessBuilder.BuildScreen(panel, UI51Build.Sprite("Backgrounds", "home_bg_blur"), null);
             var page = UI51Build.Stretch(UI51Build.Child(safe, "Page"));
 
@@ -179,10 +177,6 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "accountButton", createRt.GetComponent<Button>());
                 UI51Build.Ref(so, "deleteAccountButton", deleteRt.GetComponent<Button>());
                 UI51Build.Ref(so, "panelFrame", page);
-                // La pagina si impagina da sola: niente ricalcolo delle righe del vecchio pannello.
-                UI51Build.Ref(so, "accountHeader", null);
-                UI51Build.Ref(so, "footer", null);
-                UI51AccessBuilder.SetArray(so, "rowsAfterAccount");
                 UI51Build.Ref(so, "sfxSwitch", sfx);
                 UI51Build.Ref(so, "musicSwitch", music);
                 UI51Build.Ref(so, "vibrationSwitch", vibration);
@@ -1099,7 +1093,6 @@ namespace Project51.UI51.EditorTools
             var tile = UI51Build.GetOrAdd<UIV2StatTile>(rt);
             UI51Build.Wire(tile, so =>
             {
-                UI51Build.Ref(so, "icon", null);
                 UI51Build.Ref(so, "valueLabel", value);
                 UI51Build.Ref(so, "captionLabel", label);
             });

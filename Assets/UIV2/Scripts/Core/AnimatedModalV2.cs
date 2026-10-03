@@ -8,6 +8,7 @@ namespace Project51.UIV2.Core
     public sealed class AnimatedModalV2 : MonoBehaviour, IUIV2Modal
     {
         public CanvasGroup Group;
+        [Tooltip("Facoltativo: senza cornice la finestra fa solo la dissolvenza.")]
         public RectTransform Frame;
         public Button CloseButton;
         public Button Dimmer;
@@ -28,10 +29,13 @@ namespace Project51.UIV2.Core
 
         private bool Initialize()
         {
-            if (Frame == null || Group == null) return false;
+            if (Group == null) return false;
             if (initialized) return true;
-            origin = Frame.anchoredPosition;
-            scale = Frame.localScale;
+            if (Frame != null)
+            {
+                origin = Frame.anchoredPosition;
+                scale = Frame.localScale;
+            }
             initialized = true;
             return true;
         }
@@ -46,15 +50,20 @@ namespace Project51.UIV2.Core
             if (!reversing)
             {
                 Group.alpha = 0;
-                Frame.anchoredPosition = origin + Vector2.down * 24;
-                Frame.localScale = scale * UIV2Motion.PanelScale;
+                if (Frame != null)
+                {
+                    Frame.anchoredPosition = origin + Vector2.down * 24;
+                    Frame.localScale = scale * UIV2Motion.PanelScale;
+                }
             }
             Group.blocksRaycasts = true;
             Group.interactable = true;
-            motion = DOTween.Sequence().SetUpdate(true)
-                .Join(Group.DOFade(1, UIV2Motion.Enter).SetEase(Ease.OutQuad))
-                .Join(Frame.DOAnchorPos(origin, UIV2Motion.Enter).SetEase(Ease.OutCubic))
-                .Join(Frame.DOScale(scale, UIV2Motion.Enter).SetEase(Ease.OutBack, 1.1f));
+            var sequence = DOTween.Sequence().SetUpdate(true)
+                .Join(Group.DOFade(1, UIV2Motion.Enter).SetEase(Ease.OutQuad));
+            if (Frame != null)
+                sequence.Join(Frame.DOAnchorPos(origin, UIV2Motion.Enter).SetEase(Ease.OutCubic))
+                    .Join(Frame.DOScale(scale, UIV2Motion.Enter).SetEase(Ease.OutBack, 1.1f));
+            motion = sequence;
         }
 
         public void Close()
@@ -64,11 +73,12 @@ namespace Project51.UIV2.Core
             opening = false;
             UIV2Motion.Cancel(ref motion);
             Group.interactable = false;
-            motion = DOTween.Sequence().SetUpdate(true)
-                .Join(Group.DOFade(0, UIV2Motion.Exit))
-                .Join(Frame.DOAnchorPos(origin + Vector2.down * 18, UIV2Motion.Exit).SetEase(Ease.InCubic))
-                .Join(Frame.DOScale(scale * UIV2Motion.PanelScale, UIV2Motion.Exit).SetEase(Ease.InCubic))
-                .OnComplete(CloseImmediate);
+            var sequence = DOTween.Sequence().SetUpdate(true)
+                .Join(Group.DOFade(0, UIV2Motion.Exit));
+            if (Frame != null)
+                sequence.Join(Frame.DOAnchorPos(origin + Vector2.down * 18, UIV2Motion.Exit).SetEase(Ease.InCubic))
+                    .Join(Frame.DOScale(scale * UIV2Motion.PanelScale, UIV2Motion.Exit).SetEase(Ease.InCubic));
+            motion = sequence.OnComplete(CloseImmediate);
         }
 
         public void CloseImmediate()

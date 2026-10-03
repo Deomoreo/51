@@ -19,9 +19,6 @@ namespace Project51.Unity.UI
         [Tooltip("Indice 0=Locale, 1=Sinistra, 2=Alto, 3=Destra")]
         [SerializeField] private PlayerBanner[] banners = new PlayerBanner[4];
 
-        [Tooltip("panel_fill_r24 di PanelsNeutral_v2, usato per il cerchio del conteggio prese. Assegnato da Tools/UIV2/Apply Table Layout V4.")]
-        [SerializeField] private Sprite roundedFillSprite;
-
         [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati da Tools/UIV2/Apply Table Layout V4.")]
         [SerializeField] private Sprite[] seatAvatars = new Sprite[0];
 
@@ -112,16 +109,7 @@ namespace Project51.Unity.UI
                         if (scopeHits[relative].targetGraphic != null) scopeHits[relative].targetGraphic.raycastTarget = hasScope;
                     }
                     if (relative == scopeSlot) ShowScope(relative, p, player);
-                    continue;
                 }
-                banner.SetName(GetDisplayName(p));
-                // ponytail: ritratto per posto, non per profilo; serve un AvatarId sincronizzato per sceglierlo.
-                if (seatAvatars.Length > 0) banner.SetAvatar(seatAvatars[p % seatAvatars.Length]);
-                // Punteggio di partita (a coppie quello della squadra), non solo della smazzata in corso.
-                banner.SetScore(MatchScore.Totals(state)[MatchScore.EntryOf(state, p)]);
-                banner.SetTurnActive(p == turnController.CurrentPlayerIndex);
-                banner.SetScopeCards(GetScopeSprites(player));
-                banner.SetCapturedPile(turnController.GetDisplayedCapturedCount(p), GetMatchCardBack(), CardViewManager.GetCapturedPileDesignOffset(relative), roundedFillSprite);
             }
 
             for (int slot = 0; slot < banners.Length; slot++)
@@ -134,21 +122,6 @@ namespace Project51.Unity.UI
         }
 
         /// <summary>
-        /// Banner del giocatore assoluto playerIndex (o null se non mappato/non pronto). Usato
-        /// da TurnController per l'animazione di dichiarazione del dealer a inizio smazzata,
-        /// cosi' la conversione a indice relativo resta in un solo posto invece di duplicarla.
-        /// </summary>
-        public PlayerBanner GetBannerForPlayer(int playerIndex)
-        {
-            var state = turnController != null ? turnController.GameState : null;
-            if (state == null) return null;
-
-            int relative = ResolveRelativeSlot(playerIndex, GameModeService.Current.LocalPlayerIndex, state.NumPlayers);
-            if (relative < 0 || relative >= banners.Length) return null;
-            return banners[relative];
-        }
-
-        /// <summary>
         /// Mostra la chip "MAZZIERE" sul banner del giocatore assoluto playerIndex e la spegne su
         /// TUTTI gli altri banner - il dealer resta visualizzato per tutta la smazzata (richiesta
         /// esplicita dell'utente), quindi ad ogni chiamata bisogna anche ripulire l'eventuale
@@ -156,17 +129,12 @@ namespace Project51.Unity.UI
         /// non solo accendere quello nuovo. Chiamato via reflection da TurnController
         /// (Project51.Gameplay e' un assembly separato che non puo' referenziare
         /// Project51.Unity.UI, che vive nell'assembly di default - stesso motivo/stesso pattern
-        /// gia' usato per NetworkGameController): un solo metodo invocabile, cosi' non serve far
-        /// viaggiare l'oggetto PlayerBanner attraverso la reflection.
+        /// gia' usato per NetworkGameController): un solo metodo invocabile.
         /// </summary>
         public void SetDealerIndicatorForPlayer(int playerIndex, bool active)
         {
             if (active)
             {
-                foreach (var banner in banners)
-                {
-                    banner?.SetDealerIndicator(false);
-                }
                 foreach (var banner in ui51Banners)
                 {
                     if (banner != null) banner.SetDealer(false);
@@ -178,7 +146,6 @@ namespace Project51.Unity.UI
                 ? UI51Banner(ResolveRelativeSlot(playerIndex, GameModeService.Current.LocalPlayerIndex, state.NumPlayers))
                 : null;
             if (ui51 != null) ui51.SetDealer(active);
-            else GetBannerForPlayer(playerIndex)?.SetDealerIndicator(active);
         }
 
         /// <summary>Tocco sulle scope del posto relativo slot (Button di UI51ScopeHit): apre il visore.</summary>

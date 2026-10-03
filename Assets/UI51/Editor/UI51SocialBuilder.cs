@@ -15,7 +15,6 @@ namespace Project51.UI51.EditorTools
     /// Notizie (mockup Notizie e NotizieArticolo, radice UI51News con UI51NewsView, pulsante Notizie sotto Posta nella Home) e
     /// Posta (mockup Posta e PostaMessaggio, radice UI51Mail con UI51MailView, aperta dal pulsante Posta che c'era gia') e
     /// Premi giornalieri (mockup Premi e PremiRiscattato, radice UI51Rewards con UI51RewardsView, dal pulsante Premi).
-    /// La vecchia pagina NewsV2 (Novita' della schermata iniziale) resta in scena, non piu' raggiungibile.
     /// Idempotente: rieseguirlo riusa i nodi per nome.
     /// </summary>
     public static class UI51SocialBuilder

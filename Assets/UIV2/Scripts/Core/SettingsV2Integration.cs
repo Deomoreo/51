@@ -13,14 +13,7 @@ namespace Project51.UIV2.Core
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private Button closeButton;
-        [SerializeField] private Button dimmerButton;
         [SerializeField] private Button accountButton;
-        [SerializeField] private SimpleToggleSwitch audioToggle;
-        [SerializeField] private SimpleToggleSwitch musicToggle;
-        [SerializeField] private SimpleToggleSwitch vibrationToggle;
-        [SerializeField] private SimpleToggleSwitch reducedGraphicsToggle;
-        [SerializeField] private TMP_Text accountName;
-        [SerializeField] private TMP_Text accountSubtitle;
         [SerializeField] private AuthUIController authUI;
         [Header("Account -> Elimina account (H7)")]
         [SerializeField] private Button deleteAccountButton;
@@ -29,13 +22,10 @@ namespace Project51.UIV2.Core
         [Header("Sezione Account: solo dopo l'ingresso (ospite o login)")]
         [Tooltip("Finche' non si e' entrati (HasEntered falso) la riga Account non compare.")]
         [SerializeField] private StartScreenV2 startScreen;
+        [Tooltip("La pagina UI51 (Safe/Page): la cornice che AnimatedModalV2 anima.")]
         [SerializeField] private RectTransform panelFrame;
-        [SerializeField] private TMP_Text accountHeader;
-        [Tooltip("Righe sotto ad Account (Lingua, Supporto): salgono quando Account e' nascosto.")]
-        [SerializeField] private RectTransform[] rowsAfterAccount;
-        [SerializeField] private RectTransform footer;
 
-        [Header("UI51 (opzionali): vuoti = aspetto classico")]
+        [Header("UI51")]
         [SerializeField] private UI51Toggle sfxSwitch;
         [SerializeField] private UI51Toggle musicSwitch;
         [SerializeField] private UI51Toggle vibrationSwitch;
@@ -64,12 +54,6 @@ namespace Project51.UIV2.Core
         [SerializeField] private Project51.Unity.UI.UI51BlockedView blocked;
         [SerializeField] private ScrollRect scroll;
 
-        public const string AccountHeaderText = "ACCOUNT";
-        public const string GeneralHeaderText = "GENERALE";
-
-        private bool layoutCaptured;
-        private float frameHeight, footerY, deleteY, accountStep, deleteStep;
-        private float[] rowsY;
         private AnimatedModalV2 panelMotion;
 
         public bool IsOpen => panel != null && panel.activeSelf;
@@ -77,15 +61,7 @@ namespace Project51.UIV2.Core
         private void Awake()
         {
             closeButton.onClick.AddListener(Close);
-            dimmerButton.onClick.AddListener(Close);
             accountButton.onClick.AddListener(OpenAccount);
-            audioToggle.OnChanged += GameAudioPreferences.SetEnabled;
-            EnsureMusicToggle();
-            if (musicToggle != null) musicToggle.OnChanged += GameAudioPreferences.SetMusicEnabled;
-            EnsureVibrationToggle();
-            if (vibrationToggle != null) vibrationToggle.OnChanged += GamePreferences.SetVibrationEnabled;
-            EnsureReducedGraphicsToggle();
-            if (reducedGraphicsToggle != null) reducedGraphicsToggle.OnChanged += GamePreferences.SetReducedGraphics;
             GamePreferences.Changed += RefreshGraphicsChoice;
             if (deleteAccountButton != null) deleteAccountButton.onClick.AddListener(OpenDeleteAccount);
             if (sfxSwitch != null) sfxSwitch.onValueChanged.AddListener(GameAudioPreferences.SetEffectsEnabled);
@@ -115,11 +91,6 @@ namespace Project51.UIV2.Core
         public void Open()
         {
             var auth = AuthBootstrapper.Instance?.PlayFabAuth;
-            accountName.text = auth?.GetBestDisplayName() ?? "Ospite";
-            accountSubtitle.text = auth != null && auth.HasRealLogin ? "Gestisci account" : "Accedi o registrati";
-            audioToggle.SetOn(GameAudioPreferences.Enabled);
-            if (musicToggle != null) musicToggle.SetOn(GameAudioPreferences.MusicChoice);
-            if (vibrationToggle != null) vibrationToggle.SetOn(GamePreferences.VibrationEnabled);
             if (sfxSwitch != null)
             {
                 GameAudioPreferences.FoldMasterIntoChannels();
@@ -141,8 +112,6 @@ namespace Project51.UIV2.Core
             if (socialSection != null) socialSection.SetActive(realAccount); // gli ospiti non bloccano (non hanno dove salvarlo)
             if (scroll != null) scroll.verticalNormalizedPosition = 1f;
             if (emailLabel != null) emailLabel.text = MaskEmail(auth?.Email);
-            var footerText = footer != null ? footer.GetComponent<TMP_Text>() : null;
-            if (footerText != null) footerText.text = "51Cirulla · v" + Application.version;
             if (panelMotion == null)
             {
                 panelMotion = panel.GetComponent<AnimatedModalV2>();
@@ -161,45 +130,15 @@ namespace Project51.UIV2.Core
             else panel.SetActive(false);
         }
 
-        /// <summary>
-        /// Nasconde le righe Account / Elimina account e ricompatta la sezione: le righe sotto salgono,
-        /// la cornice si accorcia (restando centrata) e il pie' di pagina la segue.
-        /// </summary>
+        /// <summary>Mostra o nasconde le righe Account / Elimina account.</summary>
         private void ApplyAccountLayout(bool showAccount, bool showDelete)
         {
-            var accountRow = (RectTransform)accountButton.transform;
-            var deleteRow = deleteAccountButton != null ? (RectTransform)deleteAccountButton.transform : null;
-            accountRow.gameObject.SetActive(showAccount);
-            if (deleteRow != null) deleteRow.gameObject.SetActive(showDelete);
-            if (accountHeader != null) accountHeader.text = showAccount ? AccountHeaderText : GeneralHeaderText;
-            if (panelFrame == null || rowsAfterAccount == null || rowsAfterAccount.Length == 0) return;
-
-            if (!layoutCaptured)
-            {
-                layoutCaptured = true;
-                frameHeight = panelFrame.sizeDelta.y;
-                footerY = footer != null ? footer.anchoredPosition.y : 0f;
-                rowsY = new float[rowsAfterAccount.Length];
-                for (int i = 0; i < rowsY.Length; i++) rowsY[i] = rowsAfterAccount[i].anchoredPosition.y;
-                accountStep = accountRow.anchoredPosition.y - rowsY[0];
-                deleteY = deleteRow != null ? deleteRow.anchoredPosition.y : 0f;
-                deleteStep = deleteRow != null ? rowsY[rowsY.Length - 1] - deleteY : 0f;
-            }
-
-            float up = showAccount ? 0f : accountStep;
-            for (int i = 0; i < rowsY.Length; i++) SetY(rowsAfterAccount[i], rowsY[i] + up);
-            if (deleteRow != null) SetY(deleteRow, deleteY + up);
-
-            float shrink = up + (showDelete ? 0f : deleteStep);
-            panelFrame.sizeDelta = new Vector2(panelFrame.sizeDelta.x, frameHeight - shrink);
-            if (footer != null) SetY(footer, footerY + shrink);
+            accountButton.gameObject.SetActive(showAccount);
+            if (deleteAccountButton != null) deleteAccountButton.gameObject.SetActive(showDelete);
         }
-
-        private static void SetY(RectTransform rect, float y) => rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
 
         private void RefreshGraphicsChoice()
         {
-            if (reducedGraphicsToggle != null) reducedGraphicsToggle.SetOn(GamePreferences.ReducedGraphics);
             if (graphicsSwitch != null) graphicsSwitch.SetIsOn(GamePreferences.ReducedGraphics, false);
         }
 
@@ -220,53 +159,6 @@ namespace Project51.UIV2.Core
             if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
             if (!AppLoading.LoadScene(AppFlowManager.SCENE_MAIN_MENU)) SceneManager.LoadScene(AppFlowManager.SCENE_MAIN_MENU);
         }
-
-        public void EnsureReducedGraphicsToggle()
-        {
-            if (reducedGraphicsToggle == null && panelFrame != null)
-                reducedGraphicsToggle = panelFrame.Find("Row_AnimazioniVeloci")?.GetComponentInChildren<SimpleToggleSwitch>(true);
-            if (reducedGraphicsToggle == null) return;
-            var row = reducedGraphicsToggle.transform.parent;
-            row.gameObject.SetActive(true);
-            row.Find("Title").GetComponent<TMP_Text>().text = "Grafica ridotta";
-            row.Find("Subtitle").GetComponent<TMP_Text>().text = "Meno effetti e animazioni più brevi";
-            reducedGraphicsToggle.GetComponent<Button>().interactable = true;
-            var group = row.GetComponent<CanvasGroup>();
-            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
-            RefreshGraphicsChoice();
-        }
-
-        /// <summary>Stessa scelta Musica delle Impostazioni al tavolo (GameAudioPreferences.MusicKey).</summary>
-        public void EnsureMusicToggle()
-        {
-            if (musicToggle == null && panelFrame != null)
-                musicToggle = panelFrame.Find("Row_Musica")?.GetComponentInChildren<SimpleToggleSwitch>(true);
-            if (musicToggle == null) return;
-            var row = musicToggle.transform.parent;
-            row.gameObject.SetActive(true);
-            var subtitle = row.Find("Subtitle")?.GetComponent<TMP_Text>();
-            if (subtitle != null) subtitle.text = "Musica di sottofondo";
-            musicToggle.GetComponent<Button>().interactable = true;
-            var group = row.GetComponent<CanvasGroup>();
-            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
-            musicToggle.SetOn(GameAudioPreferences.MusicChoice);
-        }
-
-        public void EnsureVibrationToggle()
-        {
-            if (vibrationToggle == null && panelFrame != null)
-                vibrationToggle = panelFrame.Find("Row_Vibrazione")?.GetComponentInChildren<SimpleToggleSwitch>(true);
-            if (vibrationToggle == null) return;
-            vibrationToggle.transform.parent.gameObject.SetActive(true);
-            var subtitle = vibrationToggle.transform.parent.Find("Subtitle")?.GetComponent<TMP_Text>();
-            if (subtitle != null) subtitle.text = "Tocchi e momenti importanti";
-            vibrationToggle.GetComponent<Button>().interactable = true;
-            var group = vibrationToggle.transform.parent.GetComponent<CanvasGroup>();
-            if (group != null) { group.alpha = 1f; group.interactable = true; group.blocksRaycasts = true; }
-            vibrationToggle.SetOn(GamePreferences.VibrationEnabled);
-        }
-
-
 
         /// <summary>
         /// Ospite: la schermata Registrazione V2 (da li' si passa anche all'Accesso), come "Registrati
@@ -297,13 +189,8 @@ namespace Project51.UIV2.Core
         private void OnDestroy()
         {
             if (closeButton != null) closeButton.onClick.RemoveListener(Close);
-            if (dimmerButton != null) dimmerButton.onClick.RemoveListener(Close);
             if (accountButton != null) accountButton.onClick.RemoveListener(OpenAccount);
             if (deleteAccountButton != null) deleteAccountButton.onClick.RemoveListener(OpenDeleteAccount);
-            if (audioToggle != null) audioToggle.OnChanged -= GameAudioPreferences.SetEnabled;
-            if (musicToggle != null) musicToggle.OnChanged -= GameAudioPreferences.SetMusicEnabled;
-            if (vibrationToggle != null) vibrationToggle.OnChanged -= GamePreferences.SetVibrationEnabled;
-            if (reducedGraphicsToggle != null) reducedGraphicsToggle.OnChanged -= GamePreferences.SetReducedGraphics;
             GamePreferences.Changed -= RefreshGraphicsChoice;
         }
     }

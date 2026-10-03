@@ -516,8 +516,6 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "LoginEmail", login.Email);
                 UI51Build.Ref(so, "LoginStatus", login.Status);
                 SetArray(so, "LoginGuestOnly", login.Guest.gameObject);
-                SetArray(so, "LoginBelowGuest");
-                UI51Build.Float(so, "LoginGuestHiddenShift", 0f);   // il foglio e' un layout: si richiude da solo
 
                 UI51Build.Ref(so, "RegisterBack", register.Back);
                 UI51Build.Ref(so, "RegisterToLogin", register.ToLogin);
@@ -575,7 +573,6 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "Subtitle", ui.Subtitle);
                 UI51Build.Ref(so, "Body", ui.Body);
                 UI51Build.Ref(so, "Scroll", ui.Scroll);
-                UI51Build.Ref(so, "OpenOnWeb", null);
                 UI51Build.Ref(so, "IndexRowTemplate", ui.IndexRow);
                 UI51Build.Ref(so, "SectionTemplate", ui.Section);
                 UI51Build.Ref(so, "Understood", ui.Understood);

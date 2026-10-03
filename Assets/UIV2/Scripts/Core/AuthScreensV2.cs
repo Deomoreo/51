@@ -37,8 +37,6 @@ namespace Project51.UIV2.Core
         [Tooltip("\"oppure\" + ACCEDI COME OSPITE: spariscono dopo l'ingresso, quando si e' gia' ospite.")]
         public GameObject[] LoginGuestOnly;
         [Tooltip("Righe sotto al pulsante ospite (Non hai un account? / REGISTRATI): salgono al suo posto.")]
-        public RectTransform[] LoginBelowGuest;
-        public float LoginGuestHiddenShift = 224f;
 
         [Header("Registrazione (mockup 24)")]
         public GameObject RegisterPanel;
@@ -69,21 +67,12 @@ namespace Project51.UIV2.Core
 
         [Header("Documenti legali")]
         public LegalModalV2 Legal;
-        [Tooltip("Le quattro tacche di 'Sicurezza password', da sinistra a destra.")]
-        public Image[] StrengthBars;
-        [Tooltip("Bagliore dietro REGISTRATI: si spegne quando il pulsante non e' ancora premibile.")]
-        public Image RegisterGlow;
 
         /// <summary>Lunghezza minima accettata da PlayFab.</summary>
         public const int MinimumPasswordLength = 6;
 
         private static readonly Color StatusError = UI51Tokens.DangerText;
         private static readonly Color StatusInfo = new Color32(150, 200, 170, 255);
-        private static readonly Color StrengthOn = new Color32(74, 222, 128, 255);
-        private static readonly Color StrengthOff = new Color32(30, 42, 68, 255);
-
-        /// <summary>Opacita' del bagliore quando il pulsante e' premibile (come la costruisce il builder).</summary>
-        private const float GlowAlpha = 150f / 255f;
 
         private bool termsAccepted;
         private bool registerWasOpen;
@@ -152,9 +141,6 @@ namespace Project51.UIV2.Core
             if (LoginBack != null) LoginBack.gameObject.SetActive(hide);
             if (LoginGuestOnly != null)
                 foreach (var go in LoginGuestOnly) if (go != null) go.SetActive(!hide);
-            if (LoginBelowGuest != null)
-                foreach (var rect in LoginBelowGuest)
-                    if (rect != null) rect.anchoredPosition += new Vector2(0f, hide ? LoginGuestHiddenShift : -LoginGuestHiddenShift);
         }
 
         // ------------------------------------------------------------------
@@ -302,19 +288,9 @@ namespace Project51.UIV2.Core
             string password = RegisterPassword != null ? RegisterPassword.text ?? string.Empty : string.Empty;
             string confirm = RegisterConfirm != null ? RegisterConfirm.text ?? string.Empty : string.Empty;
 
-            UpdateStrengthBars(password);
-
             bool complete = username.Length >= 3 && LooksLikeEmail(email)
                 && password.Length >= MinimumPasswordLength && confirm == password && termsAccepted;
             if (RegisterSubmit != null) RegisterSubmit.interactable = complete;
-            // Il bagliore segue il pulsante: acceso dietro a un pulsante spento sembrerebbe un invito
-            // a premere qualcosa che non risponde.
-            if (RegisterGlow != null)
-            {
-                var glow = RegisterGlow.color;
-                glow.a = complete ? GlowAlpha : 0f;
-                RegisterGlow.color = glow;
-            }
 
             // Il messaggio compare solo quando c'e' qualcosa da dire: un modulo ancora vuoto non
             // deve gia' sembrare sbagliato.
@@ -325,35 +301,6 @@ namespace Project51.UIV2.Core
             if (confirm.Length > 0 && confirm != password) { SetStatus(RegisterStatus, "Le due password non coincidono.", true); return; }
             if (!termsAccepted && username.Length > 0 && password.Length > 0) { SetStatus(RegisterStatus, "Accetta i Termini per continuare.", false); return; }
             Clear(RegisterStatus);
-        }
-
-        private void UpdateStrengthBars(string password)
-        {
-            if (StrengthBars == null) return;
-            int score = Strength(password);
-            for (int i = 0; i < StrengthBars.Length; i++)
-            {
-                if (StrengthBars[i] != null) StrengthBars[i].color = i < score ? StrengthOn : StrengthOff;
-            }
-        }
-
-        /// <summary>Quante tacche accendere: da 0 (vuota o troppo corta) a 4.</summary>
-        public static int Strength(string password)
-        {
-            if (string.IsNullOrEmpty(password)) return 0;
-            bool letter = false, digit = false, other = false;
-            foreach (char c in password)
-            {
-                if (char.IsLetter(c)) letter = true;
-                else if (char.IsDigit(c)) digit = true;
-                else other = true;
-            }
-            int score = 0;
-            if (password.Length >= MinimumPasswordLength) score++;
-            if (password.Length >= 10) score++;
-            if (letter && digit) score++;
-            if (other) score++;
-            return score;
         }
 
         /// <summary>Controllo minimo: una chiocciola in mezzo e un punto dopo, col resto attorno.</summary>

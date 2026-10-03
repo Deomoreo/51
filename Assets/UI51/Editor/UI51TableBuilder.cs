@@ -87,9 +87,6 @@ namespace Project51.UI51.EditorTools
 
         static void BuildTopHud(TableTopBarController controller, Transform bar, InGameSettingsV2 settings)
         {
-            foreach (string old in new[] { "HandText", "CardsLeftText" })
-                UI51AccessBuilder.HideChild(bar, old);
-
             var hud = UI51Build.Stretch(UI51Build.Child(bar, "UI51TopHud"));
             var fill = UI51Tokens.Rgba(8, 17, 34, 0.7f);
 
@@ -553,7 +550,7 @@ namespace Project51.UI51.EditorTools
         /// ombra, anello che pulsa e faccia con riflesso mentre la finestra e' aperta. Anello del tempo 58 e pallino dei secondi a 45
         /// gradi restano (decisione: sempre visibili nella finestra). Avviso: chip del mockup fra mano e banner. Pugno al centro del
         /// tavolo: UI51AccusoReveal sotto AccusoImpact (AccusoImpactV2.Parts, UIAnim.Accuso), posato da GameSocialV2 sul tavolo.
-        /// La vecchia grafica (Icon, Caption, Fill, Number, Ring, Text, Visual) resta in scena spenta.
+        /// La vecchia grafica (Icon, Caption, Fill, Number, Ring, Text) resta in scena spenta.
         /// </summary>
         static void BuildAccuso(UnityEngine.SceneManagement.Scene scene)
         {
@@ -965,7 +962,7 @@ namespace Project51.UI51.EditorTools
         /// Mockup Partita (opzioni). Dentro InGameSettings/Panel (canvas 600: sopra vassoio, risultati e pugno): velo sopra la foto
         /// sfocata che c'era gia' (Blur), foglio dal basso in scala Unit con Audio, Grafica (una sola "Grafica ridotta", come la Home:
         /// Bassa/Media/Alta del mockup non hanno un effetto vero), Partita (suggerimenti mosse, in piu' del mockup) e TORNA AL TAVOLO.
-        /// Il vecchio disegno resta spento con i suoi riferimenti. Apertura, posto sopra la safe area e animazione in InGameSettingsV2.
+        /// Apertura, posto sopra la safe area e animazione in InGameSettingsV2.
         /// </summary>
         static void BuildOptions(InGameSettingsV2 settings)
         {
@@ -977,8 +974,6 @@ namespace Project51.UI51.EditorTools
             }
             bool was = panel.activeSelf;
             panel.SetActive(true); // TMP su oggetti spenti lancia eccezioni
-            foreach (string old in new[] { "Veil", "Dim", "Design" })
-                UI51AccessBuilder.HideChild(panel.transform, old);
 
             var root = UI51Build.Stretch(UI51Build.Child(panel.transform, "UI51Options"));
             // Il nome "Backdrop" tiene lontane pressione e vibrazione di UIV2MotionInstaller; il tocco chiude (InGameSettingsV2.Awake).
@@ -1347,8 +1342,7 @@ namespace Project51.UI51.EditorTools
         // --- S10: sorteggio
 
         /// <summary>
-        /// Mockup Sorteggio (1 contro 1) e Sorteggio4 (Fase 6): DealerRoulette/UI51 accanto al vecchio Design, spento quando
-        /// gira la ruota. Schermata intera in scala uniforme (BuildScreen: DesignCanvasFit 390x844, come Accesso): intestazione,
+        /// Mockup Sorteggio (1 contro 1) e Sorteggio4 (Fase 6): DealerRoulette/UI51. Schermata intera in scala uniforme (BuildScreen: DesignCanvasFit 390x844, come Accesso): intestazione,
         /// ruota a 2 o 4 spicchi con avatar e nomi, mozzo col sole, lancetta, stato, scheda MAZZIERE, conto e AL TAVOLO
         /// ("Continue": suono UiConfirm). Tempi, animazioni e spicchi in SorteggioView, attesa e consegna in
         /// DealerRouletteController.PlayWheel.
@@ -1356,15 +1350,14 @@ namespace Project51.UI51.EditorTools
         static void BuildSorteggio(PlayerBannerManager banners)
         {
             var roulette = UnityEngine.Object.FindObjectOfType<Project51.Unity.DealerRouletteController>(true);
-            var design = roulette != null ? roulette.transform.Find("Design") : null;
             var bg = UI51Build.Sprite("Backgrounds", "home_bg_blur");
             var wash = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/UIV2/Art/Generated/glow_soft_pill.png");
             var glow = UI51Build.Sprite("Common", "Bagliore_morbido");
             var sun = UI51Build.Sprite("Common", "Sun_fix");
             var avatarPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UI51PrefabBuilder.PrefabPath("AvatarFrame"));
-            if (design == null || bg == null || wash == null || glow == null || sun == null || avatarPrefab == null)
+            if (roulette == null || bg == null || wash == null || glow == null || sun == null || avatarPrefab == null)
             {
-                Debug.LogError($"{Tag} Manca un pezzo del sorteggio (DealerRoulette/Design, home_bg_blur, glow_soft_pill, Bagliore_morbido, " +
+                Debug.LogError($"{Tag} Manca un pezzo del sorteggio (DealerRouletteController, home_bg_blur, glow_soft_pill, Bagliore_morbido, " +
                                "Sun_fix, prefab AvatarFrame). Sorteggio non toccato.");
                 return;
             }
@@ -1528,12 +1521,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "m_Count", count);
                 UI51Build.Ref(so, "m_Continue", cont.gameObject);
             });
-            var legacy = new[] { roulette.transform.Find("Blur"), roulette.transform.Find("Veil"), design };
-            UI51Build.Wire(roulette, so =>
-            {
-                UI51Build.Ref(so, "ui51Wheel", root.gameObject);
-                UI51AccessBuilder.SetArray(so, "legacyOnly", System.Array.ConvertAll(System.Array.FindAll(legacy, t => t != null), t => (UnityEngine.Object)t.gameObject));
-            });
+            UI51Build.Wire(roulette, so => UI51Build.Ref(so, "ui51Wheel", root.gameObject));
             // Accesi solo quando servono: la ruota da PlayWheel, scheda e conto al risultato (SorteggioView).
             card.gameObject.SetActive(false);
             footer.gameObject.SetActive(false);

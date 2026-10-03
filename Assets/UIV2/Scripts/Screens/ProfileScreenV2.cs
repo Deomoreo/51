@@ -182,7 +182,7 @@ namespace Project51.UIV2.Screens
         private static void SetTile(UIV2StatTile tile, string value)
         {
             // Caption e icona restano quelle del prefab (null = non sovrascrivere).
-            if (tile != null) tile.SetStat(null, value, null);
+            if (tile != null) tile.SetStat(value, null);
         }
     }
 }

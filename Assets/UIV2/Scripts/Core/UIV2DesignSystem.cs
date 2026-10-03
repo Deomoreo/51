@@ -49,16 +49,13 @@ namespace Project51.UIV2.Core
             switch (root.name)
             {
                 case "UIV2_Home": case "UIV2_Root": case "StartScreenV2":
-                case "AppLoadingV2": case "NewsV2": case "OnlineFlowV2":
+                case "AppLoadingV2": case "OnlineFlowV2":
                 case "GamePresentationV2": case "GameCanvas":
                     Apply(root, theme);
                     break;
                 case "Canvas_Login":
-                    foreach (string panel in new[] { "RegisterPanel", "AccountPanel" })
-                    {
-                        var design = root.transform.Find(panel + "/Design");
-                        if (design != null) Apply(design.gameObject, theme);
-                    }
+                    var design = root.transform.Find("AccountPanel/Design");
+                    if (design != null) Apply(design.gameObject, theme);
                     break;
             }
         }
@@ -69,8 +66,6 @@ namespace Project51.UIV2.Core
             foreach (var text in root.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
                 if (Excluded(text.transform)) continue;
-                // Testi della barra del tavolo: font/misure calibrati sul mockup da Apply Table Layout V4.
-                if (text.transform.parent != null && text.transform.parent.name == "TableTopBar") continue;
                 var material = text.fontSharedMaterial;
                 bool calibrated = material != null && (material.name.Contains("Outline Ribbon") || material.name.EndsWith(" Button"));
                 // Numeric HUD, room-code cells and tiny badges have their own geometry.
@@ -106,7 +101,7 @@ namespace Project51.UIV2.Core
         {
             for (var t = transform; t != null; t = t.parent)
                 // "UI51...": schermate e intestazioni ricostruite col design UI51, hanno font e colori propri.
-                if (t.name == "LegacyOnlineViews" || t.name.StartsWith("UI51")) return true;
+                if (t.name.StartsWith("UI51")) return true;
             return false;
         }
 
