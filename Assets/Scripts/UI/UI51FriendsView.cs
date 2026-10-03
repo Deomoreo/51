@@ -31,6 +31,7 @@ namespace Project51.Unity.UI
         [SerializeField] private Button back;
         [SerializeField] private HomeScreenV2 home;
         [SerializeField] private RoomFlowV2 roomFlow;
+        [SerializeField] private QuickSelectionPanels quickPanels;
         [SerializeField] private TMP_Text onlineLabel;
 
         [Header("Aggiungi")]
@@ -324,14 +325,18 @@ namespace Project51.Unity.UI
 
         // --- Inviti
 
-        /// <summary>Invita: "Crea stanza" (scelta del formato); appena la stanza c'e', il codice parte verso l'amico.</summary>
+        /// <summary>
+        /// Invita: Modalita' sulla scheda Stanza privata (formato e CREA STANZA); appena la stanza c'e', il codice parte verso
+        /// l'amico. Amici si chiude: Modalita' sta sotto (UIV2_Home).
+        /// </summary>
         private void Invite(string friendId)
         {
-            if (roomFlow == null || MatchmakingManager.Instance == null) return;
+            if (quickPanels == null || MatchmakingManager.Instance == null) return;
             Subscribe();
             pendingInvite = friendId;
             pendingInviteAt = Time.unscaledTime;
-            roomFlow.OpenCreate();
+            Close();
+            quickPanels.OpenPrivateRoom();
         }
 
         private void Subscribe()

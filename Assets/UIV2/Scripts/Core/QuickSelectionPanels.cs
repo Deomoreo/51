@@ -77,6 +77,8 @@ namespace Project51.UIV2.Core
                 PrivateCode.onSubmit.AddListener(_ => OpenRoomFlow(false));
                 PrivatePaste.onClick.AddListener(() => PrivateCode.text = RoomFlowV2.NormalizeCode(GUIUtility.systemCopyBuffer));
             }
+            // "Gioca online invece" della StanzaErrore parte con la ricerca: Modalita' (riaperta sotto l'errore) non resta dietro.
+            if (RoomFlow != null && RoomFlow.RoomError != null) RoomFlow.RoomError.Alt.onClick.AddListener(() => ModeModal.Close());
             var scrollSize = ModeScroll.GetComponent<LayoutElement>();
             if (scrollSize != null) modeScrollHeight = scrollSize.preferredHeight;
         }
@@ -152,6 +154,13 @@ namespace Project51.UIV2.Core
         {
             if (IsOpen) return;
             ShowModes();
+        }
+
+        /// <summary>INVITA degli Amici: Modalita' sulla scheda Stanza privata (CREA STANZA manda poi il codice all'amico).</summary>
+        public void OpenPrivateRoom()
+        {
+            if (!ModeModal.IsOpen) ShowModes();
+            ShowTab(2);
         }
 
         /// <summary>"GIOCA CONTRO I BOT" della Sospensione: Modalita' sulla scheda Allenamento, col formato che era scelto.</summary>

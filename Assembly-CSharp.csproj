@@ -233,7 +233,6 @@
     <Compile Include="Assets\UIV2\Scripts\Animations\UIV2AnimatedComponent.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\CollectionDecksPanel.cs" />
     <Compile Include="Assets\Scripts\UI\UI51ConnectionOverlay.cs" />
-    <Compile Include="Assets\UIV2\Scripts\Components\CodeCellsV2.cs" />
     <Compile Include="Assets\UIV2\Scripts\Core\RoomFlowV2.cs" />
     <Compile Include="Assets\Scripts\UI\UI51Toast.cs" />
     <Compile Include="Assets\UIV2\Scripts\Screens\ProfileTrophyView.cs" />

@@ -532,6 +532,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "back", back);
                 UI51Build.Ref(so, "home", home);
                 UI51Build.Ref(so, "roomFlow", roomFlow);
+                UI51Build.Ref(so, "quickPanels", Object.FindObjectOfType<QuickSelectionPanels>(true));
                 UI51Build.Ref(so, "onlineLabel", onlineLabel);
                 UI51Build.Ref(so, "myLabel", mine);
                 UI51Build.Ref(so, "copy", copy);

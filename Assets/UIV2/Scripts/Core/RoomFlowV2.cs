@@ -15,8 +15,8 @@ using Hashtable = ExitGames.Client.Photon.Hashtable;
 namespace Project51.UIV2.Core
 {
     /// <summary>
-    /// Flusso online V2: crea stanza, entra con codice, ricerca partita, sala d'attesa (host e ospite).
-    /// Mockup: screen_3_entra_codice, 03_crea_stanza_con_bot; ricerca = UI51 Matchmaking, sala = UI51 SalaPrivata (Fase 13).
+    /// Flusso online: crea stanza ed entra con codice (dalla scheda Stanza privata di Modalita'), ricerca partita, sala d'attesa
+    /// (host e ospite). Ricerca = UI51 Matchmaking, sala = UI51 SalaPrivata (Fase 13).
     /// La logica di rete resta in MatchmakingManager / GameLaunchController.
     /// </summary>
     public sealed class RoomFlowV2 : MonoBehaviour
@@ -24,27 +24,10 @@ namespace Project51.UIV2.Core
         public GameLaunchController Launcher;
 
         [Header("Pannelli")]
-        public GameObject CreatePanel;
-        public GameObject JoinPanel;
         public GameObject SearchPanel;
         public GameObject LobbyHostPanel;
         public GameObject LobbyGuestPanel;
         public Button[] CloseButtons;
-
-        [Header("Crea stanza")]
-        public Button[] Formats;
-        public Sprite FormatSelectedSprite;
-        public Sprite FormatNormalSprite;
-        public TMP_Text CreateFormat;
-        public Button Create;
-
-        [Header("Entra con codice")]
-        public TMP_InputField CodeInput;
-        public CodeCellsV2 JoinCells;
-        public GameObject JoinErrorRow;
-        public TMP_Text JoinError;
-        public Button Paste;
-        public Button Join;
 
         [Header("Ricerca partita (UI51 Matchmaking)")]
         public UI51MatchmakingView SearchView;
@@ -84,13 +67,10 @@ namespace Project51.UIV2.Core
         private int localBotMask;
         private float localBotMaskTime = -10f;
 
-        private GameObject[] Panels => new[] { CreatePanel, JoinPanel, SearchPanel, LobbyHostPanel, LobbyGuestPanel };
+        private GameObject[] Panels => new[] { SearchPanel, LobbyHostPanel, LobbyGuestPanel };
 
         private void Awake()
         {
-            Create.onClick.AddListener(CreateRoom);
-            Join.onClick.AddListener(JoinRoom);
-            Paste.onClick.AddListener(() => CodeInput.text = NormalizeCode(GUIUtility.systemCopyBuffer));
             foreach (var view in new[] { HostView, GuestView })
             {
                 var v = view;
@@ -100,18 +80,11 @@ namespace Project51.UIV2.Core
             HostView.StartButton.onClick.AddListener(StartMatch);
             foreach (var button in CloseButtons) if (button != null) button.onClick.AddListener(Cancel);
             RoomError.Alt.onClick.AddListener(PlayOnline);
-            for (int i = 0; i < Formats.Length; i++)
-            {
-                int index = i;
-                Formats[i].onClick.AddListener(() => SelectFormat(index));
-            }
             for (int i = 0; i < HostView.Seats.Length; i++)
             {
                 int index = i;
                 HostView.Seats[i].Button.onClick.AddListener(() => ToggleBot(index));
             }
-            CodeInput.onValueChanged.AddListener(EditCode);
-            CodeInput.onSubmit.AddListener(_ => JoinRoom());
             HideAll();
         }
 
@@ -121,24 +94,6 @@ namespace Project51.UIV2.Core
         public static bool IsValidCode(string code) =>
             code != null && code.Length == MatchmakingManager.RoomCodeLength && code.All(c => c >= 'A' && c <= 'Z' || c >= '0' && c <= '9');
 
-        public void OpenCreate()
-        {
-            joining = false;
-            busy = false;
-            SelectFormat(0);
-            Show(CreatePanel);
-        }
-
-        public void OpenJoin()
-        {
-            joining = true;
-            busy = false;
-            Show(JoinPanel);
-            CodeInput.text = "";
-            EditCode("");
-            CodeInput.ActivateInputField();
-        }
-
         /// <summary>
         /// Entra subito con questo codice (scheda Stanza privata della Home, invito di un amico): si passa dritti a "Ingresso nella
         /// stanza…"; se Photon rifiuta, la finestra StanzaErrore.
@@ -147,8 +102,7 @@ namespace Project51.UIV2.Core
         {
             joining = true;
             busy = false;
-            CodeInput.text = NormalizeCode(code);
-            JoinRoom();
+            JoinRoom(NormalizeCode(code));
         }
 
         /// <summary>CREA STANZA della scheda Stanza privata: crea subito nel Format scelto li'.</summary>
@@ -159,19 +113,11 @@ namespace Project51.UIV2.Core
             CreateRoom();
         }
 
-        /// <summary>Formato scelto in Crea stanza, per l'invito agli amici ("1 vs 1", "2 vs 2", "1 vs 3").</summary>
+        /// <summary>Nome del formato della stanza, per l'invito agli amici ("1 vs 1", "2 vs 2", "1 vs 3").</summary>
         public static string FormatName(GameFormat f)
         {
             int i = System.Array.IndexOf(FormatOrder, f);
             return i >= 0 ? FormatNames[i] : "";
-        }
-
-        private void SelectFormat(int index)
-        {
-            format = FormatOrder[index];
-            CreateFormat.text = "Formato: " + FormatNames[index];
-            for (int i = 0; i < Formats.Length; i++)
-                Formats[i].image.sprite = i == index ? FormatSelectedSprite : FormatNormalSprite;
         }
 
         private MatchConfig Config()
@@ -199,15 +145,10 @@ namespace Project51.UIV2.Core
             Launcher.CreatePrivateRoom(Config(), Unblock); // stato fresco della sospensione prima di creare
         }
 
-        private void JoinRoom()
+        private void JoinRoom(string code)
         {
             if (busy || Suspended()) return;
-            string code = NormalizeCode(CodeInput.text);
-            if (!IsValidCode(code))
-            {
-                ShowJoinError("Inserisci tutti i 5 caratteri del codice.");
-                return;
-            }
+            if (!IsValidCode(code)) { ShowRoomError(0); return; } // la scheda lo controlla gia' (scossa); qui solo un invito malformato
             busy = true;
             joining = true;
             joinFailure = 0;
@@ -230,21 +171,6 @@ namespace Project51.UIV2.Core
             if (!UI51SuspensionView.BlocksOnline()) return false;
             ReturnOnCancel = null;
             return true;
-        }
-
-        private void EditCode(string value)
-        {
-            string code = NormalizeCode(value);
-            if (code != value) CodeInput.SetTextWithoutNotify(code);
-            JoinCells.SetCode(code);
-            Join.interactable = IsValidCode(code) && !busy;
-            JoinErrorRow.SetActive(false);
-        }
-
-        private void ShowJoinError(string message)
-        {
-            JoinError.text = message;
-            JoinErrorRow.SetActive(true);
         }
 
         private void Subscribe()
