@@ -35,7 +35,6 @@ namespace Project51.UIV2.Core
         [SerializeField] private CanvasGroup[] pageHeaders;
 
         private AuthBootstrapper auth;
-        private PlayerProgressLocal progress;
         private bool showingHome;
         private string profileOwnerId;
         private bool loadingProfile;
@@ -61,9 +60,11 @@ namespace Project51.UIV2.Core
                 profile.OnRegisterPressed += OpenRegistration;
                 profile.OnLoginPressed += OpenLogin;
                 profile.OnEditPressed += OpenProfileEditor;
+                profile.OnRetryPressed += RetryProfile;
                 profile.SetActionsAvailable(settings != null, authUI != null);
             }
             if (profileEditor != null) profileEditor.OnSave += SaveCosmetics;
+            s_Editor = profileEditor;
             if (collection != null)
             {
                 collection.DecksPanel.OnDeckActionPressed += SelectDeck;
@@ -80,7 +81,6 @@ namespace Project51.UIV2.Core
                 new UIV2NavItemData { Id = "profile", Label = "Profilo" }
             });
             home.SetMode(quickPanels.ModeOption(quickPanels.Selection));
-            home.SetPendingActionsInteractable(false);
             home.SetDeckInteractable(collection != null);
             RefreshDecks();
             home.SetRankingBadge(0); // Premi e Posta: il pallino lo mettono UI51RewardsView e UI51MailView
@@ -101,8 +101,7 @@ namespace Project51.UIV2.Core
                 }
                 if (auth.PlayFabAuth != null) auth.PlayFabAuth.OnDisplayNameChanged += DisplayNameChanged;
             }
-            progress = PlayerProgressLocal.Instance;
-            if (progress != null) progress.OnExpChanged += ExpChanged;
+            WalletService.Changed += RefreshWallet;
             RefreshProfile();
             PageChanged(0);
         }
@@ -128,7 +127,17 @@ namespace Project51.UIV2.Core
         // Avatar della testata: stessa pagina della voce "Profilo" della barra in basso (ultima voce).
         private void OpenProfile()
         {
-            if (profile != null && !pager.IsMoving) Navigate(3);
+            if (profile == null || pager.IsMoving) return;
+            // B19 (ST1): progressi non caricati (rete) -> aprire il Profilo riprova.
+            if (HasRealLogin() && !loadingProfile && auth?.Profile != null && !auth.Profile.IsLoaded) ReloadAccountProfile();
+            Navigate(3);
+        }
+
+        // B19 (scelta utente 07/10): RIPROVA nello stato d'errore del Profilo, senza chiuderlo e riaprirlo.
+        private void RetryProfile()
+        {
+            if (HasRealLogin() && !loadingProfile && auth?.Profile != null && !auth.Profile.IsLoaded && !auth.Profile.IsLoading)
+                ReloadAccountProfile();
         }
 
         private void OpenLogin()
@@ -159,7 +168,11 @@ namespace Project51.UIV2.Core
             }
             // Una scrittura sola: la carta si aggiorna una volta, con OnProfileUpdated.
             cloud.SetCosmetics(avatarId, frameId, bannerId,
-                () => { if (this != null && profileEditor != null) profileEditor.SaveFinished(true); },
+                () =>
+                {
+                    auth.PublishLook(); // gli amici vedono subito il nuovo aspetto (FriendsService.PublishLook)
+                    if (this != null && profileEditor != null) profileEditor.SaveFinished(true);
+                },
                 error => { if (this != null && profileEditor != null) profileEditor.SaveFinished(false); });
         }
 
@@ -252,12 +265,11 @@ namespace Project51.UIV2.Core
         }
 
         private void DisplayNameChanged(string unused) => RefreshProfile();
-        private void ExpChanged(int total, int gained) => RefreshProfile();
-
         private void CloudProfileLoaded()
         {
             profileOwnerId = auth?.PlayFabAuth?.PlayFabId;
             RefreshProfile();
+            WalletService.Refresh();
         }
 
         private void ReloadAccountProfile()
@@ -272,7 +284,20 @@ namespace Project51.UIV2.Core
                 loadingProfile = false;
                 auth.PublishLook(); // anche se il caricamento fallisce: niente aspetto dell'account di prima al tavolo
                 RefreshProfile();
+                WalletService.Refresh();
             });
+        }
+
+        private static ProfileEditorV2 s_Editor;
+
+        /// <summary>Sprite di un avatar per id (nome dello sprite), coi ritratti dell'editor del profilo; null prima della Home.</summary>
+        public static Sprite AvatarById(string id) => id != null && s_Editor != null ? s_Editor.AvatarFor(id) : null;
+
+        /// <summary>B20: avatar che un altro giocatore ha pubblicato (lobby, ricerca partita); null per bot, ospiti e versioni vecchie.</summary>
+        public static Sprite AvatarOf(Photon.Realtime.Player player)
+        {
+            string id = player != null ? ProfileCosmetics.ReadAvatar(player.CustomProperties) : null;
+            return id != null && s_Editor != null ? s_Editor.AvatarFor(id) : null;
         }
 
         /// <summary>Avatar scelto nel profilo (null per l'ospite o profilo non caricato): lo usano i posti della ricerca partita.</summary>
@@ -285,8 +310,9 @@ namespace Project51.UIV2.Core
             var cloud = auth?.Profile;
             bool isGuest = !HasRealLogin();
             bool cloudLoaded = CloudReady();
-            // Gli ospiti non guadagnano XP (spinta a registrarsi): livello 1 fisso.
-            int totalXp = isGuest ? 0 : cloudLoaded ? cloud.XP : progress != null ? progress.Exp : 0;
+            // Gli ospiti non guadagnano XP (spinta a registrarsi): livello 1 fisso. B19 (ST1): un account senza profilo caricato non
+            // mostra l'XP del telefono (era di un altro account o incompleta) ma "—".
+            int totalXp = isGuest || !cloudLoaded ? 0 : cloud.XP;
             string playFabId = auth?.PlayFabAuth?.PlayFabId;
             int level = PlayerXp.LevelOf(totalXp);
             int xp = PlayerXp.XpInLevel(totalXp);
@@ -307,8 +333,9 @@ namespace Project51.UIV2.Core
                     FrameId = cosmetics ? cloud.FrameId : null,
                     BannerId = cosmetics ? cloud.BannerId : null,
                     Level = level, XpCurrent = xp, XpMax = maxXp,
-                    HasProgress = cloudLoaded || progress != null,
+                    HasProgress = isGuest || cloudLoaded,
                     HasMatchStats = !isGuest && cloudLoaded,
+                    CanRetry = !isGuest && !cloudLoaded && !loadingProfile && cloud != null && !cloud.IsLoaded && !cloud.IsLoading,
                     MatchesPlayed = cloudLoaded ? cloud.TotalGames : 0,
                     Wins = cloudLoaded ? cloud.Wins : 0
                 });
@@ -319,16 +346,24 @@ namespace Project51.UIV2.Core
                 Level = level,
                 Avatar = avatar,
                 XpCurrent = xp,
-                XpMax = isGuest ? 0 : maxXp // 0 = esagono livello e barra XP nascosti per gli ospiti
+                XpMax = isGuest || !cloudLoaded ? 0 : maxXp // 0 = esagono livello e barra XP nascosti (ospite, progressi non caricati)
             });
             topBar.SetGuest(isGuest);
             home.SetGuest(isGuest);
+            RefreshWallet();
+        }
+
+        private void RefreshWallet()
+        {
+            if (topBar != null) topBar.SetWallet(WalletService.IsLoaded, WalletService.Coins, WalletService.Gems);
         }
 
         private void OnDestroy()
         {
+            if (s_Editor == profileEditor) s_Editor = null;
             if (home != null) { home.OnPlayPressed -= Play; home.OnModePressed -= OpenModes; home.OnDeckPressed -= OpenDecks; home.OnSettingsPressed -= OpenSettings; }
             CardDecks.SelectionChanged -= RefreshDecks;
+            WalletService.Changed -= RefreshWallet;
             if (topBar != null) { topBar.OnRegisterPressed -= OpenRegistration; topBar.OnProfilePressed -= OpenProfile; }
             if (profile != null)
             {
@@ -336,6 +371,7 @@ namespace Project51.UIV2.Core
                 profile.OnRegisterPressed -= OpenRegistration;
                 profile.OnLoginPressed -= OpenLogin;
                 profile.OnEditPressed -= OpenProfileEditor;
+                profile.OnRetryPressed -= RetryProfile;
             }
             if (profileEditor != null) profileEditor.OnSave -= SaveCosmetics;
             if (pagesBackground != null) pagesBackground.DOKill();
@@ -358,7 +394,6 @@ namespace Project51.UIV2.Core
                 }
                 if (auth.PlayFabAuth != null) auth.PlayFabAuth.OnDisplayNameChanged -= DisplayNameChanged;
             }
-            if (progress != null) progress.OnExpChanged -= ExpChanged;
             if (authUI != null)
             {
                 authUI.OnLoginSuccess -= ReloadAccountProfile;

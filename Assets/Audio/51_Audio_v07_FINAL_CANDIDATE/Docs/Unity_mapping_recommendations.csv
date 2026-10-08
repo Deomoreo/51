@@ -1,0 +1,21 @@
+SoundId,Files,Volume,PitchJitter,MinInterval,Notes
+UiClick,ui_click.wav,0.45,0.0,0.05,new tactile
+UiBack,ui_back.wav,0.5,0.0,0.05,new tactile
+UiTab,ui_tab.wav,0.5,0.0,0.03,new tactile
+UiConfirm,ui_confirm_01/02/03.wav,0.58,0.0,0.15,3 true variants
+UiError,ui_error.wav,0.55,0.0,0.2,new tactile+low accent
+PopupOpen,popup_open.wav,0.48,0.0,0.15,new tactile
+PopupClose,popup_close.wav,0.48,0.0,0.15,new tactile
+Notification,notification_soft.wav,0.48,0.0,0.5,new short cue
+CardPlay,card_play_01..05.wav,0.65,0.015,0.05,felt source; reduce pitch jitter
+CardCapture,card_capture_01..04.wav,0.7,0.01,0.1,collection + felt
+CardDeal,card_deal_3.wav,0.6,0.0,0.2,humanized real hits
+CardDealLong,card_deal_6.wav,0.6,0.0,0.2,humanized real hits
+Scopa,scopa_01..03.wav,0.82,0.0,1.0,3 true variants
+Accuso,accuso_01..03.wav,0.86,0.0,0.25,cards + short musical signature
+YourTurn,your_turn.wav,0.6,0.0,0.5,distinct short identity cue
+MatchStart,match_start.wav,0.78,0.0,1.0,kept/remastered
+Victory,victory_short.wav,0.88,0.0,1.0,new short edit
+Defeat,defeat.wav,0.76,0.0,1.0,new short edit
+RewardCoin,reward_coin.wav,0.72,0.02,0.08,kept/remastered
+RewardGem,reward_gem.wav,0.75,0.0,0.2,kept/remastered

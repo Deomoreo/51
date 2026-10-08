@@ -96,6 +96,8 @@ graphify-out/
 # CloudScript: segreto dei nomi dei webhook e file da caricare (il repository e pubblico)
 Server/CloudScript/segreto.txt
 Server/CloudScript/51.carica.js
+# Ambiente QA dei premi: chiave segreta di PlayFab
+Server/QA/qa.json
 
 # Generated files and local captures (Unity-MCP screenshots, UI Toolkit schemas)
 /Captures/

@@ -1,3 +1,4 @@
+using Project51.UI51;
 using Project51.UIV2.Animations;
 using Project51.UIV2.Core;
 using UnityEditor;
@@ -10,7 +11,7 @@ namespace Project51.EditorTools
     /// <summary>
     /// Sfondo animato della Home: base statica a riempimento (EnvelopeParent) dal bordo alto dello
     /// schermo alla nav, livelli d'effetto (stelle, luci del castello, stella cadente, bagliore delle
-    /// torce, cespugli) che pulsano (UIV2AmbientFloat) e fiamme che si muovono (shader UIV2/FlameWobble).
+    /// torce, cespugli) che pulsano (UIV2AmbientFloat) e fiamme animate a fotogrammi (EmoticonPlayer, Ambient).
     /// Fermo con Grafica ridotta: resta la posa del mockup. Rilanciabile: rimuove e ricrea solo "HomeAmbient".
     /// Posizioni in pixel dell'artwork base a meta' risoluzione (941x1672; il PNG e' 1882x3344,
     /// stesse proporzioni), origine in alto a sinistra; movimenti in unita' canvas (riferimento 1080x1920).
@@ -19,7 +20,6 @@ namespace Project51.EditorTools
     {
         private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         private const string HomeAmbientFolder = "Assets/UI/Sprites/DragonsHoard/sprites_unity/sprites_unity/BackgroundHome/";
-        private const string FlameMaterialPath = "Assets/UIV2/Art/Shaders/UIV2FlameWobble.mat";
         private const float BaseWidth = 941f, BaseHeight = 1672f;
 
         // Livelli 941x1672 allineati 1:1 alla base (o in Place, px d'artwork): alpha di riposo (= mockup)
@@ -50,24 +50,30 @@ namespace Project51.EditorTools
         private const float TorchGlowScale = 0.75f;
         private static readonly Vector2[] TorchGlowCentres = { new Vector2(151f, 688f), new Vector2(796f, 688f) };
 
-        // Fiamme sui bracieri: base della fiamma (X, Y) nel braciere del mockup, larghezza visibile.
-        // Una per braciere: il movimento lo fa lo shader, sfasato dalla posizione.
+        // Fiamme sui bracieri: base della fiamma (X, Y) sul bordo alto della coppa (misurato sulla base: orlo a 701,
+        // centri 136 e 800), cosi' la fiamma esce dalla coppa senza coprirla. Anche su Accesso, Registrazione,
+        // Caricamento e le altre schermate con lo sfondo nitido (UI51AccessBuilder.BuildScreen).
+        // 10 fotogrammi (Flame/home_flame_01..10, ritagliati dal foglio 5x2 in Design/sorgenti/.../AnimationFlame,
+        // tutti 290x363 con la base allineata), andata e ritorno; sfasati per braciere.
         private struct FlameLayer
         {
             public string Name;
-            public float X, Y;
+            public float X, Y, Phase;
         }
 
-        private const string FlameSprite = "home_flame_a";
+        private const string FlameFolder = "Flame/home_flame_";
+        private const int FlameFrames = 10;
         private const float FlameWidth = 44f;
+        private const float FlamePeriod = 0.8f;
         // 2.20: sfondo, non primo piano: nucleo bianco spento verso l'arancio e un po' di trasparenza.
         private static readonly Color FlameTint = new Color(0.9f, 0.7f, 0.52f, 0.85f);
-        private static readonly Rect FlameVisible = Rect.MinMaxRect(286, 60, 1002, 1193); // bbox alfa (px, origine in alto a sinistra)
+        // Corpo visibile comune ai fotogrammi (px, origine in alto a sinistra): base a 357, centro a 145.
+        private static readonly Rect FlameVisible = Rect.MinMaxRect(45, 0, 245, 357);
 
         private static readonly FlameLayer[] HomeFlameLayers =
         {
-            new FlameLayer { Name = "Flame_Left",  X = 137f, Y = 705f },
-            new FlameLayer { Name = "Flame_Right", X = 798f, Y = 705f },
+            new FlameLayer { Name = "Flame_Left",  X = 136f, Y = 700f, Phase = 0f },
+            new FlameLayer { Name = "Flame_Right", X = 800f, Y = 700f, Phase = 0.37f },
         };
 
         [MenuItem("Tools/UIV2/Build Home Ambient")]
@@ -75,8 +81,7 @@ namespace Project51.EditorTools
         {
             if (EditorApplication.isPlaying) throw new System.InvalidOperationException("Stop Play Mode first.");
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            // Fiamme alte ~110 px su iPhone da sorgenti 1254: 256 con mipmap; i livelli 941x1672 restano pieni.
-            ShrinkForUi(FlameSprite, 256, true);
+            ImportFlames();
             ShrinkForUi("home_bg_base", 4096, false); // 1882x3344: a 2048 tornerebbe sotto la risoluzione degli iPhone
 
             var scene = EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
@@ -139,20 +144,7 @@ namespace Project51.EditorTools
                 Float(rect, 0f, 0f, 0f, 0f, 0.12f, 0.9f, 0.2f + side * 0.35f);
             }
 
-            // Pivot alla base visibile della fiamma: il tremolio di scala parte dal braciere.
-            var flameMaterial = FlameMaterial();
-            var flameSize = SourceSize(FlameSprite);
-            float k = FlameWidth / FlameVisible.width;
-            foreach (var layer in HomeFlameLayers)
-            {
-                var rect = AmbientImage(frame, layer.Name, FlameSprite, 1f);
-                rect.GetComponent<Image>().material = flameMaterial;
-                rect.GetComponent<Image>().color = FlameTint;
-                float left = layer.X - FlameVisible.center.x * k, top = layer.Y - FlameVisible.yMax * k;
-                PlaceInArt(rect, new Rect(left, top, flameSize.x * k, flameSize.y * k));
-                SetPivotKeepingPlace(rect, new Vector2(FlameVisible.center.x / flameSize.x, 1f - FlameVisible.yMax / flameSize.y));
-                Float(rect, 0f, 0f, 0f, 0.015f, 0f, 0.6f, layer.X * 0.001f);
-            }
+            AddFlames(frame);
 
             OverlayImage(frame, Bushes);
 
@@ -188,30 +180,53 @@ namespace Project51.EditorTools
             rect.offsetMin = rect.offsetMax = Vector2.zero;
         }
 
-        private static Material FlameMaterial()
+        // Fotogrammi 290x363 ridotti a ~110 px su iPhone: mipmap contro lo sfarfallio.
+        internal static void ImportFlames()
         {
-            var material = AssetDatabase.LoadAssetAtPath<Material>(FlameMaterialPath);
-            if (material == null)
+            for (int f = 1; f <= FlameFrames; f++) ShrinkForUi(FlameFolder + f.ToString("00"), 512, true);
+        }
+
+        /// <summary>Le due fiamme animate dentro un rettangolo con le proporzioni dell'artwork base (941x1672). Pivot alla base visibile.</summary>
+        internal static void AddFlames(RectTransform frame)
+        {
+            var flameFrames = new Sprite[FlameFrames];
+            for (int f = 0; f < FlameFrames; f++) flameFrames[f] = LoadSprite(FlameFolder + (f + 1).ToString("00"));
+            var flameSize = SourceSize(FlameFolder + "01");
+            float k = FlameWidth / FlameVisible.width;
+            foreach (var layer in HomeFlameLayers)
             {
-                material = new Material(Shader.Find("UIV2/FlameWobble"));
-                AssetDatabase.CreateAsset(material, FlameMaterialPath);
+                var rect = AmbientImage(frame, layer.Name, FlameFolder + "01", 1f);
+                rect.GetComponent<Image>().color = FlameTint;
+                float left = layer.X - FlameVisible.center.x * k, top = layer.Y - FlameVisible.yMax * k;
+                PlaceInArt(rect, new Rect(left, top, flameSize.x * k, flameSize.y * k));
+                SetPivotKeepingPlace(rect, new Vector2(FlameVisible.center.x / flameSize.x, 1f - FlameVisible.yMax / flameSize.y));
+                var player = new SerializedObject(rect.gameObject.AddComponent<EmoticonPlayer>());
+                var frames = player.FindProperty("m_Frames");
+                frames.arraySize = FlameFrames;
+                // Sfasatura: ogni braciere parte da un fotogramma diverso del giro.
+                int shift = Mathf.RoundToInt(layer.Phase * FlameFrames);
+                for (int f = 0; f < FlameFrames; f++) frames.GetArrayElementAtIndex(f).objectReferenceValue = flameFrames[(f + shift) % FlameFrames];
+                player.FindProperty("m_Period").floatValue = FlamePeriod;
+                player.FindProperty("m_Ambient").boolValue = true;
+                player.ApplyModifiedPropertiesWithoutUndo();
             }
-            // 2.20: ondeggiamento piu' calmo, da sfondo.
-            material.SetFloat("_Sway", 0.025f);
-            material.SetFloat("_Speed", 0.8f);
-            EditorUtility.SetDirty(material);
-            return material;
         }
 
         private static RectTransform AmbientImage(RectTransform parent, string name, string sprite, float alpha)
         {
             var rect = CreateUIObject(name, parent);
             var image = rect.gameObject.AddComponent<Image>();
-            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(HomeAmbientFolder + sprite + ".png");
-            if (image.sprite == null) throw new System.Exception("Sprite mancante: " + sprite);
+            image.sprite = LoadSprite(sprite);
             image.color = new Color(1f, 1f, 1f, alpha);
             image.raycastTarget = false;
             return rect;
+        }
+
+        private static Sprite LoadSprite(string sprite)
+        {
+            var loaded = AssetDatabase.LoadAssetAtPath<Sprite>(HomeAmbientFolder + sprite + ".png");
+            if (loaded == null) throw new System.Exception("Sprite mancante: " + sprite);
+            return loaded;
         }
 
         private static void Float(RectTransform rect, float moveX, float moveY, float rotation, float scale, float alpha, float duration, float phase, float pause = 0f)
@@ -246,7 +261,9 @@ namespace Project51.EditorTools
         private static void ShrinkForUi(string sprite, int maxSize, bool mipmaps)
         {
             var importer = (TextureImporter)AssetImporter.GetAtPath(HomeAmbientFolder + sprite + ".png");
-            if (importer.maxTextureSize == maxSize && importer.mipmapEnabled == mipmaps) return;
+            if (importer.textureType == TextureImporterType.Sprite && importer.maxTextureSize == maxSize && importer.mipmapEnabled == mipmaps) return;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
             importer.maxTextureSize = maxSize;
             importer.mipmapEnabled = mipmaps;
             importer.SaveAndReimport();

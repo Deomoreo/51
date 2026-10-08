@@ -9,11 +9,37 @@ Regola: bug e rifiniture di cose esistenti si fanno in ordine. Schermate e siste
 
 ---
 
-## ▶ PUNTO DI RIPRESA — 03/10, versione 2.64
+## ▶ PUNTO DI RIPRESA — 07/10, giro 2.65 (versione dell'app ferma a 1.0.0, vedi sotto)
+
+**◐ Terzo giro Android (08/10 pomeriggio):** stato in `docs/build3/STATO_BACKLOG.md` (#132-#137). Economia: registro "Consegne" nel CloudScript (consegna sicura, recupero), causa = accredito rifiutato da PlayFab da confermare con `node Server/QA/qa.js diagnosi`. Ambiente QA in `Server/QA/`. Turno altrui, fine tutorial senza risultati sotto, pallino Richieste, tastiera che solleva solo il modulo. EditMode 386: 379 ok, 0 falliti, 7 saltati; test.js ok. Versione ferma, niente commit.
+- ☐ **Tu:** Upload + Deploy del nuovo `51.carica.js` (13:56), poi nuovo APK.
+
+**◐ Build 3 (07/10):** diagnosi in `docs/build3/DIAGNOSI.md` (blocchi B1–B38, decisioni tue accettate tutte), dettaglio in `docs/build3/dettaglio_voci.md`. Stato blocco per blocco nel §0 di DIAGNOSI. Fatti B1–B36 (non committati, versione ferma a 1.0.0). Build pulito, EditMode 386: 379 ok, 0 falliti, 7 saltati; CloudScript test.js ok.
+- ☐ **Tu:** Upload + Deploy di `Server/CloudScript/51.carica.js` su PlayFab (già preparato con carica.js, stesso segreto; serve a B14 sessione, B22 posta, B32 premio tutorial).
+- ☐ **Tu, sul telefono:** sollevamento con la tastiera, tocco vicino al bordo di una carta dell'Accuso, vibrazione, tempi di CardPlay e Scopa con l'audio v07, il tutorial nuovo per intero (circa 5 minuti).
+- ⏸ **B37** (Profiler sul telefono), **B38** (giro TestFlight + APK): servono i telefoni.
 
 **Giro lungo sui mockup (01/10, "continuiamo coi mockup, non fermarti"):** si va avanti fase per fase; ogni versione qui sotto è una fase o un pezzo di fase. Le scelte che ho preso da solo sono elencate in ogni versione sotto "Scelte mie, da confermare".
 
 **Dove siamo (2.64):** tutte le fasi dei mockup sono chiuse, compresa la Fase 10 (Pulizia, sotto alla 2.64). Prossimo: la prova vera su due telefoni (rientro, inviti, monete a fine partita online) e le cose rimaste fuori dalla pulizia (sotto). Da fare tu per la Classifica: ricaricare `51.carica.js` e creare la classifica settimanale nel Game Manager (alla 2.63).
+
+**2.65 (07/10):** fuochi, monete e gemme, mazzi nuovi. Build pulito (0 errori); test EditMode 376 totali: 369 ok, 0 falliti, 7 saltati (Explicit). Provato nel Simulator (iPhone 12): Accesso, Home, Collezione, Negozio, Profilo, pannello Mazzo, tavolo 1v3. Non committato.
+- ☑ **Fuochi dei bracieri:** il tuo foglio di 10 fiamme (sorgente in `Design/sorgenti/.../AnimationFlame`) ritagliato, ripulito e allineato in `BackgroundHome/Flame/home_flame_01..10` (290x363, base allineata), animato in andata e ritorno in 0,8 s (`EmoticonPlayer` con `m_Ambient`: fermo con la grafica ridotta). Base sul bordo della coppa (701 su 1672), non la copre. Anche su tutte le schermate con lo sfondo nitido: `UI51AccessBuilder.BuildScreen` le aggiunge sopra il velo (Accesso, Registrazione, Recupero password, Caricamento, Benvenuto, Ricerca partita, Sospensione, Aggiornamento/Manutenzione). Tolti `home_flame_a`, lo shader `UIV2FlameWobble` e il suo materiale.
+- ☑ **Monete e gemme nella Home:** due pillole come nel mockup Home, in alto a destra, solo per gli account (`UIV2TopBar.SetWallet`, `HomeV2Integration` legge `WalletService` al caricamento del profilo e a ogni cambio). Prima nessuna schermata mostrava il saldo.
+- ☑ **Mazzi nuovi:** i 4 mazzi puntano alle carte ripulite in `Assets/Art/Decks/Deck_*` (alte 1,8 unità, rettangolo pieno); dorsi nuovi anche in catalogo, pannello Mazzo, Collezione e tavolo. Dorso del Classico ridotto da 3852x5676 a 963x1419. Cancellati i mazzi vecchi: `51_BAROCCO_PNG_Unity`, `51_CORTE_DI_GIADA_PNG_Unity`, `51_DEFAULT_DECK_Unity`, `Resources/Cards`, `napoletane.svgz.png`.
+- ☑ **Benvenuto:** si segna come visto solo dopo una scelta (prima bastava aprirlo: chiudendo l'app lì sopra non tornava più).
+- ❓ **Versione:** `bundleVersion` ora è 1.0.0 (preparazione iOS del 04/10), quindi non l'ho alzata. Da decidere: da qui si alza 1.0.0 → 1.0.1 o solo il numero di build?
+- ❓ **Cose minime trovate nel giro, non toccate (aspettano il tuo sì):**
+  - Pannello Mazzo: "4 sbloccati · sali di livello per ottenerne altri", ma non ci sono altri mazzi da sbloccare.
+  - Profilo ospite: "Ricompense · Forzieri, missioni ed eventi", ma missioni ed eventi non esistono.
+  - Pagina Negozio: titolo e testo "sarà disponibile prossimamente" in un carattere diverso dal resto (non Cinzel/Nunito), stile UIV2 vecchio.
+- **ASSET MANCANTI DA CREARE:** nessuno.
+
+**03/10, prova su telefono: "Connessione non riuscita / Il gioco online non è disponibile in questo momento"** quando si entra nella stanza di un altro che sta cercando. Nessun cambio al codice (resta 2.64).
+- **Diagnosi:** è l'errore 32752 di Photon: un webhook del pannello Photon ha risposto con un errore all'ingresso nella stanza. Non dipende dall'essere ospite: capita a chiunque entri per secondo (chi crea la stanza passa). Nell'app e nel CloudScript non c'è nessun blocco per gli ospiti.
+- ☐ **Da fare tu, pannello Photon → Webhooks** (i passi della 2.62, mai provati dal vivo): PathBeforeJoin e PathLeave **vuoti** (`RoomBeforeJoin` e `RoomLeft` non esistono più nello script: se sono ancora scritti, ogni ingresso viene rifiutato); PathCreate e PathJoin con i nomi stampati da `node Server/CloudScript/carica.js`; PathClose `RoomClosed`; HasErrorInfo spento. E che su PlayFab la revisione attiva sia l'ultimo `51.carica.js`.
+- ☐ Poi riprovare con due dispositivi: uno cerca, l'altro (ospite) cerca.
+- **Regola nuova (tua, 03/10):** il codice resta pulito a ogni giro: quello che viene sostituito si toglie nello stesso giro.
 
 **2.64:** Fase 10, Pulizia ("fai tutto tu", 02-03/10). Verifica profonda con agenti (270 voci, ognuna ricontrollata da un secondo agente: 268 confermate), poi 14 blocchi, ognuno verificato e committato a parte (commit `4440503` … `526bea7`, prima il commit di sicurezza `30ced5a` delle 2.38-2.63). Il dettaglio è in `FASE10_PIANO.md`, `FASE10_DECISIONI.md`, `FASE10_VOCI.json`. Build pulito (0 errori); test EditMode 376 totali: 369 ok, 0 falliti, 7 saltati (Explicit). Meno test perché sono andati quelli del codice tolto e i doppioni (i casi unici sono stati spostati in `Rules51CoreTests`). Circa 5.200 file toccati, quasi tutti cancellazioni (anche `Library/` e i `.csproj` che erano in git per errore).
 - ☑ **Tolti:** la vecchia HUD della Home (le 4 tele spente, `MainHud`, la vecchia barra, `ModalitySelectorPanelUI`: la scelta di modalità e formato ora vive in `QuickSelectionPanels`); la scena `HomeScreen` e i suoi 17 builder; `TESTPHOTN` e le 5 scene di prova UIV2; tutti i `UIV2FoundationBuilder*` e i builder una tantum (resta `HomeAmbientBuilder`, estratto); il vecchio codice di rete (`NetworkManager`, `RoomManager`...); il Negozio V2 (non era nel gioco); i vecchi disegni spenti dentro le schermate UIV2 (risultati, roulette, sale online, registrazione, impostazioni, notizie, emoticon, banner); i prefab UIV2, ora spacchettati in MainMenu; il codice di gioco morto (trascinamento e selezione delle carte, mucchi delle prese, vecchio pannello di fine smazzata); metodi e campi mai usati in account, profilo e rete; documenti vecchi (`Assets/Networking`, specifiche UIV2, `PROJECT_STATUS.md`, `README_AUTH.md`); i pacchetti VisualScripting, Timeline, Collab, UIEffect.

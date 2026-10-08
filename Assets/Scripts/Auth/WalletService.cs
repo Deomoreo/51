@@ -20,13 +20,37 @@ namespace Project51.Auth
         public static bool IsLoaded { get; private set; }
         public static event Action Changed;
 
+        // B10 (S3): un cambio di account (Reset) scarta la risposta ancora in volo per l'account di prima.
+        private static int generation, requests;
+
+        /// <summary>Cambio di account: saldi a zero finche' Refresh non porta quelli nuovi.</summary>
+        public static void Reset()
+        {
+            generation++;
+            Coins = Gems = 0;
+            IsLoaded = false;
+            Changed?.Invoke();
+        }
+
+        /// <summary>Saldo detto dal server dopo un premio (CloudScript): negativo = quella valuta resta com'era.</summary>
+        public static void Apply(int coins, int gems)
+        {
+            requests++; // una lettura del portafoglio partita prima porterebbe il saldo vecchio
+            if (coins >= 0) Coins = coins;
+            if (gems >= 0) Gems = gems;
+            IsLoaded = true;
+            Changed?.Invoke();
+        }
+
         public static void Refresh(Action onDone = null)
         {
             if (!PlayFabClientAPI.IsClientLoggedIn()) { onDone?.Invoke(); return; }
+            int gen = generation, seq = ++requests;
 
             PlayFabClientAPI.GetUserInventory(new GetUserInventoryRequest(),
                 result =>
                 {
+                    if (gen != generation || seq != requests) return; // B22 (M3): conta solo la risposta dell'ultima richiesta
                     var vc = result.VirtualCurrency;
                     Coins = vc != null && vc.TryGetValue(CoinsCode, out int c) ? c : 0;
                     Gems = vc != null && vc.TryGetValue(GemsCode, out int g) ? g : 0;

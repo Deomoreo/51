@@ -232,6 +232,13 @@ namespace Project51.Auth
         private void OnRegisterClicked()
         {
             if (_isProcessing) return;
+            // Senza la sessione dell'avvio AddUsernamePassword lancia un'eccezione e il caricamento resterebbe sopra per sempre.
+            var boot = Project51.Auth.AuthBootstrapper.Instance;
+            if (boot == null || boot.PlayFabAuth == null || !boot.PlayFabAuth.IsLoggedIn)
+            {
+                SetStatusText(registerStatusText, "Connessione al server in corso: riprova tra un attimo.", true);
+                return;
+            }
             
             string username = registerUsernameInput != null ? (registerUsernameInput.text ?? string.Empty).Trim() : string.Empty;
             string email = registerEmailInput != null ? (registerEmailInput.text ?? string.Empty).Trim() : string.Empty;
@@ -250,15 +257,12 @@ namespace Project51.Auth
             PlayFabClientAPI.AddUsernamePassword(request,
                 result =>
                 {
-                    // Da qui e' un login vero: senza questo Profilo e Impostazioni restano in veste ospite.
-                    Project51.Auth.AuthBootstrapper.Instance?.PlayFabAuth?.MarkRegistered(email);
-                    
-                    // Aggiorna display name tramite il servizio centrale, così la UI (Banner) riceve l'evento.
+                    // Da qui e' un login vero col nome scelto: senza questo Profilo e Impostazioni restano in veste ospite.
                     var bs = Project51.Auth.AuthBootstrapper.Instance;
+                    bs?.PlayFabAuth?.MarkRegistered(email, username);
+                    // Il nome visibile su PlayFab (amici, classifiche). Se non va, il prossimo login lo ripara (B13).
                     if (bs != null && !string.IsNullOrWhiteSpace(username))
-                    {
-                        bs.PlayFabAuth.UpdateDisplayName(username);
-                    }
+                        bs.PlayFabAuth.UpdateDisplayName(username, null, e => Debug.LogWarning("[AuthUIController] Display name not set: " + e));
 
                     _isProcessing = false;
                     SetLoading(false);

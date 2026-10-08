@@ -1,0 +1,29 @@
+00:00.00  UI Click            SFX/UI/ui_click.wav
+00:00.70  UI Tab              SFX/UI/ui_tab.wav
+00:01.45  UI Back             SFX/UI/ui_back.wav
+00:02.20  UI Confirm 1        SFX/UI/ui_confirm_01.wav
+00:03.16  UI Error            SFX/UI/ui_error.wav
+00:04.14  Popup Open          SFX/UI/popup_open.wav
+00:04.87  Popup Close         SFX/UI/popup_close.wav
+00:06.73  Notification        SFX/Events/notification_soft.wav
+00:07.85  Your Turn           SFX/Events/your_turn.wav
+00:10.20  Card Play 1         SFX/Gameplay/card_play_01.wav
+00:11.11  Card Play 2         SFX/Gameplay/card_play_02.wav
+00:12.05  Card Play 3         SFX/Gameplay/card_play_03.wav
+00:12.99  Card Play 4         SFX/Gameplay/card_play_04.wav
+00:13.90  Card Play 5         SFX/Gameplay/card_play_05.wav
+00:14.82  Card Capture 1      SFX/Gameplay/card_capture_01.wav
+00:16.02  Card Capture 2      SFX/Gameplay/card_capture_02.wav
+00:17.11  Deal 3              SFX/Gameplay/card_deal_3.wav
+00:18.54  Deal 6              SFX/Gameplay/card_deal_6.wav
+00:20.55  Shuffle 1           Extras/deck_shuffle_01.wav
+00:21.87  Shuffle 2           Extras/deck_shuffle_02.wav
+00:24.33  Accuso 1            SFX/Events/accuso_01.wav
+00:25.83  Accuso 2            SFX/Events/accuso_02.wav
+00:27.33  Scopa 1             SFX/Gameplay/scopa_01.wav
+00:29.35  Scopa 2             SFX/Gameplay/scopa_02.wav
+00:32.26  Reward Coin         SFX/Rewards/reward_coin.wav
+00:33.56  Reward Gem          SFX/Rewards/reward_gem.wav
+00:36.32  Match Start         SFX/Events/match_start.wav
+00:38.48  Victory             SFX/Events/victory_short.wav
+00:40.75  Defeat              SFX/Events/defeat.wav

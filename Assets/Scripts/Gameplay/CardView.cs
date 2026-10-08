@@ -1,6 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
 using Project51.Core;
+using TMPro;
 using System;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -153,6 +154,7 @@ namespace Project51.Unity
 
                 // Ensure visible color and sorting order
                 spriteRenderer.color = Color.white;
+                resting = false;
                 if (string.IsNullOrEmpty(spriteRenderer.sortingLayerName))
                     spriteRenderer.sortingLayerName = "Default";
                 // elevate order so UI/camera overlays don't hide them
@@ -252,11 +254,14 @@ namespace Project51.Unity
                     OnCardClicked?.Invoke(this);
                 }
             }
-            else if (Tapped != null && !IsPointerOverUI())
-            {
-                GameFeedback.TryHaptic(false);
-                Tapped(this);
-            }
+        }
+
+        // B27 (A1): le carte accusate degli altri aprono il visore al rilascio, come ogni pulsante del tavolo.
+        private void OnMouseUpAsButton()
+        {
+            if (isClickable || Tapped == null || IsPointerOverUI()) return;
+            GameFeedback.TryHaptic(false);
+            Tapped(this);
         }
 
         /// <summary>
@@ -359,17 +364,7 @@ namespace Project51.Unity
             // carta venga disattivata (nascosta, distrutta, riusata) mentre il mouse era ancora
             // sopra: in quel caso OnMouseExit non scatta affatto.
             if (s_Hovered == this) s_Hovered = null;
-            if (isMouseOver)
-            {
-                isMouseOver = false;
-                if (!showingTemporaryValue && temporaryFaceSprite != null && spriteRenderer != null)
-                {
-                    spriteRenderer.sprite = temporaryFaceSprite;
-                    showingTemporaryValue = true;
-                    SetMarkerVisible(markerRenderer != null && markerRenderer.sprite != null);
-                }
-
-            }
+            isMouseOver = false;
             StopPoseAnimations();
             isSelected = false;
             transform.localScale = displayScale;
@@ -399,19 +394,9 @@ namespace Project51.Unity
             {
                 SurfaceEffect.PlaySweep();
                 // if selected, keep selection animation; otherwise scale smoothly
+                // B27 (A1/A3, scelta 07/10): niente piu' 7 di coppe sotto il dito, la matta ha la sua scritta fissa.
                 if (!isSelected)
                     AnimateHover(true);
-
-                // Show original 7 di Coppe when hovering (hide Matta temporary value)
-                if (showingTemporaryValue && originalFaceSprite != null)
-                {
-                    if (spriteRenderer != null)
-                    {
-                        spriteRenderer.sprite = originalFaceSprite;
-                        showingTemporaryValue = false;
-                        SetMarkerVisible(false);
-                    }
-                }
             }
         }
 
@@ -434,17 +419,6 @@ namespace Project51.Unity
             {
                 if (!isSelected)
                     AnimateHover(false);
-
-                // Restore Matta temporary value when leaving hover
-                if (!showingTemporaryValue && temporaryFaceSprite != null)
-                {
-                    if (spriteRenderer != null)
-                    {
-                        spriteRenderer.sprite = temporaryFaceSprite;
-                        showingTemporaryValue = true;
-                        SetMarkerVisible(markerRenderer != null && markerRenderer.sprite != null);
-                    }
-                }
             }
         }
 
@@ -477,8 +451,7 @@ namespace Project51.Unity
             if (_turnControllerCache == null || _turnControllerCache.CurrentPlayerIndex < 0)
                 return true; // fallback: nessun TurnController trovato ancora (es. scena in caricamento)
 
-            return _turnControllerCache.IsHumanPlayerTurn
-                && GameModeService.Current.IsLocalPlayer(_turnControllerCache.CurrentPlayerIndex);
+            return _turnControllerCache.AcceptsLocalInput; // B3: anche tavolo fermo e nessuna mossa gia' mandata
         }
 
         private float lastClickTime = 0f;
@@ -487,7 +460,6 @@ namespace Project51.Unity
         // Temporary value overlay support (for Matta during accusi)
         private Sprite originalFaceSprite;
         private Sprite temporaryFaceSprite;
-        private bool showingTemporaryValue = false;
         private bool isMouseOver = false; // Track if mouse is currently over this card
         private SpriteRenderer markerRenderer; // small overlay marker
 
@@ -519,6 +491,22 @@ namespace Project51.Unity
         }
 
         // When clicked we toggle selection elevation animation
+        private bool resting;
+        private static readonly Color RestingTint = new Color(0.72f, 0.72f, 0.72f, 1f);
+
+        /// <summary>
+        /// Test 6 (terzo giro 08/10): mano propria "a riposo" mentre gioca un altro, un poco piu' scura come un pulsante spento; al
+        /// proprio turno torna piena (0,25 s).
+        /// </summary>
+        public void SetResting(bool on)
+        {
+            if (resting == on || spriteRenderer == null) return;
+            resting = on;
+            var sr = spriteRenderer;
+            DOTween.Kill(sr);
+            DOTween.To(() => sr.color, c => sr.color = c, on ? RestingTint : Color.white, 0.25f).SetTarget(sr).SetLink(gameObject);
+        }
+
         public void SetSelected(bool selected)
         {
             if (isSelected == selected) return;
@@ -544,9 +532,11 @@ namespace Project51.Unity
         {
             float elapsed = 0f;
             var startScale = GetPoseScale();
-            var targetScale = select ? displayScale * 1.12f : displayScale;
             var startPos = transform.position;
-            var targetPos = select ? originalPosition + Vector3.up * Raise : originalPosition;
+            // B4: la posa di riposo si rilegge a ogni frame: se intanto SetPosition/SetDisplayScale spostano la carta (mossa
+            // confermata, mano ridisposta), l'animazione va li' invece di riportarla nel posto vecchio.
+            Vector3 TargetScale() => select ? displayScale * 1.12f : displayScale;
+            Vector3 TargetPos() => select ? originalPosition + Vector3.up * Raise : originalPosition;
             if (spriteRenderer != null)
             {
                 if (select)
@@ -559,13 +549,13 @@ namespace Project51.Unity
             {
                 elapsed += Time.deltaTime;
                 var t = PoseEase(Mathf.Clamp01(elapsed / selectionAnimDuration), select);
-                transform.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
-                transform.position = Vector3.LerpUnclamped(startPos, targetPos, t);
+                transform.localScale = Vector3.LerpUnclamped(startScale, TargetScale(), t);
+                transform.position = Vector3.LerpUnclamped(startPos, TargetPos(), t);
                 yield return null;
             }
 
-            transform.localScale = targetScale;
-            transform.position = targetPos;
+            transform.localScale = TargetScale();
+            transform.position = TargetPos();
             selectionCoroutine = null;
         }
 
@@ -645,20 +635,21 @@ namespace Project51.Unity
             float elapsed = 0f;
             Vector3 startScale = GetPoseScale();
             Vector3 startPosition = transform.position;
-            Vector3 targetScale = enter ? displayScale * hoverScaleMultiplier : displayScale;
-            Vector3 targetPosition = enter ? originalPosition + Vector3.up * hoverRaiseAmount : originalPosition;
+            // B4: obiettivo letto a ogni frame (vedi SelectionCoroutine); una carta passata al tavolo (EnableHover falso) non resta sollevata.
+            Vector3 TargetScale() => enter && enableHover ? displayScale * hoverScaleMultiplier : displayScale;
+            Vector3 TargetPosition() => enter && enableHover ? originalPosition + Vector3.up * hoverRaiseAmount : originalPosition;
 
             while (elapsed < hoverAnimDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = PoseEase(Mathf.Clamp01(elapsed / hoverAnimDuration), enter);
-                transform.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
-                transform.position = Vector3.LerpUnclamped(startPosition, targetPosition, t);
+                transform.localScale = Vector3.LerpUnclamped(startScale, TargetScale(), t);
+                transform.position = Vector3.LerpUnclamped(startPosition, TargetPosition(), t);
                 yield return null;
             }
 
-            transform.localScale = targetScale;
-            transform.position = targetPosition;
+            transform.localScale = TargetScale();
+            transform.position = TargetPosition();
             hoverCoroutine = null;
         }
 
@@ -801,21 +792,8 @@ namespace Project51.Unity
             // It was already set in Initialize() to preserve the real card sprite (7 di Coppe)
             // If we overwrote it here, we would lose the reference to the original sprite
             
-            // IMPORTANT: If mouse is currently over the card, don't change the sprite!
-            // The user is viewing the original 7 di Coppe and we don't want to interrupt that.
-            if (isMouseOver)
-            {
-                // Just update the marker sprite, but keep it hidden
-                EnsureMarkerRenderer();
-                markerRenderer.sprite = marker;
-                SetMarkerVisible(false);
-                // Keep showingTemporaryValue = false so OnMouseExit will restore the temp sprite
-                return;
-            }
-            
             // Show the temporary sprite immediately (not the original 7 di Coppe)
             spriteRenderer.sprite = tempSprite;
-            showingTemporaryValue = true;
             
             // Set marker and show it
             EnsureMarkerRenderer();
@@ -827,7 +805,6 @@ namespace Project51.Unity
         public void ClearTemporaryValue()
         {
             CancelMattaAnimation();
-            showingTemporaryValue = false;
             temporaryFaceSprite = null;
             if (spriteRenderer != null && originalFaceSprite != null)
             {
@@ -844,13 +821,14 @@ namespace Project51.Unity
 
         /// <summary>
         /// La matta diventa targetSprite per l'accuso: la carta si gira e cambia faccia, dietro resta un
-        /// alone dorato che pulsa. Passandoci sopra si vede ancora il 7 di coppe vero.
+        /// alone dorato che pulsa, bordo viola e scritta "MATTA" (B26).
         /// Richiamabile a ogni refresh: l'animazione parte solo quando il valore cambia.
         /// </summary>
         public void ShowMattaTransform(Sprite targetSprite, Sprite haloSprite)
         {
             if (targetSprite == null || CardRenderer == null) return;
             EnsureMattaHalo(haloSprite);
+            SetMattaMarker(true);
             if (shownMattaTarget == targetSprite) return;
             shownMattaTarget = targetSprite;
 
@@ -867,6 +845,7 @@ namespace Project51.Unity
 
         public void ClearMattaTransform()
         {
+            SetMattaMarker(false);
             CancelMattaAnimation();
             if (shownMattaTarget == null && (mattaHalo == null || !mattaHalo.gameObject.activeSelf)) return;
             shownMattaTarget = null;
@@ -955,12 +934,18 @@ namespace Project51.Unity
         private static readonly Color MoveHintColor = new Color(0.45f, 0.92f, 1f);
 
         /// <summary>Impostazioni in partita, "Suggerimenti mosse". Senza sprite il bagliore non compare.</summary>
-        public void SetMoveHint(bool on, Sprite glowSprite) => SetGlow(on, glowSprite, MoveHintColor);
+        /// B26 (O1): oltre al bagliore, un bordo netto azzurro (il bagliore da solo si vedeva appena).
+        public void SetMoveHint(bool on, Sprite glowSprite)
+        {
+            SetGlow(on, glowSprite, MoveHintColor);
+            PlaceOutline(ref hintOutline, "HintOutline", MoveHintColor, on ? HintOutlineWidth : 0f, 0.008f);
+        }
 
         /// <summary>Alone colorato dietro alla carta (suggerimenti, accuso del mazziere).</summary>
         public void SetGlow(bool on, Sprite glowSprite, Color color)
         {
             moveHintColor = color;
+            if (hintOutline != null) hintOutline.gameObject.SetActive(false); // il bordo azzurro e' solo dei suggerimenti
             if (!on || glowSprite == null || CardRenderer == null)
             {
                 if (moveHintGlow != null) moveHintGlow.gameObject.SetActive(false);
@@ -989,7 +974,58 @@ namespace Project51.Unity
         private const int OutlinePixels = 64, OutlineCornerPixels = 16; // sprite 9-slice generato, 100 px per unita'
 
         /// <summary>Bordo attorno alla carta spesso width volte la sua larghezza (0 = spento), angoli come quelli della carta.</summary>
-        public void SetOutline(Color color, float width)
+        public void SetOutline(Color color, float width) => PlaceOutline(ref outline, "Outline", color, width, 0.01f);
+
+        // Bordi propri (B26): matta e suggerimento non sovrascrivono quello delle carte accusate / tre assi.
+        // Piu' avanti (z minore) copre: la matta (0.009) copre l'oro dell'accusata (0.01); il suggerimento (0.008), piu' stretto, sta dentro alla matta.
+        private SpriteRenderer mattaOutline, hintOutline, mattaPill;
+        private TextMeshPro mattaTag;
+        private static readonly Color MattaColor = new Color32(0xC0, 0x6C, 0xF0, 0xFF);
+        private const float MattaOutlineWidth = 0.06f, HintOutlineWidth = 0.035f;
+
+        /// <summary>B26 (A3): finche' la matta vale un'altra carta ha un bordo viola e la scritta "MATTA" in basso.</summary>
+        private void SetMattaMarker(bool on)
+        {
+            PlaceOutline(ref mattaOutline, "MattaOutline", MattaColor, on ? MattaOutlineWidth : 0f, 0.009f);
+            if (!on || CardRenderer == null || CardRenderer.sprite == null)
+            {
+                if (mattaPill != null) mattaPill.gameObject.SetActive(false);
+                return;
+            }
+            if (mattaPill == null)
+            {
+                var child = new GameObject("MattaTag");
+                child.transform.SetParent(CardRenderer.transform, false);
+                child.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+                mattaPill = child.AddComponent<SpriteRenderer>();
+                mattaPill.drawMode = SpriteDrawMode.Sliced;
+                mattaPill.sprite = OutlineSprite();
+                mattaPill.color = MattaColor;
+                var label = new GameObject("Text");
+                label.transform.SetParent(child.transform, false);
+                label.hideFlags = child.hideFlags;
+                mattaTag = label.AddComponent<TextMeshPro>();
+                mattaTag.text = "MATTA";
+                mattaTag.fontStyle = FontStyles.Bold;
+                mattaTag.alignment = TextAlignmentOptions.Center;
+                mattaTag.enableWordWrapping = false;
+                mattaTag.enableAutoSizing = true;
+                mattaTag.fontSizeMin = 0.1f;
+                mattaTag.fontSizeMax = 100f;
+                mattaTag.color = Color.white;
+            }
+            var bounds = CardRenderer.sprite.bounds;
+            var size = new Vector2(bounds.size.x * 0.7f, bounds.size.y * 0.13f);
+            float s = size.y * 0.5f / (OutlineCornerPixels / 100f); // angoli = meta' altezza: pillola
+            mattaPill.transform.localPosition = new Vector3(bounds.center.x, bounds.min.y + bounds.size.y * 0.12f, -0.01f);
+            mattaPill.transform.localScale = new Vector3(s, s, 1f);
+            mattaPill.size = size / s;
+            mattaTag.rectTransform.sizeDelta = new Vector2(size.x * 0.86f, size.y * 0.8f) / s;
+            mattaTag.transform.localPosition = new Vector3(0f, 0f, -0.001f);
+            mattaPill.gameObject.SetActive(true);
+        }
+
+        private void PlaceOutline(ref SpriteRenderer outline, string name, Color color, float width, float z)
         {
             if (width <= 0f || CardRenderer == null || CardRenderer.sprite == null)
             {
@@ -999,7 +1035,7 @@ namespace Project51.Unity
 
             if (outline == null)
             {
-                var child = new GameObject("Outline");
+                var child = new GameObject(name);
                 child.transform.SetParent(CardRenderer.transform, false);
                 child.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
                 outline = child.AddComponent<SpriteRenderer>();
@@ -1012,7 +1048,7 @@ namespace Project51.Unity
             // Angoli della carta circa al 9% della larghezza, piu' lo spessore. Un filo dietro alla carta (z): stesso ordine,
             // cosi' sta sopra alla sua ombra (coda 2999) e sotto alla faccia.
             float s = (0.09f * bounds.size.x + t) / (OutlineCornerPixels / 100f);
-            outline.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, 0.01f);
+            outline.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, z);
             outline.transform.localScale = new Vector3(s, s, 1f);
             outline.size = new Vector2(bounds.size.x + 2f * t, bounds.size.y + 2f * t) / s;
             outline.color = color;
@@ -1047,11 +1083,14 @@ namespace Project51.Unity
             if (dropShadow != null)
                 dropShadow.SetElevation(Mathf.Clamp01((transform.position.y - originalPosition.y) /
                     Mathf.Max(.01f, Raise)));
-            if (outline != null && outline.gameObject.activeSelf && CardRenderer != null)
+            FollowCard(outline, 0);
+            FollowCard(mattaOutline, 0);
+            FollowCard(hintOutline, 0);
+            if (FollowCard(mattaPill, 1))
             {
-                outline.enabled = CardRenderer.enabled;
-                outline.sortingLayerID = CardRenderer.sortingLayerID;
-                outline.sortingOrder = CardRenderer.sortingOrder;
+                mattaTag.enabled = mattaPill.enabled;
+                mattaTag.sortingLayerID = mattaPill.sortingLayerID;
+                mattaTag.sortingOrder = mattaPill.sortingOrder + 1;
             }
             bool haloOn = mattaHalo != null && mattaHalo.gameObject.activeSelf;
             if (moveHintGlow != null && moveHintGlow.gameObject.activeSelf)
@@ -1071,6 +1110,16 @@ namespace Project51.Unity
             mattaHaloBurst = Mathf.MoveTowards(mattaHaloBurst, 0f, Time.deltaTime * 2.5f);
             float pulse = GamePreferences.ReducedGraphics ? 0.75f : 0.6f + 0.25f * (Mathf.Sin(Time.time * 4f) + 1f) * 0.5f;
             mattaHalo.color = new Color(1f, 0.8f, 0.35f, GamePreferences.ReducedGraphics ? pulse : Mathf.Clamp01(pulse + mattaHaloBurst));
+        }
+
+        /// <summary>Un pezzo attaccato alla carta segue il suo ordine (hover, selezione) e si nasconde con lei.</summary>
+        private bool FollowCard(SpriteRenderer part, int above)
+        {
+            if (part == null || !part.gameObject.activeSelf || CardRenderer == null) return false;
+            part.enabled = CardRenderer.enabled;
+            part.sortingLayerID = CardRenderer.sortingLayerID;
+            part.sortingOrder = CardRenderer.sortingOrder + above;
+            return true;
         }
 
         /// <summary>

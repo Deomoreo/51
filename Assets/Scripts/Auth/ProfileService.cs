@@ -16,8 +16,8 @@ namespace Project51.Auth
     /// - Statistics: Valori numerici come Level, Wins, TotalGames (le scrive solo il server, qui si leggono)
     /// 
     /// NOTA SICUREZZA:
-    /// - Player Data con permesso "Public" è visibile ad altri giocatori
-    /// - Player Data con permesso "Private" è solo per il proprietario
+    /// - Player Data con permesso "Public" Ã¨ visibile ad altri giocatori
+    /// - Player Data con permesso "Private" Ã¨ solo per il proprietario
     /// - Statistics sono automaticamente pubbliche per leaderboard
     /// </summary>
     public class ProfileService
@@ -37,6 +37,8 @@ namespace Project51.Auth
         public const string DATA_BLOCKED = "Bloccati"; // PlayFab ID bloccati, separati da "|" (BlockList)
         // Aspetto come proprieta' del giocatore Photon: lo scrive AuthBootstrapper.PublishLook, lo legge ProfileCosmetics.ReadLook.
         public const string LookFrameKey = "fr", LookBannerKey = "bn", LookLevelKey = "lv";
+        // B20 (ST4): avatar scelto (id = nome dello sprite UI51, come AvatarId), per tavolo e lobby degli altri.
+        public const string LookAvatarKey = "av";
         // Profilo rapido al tavolo (01/10): partite, vittorie, scope totali e id PlayFab (per Aggiungi amico, Segnala, Silenzia).
         public const string LookGamesKey = "gp", LookWinsKey = "gw", LookScopeKey = "sc", LookIdKey = "id";
         /// <summary>PlayFab ID di questa sessione d'ospite: per segnalarlo (le sanzioni degli ospiti restano sul loro dispositivo).</summary>
@@ -47,8 +49,26 @@ namespace Project51.Auth
         private Dictionary<string, int> _statisticsCache = new Dictionary<string, int>();
         
         public bool IsLoaded { get; private set; }
+
+        /// <summary>B19: un LoadProfile dell'account attuale e' in volo (il Profilo mostra RIPROVA solo a caricamento finito male).</summary>
+        public bool IsLoading => loading > 0;
+        private int loading;
+
+        // B10 (S3): ogni cambio di account (Reset) scarta le risposte ancora in volo per l'account di prima.
+        private int generation;
+
+        /// <summary>Cambio di account: via i dati del vecchio, finche' LoadProfile non porta quelli nuovi.</summary>
+        public void Reset()
+        {
+            generation++;
+            loading = 0;
+            IsLoaded = false;
+            DisplayName = null;
+            _playerDataCache.Clear();
+            _statisticsCache.Clear();
+        }
         
-        // Proprietà di accesso rapido
+        // ProprietÃ  di accesso rapido
         public string DisplayName { get; private set; }
         public int Level => GetStatistic(STAT_LEVEL, 1);
         public int Wins => GetStatistic(STAT_WINS, 0);
@@ -75,18 +95,25 @@ namespace Project51.Auth
             // Carica dati in parallelo
             int pendingRequests = 3;
             bool hasError = false;
+            int gen = generation;
+            loading++;
             
             void CheckComplete()
             {
                 pendingRequests--;
+                // Caricamento dell'account di prima: niente stato ne' eventi, ma chi aspetta (onComplete) si sblocca lo stesso
+                // (la Home altrimenti resterebbe "in caricamento" per sempre).
+                if (gen != generation) { if (pendingRequests <= 0) onComplete?.Invoke(); return; }
                 if (pendingRequests <= 0)
                 {
+                    loading--;
                     IsLoaded = !hasError;
                     if (IsLoaded)
                     {
                         Debug.Log("[ProfileService] Profile loaded successfully");
                         OnProfileLoaded?.Invoke();
                     }
+                    else OnProfileUpdated?.Invoke(); // B19: chi mostra il profilo passa da "in caricamento" a RIPROVA
                     onComplete?.Invoke();
                 }
             }
@@ -226,6 +253,9 @@ namespace Project51.Auth
 
         #region Private Methods
         
+        /// <summary>B19 (ST1): rilegge solo le statistiche (premio di fine partita non arrivato): chi mostra il profilo si aggiorna.</summary>
+        public void RefreshStatistics() => LoadStatistics(() => OnProfileUpdated?.Invoke(), null);
+
         private void LoadDisplayName(Action onSuccess, Action onError)
         {
             var request = new GetPlayerProfileRequest
@@ -236,9 +266,11 @@ namespace Project51.Auth
                 }
             };
             
+            int gen = generation;
             PlayFabClientAPI.GetPlayerProfile(request,
                 result =>
                 {
+                    if (gen != generation) { onSuccess?.Invoke(); return; } // dati dell'account di prima: non si scrivono
                     DisplayName = result.PlayerProfile?.DisplayName ?? "Player";
                     onSuccess?.Invoke();
                 },
@@ -257,9 +289,11 @@ namespace Project51.Auth
                 StatisticNames = new List<string> { STAT_LEVEL, STAT_WINS, STAT_TOTAL_GAMES, STAT_XP, STAT_TOTAL_SCOPE }
             };
             
+            int gen = generation;
             PlayFabClientAPI.GetPlayerStatistics(request,
                 result =>
                 {
+                    if (gen != generation) { onSuccess?.Invoke(); return; } // dati dell'account di prima: non si scrivono
                     _statisticsCache.Clear();
                     
                     foreach (var stat in result.Statistics)
@@ -291,9 +325,11 @@ namespace Project51.Auth
                 Keys = new List<string> { DATA_AVATAR_ID, DATA_BANNER_ID, DATA_FRAME_ID, DATA_BLOCKED }
             };
             
+            int gen = generation;
             PlayFabClientAPI.GetUserData(request,
                 result =>
                 {
+                    if (gen != generation) { onSuccess?.Invoke(); return; } // dati dell'account di prima: non si scrivono
                     _playerDataCache.Clear();
                     
                     if (result.Data != null)

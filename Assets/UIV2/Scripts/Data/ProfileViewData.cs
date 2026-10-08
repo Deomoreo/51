@@ -21,5 +21,6 @@ namespace Project51.UIV2.Data
         public bool IsGuest;
         public bool HasProgress = true;
         public bool HasMatchStats = true;
+        public bool CanRetry;           // B19: caricamento dell'account fallito (non in corso) -> RIPROVA
     }
 }

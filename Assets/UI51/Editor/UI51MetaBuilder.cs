@@ -371,7 +371,19 @@ namespace Project51.UI51.EditorTools
         const int PageCount = 4, ProfilePage = 3;
         // Titolo e pulsanti della pagina stanno sulla riga della testata della Home (avatar 58 a 22 dall'alto).
         const float HeaderTop = 22f + 29f - 20f;
-        static readonly string[] AvatarNames = { "avatar_1", "av_2", "av_3", "av_4", "av_5", "av_6", "av_7", "av_8" };
+        internal static readonly string[] AvatarNames = { "avatar_1", "av_2", "av_3", "av_4", "av_5", "av_6", "av_7", "av_8" };
+
+        /// <summary>B19: RIPROVA a destra della riga del livello, acceso da ProfileScreenV2 solo a caricamento fallito.</summary>
+        public static Button ProfileRetry(RectTransform level)
+        {
+            var old = level.Find("Retry");
+            if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
+            var retry = UI51Build.Child(level, "Retry");
+            UI51PrefabBuilder.GoldBody(retry.gameObject, 96f, 30f, 15f, FontFace.CinzelBold, 11f, 1f, "RIPROVA");
+            UI51Build.Place(retry, new Vector2(1f, 0.5f), new Vector2(96f, 30f), Vector2.zero);
+            retry.gameObject.SetActive(false);
+            return retry.GetComponent<Button>();
+        }
 
         static void BuildProfile(ProfileScreenV2 profile, ScrollRect scroll, HomeV2Integration home, UIV2TopBar topBar, Transform modalHost)
         {
@@ -449,6 +461,7 @@ namespace Project51.UI51.EditorTools
             });
             var hint = UI51Build.NoWrap(UI51Build.Text(Line(info, "Hint", 15f), "", FontFace.NunitoRegular, 11f,
                 UI51Tokens.CreamA(0.5f), TextAlignmentOptions.MidlineLeft));
+            var retry = ProfileRetry(level);
 
             var grid = Line(Section(account, "Stats", "STATISTICHE"), "Grid", 62f);
             var tiles = UI51Build.Row(grid, 10f, null, TextAnchor.MiddleCenter, true, true);
@@ -554,6 +567,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "xpHintLabel", hint);
                 UI51Build.Ref(so, "editButton", editButton);
                 UI51Build.Ref(so, "loginButton", login);
+                UI51Build.Ref(so, "retryButton", retry);
             });
 
             var editor = BuildEditor(modalHost, avatars);

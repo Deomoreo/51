@@ -45,17 +45,39 @@ namespace Project51.Unity.UI
 
         public void Open()
         {
-            var p = AuthBootstrapper.Instance != null ? AuthBootstrapper.Instance.Profile : null;
-            games = p != null ? p.TotalGames : 0; wins = p != null ? p.Wins : 0;
-            scope = p != null ? p.TotalScope : 0; level = p != null ? p.Level : 1;
             gameObject.SetActive(true);
             detail.SetActive(false);
+            Bind();
+            Filter(0);
+            UIAnim.FadeIn((RectTransform)transform, 0.2f);
+        }
+
+        // B19 (ST2): aperta prima che il profilo arrivi (o mentre si aggiorna), la pagina si riallinea da sola.
+        private static ProfileService Profile => AuthBootstrapper.Instance != null ? AuthBootstrapper.Instance.Profile : null;
+
+        private void OnEnable()
+        {
+            if (Profile == null) return;
+            Profile.OnProfileLoaded += Bind;
+            Profile.OnProfileUpdated += Bind;
+        }
+
+        private void OnDisable()
+        {
+            if (Profile == null) return;
+            Profile.OnProfileLoaded -= Bind;
+            Profile.OnProfileUpdated -= Bind;
+        }
+
+        private void Bind()
+        {
+            var p = Profile;
+            games = p != null ? p.TotalGames : 0; wins = p != null ? p.Wins : 0;
+            scope = p != null ? p.TotalScope : 0; level = p != null ? PlayerXp.LevelOf(p.XP) : 1; // dall'XP, come la Home
             int earned = Trophies.CountEarned(games, wins, scope, level), total = Trophies.All.Length;
             count.text = earned + " / " + total;
             var max = progressFill.anchorMax; max.x = (float)earned / total; progressFill.anchorMax = max;
             for (int i = 0; i < cards.Length && i < Trophies.All.Length; i++) BindCard(cards[i], Trophies.All[i]);
-            Filter(0);
-            UIAnim.FadeIn((RectTransform)transform, 0.2f);
         }
 
         /// <summary>

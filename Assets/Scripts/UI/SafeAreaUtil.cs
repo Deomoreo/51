@@ -8,7 +8,7 @@ namespace Project51.Unity
         {
             Rect raw = Screen.safeArea;
 
-            // Se Ë gi‡ coerente con Screen.width/height (player window), non convertire
+            // Se √® gi√† coerente con Screen.width/height (player window), non convertire
             if (raw.width <= Screen.width + 1f && raw.height <= Screen.height + 1f)
             {
                 return raw;

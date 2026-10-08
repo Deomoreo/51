@@ -35,12 +35,16 @@ namespace Project51.Auth
     public sealed class FriendsChat : MonoBehaviour, IChatClientListener
     {
         const string Prefix = "51|invito|";
+        // Secondo giro Android 08/10: "rileggi gli amici" (richiesta, accetta, rifiuta, rimuovi, avatar o banner cambiati).
+        public const string ChangedMessage = "51|amici";
         const double InviteMaxAgeSeconds = 120;
 
         public static FriendsChat Instance { get; private set; }
 
         public event Action OnPresenceChanged;
         public event Action<FriendInvite> OnInvite;
+        /// <summary>Un amico (o chi mi manda una richiesta) ha cambiato qualcosa: la lista va riletta dal server.</summary>
+        public event Action OnFriendsChanged;
 
         public bool IsAvailable => !string.IsNullOrEmpty(AppId);
         public bool IsConnected => client != null && client.CanChat;
@@ -51,6 +55,8 @@ namespace Project51.Auth
         private readonly HashSet<string> friends = new HashSet<string>();
         private bool connecting;
         private string playingNote;
+        // B15 (P1): caduta non voluta -> nuovo tentativo da solo, 5 s poi il doppio fino a 30 s; si riparte da 5 a collegamento riuscito.
+        private float retryDelay = 5f;
 
         static string AppId => PhotonNetwork.PhotonServerSettings != null ? PhotonNetwork.PhotonServerSettings.AppSettings.AppIdChat : null;
 
@@ -80,11 +86,11 @@ namespace Project51.Auth
 
         private void Update() => client?.Service();
 
-        // In pausa Chat va in timeout: al ritorno ci si ricollega (e gli amici ci rivedono online).
+        // B15 (P1/P3, scelta 07/10): in background offline subito (gli amici lo vedono), al ritorno ci si ricollega.
         private void OnApplicationPause(bool paused)
         {
-            if (paused) return;
-            if (friends.Count > 0) Connect();
+            if (paused) { CancelInvoke(nameof(Connect)); client?.Disconnect(); }
+            else Connect();
         }
 
         /// <summary>Si collega (una volta) e segue questi amici: lo stato arriva con OnPresenceChanged.</summary>
@@ -106,6 +112,18 @@ namespace Project51.Auth
         {
             if (!IsConnected) return false;
             return client.SendPrivateMessage(friendId, FormatInvite(roomCode, format, myName, DateTime.UtcNow));
+        }
+
+        /// <summary>Avvisa quel giocatore di rileggere gli amici. Senza Chat (o lui offline) niente: lo prende al prossimo giro (UI51FriendsView).</summary>
+        public void Nudge(string playFabId)
+        {
+            if (IsConnected && !string.IsNullOrEmpty(playFabId)) client.SendPrivateMessage(playFabId, ChangedMessage);
+        }
+
+        /// <summary>Avvisa tutti gli amici seguiti (avatar, cornice o banner cambiati).</summary>
+        public void NudgeAll()
+        {
+            foreach (var id in friends) Nudge(id);
         }
 
         /// <summary>"51|invito|codice|formato|ora unix|nome" (il nome per ultimo: puo' contenere "|").</summary>
@@ -138,12 +156,12 @@ namespace Project51.Auth
             PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest { PhotonApplicationId = AppId }, result =>
             {
                 if (this == null) return;
-                client = new ChatClient(this) { ChatRegion = "EU" };
+                client = new ChatClient(this) { ChatRegion = "EU", EnableProtocolFallback = true }; // come PUN: UDP bloccato -> TCP
                 var values = new AuthenticationValues { AuthType = CustomAuthenticationType.Custom };
                 values.AddAuthParameter("username", id);
                 values.AddAuthParameter("token", result.PhotonCustomAuthenticationToken);
                 values.UserId = id;
-                if (!client.Connect(AppId, Application.version, values)) connecting = false;
+                if (!client.Connect(AppId, PhotonAuthConnector.AppVersion, values)) connecting = false;
             }, error =>
             {
                 connecting = false;
@@ -154,7 +172,7 @@ namespace Project51.Auth
         private void OnSceneChanged(Scene from, Scene to)
         {
             playingNote = to.name == "GameScene" ? "In partita" : null;
-            if (friends.Count > 0) Connect();
+            Connect();
             PublishStatus();
         }
 
@@ -170,6 +188,7 @@ namespace Project51.Auth
         public void OnConnected()
         {
             connecting = false;
+            retryDelay = 5f;
             if (friends.Count > 0) client.AddFriends(new List<string>(friends).ToArray());
             PublishStatus();
         }
@@ -180,6 +199,13 @@ namespace Project51.Auth
             presence.Clear();
             presenceNote.Clear();
             OnPresenceChanged?.Invoke();
+            var cause = client != null ? client.DisconnectedCause : ChatDisconnectCause.None;
+            if (Debug.isDebugBuild) Debug.Log("[FriendsChat] Disconnected: " + cause);
+            // Uscita voluta (pausa, cambio account) o credenziali rifiutate: nessun nuovo tentativo.
+            if (cause == ChatDisconnectCause.DisconnectByClientLogic || cause == ChatDisconnectCause.InvalidAuthentication
+                || cause == ChatDisconnectCause.CustomAuthenticationFailed) return;
+            Invoke(nameof(Connect), retryDelay);
+            retryDelay = Mathf.Min(retryDelay * 2f, 30f);
         }
 
         public void OnStatusUpdate(string user, int status, bool gotMessage, object message)
@@ -194,6 +220,7 @@ namespace Project51.Auth
         {
             if (client != null && sender == client.UserId) return; // la copia del messaggio che ho mandato io
             if (BlockList.IsBlocked(sender)) return; // giocatore bloccato: niente inviti
+            if (message as string == ChangedMessage) { OnFriendsChanged?.Invoke(); return; }
             // Anche da chi non e' nella mia lista: l'amicizia PlayFab e' a senso unico (chi mi ha aggiunto puo' invitarmi).
             if (TryParseInvite(sender, message, DateTime.UtcNow, out var invite)) OnInvite?.Invoke(invite);
         }

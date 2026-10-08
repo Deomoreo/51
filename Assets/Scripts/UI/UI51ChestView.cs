@@ -1,3 +1,4 @@
+using DG.Tweening;
 using Project51.Auth;
 using Project51.UI51;
 using TMPro;
@@ -29,17 +30,17 @@ namespace Project51.Unity.UI
             collect.onClick.AddListener(() => gameObject.SetActive(false));
         }
 
-        /// <summary>Apre la schermata se nel premio c'e' un forziere; altrimenti falso (chi chiama festeggia a modo suo).</summary>
+        /// <summary>
+        /// Apre la schermata se nel premio c'e' un forziere; altrimenti falso (chi chiama festeggia a modo suo).
+        /// Premi e Posta la aprono quando il server ha risposto, col premio vero (secondo giro 08/10: niente piu' premio previsto).
+        /// </summary>
         public bool Open(ServerReward r)
         {
             if (r == null || r.forzieri == null || r.forzieri.Length == 0) return false;
             bool isGreen = r.forzieri[0].colore == "verde";
             chestImage.sprite = smallChestImage.sprite = isGreen ? green : purple;
             caption.text = isGreen ? "FORZIERE VERDE" : "FORZIERE VIOLA";
-            coinsText.text = "+" + r.monete;
-            gemsText.text = "+" + r.gemme;
-            coinsCard.gameObject.SetActive(r.monete > 0);
-            gemsCard.gameObject.SetActive(r.gemme > 0);
+            Fill(r);
 
             gameObject.SetActive(true);
             closed.SetActive(true);
@@ -49,12 +50,25 @@ namespace Project51.Unity.UI
             UIAnim.FadeIn((RectTransform)transform, 0.25f);
             UIAnim.Pop(chest, 0.6f, 1.06f, 0.4f);
             if (UIAnim.DecorativeLoops) Wobble.Play(chestImage.rectTransform, 0.5f, -1); // sull'immagine: Play sul bottone ucciderebbe il pop
-            UIAnim.Blink(tapLabel, 0.45f, 1f, 1.6f);
+            // B21 (M1, scelta 07/10): il forziere si apre da solo dopo il pop, RACCOGLI e' l'unico tocco (prima: forziere, poi RACCOGLI).
+            // Giro Android 08/10: dopo 1.4 s (era 0.7, l'apertura quasi non si vedeva).
+            tapLabel.gameObject.SetActive(false);
+            DOVirtual.DelayedCall(1.4f, Reveal, true).SetLink(gameObject, LinkBehaviour.KillOnDisable);
             return true;
+        }
+
+        /// <summary>Contenuto deciso dal server.</summary>
+        private void Fill(ServerReward r)
+        {
+            coinsText.text = "+" + r.monete;
+            gemsText.text = "+" + r.gemme;
+            coinsCard.gameObject.SetActive(r.monete > 0);
+            gemsCard.gameObject.SetActive(r.gemme > 0);
         }
 
         private void Reveal()
         {
+            if (opened.activeSelf) return; // gia' aperto (tocco e apertura automatica insieme)
             UIAnim.Stop(chestImage.rectTransform);
             UIAnim.Stop(tapLabel);
             closed.SetActive(false);
@@ -63,9 +77,9 @@ namespace Project51.Unity.UI
             sub.text = "Già aggiunto al tuo saldo";
             UIAnim.RewardBurst(burst);
             UIAnim.Pop(smallChest, 0.6f, 1.08f, 0.35f);
-            float delay = 0.3f;
+            float delay = 0.45f;
             foreach (var card in new[] { coinsCard, gemsCard })
-                if (card.gameObject.activeSelf) { UIAnim.Flip(card, delay); delay += 0.25f; }
+                if (card.gameObject.activeSelf) { UIAnim.Flip(card, delay); delay += 0.35f; }
             UIAnim.Pop(collectRect, 0.8f, 1.04f, 0.3f, delay + 0.2f);
         }
     }

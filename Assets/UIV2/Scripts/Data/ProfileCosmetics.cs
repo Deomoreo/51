@@ -62,6 +62,21 @@ namespace Project51.UIV2.Data
             return has;
         }
 
+        /// <summary>Avatar pubblicato da un account (AuthBootstrapper.LookProps); null per bot, ospiti, versioni vecchie e valori strani.</summary>
+        public static string ReadAvatar(System.Collections.IDictionary props)
+        {
+            string id = props?[Project51.Auth.ProfileService.LookAvatarKey] as string;
+            return id != null && id.Length > 0 && id.Length <= 32 ? id : null;
+        }
+
+        /// <summary>Sprite di un avatar per id (nome dello sprite); id sconosciuto ("default", mai scelto) = il primo, come la Home.</summary>
+        public static UnityEngine.Sprite AvatarFor(UnityEngine.Sprite[] avatars, string id)
+        {
+            if (avatars == null || avatars.Length == 0) return null;
+            foreach (var a in avatars) if (a != null && a.name == id) return a;
+            return avatars[0];
+        }
+
         /// <summary>PlayFab ID della sessione di un ospite (AuthBootstrapper.LookProps), null per gli account e i valori strani.</summary>
         public static string GuestId(System.Collections.IDictionary props)
         {

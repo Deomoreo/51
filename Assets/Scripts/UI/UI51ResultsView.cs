@@ -38,6 +38,8 @@ namespace Project51.Unity.UI
         [SerializeField] private GameObject[] dashes = new GameObject[0];             // 32
         [SerializeField] private TMP_Text[] handTotals = new TMP_Text[0];             // 4
         [SerializeField] private RectTransform race;
+        /// <summary>"Corsa al 51" del fine smazzata (la illumina il tutorial, B33).</summary>
+        public RectTransform Race => race;
         [SerializeField] private TMP_Text raceTitle, raceNote;
         [SerializeField] private RectTransform[] raceRows = new RectTransform[0];     // 4
         [SerializeField] private TMP_Text[] raceNames = new TMP_Text[0], raceTotals = new TMP_Text[0];
@@ -152,7 +154,7 @@ namespace Project51.Unity.UI
             var byColumn = order.Select(e => b[e]).ToArray(); // "22 – 18" nell'ordine delle colonne (io per primo), non dei posti
             var roundScores = MatchScore.RoundScores(state);
             var totals = MatchScore.Totals(state);
-            roundMode.text = ModeLabel(state) + " · MANO " + state.RoundIndex;
+            roundMode.text = ModeLabel(state) + " · SMAZZATA " + state.RoundIndex; // X2: "mano" al tavolo sono le 3 carte
 
             for (int j = 0; j < heads.Length; j++)
             {
@@ -220,14 +222,15 @@ namespace Project51.Unity.UI
                 int e = order[j], after = totals[e], before = after - roundScores[e];
                 raceRows[j].anchoredPosition = new Vector2(raceRows[j].anchoredPosition.x, -(12f + 15f + gap + j * (18f + gap)));
                 raceNames[j].text = state.TeamMode ? (j == 0 ? "Noi" : "Loro") : GameSocialV2.PlayerName(e);
-                bool cappotto = MatchScore.IsCappotto(after);
-                raceTotals[j].text = (cappotto ? "Capp." : after.ToString()) + "<size=10><color=#F5E9D073> /" + target + "</color></size>";
+                bool cappotto = MatchScore.IsCappotto(after), exact = after == target; // 51 esatti: la barra torna a 0 (B30)
+                raceTotals[j].text = (cappotto ? "Capp." : exact ? "0" : after.ToString())
+                    + "<size=10><color=#F5E9D073> " + (exact ? target + " esatti" : "/" + target) + "</color></size>";
                 raceFrom[j] = Mathf.Clamp01((float)before / target);
-                raceTo[j] = cappotto ? 1f : Mathf.Clamp01((float)after / target);
+                raceTo[j] = cappotto ? 1f : exact ? 0f : Mathf.Clamp01((float)after / target);
             }
 
             var leaders = MatchScore.Leaders(state);
-            tiePending = tie != null && leaders.Length > 1 && totals[leaders[0]] >= target;
+            tiePending = tie != null && leaders.Length > 1 && totals[leaders[0]] > target;
             if (tiePending) BindTie(state, order.Where(leaders.Contains).ToArray(), totals[leaders[0]], target, localEntry);
         }
 
@@ -268,7 +271,7 @@ namespace Project51.Unity.UI
             if (tie != null) tie.gameObject.SetActive(false);
         }
 
-        /// <summary>Riga sotto il pulsante ("Si riparte da sola tra N secondi"); vuota = nascosta.</summary>
+        /// <summary>Riga sotto il pulsante ("Prossima smazzata tra N secondi"); vuota = nascosta.</summary>
         public void SetRoundCaption(string text)
         {
             if (roundCaption == null) return;
@@ -489,10 +492,21 @@ namespace Project51.Unity.UI
             coinsLabel.color = UI51Tokens.GoldLight;
             if (failed) { coinsLabel.text = "Monete non disponibili"; coinsLabel.color = UI51Tokens.CreamA(0.5f); }
             else if (r == null) coinsLabel.text = "…";
+            // #142 Fase A: niente premio prima che le altre persone confermino lo stesso risultato.
+            else if (r.stato == "inVerifica" || r.stato == "troppoCorta" || r.stato == "attendi")
+            { coinsLabel.text = "Risultato in verifica"; coinsLabel.color = UI51Tokens.CreamA(0.6f); }
+            else if (r.stato == "incompleta" || r.stato == "contestata")
+            {
+                coinsLabel.text = r.monete > 0 ? "+" + r.monete + " monete di partecipazione" : "Risultato non verificato";
+                if (r.monete <= 0) coinsLabel.color = UI51Tokens.CreamA(0.6f);
+            }
+            else if (r.stato == "daRiconciliare") { coinsLabel.text = "Risultato registrato: in verifica"; coinsLabel.color = UI51Tokens.CreamA(0.6f); }
             else if (r.monete > 0) coinsLabel.text = "+" + r.monete + " monete";
+            else if (r.inConsegna) { coinsLabel.text = "Monete in arrivo"; coinsLabel.color = UI51Tokens.CreamA(0.6f); } // terzo giro 08/10
             else
             {
-                coinsLabel.text = r.limiteAbbandoni ? "Niente monete: abbandoni già premiati oggi" : r.tetto ? "Tetto di monete di oggi raggiunto" : "+0 monete";
+                coinsLabel.text = r.limiteAbbandoni ? "Niente monete: abbandoni già premiati oggi" : r.tetto ? "Tetto di monete di oggi raggiunto"
+                    : r.limitePartite ? "Limite di partite premiate di oggi raggiunto" : "+0 monete";
                 coinsLabel.color = UI51Tokens.CreamA(0.6f);
             }
         }

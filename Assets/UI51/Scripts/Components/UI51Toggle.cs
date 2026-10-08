@@ -51,6 +51,7 @@ namespace Project51.UI51
         {
             if (eventData.button != PointerEventData.InputButton.Left || !m_Interactable) return;
             Toggle();
+            GameFeedback.TryHaptic(false); // B36 (O2): gli interruttori vibrano come i pulsanti (dopo: spegnendo la vibrazione non vibra)
         }
 
         void Apply(float t)

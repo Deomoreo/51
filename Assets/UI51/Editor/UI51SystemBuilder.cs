@@ -171,7 +171,7 @@ namespace Project51.UI51.EditorTools
             var seatBox = UI51Build.Child(seatBlock, "Box");
             UI51Build.Solid(seatBox, UI51Tokens.GoldA(0.08f), 12f, 1f, UI51Tokens.GoldA(0.3f));
             UI51Build.Stack(seatBox, 0f, UI51Build.Pad(10, 12, 10, 12));
-            var seat = UI51Build.Text(UI51Build.Child(seatBox, "Text"), "Il tuo posto al tavolo resta tuo per 60s. Gli altri giocatori ti aspettano.",
+            var seat = UI51Build.Text(UI51Build.Child(seatBox, "Text"), "Intanto gioca un bot al tuo posto: rientra entro 60s per riprenderlo.",
                 FontFace.NunitoRegular, 12f, UI51Tokens.Cream, TextAlignmentOptions.Center);
             UI51Build.Wrap(seat, 8.6f); // line-height 1.45
 

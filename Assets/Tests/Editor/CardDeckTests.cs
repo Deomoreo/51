@@ -26,8 +26,7 @@ namespace Project51.Tests
                 var face = deck.GetFace(card);
                 Assert.NotNull(face, card.ToString());
                 Assert.IsTrue(unique.Add(face), "Duplicate face: " + card);
-                string expected = id == "napoletano" ? card.Suit + "_" + rank + ".asset"
-                    : (id == "giada" ? "51_GIADA_" : id == "barocco" ? "51_BAROCCO_" : "51_") + card.Suit.ToString().ToUpperInvariant() + "_" + rank.ToString("00") + ".png";
+                string expected = "/" + id.ToUpperInvariant() + "_" + rank.ToString("00") + "_" + card.Suit.ToString().ToUpperInvariant() + ".png";
                 StringAssert.EndsWith(expected, AssetDatabase.GetAssetPath(face));
                 Assert.That(face.bounds.size.y, Is.EqualTo(1.8f).Within(.01f));
             }

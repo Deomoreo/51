@@ -12,6 +12,8 @@ namespace Project51.Unity.UI
         public UI51Shape dot;
         public TMP_Text title, level, status;
         public Button invite;
+        /// <summary>Giro Android 08/10: tocco sulla riga (scheda dell'amico), Accetta e Rifiuta delle richieste ricevute.</summary>
+        public Button open, accept, decline;
         public GameObject invited, busy;
         public TMP_Text busyLabel;
     }

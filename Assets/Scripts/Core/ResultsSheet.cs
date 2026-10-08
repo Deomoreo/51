@@ -69,13 +69,18 @@ namespace Project51.Core
         /// <summary>Posizioni in classifica, pari merito condivisi: 52, 44, 44, 30 -> 1, 2, 2, 4 (scelta utente 01/10).</summary>
         public static int[] Ranks(int[] totals) => totals.Select(t => 1 + totals.Count(o => o > t)).ToArray();
 
-        /// <summary>Nota in alto a destra della corsa: a due quanto manca a me, a quattro a chi e' in testa.</summary>
+        /// <summary>
+        /// Nota in alto a destra della corsa: a due quanto manca a me, a quattro a chi e' in testa. Si vince superando il
+        /// traguardo; chi ci arriva esatto torna a 0 (B30).
+        /// </summary>
         public static string RaceNote(int[] totals, int localEntry, int target)
         {
             bool four = totals.Length > 2;
-            int left = target - (four ? totals.Max() : totals[localEntry]);
+            int score = four ? totals.Max() : totals[localEntry];
+            if (score == target) return target + " esatti: si riparte da 0";
+            int left = target + 1 - score;
             if (left <= 0) return "pari: si gioca ancora"; // a smazzata finita col traguardo superato resta solo il pari in testa
-            return (four ? "in testa: " : "") + left + (left == 1 ? " punto" : " punti") + " alla vittoria";
+            return (four ? "in testa: " : "") + left + " punti alla vittoria"; // mai 1: a 51 esatti si torna a 0
         }
     }
 }

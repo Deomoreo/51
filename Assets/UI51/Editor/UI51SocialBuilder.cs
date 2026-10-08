@@ -200,6 +200,30 @@ namespace Project51.UI51.EditorTools
 
         // --- Posta (mockup Posta e PostaMessaggio)
 
+        /// <summary>
+        /// Build 3 #25 (scelta utente 07/10): monete e gemme in fondo a destra della testata (pillole della Home, una sopra l'altra),
+        /// aggiornate da UI51WalletPills. Rifatto da capo a ogni lancio.
+        /// </summary>
+        public static void HeaderWallet(RectTransform header)
+        {
+            var old = header.Find("Wallet");
+            if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
+            var wallet = UI51Build.Size(UI51Build.Child(header, "Wallet"), 0f, 58f);
+            wallet.SetAsLastSibling();
+            UI51Build.Layout(wallet, 80f, 58f);
+            UI51Build.Column(wallet, 6f, null, TextAnchor.MiddleRight, true, true);
+            var coins = UI51HomeBuilder.WalletPill(wallet, "Coins", "ic_coin", 15f, 15f, 7);
+            var gems = UI51HomeBuilder.WalletPill(wallet, "Gems", "ic_gem", 11f, 14f, 8);
+            wallet.gameObject.SetActive(false);
+            var pills = UI51Build.GetOrAdd<UI51WalletPills>(header);
+            UI51Build.Wire(pills, so =>
+            {
+                UI51Build.Ref(so, "group", wallet.gameObject);
+                UI51Build.Ref(so, "coinsLabel", coins);
+                UI51Build.Ref(so, "gemsLabel", gems);
+            });
+        }
+
         static void BuildMail(HomeScreenV2 home, Canvas homeCanvas)
         {
             var rootGo = Root(home, homeCanvas, "UI51Mail", out var group);
@@ -227,6 +251,7 @@ namespace Project51.UI51.EditorTools
             // Larga quanto il testo + 14 per lato (padding del mockup), anche quando dice "Presto in arrivo".
             UI51Build.Row(claimAllRt, 0f, UI51Build.Pad(0, 14, 0, 14), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
             var claimAllLabel = claimAllRt.Find("Label").GetComponent<TextMeshProUGUI>();
+            HeaderWallet(header);
 
             // Elenco da top 88, largo 350 (20 per lato), scorre fino a sopra la nota in fondo.
             var scrollRt = UI51Build.Stretch(UI51Build.Child(safe, "Scroll"), 0f, 53f, 0f, 88f);
@@ -308,6 +333,7 @@ namespace Project51.UI51.EditorTools
             var title = UI51Build.Size(UI51Build.Child(header, "Title"), 0f, 40f);
             UI51Build.Layout(title, -1f, -1f, 1f);
             UI51Build.NoWrap(UI51Build.Text(title, "Premi giornalieri", FontFace.CinzelBold, 22f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
+            HeaderWallet(header);
 
             // Serie di accessi (top 82): a sinistra la serie, a destra il tempo che resta.
             var streak = UI51Build.TopBand(UI51Build.Child(safe, "Streak"), 20f, 20f, 82f, 62f);
@@ -522,6 +548,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Wrap(status, 8f);
 
             var empty = BuildFriendsEmpty(safe, out var share);
+            BuildFriendCard(view, safe);
             var banner = BuildInviteBanner(home, homeCanvas);
             var avatars = new Object[FriendAvatars.Length];
             for (int i = 0; i < avatars.Length; i++) avatars[i] = UI51Build.Sprite("Avatars", FriendAvatars[i]);
@@ -555,6 +582,107 @@ namespace Project51.UI51.EditorTools
         }
 
         /// <summary>
+        /// Scheda dell'amico (giro Android 08/10, richiesta dell'utente: toccando un amico profilo, invito, rimozione, blocco), nello
+        /// stile del profilo rapido del tavolo (300, raggio 22, oro .5): avatar 62 con nome, livello e titolo, ultimo accesso; tre
+        /// statistiche; pulsante principale oro 42 (Invita / Accetta), secondario a contorno 38 (Rimuovi / Rifiuta / Annulla) e Blocca.
+        /// </summary>
+        static void BuildFriendCard(UI51FriendsView view, RectTransform safe)
+        {
+            var root = UI51Build.Stretch(UI51Build.Child(safe, "FriendCard"));
+            UI51Build.GetOrAdd<CanvasGroup>(root); // dissolvenza d'apertura
+            var backdrop = UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(root, "Backdrop"), -400f, -400f, -400f, -400f),
+                UI51Tokens.Rgba(3, 8, 18, 0.6f), 0f, 0f, default, true);
+            var panel = UI51Build.Center(UI51Build.Child(root, "Card"), 300f, 0f);
+            UI51Build.Shape(panel, UI51Shape.Linear((UI51Tokens.Rgba(14, 28, 52, 0.98f), 0f), (UI51Tokens.Rgba(7, 14, 28, 0.99f), 1f)), 180f,
+                UI51Tokens.Radii(22f), 1f, UI51Tokens.GoldA(0.5f), true, new UI51Shadow(0f, 20f, 44f, UI51Tokens.BlackA(0.6f)));
+            UI51Build.Column(panel, 12f, UI51Build.Pad(16, 16, 16, 16), TextAnchor.UpperCenter, true, true).childForceExpandWidth = true;
+            UI51Build.Fit(panel, false, true);
+            // Banner dell'amico sotto a tutto, con la stessa velatura del profilo rapido al tavolo (UI51TableBuilder.BuildQuickProfile).
+            var bannerRt = UI51Build.Stretch(UI51Build.Child(panel, "Banner"), 1f, 1f, 1f, 1f);
+            UI51Build.Layout(bannerRt, -1f, -1f, -1f, -1f, true);
+            var banner = UI51Build.Solid(bannerRt, Color.white, 21f);
+            var shade = UI51Build.Stretch(UI51Build.Child(panel, "Shade"), 1f, 1f, 1f, 1f);
+            UI51Build.Layout(shade, -1f, -1f, -1f, -1f, true);
+            UI51Build.Shape(shade, UI51Shape.Linear((UI51Tokens.Rgba(6, 13, 27, 0.05f), 0f), (UI51Tokens.Rgba(6, 13, 27, 0.35f), 0.45f),
+                (UI51Tokens.Rgba(6, 13, 27, 0.62f), 1f)), 180f, UI51Tokens.Radii(21f), 0f, Color.clear);
+
+            var header = UI51Build.Child(panel, "Header");
+            UI51Build.Layout(header, -1f, 64f);
+            UI51Build.Row(header, 12f, null, TextAnchor.MiddleLeft, true, true);
+            var slot = UI51Build.Child(header, "AvatarSlot");
+            UI51Build.Layout(slot, 62f, 62f);
+            var avatar = UI51PrefabBuilder.BuildAvatar(UI51Build.Child(slot, "Avatar").gameObject, 62f, 3f, FrameStyle.Oro,
+                UI51Build.Sprite("Avatars", "av_2"), 30f);
+            var texts = UI51Build.Child(header, "Texts");
+            UI51Build.Layout(texts, 0f, 64f, 1f, 0f);
+            UI51Build.Column(texts, 2f, null, TextAnchor.MiddleLeft, true, true).childForceExpandWidth = true;
+            var name = UI51Build.Clip(UI51Build.Text(UI51Build.Child(texts, "Name"), "Giulia", FontFace.CinzelBold, 16f, UI51Tokens.Cream,
+                TextAlignmentOptions.MidlineLeft));
+            UI51Build.Layout(name, -1f, 22f);
+            var level = UI51Build.Clip(UI51Build.Text(UI51Build.Child(texts, "Level"), "Liv. 15", FontFace.NunitoExtraBold, 11f, UI51Tokens.Gold,
+                TextAlignmentOptions.MidlineLeft));
+            UI51Build.Layout(level, -1f, 16f);
+            var status = UI51Build.Clip(UI51Build.Text(UI51Build.Child(texts, "Status"), "Online", FontFace.NunitoRegular, 11f,
+                UI51Tokens.CreamA(0.6f), TextAlignmentOptions.MidlineLeft));
+            UI51Build.Layout(status, -1f, 16f);
+            var x = UI51Build.Child(header, "Close");
+            UI51Build.Layout(x, 28f, 28f);
+            var xShape = UI51Build.Solid(x, UI51Tokens.WhiteA(0.06f), 14f, 0f, default, true);
+            UI51Build.Image(UI51Build.Center(UI51Build.Child(x, "Icon"), 10f, 10f), UI51Build.Sprite("Common", "ic_close_cream"), Color.white);
+
+            // Statistiche come il profilo rapido: riquadri bianco .04 r12, valore Cinzel 16 ed etichetta 9.
+            var stats = UI51Build.Child(panel, "Stats");
+            UI51Build.Layout(stats, -1f, 52f);
+            UI51Build.Row(stats, 6f, null, TextAnchor.MiddleCenter, true, true).childForceExpandWidth = true;
+            var values = new TextMeshProUGUI[3];
+            string[] labels = { "Partite", "Vittorie", "Scope" };
+            for (int i = 0; i < 3; i++)
+            {
+                var tile = UI51Build.Child(stats, "Tile" + i);
+                UI51Build.Layout(tile, -1f, 52f, 1f);
+                UI51Build.Solid(tile, UI51Tokens.WhiteA(0.04f), 12f);
+                values[i] = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Value"), 0f, 22f, 0f, 8f), "0",
+                    FontFace.CinzelBold, 16f, UI51Tokens.Cream, TextAlignmentOptions.Center));
+                UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tile, "Label"), 0f, 8f, 0f, 32f), labels[i],
+                    FontFace.NunitoBold, 9f, UI51Tokens.CreamA(0.55f), TextAlignmentOptions.Center));
+            }
+
+            var primary = UI51Build.Child(panel, "Primary");
+            UI51PrefabBuilder.GoldBody(primary.gameObject, 268f, 42f, 12f, FontFace.NunitoExtraBold, 13f, 0f, "Invita a giocare");
+            UI51Build.Layout(primary, -1f, 42f);
+            var secondary = UI51Build.Child(panel, "Secondary");
+            UI51PrefabBuilder.ButtonBody(secondary.gameObject, 268f, 38f, UI51Shape.Solid(UI51Tokens.WhiteA(0.04f)), UI51Tokens.Radii(12f), 1f,
+                UI51Tokens.CreamA(0.3f), FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.Cream, "Rimuovi dagli amici");
+            UI51Build.Layout(secondary, -1f, 38f);
+            var block = UI51Build.Child(panel, "Block");
+            UI51PrefabBuilder.ButtonBody(block.gameObject, 268f, 30f, UI51Shape.Solid(Color.clear), UI51Tokens.Radii(12f), 0f, Color.clear,
+                FontFace.NunitoExtraBold, 12f, 0f, UI51Tokens.CreamA(0.6f), "Blocca giocatore");
+            UI51Build.Layout(block, -1f, 30f);
+            root.gameObject.SetActive(false);
+
+            UI51Build.Wire(view, so =>
+            {
+                UI51Build.Ref(so, "card", root);
+                UI51Build.Ref(so, "cardPanel", panel);
+                UI51Build.Ref(so, "cardBackdrop", UI51Build.Button(backdrop, backdrop));
+                UI51Build.Ref(so, "cardClose", UI51Build.Button(xShape, xShape));
+                UI51Build.Ref(so, "cardAvatar", avatar);
+                UI51Build.Ref(so, "cardBanner", banner);
+                UI51Build.Ref(so, "cardName", name);
+                UI51Build.Ref(so, "cardLevel", level);
+                UI51Build.Ref(so, "cardStatus", status);
+                UI51Build.Ref(so, "cardGames", values[0]);
+                UI51Build.Ref(so, "cardWins", values[1]);
+                UI51Build.Ref(so, "cardScope", values[2]);
+                UI51Build.Ref(so, "cardPrimary", primary.GetComponent<Button>());
+                UI51Build.Ref(so, "cardPrimaryLabel", primary.GetComponentInChildren<TMP_Text>(true));
+                UI51Build.Ref(so, "cardSecondary", secondary.GetComponent<Button>());
+                UI51Build.Ref(so, "cardSecondaryLabel", secondary.GetComponentInChildren<TMP_Text>(true));
+                UI51Build.Ref(so, "cardBlock", block.GetComponent<Button>());
+            });
+        }
+
+        /// <summary>
         /// Riga alta 64 (padding 0 12, stacco 12): avatar 44 con anello (oro online, crema .25 offline) e pallino di stato 12,
         /// nome 14 + "Liv. N", stato 11; a destra Invita (oro), Invitato (contorno) oppure Occupato / Offline.
         /// </summary>
@@ -562,6 +690,9 @@ namespace Project51.UI51.EditorTools
         {
             var rt = UI51Build.Child(parent, "RowTemplate");
             var item = UI51Build.GetOrAdd<UI51FriendItem>(rt);
+            // Giro Android 08/10: tutta la riga si tocca e apre la scheda dell'amico.
+            var hit = UI51Build.Solid(rt, Color.clear, 0f, 0f, default, true);
+            item.open = UI51Build.Button(hit, hit);
             var line = UI51Build.Child(rt, "Line");
             line.anchorMin = Vector2.zero;
             line.anchorMax = new Vector2(1f, 0f);
@@ -603,7 +734,7 @@ namespace Project51.UI51.EditorTools
 
             var actions = UI51Build.Size(UI51Build.Child(rt, "Actions"), 0f, 32f); // la riga non controlla le altezze
             UI51Build.Layout(actions, -1f, 32f);
-            UI51Build.Row(actions, 0f, null, TextAnchor.MiddleRight, true, true).childForceExpandHeight = true;
+            UI51Build.Row(actions, 6f, null, TextAnchor.MiddleRight, true, true).childForceExpandHeight = true;
             var inviteRt = UI51Build.Child(actions, "Invite");
             UI51PrefabBuilder.GoldBody(inviteRt.gameObject, 70f, 32f, 16f, FontFace.NunitoExtraBold, 12f, 0f, "Invita");
             UI51Build.Row(inviteRt, 0f, UI51Build.Pad(0, 14, 0, 14), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
@@ -620,8 +751,20 @@ namespace Project51.UI51.EditorTools
             item.busyLabel = UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(busyRt, "Label"), "Offline", FontFace.NunitoBold, 11f,
                 UI51Tokens.CreamA(0.5f), TextAlignmentOptions.Center));
             item.busy = busyRt.gameObject;
+            // Richiesta ricevuta (mockup AmiciRichieste): Rifiuta (cerchio con la X, contorno crema .25) e Accetta (oro).
+            var declineRt = UI51Build.Child(actions, "Decline");
+            UI51Build.Layout(declineRt, 32f, 32f);
+            var declineShape = UI51Build.Solid(declineRt, UI51Tokens.WhiteA(0.06f), 16f, 1f, UI51Tokens.CreamA(0.25f), true);
+            item.decline = UI51Build.Button(declineShape, declineShape);
+            UI51Build.Image(UI51Build.Center(UI51Build.Child(declineRt, "Icon"), 11f, 11f), UI51Build.Sprite("Common", "ic_close_cream"), Color.white);
+            var acceptRt = UI51Build.Child(actions, "Accept");
+            UI51PrefabBuilder.GoldBody(acceptRt.gameObject, 76f, 32f, 16f, FontFace.NunitoExtraBold, 12f, 0f, "Accetta");
+            UI51Build.Row(acceptRt, 0f, UI51Build.Pad(0, 14, 0, 14), TextAnchor.MiddleCenter, true, true).childForceExpandHeight = true;
+            item.accept = acceptRt.GetComponent<Button>();
             item.invited.SetActive(false);
             item.busy.SetActive(false);
+            declineRt.gameObject.SetActive(false);
+            acceptRt.gameObject.SetActive(false);
             return item;
         }
 

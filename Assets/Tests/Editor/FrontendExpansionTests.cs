@@ -19,28 +19,40 @@ namespace Project51.Tests
         [Test]
         public void EmoticonLoadoutIsLimitedAndCanBeReplacedWithoutDuplicates()
         {
-            const string key="Collection.Emoticons";bool existed=PlayerPrefs.HasKey(key);string original=PlayerPrefs.GetString(key);
+            string original=CollectionCosmeticsV2.Stored;
             try
             {
-                PlayerPrefs.SetString(key,"0,1,2");Assert.IsFalse(CollectionCosmeticsV2.Equip(3));
+                CollectionCosmeticsV2.Stored="0,1,2";Assert.IsFalse(CollectionCosmeticsV2.Equip(3));
                 CollectionCosmeticsV2.Remove(1);Assert.IsTrue(CollectionCosmeticsV2.Equip(3));Assert.IsFalse(CollectionCosmeticsV2.Equip(3));
                 CollectionAssert.AreEqual(new[]{0,2,3},CollectionCosmeticsV2.Equipped);
-                PlayerPrefs.SetString(key,"0,0,99,invalid,2,3,4");CollectionAssert.AreEqual(new[]{0,2,3},CollectionCosmeticsV2.Equipped);
+                CollectionCosmeticsV2.Stored="0,0,99,invalid,2,3,4";CollectionAssert.AreEqual(new[]{0,2,3},CollectionCosmeticsV2.Equipped);
             }
-            finally{if(existed)PlayerPrefs.SetString(key,original);else PlayerPrefs.DeleteKey(key);PlayerPrefs.Save();}
+            finally{CollectionCosmeticsV2.Stored=original;}
+        }
+        [Test]
+        public void GuestMuteLastsTheSessionAndWritesNothingToThePhone()
+        {
+            string id="test-"+System.Guid.NewGuid().ToString("N");
+            int before=PlayerPrefs.GetString(Project51.Auth.EmoticonMute.Key+id,"").Length;
+            Project51.Auth.EmoticonMute.SetMuted(id,true); // nessun login vero (nessun AuthBootstrapper): come un ospite
+            Assert.IsTrue(Project51.Auth.EmoticonMute.IsMuted(id));
+            Assert.IsFalse(PlayerPrefs.HasKey(Project51.Auth.EmoticonMute.Key+id),"B12 (E2): a guest's mute stays in memory.");
+            Assert.AreEqual(0,before);
+            Project51.Auth.EmoticonMute.SetMuted(id,false);
+            Assert.IsFalse(Project51.Auth.EmoticonMute.IsMuted(id));
         }
         [Test]
         public void EmoticonToggleRemovesOneInUseAndAppendsAFreeOne()
         {
-            const string key="Collection.Emoticons";bool existed=PlayerPrefs.HasKey(key);string original=PlayerPrefs.GetString(key);
+            string original=CollectionCosmeticsV2.Stored;
             try
             {
-                PlayerPrefs.SetString(key,"0,1,2");Assert.IsFalse(CollectionCosmeticsV2.Toggle(3));CollectionAssert.AreEqual(new[]{0,1,2},CollectionCosmeticsV2.Equipped);
+                CollectionCosmeticsV2.Stored="0,1,2";Assert.IsFalse(CollectionCosmeticsV2.Toggle(3));CollectionAssert.AreEqual(new[]{0,1,2},CollectionCosmeticsV2.Equipped);
                 Assert.IsTrue(CollectionCosmeticsV2.Toggle(1));CollectionAssert.AreEqual(new[]{0,2},CollectionCosmeticsV2.Equipped);
                 Assert.IsTrue(CollectionCosmeticsV2.Toggle(1));CollectionAssert.AreEqual(new[]{0,2,1},CollectionCosmeticsV2.Equipped);
                 CollectionCosmeticsV2.Toggle(0);CollectionCosmeticsV2.Toggle(2);CollectionCosmeticsV2.Toggle(1);CollectionAssert.IsEmpty(CollectionCosmeticsV2.Equipped);
             }
-            finally{if(existed)PlayerPrefs.SetString(key,original);else PlayerPrefs.DeleteKey(key);PlayerPrefs.Save();}
+            finally{CollectionCosmeticsV2.Stored=original;}
         }
         [Test]
         public void CollectionTabLabelShowsCountOnlyWhenKnown()

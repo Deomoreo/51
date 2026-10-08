@@ -16,20 +16,20 @@ MonoBehaviour:
   - Id: napoletano
     DisplayName: Napoletano
     Subtitle: 40 carte
-    Artwork: {fileID: 21300000, guid: 00c4d72a9d1fb694bb699f53c25fe852, type: 2}
+    Artwork: {fileID: 21300000, guid: 6518112790442a74da71312c1f641526, type: 3}
     ResourcePath: CardDecks/napoletano
   - Id: classico
     DisplayName: Classico
     Subtitle: 40 carte
-    Artwork: {fileID: 21300000, guid: f7aaf18236002a64fa9515a350047236, type: 3}
+    Artwork: {fileID: 21300000, guid: acab8f09baf3ad84ab77a0b6c2ad8bed, type: 3}
     ResourcePath: CardDecks/classico
   - Id: giada
     DisplayName: Corte di Giada
     Subtitle: 40 carte
-    Artwork: {fileID: 21300000, guid: ffec71c57be6fdf41b984a766bd4e9b1, type: 3}
+    Artwork: {fileID: 21300000, guid: a73ec918864a8bf419fc8a0030958faa, type: 3}
     ResourcePath: CardDecks/giada
   - Id: barocco
     DisplayName: Barocco
     Subtitle: 40 carte
-    Artwork: {fileID: 21300000, guid: ca788779c7bd24c4fbdfabe4c5ca621c, type: 3}
+    Artwork: {fileID: 21300000, guid: 4640235a0ee0ac94580cc56e8d7c423a, type: 3}
     ResourcePath: CardDecks/barocco

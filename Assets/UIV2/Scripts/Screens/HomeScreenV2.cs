@@ -91,6 +91,11 @@ namespace Project51.UIV2.Screens
             if (mailButton != null) mailButton.SetBadgeCount(count);
         }
 
+        public void SetFriendsBadge(int count)
+        {
+            if (friendsButton != null) friendsButton.SetBadgeCount(count);
+        }
+
         public void SetNewsBadge(int count)
         {
             if (newsButton != null) newsButton.SetBadgeCount(count);
@@ -106,17 +111,6 @@ namespace Project51.UIV2.Screens
         {
             foreach (var action in new[] { rewardsButton, rankingButton, mailButton, newsButton, friendsButton })
                 if (action != null) action.gameObject.SetActive(!guest);
-        }
-
-        public void SetPendingActionsInteractable(bool interactable)
-        {
-            if (deckSelector != null && deckSelector.Button != null) deckSelector.Button.interactable = interactable;
-            foreach (var action in new[] { rankingButton }) // Posta e Premi: UI51MailView, UI51RewardsView (Fase 8)
-            {
-                if (action == null) continue;
-                var button = action.Button;
-                if (button != null) button.interactable = interactable;
-            }
         }
     }
 }

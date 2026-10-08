@@ -618,16 +618,17 @@ namespace Project51.UI51
 
         // ---------------------------------------------------------------- premi / barre / emoticon
 
-        /// <summary>Esplosione del bagliore al riscatto (1.1 s): scala 0.2 -> 1.4, alpha 0 -> 1 -> 0.</summary>
+        /// <summary>Esplosione del bagliore al riscatto (1.5 s, giro Android 08/10: era 1.1 e quasi non si vedeva): scala 0.2 -> 1.4, alpha 0 -> 1 -> 0.</summary>
         public static Tween RewardBurst(RectTransform glow) =>
-            new UIKeyframes(1.1f, UIEase.EaseOut)
+            new UIKeyframes(1.5f, UIEase.EaseOut)
                 .Track(AnimProp.Scale, 0f, 0.2f, 1f, 1.4f)
                 .Track(AnimProp.Alpha, 0f, 0f, 0.3f, 1f, 1f, 0f)
                 .Play(glow);
 
-        /// <summary>"+150" che sale e svanisce (1.8 s).</summary>
+        /// <summary>"+150" che sale e svanisce (2.6 s; era 1.8). Fermo e pieno dal 25% all'80%: circa 1.4 s per leggerlo.</summary>
+        public const float RewardRiseSeconds = 2.6f;
         public static Tween RewardRise(RectTransform label) =>
-            new UIKeyframes(1.8f, UIEase.EaseOut)
+            new UIKeyframes(RewardRiseSeconds, UIEase.EaseOut)
                 .Track(AnimProp.Y, 0f, 30f, 0.25f, 0f, 0.35f, 0f, 1f, -30f)
                 .Track(AnimProp.Scale, 0f, 0.6f, 0.25f, 1.1f, 0.35f, 1f, 1f, 1f)
                 .Track(AnimProp.Alpha, 0f, 0f, 0.25f, 1f, 0.8f, 1f, 1f, 0f)

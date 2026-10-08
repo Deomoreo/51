@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 
 namespace Project51.Auth
 {
+    /// <summary>Giro Android 08/10: amico (reciproco), richiesta che ho mandato, richiesta che ho ricevuto.</summary>
+    public enum FriendState { Friend, Sent, Received }
+
     /// <summary>Un amico come lo vede la UI: niente tipi PlayFab fuori da questo file.</summary>
     public readonly struct FriendEntry
     {
@@ -15,109 +19,188 @@ namespace Project51.Auth
         public readonly int Level;
         /// <summary>Ultimo accesso (UTC), null se PlayFab non lo da'.</summary>
         public readonly DateTime? LastLogin;
+        public readonly FriendState State;
+        /// <summary>Avatar scelto (nome dello sprite, come ProfileService.AvatarId); null se non l'ha mai pubblicato.</summary>
+        public readonly string AvatarId;
+        public readonly int Games, Wins, Scope;
+        /// <summary>Cornice e banner scelti (id di ProfileCosmetics); null se non li ha pubblicati (versioni vecchie).</summary>
+        public readonly string FrameId, BannerId;
 
-        public FriendEntry(string playFabId, string displayName, int level = 0, DateTime? lastLogin = null)
+        public FriendEntry(string playFabId, string displayName, int level = 0, DateTime? lastLogin = null, FriendState state = FriendState.Friend,
+            string avatarId = null, int games = 0, int wins = 0, int scope = 0, string frameId = null, string bannerId = null)
         {
+            FrameId = frameId;
+            BannerId = bannerId;
             PlayFabId = playFabId;
             DisplayName = displayName;
             Level = level;
             LastLogin = lastLogin;
+            State = state;
+            AvatarId = avatarId;
+            Games = games;
+            Wins = wins;
+            Scope = scope;
         }
     }
 
+    /// <summary>Voce di "amici" (CloudScript).</summary>
+    [Serializable]
+    public class ServerFriend
+    {
+        public string id, nome, stato, avatar, ultimo;
+        public int xp, partite, vittorie, scope;
+    }
+
     /// <summary>
-    /// Amici e segnalazioni via PlayFab Client API. PlayFab non ha richieste d'amicizia native:
-    /// AddFriend aggiunge subito (unidirezionale). Stato online e livello degli amici non arrivano da qui.
+    /// Amici (giro Android 08/10): richiesta, Accetta o Rifiuta, amicizia reciproca, Rimuovi. Gli elenchi PlayFab li cambia solo il
+    /// CloudScript ("amici", "richiestaAmico", "accettaAmico", "rimuoviAmico" in Server/CloudScript/51.js): prima AddFriend del telefono
+    /// aggiungeva a senso unico e l'altro non vedeva niente. Stato online e inviti restano di Photon Chat (FriendsChat).
     /// </summary>
     public static class FriendsService
     {
         /// <summary>
-        /// Lista degli amici con livello e ultimo accesso dal profilo. Se il titolo non permette quei campi
-        /// (Game Manager, Client Profile Options) riprova senza: solo nomi.
+        /// Aspetto pubblicato nel profilo PlayFab (AvatarUrl), letto dagli amici: "avatar:id|cornice|banner" (secondo giro Android
+        /// 08/10: prima solo "avatar:id", la scheda dell'amico non aveva il suo banner).
         /// </summary>
+        public const string AvatarPrefix = "avatar:";
+
+        const string SendError = "Non è stato possibile mandare la richiesta. Riprova.";
+
+        /// <summary>Amici, richieste ricevute e inviate, con livello, avatar, statistiche e ultimo accesso.</summary>
         public static void GetFriends(Action<List<FriendEntry>> onSuccess, Action onError)
         {
-            if (!PlayFabClientAPI.IsClientLoggedIn()) { onError?.Invoke(); return; }
-            var withProfile = new PlayerProfileViewConstraints { ShowDisplayName = true, ShowStatistics = true, ShowLastLogin = true };
-            PlayFabClientAPI.GetFriendsList(new GetFriendsListRequest { ProfileConstraints = withProfile },
-                result => onSuccess?.Invoke(ToEntries(result)),
-                _ => PlayFabClientAPI.GetFriendsList(new GetFriendsListRequest(),
-                    result => onSuccess?.Invoke(ToEntries(result)),
-                    error => Fail("GetFriendsList", error, onError)));
+            RewardsService.Call("amici", null, r =>
+            {
+                if (!r.ok) { onError?.Invoke(); return; }
+                onSuccess?.Invoke(ToEntries(r.amici));
+            }, _ => onError?.Invoke());
         }
 
-        private static List<FriendEntry> ToEntries(GetFriendsListResult result)
+        public static List<FriendEntry> ToEntries(ServerFriend[] friends)
         {
             var list = new List<FriendEntry>();
-            if (result.Friends == null) return list;
-            foreach (var f in result.Friends)
+            if (friends == null) return list;
+            foreach (var f in friends)
             {
+                if (f == null || string.IsNullOrEmpty(f.id)) continue;
+                var state = f.stato == "ricevuta" ? FriendState.Received : f.stato == "inviata" ? FriendState.Sent : FriendState.Friend;
+                DateTime? last = DateTime.TryParse(f.ultimo, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var t) ? t : (DateTime?)null;
+                ParseLook(f.avatar, out var avatar, out var frame, out var banner);
                 // "Level" si scrive solo quando cambia (al livello 1 non c'e'): il livello viene dagli XP.
-                int level = 0;
-                if (f.Profile?.Statistics != null)
-                    foreach (var stat in f.Profile.Statistics) if (stat.Name == ProfileService.STAT_XP) level = Project51.Core.PlayerXp.LevelOf(stat.Value);
-                string name = f.TitleDisplayName ?? f.Profile?.DisplayName ?? f.Username ?? f.FriendPlayFabId;
-                list.Add(new FriendEntry(f.FriendPlayFabId, name, level, f.Profile?.LastLogin));
+                list.Add(new FriendEntry(f.id, string.IsNullOrEmpty(f.nome) ? f.id : f.nome, Project51.Core.PlayerXp.LevelOf(f.xp), last, state,
+                    avatar, f.partite, f.vittorie, f.scope, frame, banner));
             }
             return list;
         }
 
-        /// <summary>Aggiunge per nome visualizzato (scelta dell'utente, 01/10; il codice #51-... arriva col server). onError riceve il messaggio per la UI.</summary>
-        public static void AddFriendByName(string displayName, Action onSuccess, Action<string> onError)
+        public static string FormatLook(string avatarId, string frameId, string bannerId) => AvatarPrefix + avatarId + "|" + frameId + "|" + bannerId;
+
+        /// <summary>Legge FormatLook (anche il vecchio "avatar:id"); campi vuoti o assenti = null.</summary>
+        public static void ParseLook(string url, out string avatarId, out string frameId, out string bannerId)
+        {
+            avatarId = frameId = bannerId = null;
+            if (url == null || !url.StartsWith(AvatarPrefix, StringComparison.Ordinal)) return;
+            var parts = url.Substring(AvatarPrefix.Length).Split('|');
+            avatarId = parts[0].Length > 0 ? parts[0] : null;
+            frameId = parts.Length > 1 && parts[1].Length > 0 ? parts[1] : null;
+            bannerId = parts.Length > 2 && parts[2].Length > 0 ? parts[2] : null;
+        }
+
+        /// <summary>Richiesta per nome visualizzato (scelta dell'utente, 01/10). onSuccess(true) = amici subito (l'aveva chiesto anche lui).</summary>
+        public static void AddFriendByName(string displayName, Action<bool> onSuccess, Action<string> onError)
         {
             if (!PlayFabClientAPI.IsClientLoggedIn()) { onError?.Invoke("Accedi per aggiungere amici."); return; }
-            PlayFabClientAPI.AddFriend(new AddFriendRequest { FriendTitleDisplayName = displayName },
-                _ => onSuccess?.Invoke(),
+            PlayFabClientAPI.GetAccountInfo(new GetAccountInfoRequest { TitleDisplayName = displayName },
+                r => AddFriend(r.AccountInfo?.PlayFabId, onSuccess, onError),
                 e => onError?.Invoke(AddError(e.Error)));
         }
 
         public static string AddError(PlayFabErrorCode code) =>
-            code == PlayFabErrorCode.UsersAlreadyFriends ? "È già tra i tuoi amici."
-            : code == PlayFabErrorCode.AccountNotFound || code == PlayFabErrorCode.InvalidParams ? "Nessun giocatore con questo nome."
-            : "Non è stato possibile aggiungerlo. Riprova.";
+            code == PlayFabErrorCode.AccountNotFound || code == PlayFabErrorCode.InvalidParams ? "Nessun giocatore con questo nome." : SendError;
 
-        public static void AddFriend(string playFabId, Action onSuccess, Action onError) =>
-            Call(() => PlayFabClientAPI.AddFriend(new AddFriendRequest { FriendPlayFabId = playFabId },
-                _ => onSuccess?.Invoke(), e => Fail("AddFriend", e, onError)), onError);
-
-        public static void RemoveFriend(string playFabId, Action onSuccess, Action onError) =>
-            Call(() => PlayFabClientAPI.RemoveFriend(new RemoveFriendRequest { FriendPlayFabId = playFabId },
-                _ => onSuccess?.Invoke(), e => Fail("RemoveFriend", e, onError)), onError);
-
-        private static void Call(Action call, Action onError)
+        /// <summary>Richiesta d'amicizia (l'altro la vede in Richieste). onSuccess(true) = gia' amici o amici subito.</summary>
+        public static void AddFriend(string playFabId, Action<bool> onSuccess, Action<string> onError)
         {
-            if (PlayFabClientAPI.IsClientLoggedIn()) call();
-            else onError?.Invoke();
+            if (string.IsNullOrEmpty(playFabId)) { onError?.Invoke("Nessun giocatore con questo nome."); return; }
+            RewardsService.Call("richiestaAmico", new Dictionary<string, object> { { "id", playFabId } }, r =>
+            {
+                if (r.ok) { Nudge(playFabId); onSuccess?.Invoke(r.stato == "amico"); }
+                else onError?.Invoke(r.errore == "ospite" ? "Gli ospiti non si possono aggiungere agli amici."
+                    : r.ospite ? "Accedi per aggiungere amici." : SendError);
+            }, _ => onError?.Invoke(SendError));
         }
 
-        private static void Fail(string what, PlayFabError error, Action onError)
+        public static void Accept(string playFabId, Action onSuccess, Action onError) =>
+            RewardsService.Call("accettaAmico", new Dictionary<string, object> { { "id", playFabId } },
+                r => { if (r.ok) { Nudge(playFabId); onSuccess?.Invoke(); } else onError?.Invoke(); }, _ => onError?.Invoke());
+
+        /// <summary>Rifiuta, annulla la richiesta o rimuovi dagli amici: via da entrambi gli elenchi.</summary>
+        public static void RemoveFriend(string playFabId, Action onSuccess, Action onError) =>
+            RewardsService.Call("rimuoviAmico", new Dictionary<string, object> { { "id", playFabId } },
+                r => { if (r.ok) { Nudge(playFabId); onSuccess?.Invoke(); } else onError?.Invoke(); }, _ => onError?.Invoke());
+
+        // Secondo giro Android 08/10: l'altro rilegge subito la lista (FriendsChat.OnFriendsChanged).
+        static void Nudge(string playFabId) => FriendsChat.Instance?.Nudge(playFabId);
+
+        /// <summary>
+        /// Avatar, cornice e banner nel profilo PlayFab (AvatarUrl, FormatLook), cosi' gli amici li vedono (#9: prima la lista
+        /// mostrava un ritratto scelto dal PlayFab ID). Solo se cambiati da quelli gia' pubblicati da questo telefono per l'account;
+        /// gli amici collegati rileggono subito.
+        /// </summary>
+        public static void PublishLook(string playFabId, string avatarId, string frameId, string bannerId)
         {
-            if (Debug.isDebugBuild) Debug.LogWarning($"[FriendsService] {what} fallita: {error.GenerateErrorReport()}");
-            onError?.Invoke();
+            if (string.IsNullOrEmpty(playFabId) || string.IsNullOrEmpty(avatarId) || !PlayFabClientAPI.IsClientLoggedIn()) return;
+            string key = "AvatarPubblicato." + playFabId, look = FormatLook(avatarId, frameId, bannerId);
+            if (PlayerPrefs.GetString(key, "") == look) return;
+            PlayFabClientAPI.UpdateAvatarUrl(new UpdateAvatarUrlRequest { ImageUrl = look },
+                _ => { PlayerPrefs.SetString(key, look); PlayerPrefs.Save(); FriendsChat.Instance?.NudgeAll(); },
+                e => Debug.LogWarning("[FriendsService] UpdateAvatarUrl fallita: " + e.GenerateErrorReport()));
         }
     }
 
-    /// <summary>"Silenzia emoticon" di un giocatore: solo su questo dispositivo, per PlayFab ID.</summary>
+    /// <summary>
+    /// "Silenzia emoticon" di un giocatore, solo su questo dispositivo. B12 (E1/E2): salvato per account; quello messo da un ospite, o
+    /// verso un ospite (il suo id vale una sessione), resta in memoria fino alla chiusura dell'app.
+    /// </summary>
     public static class EmoticonMute
     {
-        private const string Key = "Social.MutedEmoticons";
+        public const string Key = "Social.MutedEmoticons.";
+        private static readonly HashSet<string> session = new HashSet<string>();
+
+        private static string AccountKey
+        {
+            get
+            {
+                var auth = AuthBootstrapper.Instance?.PlayFabAuth;
+                return auth != null && auth.HasRealLogin && !string.IsNullOrEmpty(auth.PlayFabId) ? Key + auth.PlayFabId : null;
+            }
+        }
 
         public static bool IsMuted(string playFabId) =>
-            !string.IsNullOrEmpty(playFabId) && (Load().Contains(playFabId) || BlockList.IsBlocked(playFabId));
+            !string.IsNullOrEmpty(playFabId) && (session.Contains(playFabId) || Load().Contains(playFabId) || BlockList.IsBlocked(playFabId));
 
-        public static void SetMuted(string playFabId, bool muted)
+        public static void SetMuted(string playFabId, bool muted, bool guestTarget = false)
         {
             if (string.IsNullOrEmpty(playFabId)) return;
+            string key = AccountKey;
+            if (muted && (key == null || guestTarget)) { session.Add(playFabId); return; }
+            session.Remove(playFabId);
+            if (key == null) return;
             var set = Load();
             if (muted ? set.Add(playFabId) : set.Remove(playFabId))
             {
-                PlayerPrefs.SetString(Key, string.Join("|", set));
+                PlayerPrefs.SetString(key, string.Join("|", set));
                 PlayerPrefs.Save();
             }
         }
 
-        private static HashSet<string> Load() =>
-            new HashSet<string>(PlayerPrefs.GetString(Key, "").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries));
+        private static HashSet<string> Load()
+        {
+            string key = AccountKey;
+            return key == null ? new HashSet<string>()
+                : new HashSet<string>(PlayerPrefs.GetString(key, "").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries));
+        }
     }
 
     /// <summary>

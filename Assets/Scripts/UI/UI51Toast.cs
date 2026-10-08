@@ -34,6 +34,7 @@ namespace Project51.Unity.UI
                 s_Instance = Instantiate(prefab);
                 s_Instance.name = prefab.name;
                 DontDestroyOnLoad(s_Instance.gameObject);
+                Project51.UIV2.Animations.UIV2MotionInstaller.AddHaptics(s_Instance.gameObject); // 63b: vibra come gli altri pulsanti
             }
             s_Instance.Play(text, kind);
         }

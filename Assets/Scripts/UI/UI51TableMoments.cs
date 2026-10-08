@@ -48,8 +48,15 @@ namespace Project51.Unity.UI
 
         private readonly Vector3[] corners = new Vector3[4];
 
+        // Chip "a riposo" (mano, ultima mano) come la fa il builder: il turno la rovescia in oro pieno e la riporta qui.
+        private Gradient chipFill;
+        private float chipHeight, chipFont;
+
         private void Awake()
         {
+            chipFill = chipShape.fill;
+            chipHeight = chip.sizeDelta.y;
+            chipFont = chipText.fontSize;
             chip.gameObject.SetActive(false);
             notice.gameObject.SetActive(false);
             scopa.gameObject.SetActive(false);
@@ -60,6 +67,7 @@ namespace Project51.Unity.UI
         private void OnEnable()
         {
             GamePresentation.HandDealt += Hand;
+            GamePresentation.YourTurn += YourTurn;
             GamePresentation.Scopa += Scopa;
             GamePresentation.PlayerNotice += Player;
             GamePresentation.ConnectionNotice += Connection;
@@ -68,6 +76,7 @@ namespace Project51.Unity.UI
         private void OnDisable()
         {
             GamePresentation.HandDealt -= Hand;
+            GamePresentation.YourTurn -= YourTurn;
             GamePresentation.Scopa -= Scopa;
             GamePresentation.PlayerNotice -= Player;
             GamePresentation.ConnectionNotice -= Connection;
@@ -76,8 +85,9 @@ namespace Project51.Unity.UI
 
         private void Update()
         {
-            if (timerPill == null) return;
             if (turn == null) turn = FindObjectOfType<TurnController>();
+            if (turnChip && (turn == null || !turn.AcceptsLocalInput || (tempoPill != null && tempoPill.gameObject.activeSelf))) HideTurnChip();
+            if (timerPill == null) return;
             float left = turn != null ? turn.TurnTimeLeft : -1f;
             int seat = left >= 0f && left <= LowSeconds ? turn.CurrentPlayerIndex : -1;
             if (seat != lowSeat) ShowLowTime(seat);
@@ -135,12 +145,58 @@ namespace Project51.Unity.UI
 
         private void Hand(int hand, int total)
         {
+            turnChip = false;
+            UIAnim.Stop(chip);
+            TurnLook(false);
             bool last = hand >= total;
             chipText.text = last ? "ULTIMA MANO · MAZZO FINITO" : $"MANO {hand} DI {total}";
             chipText.color = last ? UI51Tokens.DangerText : UI51Tokens.Gold;
             chipShape.borderColor = last ? UI51Tokens.WithAlpha(UI51Tokens.Danger, 0.6f) : UI51Tokens.GoldA(0.55f);
             Below(chipHolder, ChipGap);
             Brief(chip, Stay, true);
+        }
+
+        /// <summary>
+        /// B5 (scelta utente 07/10): "TOCCA A TE" sopra la mano, con la chip della mano messa dove sta "Gioca adesso". Resta anche con
+        /// la grafica ridotta. Se c'e' gia' "Gioca adesso" basta quella. Giro Android 08/10 (turno ancora poco evidente): resta per tutto
+        /// il turno con un respiro lieve (prima spariva dopo 1,2 s) e va via appena il tocco non conta piu' o arriva "Gioca adesso".
+        /// Secondo giro Android 08/10 (ancora poco evidente): chip rovesciata, oro pieno con scritta scura, piu' alta e col testo piu'
+        /// grande, entrata con rimbalzo e respiro piu' marcato. Resta dove stava, sopra al banner e sotto la mano: niente carte coperte.
+        /// </summary>
+        private void YourTurn()
+        {
+            if (tempoPill != null && tempoPill.gameObject.activeSelf) return;
+            chipText.text = "TOCCA A TE";
+            TurnLook(true);
+            PlaceTimer(chipHolder, chip, banners != null ? banners.UI51Banner(0) : null, true);
+            UIAnim.Stop(chip);
+            chip.gameObject.SetActive(true);
+            turnChip = true;
+            var pop = new UIKeyframes(In, UIEase.EaseOut).Track(AnimProp.Alpha, 0f, 0f, 1f, 1f).Track(AnimProp.Scale, 0f, 0.7f, 0.65f, 1.18f, 1f, 1f)
+                .Play(chip);
+            if (pop != null) pop.OnComplete(() => { if (turnChip) UIAnim.Breathe(chip, 1.09f, 1.2f); });
+        }
+
+        /// <summary>Aspetto del turno (oro pieno, scritta blu notte, 36 alta, testo 15) o quello a riposo del builder.</summary>
+        private void TurnLook(bool turn)
+        {
+            chipShape.fill = turn ? UI51Shape.Linear((UI51Tokens.Rgba(255, 226, 150, 1f), 0f), (UI51Tokens.Gold, 1f)) : chipFill;
+            chipShape.borderWidth = turn ? 2f : 1f;
+            chipShape.borderColor = turn ? UI51Tokens.Rgba(255, 244, 214, 1f) : UI51Tokens.GoldA(0.55f);
+            chipText.color = turn ? UI51Tokens.Rgba(6, 13, 27, 1f) : UI51Tokens.Gold;
+            chipText.fontSize = turn ? chipFont + 3f : chipFont;
+            chip.sizeDelta = new Vector2(chip.sizeDelta.x, turn ? chipHeight + 6f : chipHeight);
+        }
+
+        private bool turnChip;
+
+        private void HideTurnChip()
+        {
+            turnChip = false;
+            UIAnim.Stop(chip);
+            var fade = new UIKeyframes(0.25f, UIEase.EaseInOut).Track(AnimProp.Alpha, 0f, 1f, 1f, 0f).Track(AnimProp.Scale, 0f, 1f, 1f, 1f).Play(chip);
+            if (fade != null) fade.OnComplete(() => chip.gameObject.SetActive(false));
+            else chip.gameObject.SetActive(false);
         }
 
         private void Player(int seat, string title, string sub, bool alert) => ShowNotice(seat, title, sub, alert, Stay);

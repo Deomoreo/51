@@ -13,6 +13,7 @@ namespace Project51.Auth
     {
         public string tipo;
         public int quantita;
+        public string colore; // forziere: "verde" o "viola" (il server usa viola se manca)
     }
 
     /// <summary>
@@ -42,7 +43,8 @@ namespace Project51.Auth
     {
         public const string DataKey = "Posta";
         public const int KeepDays = 30;
-        private const string ReadKey = "Mail.ReadIds";
+        // B11 (M4): "letto" per account (prima una chiave per telefono, che ogni account riscriveva con i suoi id).
+        private static string ReadKey => "Mail.ReadIds." + (AuthBootstrapper.Instance?.PlayFabAuth?.PlayFabId ?? "");
 
         [Serializable]
         private sealed class Wrapper { public MailMessage[] messaggi; }
@@ -118,13 +120,16 @@ namespace Project51.Auth
             return days <= 0 ? "Scade oggi" : days == 1 ? "Scade domani" : "Scade tra " + days + " giorni";
         }
 
-        public static bool IsRead(MailMessage m) => ReadIds().Contains(m.id);
+        // Un regalo gia' riscattato (anche con "Raccogli tutto", senza aprirlo) non e' piu' da leggere.
+        public static bool IsRead(MailMessage m) => IsRead(m, ReadIds());
+
+        private static bool IsRead(MailMessage m, HashSet<string> read) => read.Contains(m.id) || (m.HasGifts && m.riscattato);
 
         public static int UnreadCount(List<MailMessage> messages)
         {
             var read = ReadIds();
             int n = 0;
-            foreach (var m in messages) if (!read.Contains(m.id)) n++;
+            foreach (var m in messages) if (!IsRead(m, read)) n++;
             return n;
         }
 

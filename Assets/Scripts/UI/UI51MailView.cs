@@ -21,6 +21,7 @@ namespace Project51.Unity.UI
         public const string LoadingText = "Caricamento…";
         public const string ErrorText = "Non è stato possibile caricare la posta.\nControlla la connessione e riprova.";
         const string ClaimText = "RISCATTA", ClaimAllText = "Raccogli tutto";
+        const string InDeliveryText = "Premio preso: arriva appena il server conferma";
 
         /// <summary>Tipi di messaggio del mockup, nell'ordine di kindIcons: tessera e larghezza dell'icona.</summary>
         public static readonly string[] Kinds = { "team", "stagione", "amico", "avviso", "torneo" };
@@ -68,6 +69,7 @@ namespace Project51.Unity.UI
         private List<MailMessage> messages = new List<MailMessage>();
         private MailMessage opened;
         private bool waitingForAuth, claiming;
+        private string loadedFor; // account della Posta mostrata
         private Tween fade;
 
         public bool IsOpen => view != null && view.blocksRaycasts;
@@ -86,7 +88,22 @@ namespace Project51.Unity.UI
         }
 
         // Numero sulla Home appena la sessione PlayFab e' pronta.
-        private void Start() => Load();
+        // B11 (M4): dopo "Accedi" (o un'uscita) la Posta e il suo numero sono quelli del nuovo account, senza aprire la pagina.
+        private void Start()
+        {
+            Load();
+            if (AuthBootstrapper.Instance?.Profile != null) AuthBootstrapper.Instance.Profile.OnProfileLoaded += AccountLoaded;
+        }
+
+        private static string AccountId => AuthBootstrapper.Instance?.PlayFabAuth?.PlayFabId;
+
+        private void AccountLoaded()
+        {
+            if (AccountId == loadedFor) return;
+            messages = new List<MailMessage>();
+            Render();
+            Load();
+        }
 
         public void Open()
         {
@@ -112,7 +129,9 @@ namespace Project51.Unity.UI
                 return;
             }
             // Prima il server consegna la Posta per tutti (una volta per sessione), poi si legge.
-            RewardsService.Start(() => MailService.Fetch(Fill, () => { if (this != null && IsOpen && spawned.Count == 0) ShowStatus(ErrorText); }));
+            string id = loadedFor = AccountId;
+            RewardsService.Start(() => MailService.Fetch(list => { if (id == AccountId) Fill(list); },
+                () => { if (this != null && IsOpen && spawned.Count == 0) ShowStatus(ErrorText); }));
         }
 
         private void OnAuthReady()
@@ -133,6 +152,12 @@ namespace Project51.Unity.UI
         {
             if (this == null) return;
             messages = list ?? new List<MailMessage>();
+            // Foglio aperto: il messaggio diventa quello appena letto (per esempio gia' riscattato altrove).
+            if (opened != null && sheet.isOpen && !claiming)
+            {
+                var fresh = messages.Find(x => x.id == opened.id);
+                if (fresh != null) { opened = fresh; BindClaimState(fresh); }
+            }
             Render();
         }
 
@@ -152,7 +177,7 @@ namespace Project51.Unity.UI
             emptyBlock.gameObject.SetActive(messages.Count == 0);
             if (messages.Count == 0 && !wasEmpty) UIAnim.Pop(emptyBlock, 0.8f, 1.04f, 0.3f);
             listBlock.SetActive(messages.Count > 0);
-            var now = DateTime.UtcNow;
+            var now = DeviceModeration.UtcNow;
             foreach (var m in messages)
             {
                 var row = Instantiate(rowTemplate, rows);
@@ -206,7 +231,7 @@ namespace Project51.Unity.UI
             MailService.MarkRead(m, messages);
             Tile(detail, m);
             detail.title.text = m.titolo;
-            detail.time.text = m.da + " · " + NewsService.RelativeTime(m.DateUtc, DateTime.UtcNow);
+            detail.time.text = m.da + " · " + NewsService.RelativeTime(m.DateUtc, DeviceModeration.UtcNow);
             detail.snippet.text = m.testo;
             giftsBlock.SetActive(m.HasGifts);
             for (int i = 0; i < giftSlots.Length; i++)
@@ -218,14 +243,40 @@ namespace Project51.Unity.UI
                 SetIcon(giftImages[i], Get(giftIcons, g), GiftIconWidth[g]);
                 giftLabels[i].text = g == 2 ? "Forziere" : "+" + m.allegati[i].quantita;
             }
+            BindClaimState(m);
+            sheet.Open();
+            if (!wasRead) Render();
+        }
+
+        /// <summary>Stato del riscatto nel foglio aperto, senza riaprirlo (niente scorrimento ne' "letto" di nuovo).</summary>
+        private void BindClaimState(MailMessage m)
+        {
             giftsGroup.alpha = m.riscattato ? 0.5f : 1f;
             claim.gameObject.SetActive(m.CanClaim);
             claimLabel.DOKill();
             claimLabel.text = ClaimText;
             claimedBadge.SetActive(m.HasGifts && m.riscattato);
             closeButton.gameObject.SetActive(!m.HasGifts);
-            sheet.Open();
-            if (!wasRead) Render();
+        }
+
+        /// <summary>B22 (M2): durante un riscatto i pulsanti sono spenti e si vede (mezza opacita'), non solo il testo.</summary>
+        private void SetBusy(bool busy)
+        {
+            claiming = busy;
+            foreach (var b in new[] { claim, claimAll })
+            {
+                b.interactable = !busy;
+                var group = b.GetComponent<CanvasGroup>();
+                if (group == null) group = b.gameObject.AddComponent<CanvasGroup>();
+                group.alpha = busy ? 0.5f : 1f;
+            }
+        }
+
+        /// <summary>B22 (M3): il server ha detto no o non ha risposto: Posta e saldo si rileggono, cosi' si vede lo stato vero.</summary>
+        private void Resync()
+        {
+            WalletService.Refresh();
+            MailService.Fetch(Fill, null);
         }
 
         private void Tile(UI51MailItem item, MailMessage m)
@@ -256,52 +307,76 @@ namespace Project51.Unity.UI
 
         private static Sprite Get(Sprite[] sprites, int i) => i < sprites.Length ? sprites[i] : null;
 
+        // Secondo giro 08/10: si festeggia solo quello che il server ha dato davvero (prima il premio previsto, che restava sul pulsante
+        // anche quando il server diceva no). Durante l'attesa "…" e pulsanti spenti; dopo un si' il messaggio e' subito Riscattato.
         private void Claim()
         {
             if (claiming || opened == null || !opened.CanClaim) return;
-            claiming = true;
+            SetBusy(true);
             var m = opened;
             Say(claimLabel, "…", ClaimText, 0f);
             RewardsService.ClaimMail(m.id, r =>
             {
-                claiming = false;
                 if (this == null) return;
-                if (!r.ok) { Say(claimLabel, "NON DISPONIBILE", ClaimText, 2f); return; }
-                MarkClaimed(r);
-                if (chest != null) chest.Open(r); // UI51 Fase 15: un forziere si apre sulla sua schermata
-                // Per un attimo cosa e' arrivato (i forzieri si aprono sul server), poi RISCATTATO.
-                Say(claimLabel, RewardsService.Summary(r).ToUpperInvariant(), ClaimText, 1.6f, () => { if (sheet.isOpen && opened == m) OpenMessage(m); });
+                SetBusy(false);
+                // "gia'": un tocco di prima e' gia' passato; inConsegna (terzo giro 08/10): preso, l'accredito lo ritenta il server.
+                if (r.ok || r.gia || r.inConsegna) MarkClaimed(r);
+                if (!r.ok)
+                {
+                    if (opened == m) BindClaimState(m);
+                    if (r.inConsegna) UI51Toast.Show(InDeliveryText);
+                    else if (!r.gia) { Say(claimLabel, r.ospite ? "SOLO CON UN ACCOUNT" : "NON DISPONIBILE", ClaimText, 2f); Resync(); }
+                    return;
+                }
+                RewardsService.PlaySound(r);
+                if (chest == null || !chest.Open(r)) // UI51 Fase 15: un forziere si apre sulla sua schermata
+                    Toast(r);
+                if (sheet.isOpen && opened == m) BindClaimState(m);
             }, _ =>
             {
-                claiming = false;
-                if (this != null) Say(claimLabel, "RIPROVA PIÙ TARDI", ClaimText, 2f);
+                if (this == null) return;
+                SetBusy(false);
+                Say(claimLabel, "RIPROVA PIÙ TARDI", ClaimText, 2f);
+                Resync();
             });
         }
 
         private void ClaimAll()
         {
             if (claiming) return;
-            claiming = true;
+            SetBusy(true);
             Say(claimAllLabel, "…", ClaimAllText, 0f);
             RewardsService.ClaimAllMail(r =>
             {
-                claiming = false;
                 if (this == null) return;
-                if (!r.ok) { Say(claimAllLabel, "Niente da raccogliere", ClaimAllText, 2f); return; }
-                MarkClaimed(r, false); // Raccogli tutto sparirebbe subito: l'elenco si aggiorna dopo il messaggio
-                Say(claimAllLabel, RewardsService.Summary(r), ClaimAllText, 2f, () => { if (this != null) Render(); });
+                SetBusy(false);
+                if (r.inConsegna) { MarkClaimed(r); UI51Toast.Show(InDeliveryText); claimAllLabel.text = ClaimAllText; return; }
+                if (!r.ok) { Say(claimAllLabel, "Niente da raccogliere", ClaimAllText, 2f); Resync(); return; }
+                RewardsService.PlaySound(r);
+                if (chest == null || !chest.Open(r)) Toast(r);
+                claimAllLabel.text = ClaimAllText;
+                MarkClaimed(r);
             }, _ =>
             {
-                claiming = false;
-                if (this != null) Say(claimAllLabel, "Riprova più tardi", ClaimAllText, 2f);
+                if (this == null) return;
+                SetBusy(false);
+                Say(claimAllLabel, "Riprova più tardi", ClaimAllText, 2f);
+                Resync();
             });
         }
 
-        private void MarkClaimed(ServerReward r, bool render = true)
+        /// <summary>Cosa e' arrivato davvero ("+250 monete · +5 gemme"), dal server.</summary>
+        private static void Toast(ServerReward r)
         {
-            RewardsService.PlaySound(r);
+            string text = RewardsService.Summary(r);
+            if (text.Length > 0) UI51Toast.Show(text, UI51Toast.Kind.Coins);
+        }
+
+        private void MarkClaimed(ServerReward r)
+        {
             foreach (var m in messages) if (Array.IndexOf(r.riscattati, m.id) >= 0) m.riscattato = true;
-            if (render) Render();
+            if (opened != null && Array.IndexOf(r.riscattati, opened.id) >= 0) opened.riscattato = true; // anche se e' un oggetto vecchio
+            Render();
         }
 
         /// <summary>Il pulsante dice text per seconds (0 = finche' non cambia di nuovo), poi torna a rest e chiama then.</summary>
@@ -349,6 +424,7 @@ namespace Project51.Unity.UI
             fade?.Kill();
             StopWaitingForAuth();
             if (home != null) home.OnMailPressed -= Open;
+            if (AuthBootstrapper.Instance?.Profile != null) AuthBootstrapper.Instance.Profile.OnProfileLoaded -= AccountLoaded;
         }
     }
 }

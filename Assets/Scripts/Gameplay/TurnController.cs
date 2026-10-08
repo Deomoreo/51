@@ -66,12 +66,34 @@ namespace Project51.Unity
             recentNetworkMoves.RemoveAll(m => m.TurnId < stateTurn || m.TurnId / 100 > gameState.RoundIndex);
             if (countedTurn / 100 > gameState.RoundIndex) countedTurn = -1;
             foreach (var m in recentNetworkMoves) pendingNetworkMoves.Enqueue(m);
-            pendingLocalMove = null;
             isMoveAnimationInProgress = false;
             isRedealPendingVisual = false;
             isDealFlightPending = false;
             isRedealAnimationInProgress = false;
+            // B7 (R2): l'intro e la distribuzione partite sullo stato vecchio si fermano (prima continuavano: seconda finestra accuso,
+            // carte vecchie animate); le copie delle carte giocate parcheggiate per la distribuzione si distruggono.
+            if (introCoroutine != null)
+            {
+                StopCoroutine(introCoroutine);
+                introCoroutine = null;
+                if (dealerRouletteController != null) dealerRouletteController.Hide();
+            }
+            if (redealCoroutine != null)
+            {
+                StopCoroutine(redealCoroutine);
+                redealCoroutine = null;
+            }
+            // Quello che le coroutine fermate lasciano a meta': i tween in volo sulle carte (le riporterebbero sui bersagli vecchi),
+            // il cartello dell'accuso del mazziere e le sue carte fantasma.
+            cardViewManager?.KillCardTweens();
+            if (dealerAccusoRevealController != null) dealerAccusoRevealController.HideAnimated();
+            foreach (var ghost in dealerGhosts) if (ghost != null) ghost.DestroyView();
+            dealerGhosts.Clear();
+            if (cardAnimationController != null)
+                foreach (var visualCopy in pendingRedealVisualCopies) cardAnimationController.DestroyVisualCopy(visualCopy);
             pendingRedealVisualCopies.Clear();
+            pendingInitialHandStagedCards = null;
+            pendingInitialTableStagedCards = null;
             isAccusoWindowOpen = false;
             accusoWindowSecondsRemaining = 0f;
             accusoAlreadyResolvedThisHand.Clear();
@@ -88,9 +110,15 @@ namespace Project51.Unity
                 }
                 StageInitialDealAndStartIntro();
             }
-            else
+            else if (cardViewManager != null)
             {
-                cardViewManager?.ForceRefresh();
+                // B7: quello che i finally delle coroutine fermate non fanno piu' (carte visibili), il mazziere, e i risultati se lo
+                // stato arriva a smazzata finita (MatchResultsV2 non li rimostra ne' li riconta se sono gia' quelli).
+                cardViewManager.SetSuppressNewCardVisibility(false);
+                cardViewManager.ForceRefresh();
+                cardViewManager.SetAllCardRenderersVisible(true);
+                SetDealerIndicatorViaReflection(true);
+                if (gameState.RoundEnded) ShowRoundEndPanel();
             }
             OnMoveExecuted?.Invoke(null);
             TryProcessNextQueuedNetworkMove(); // le mosse gia' arrivate entrano subito, prima di quelle in arrivo
@@ -182,7 +210,8 @@ namespace Project51.Unity
         private List<CardViewManager.StagedCard> pendingInitialTableStagedCards;
         private (int dealerIndex, AccusoType type, List<Card> sweptCards)? pendingDealerAccuso;
         [SerializeField] private DealerAccusoRevealController dealerAccusoRevealController;
-        private Coroutine introCoroutine;
+        private Coroutine introCoroutine, redealCoroutine;
+        private readonly List<CardView> dealerGhosts = new List<CardView>(); // carte dell'accuso del mazziere in mostra
         /// <summary>Ultimo stato "appena distribuito" ricevuto dal Master: un doppione non rifa' l'introduzione.</summary>
         private string lastNetworkIntroState;
 
@@ -218,6 +247,13 @@ namespace Project51.Unity
         [Tooltip("Durata fissa della finestra per dichiarare Accuso manualmente prima che scatti l'automatico. Sempre la stessa, anche se nessuno ha un accuso disponibile: una durata variabile rivelerebbe implicitamente chi ce l'ha (vedi discussione UI_SPEC_Tavolo.md sezione 9).")]
         [SerializeField] private float manualAccusoWindowSeconds = 5f;
 
+        // B33: partita guidata (UI51TutorialView), solo offline. Gate = mosse del giocatore accettate; BotMove = mossa del copione
+        // (null = IA); Hold = Nonna Rosa sta spiegando: si fermano il conto dell'Accuso e il bot.
+        public static System.Func<Move, bool> TutorialGate;
+        public static System.Func<List<Move>, Move> TutorialBotMove;
+        public static System.Func<bool> TutorialHold;
+        private static bool Holding => TutorialHold != null && TutorialHold();
+
         [Header("Animazione dealer (inizio smazzata) - provvisorio, verra' rifatto con una vera grafica")]
         [Tooltip("Quanto resta visibile la chip 'MAZZIERE' prima che inizi la distribuzione animata.")]
         [SerializeField] private float dealerDeclareHoldSeconds = 2.2f;
@@ -248,9 +284,6 @@ namespace Project51.Unity
         /// gioco in ordine non appena il client torna libero (vedi TryProcessNextQueuedNetworkMove).
         /// </summary>
         private readonly Queue<Move> pendingNetworkMoves = new Queue<Move>();
-
-        /// <summary>Ultima mossa del giocatore locale arrivata mentre eravamo occupati (vedi ExecuteMove).</summary>
-        private Move pendingLocalMove;
 
         /// <summary>
         /// Ultime mosse arrivate dalla rete, la prima per ogni numero di turno. Lo stato intero del master puo' partire prima di una
@@ -423,7 +456,15 @@ namespace Project51.Unity
 
         /// <summary>Una mossa sta animando o aspetta in coda: lo stato non e' ancora quello finale (vittoria per abbandono).</summary>
         public bool IsBusy => isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress ||
-                              pendingNetworkMoves.Count > 0 || pendingLocalMove != null || GamePresentation.IsBusy;
+                              pendingNetworkMoves.Count > 0 || GamePresentation.IsBusy;
+
+        /// <summary>
+        /// Il giocatore di questo telefono puo' giocare ADESSO (Build 3, B3): suo turno, tavolo fermo (niente distribuzione,
+        /// finestra accuso, volo di carte), nessuna mossa gia' mandata. Va letto al momento del tocco, non salvato in IsClickable.
+        /// </summary>
+        public bool AcceptsLocalInput => gameState != null && !gameState.RoundEnded && !halted
+            && IsHumanPlayerTurn && GameModeService.Current.IsLocalPlayer(CurrentPlayerIndex)
+            && !IsBusy && !(sentKey == TurnKey() && sentState == gameState);
 
         /// <summary>Partita chiusa per abbandono degli avversari (MatchResultsV2): niente piu' mosse, ne' dei bot ne' dalla rete.</summary>
         public void Halt()
@@ -431,7 +472,6 @@ namespace Project51.Unity
             halted = true;
             CancelInvoke(); // le animazioni gia' partite finiscono da sole sotto il pannello, le mosse nuove no (guardie su halted)
             pendingNetworkMoves.Clear();
-            pendingLocalMove = null;
         }
         /// <summary>Distribuzione in corso: il mazzo sul tavolo resta visibile finche' le ultime carte non sono partite.</summary>
         public bool IsDealInProgress => isDealFlightPending;
@@ -564,7 +604,6 @@ namespace Project51.Unity
         // Scarta qualunque mossa di rete accodata da una mano/partita precedente: non ha piu'
         // senso applicarla al nuovo GameState che stiamo per creare.
         pendingNetworkMoves.Clear();
-        pendingLocalMove = null;
 
         // Initialize AI if not already done
         if (cirullaAI == null)
@@ -791,7 +830,6 @@ namespace Project51.Unity
             }
 
             RefreshValidMoves();
-            PlayYourTurnCue();
 
             if (!IsHumanPlayerTurn)
             {
@@ -940,7 +978,8 @@ namespace Project51.Unity
 
                 // 1) Ricrea le carte spazzate via come "fantasmi" e le posa sul tavolo vero, una alla
                 // volta, con lo stesso ritmo delle carte tavolo normali - non un popup con carte finte.
-                var ghosts = new List<CardView>();
+                var ghosts = dealerGhosts;
+                ghosts.Clear();
                 var staged = new List<CardViewManager.StagedCard>();
                 for (int i = 0; i < sweptCards.Count; i++)
                 {
@@ -1003,6 +1042,7 @@ namespace Project51.Unity
                 {
                     ghost?.DestroyView();
                 }
+                ghosts.Clear();
             }
             finally
             {
@@ -1011,13 +1051,23 @@ namespace Project51.Unity
             }
         }
 
+        private static System.Func<int, string> s_PlayerName;
+
         /// <summary>
-        /// Nome semplice per la roulette (niente lookup PlayFab: Project51.Auth vive
-        /// nell'assembly di default come Project51.Unity.UI, stesso motivo di
-        /// SetDealerIndicatorViaReflection - non vale la pena una reflection in piu' solo per
-        /// questo, "Tu"/"Giocatore N"/"Bot N" e' gia' chiaro per una rivelazione di un istante).
+        /// B29 (X2): lo stesso nome dei banner (GameSocialV2.PlayerName, assembly di default: via reflection come
+        /// SetDealerIndicatorViaReflection). Senza, "Tu"/"Giocatore N"/"Bot N".
         /// </summary>
         private string GetSimpleDisplayName(int playerIndex)
+        {
+            if (s_PlayerName == null)
+            {
+                var method = System.Type.GetType("Project51.UIV2.Core.GameSocialV2, Assembly-CSharp")?.GetMethod("PlayerName", new[] { typeof(int) });
+                s_PlayerName = method != null ? (System.Func<int, string>)System.Delegate.CreateDelegate(typeof(System.Func<int, string>), method) : FallbackName;
+            }
+            return s_PlayerName(playerIndex);
+        }
+
+        private static string FallbackName(int playerIndex)
         {
             var provider = GameModeService.Current;
             if (provider.IsHumanPlayer(playerIndex))
@@ -1094,7 +1144,7 @@ namespace Project51.Unity
             {
                 while (accusoWindowSecondsRemaining > 0f)
                 {
-                    accusoWindowSecondsRemaining -= Time.deltaTime;
+                    if (!Holding) accusoWindowSecondsRemaining -= Time.deltaTime;
                     yield return null;
                 }
             }
@@ -1164,17 +1214,13 @@ namespace Project51.Unity
                     // diverso da quello reale.
                     pendingNetworkMoves.Enqueue(move);
                 }
-                else if (GameModeService.Current.IsLocalPlayer(move.PlayerIndex) && GameModeService.Current.IsHumanPlayer(move.PlayerIndex))
-                {
-                    // Tocco del giocatore durante un'animazione: prima spariva senza feedback.
-                    // Lo teniamo (solo l'ultimo) e lo rigiochiamo appena liberi; se nel frattempo
-                    // non e' piu' valido la validazione lo scarta. I bot ritentano da soli.
-                    pendingLocalMove = move;
-                }
+                // Un tocco locale a tavolo occupato si scarta (B3, scelta utente 07/10): rigiocarlo dopo faceva partire carte
+                // da sole. I tocchi passano gia' da AcceptsLocalInput; i bot ritentano da soli.
                 return;
             }
 
             var provider = GameModeService.Current;
+            if (!fromNetwork && !provider.IsMultiplayer && TutorialGate != null && provider.IsHumanPlayer(move.PlayerIndex) && !TutorialGate(move)) return;
 
             // Multiplayer: check if this move needs to be sent via network
             // SKIP if this call is already from network to prevent infinite loop!
@@ -1273,13 +1319,13 @@ namespace Project51.Unity
                 TryProcessNextQueuedNetworkMove();
             }
 
-            // Tocco locale fatto durante un'animazione: lo rigiochiamo appena siamo liberi.
-            if (pendingLocalMove != null && pendingNetworkMoves.Count == 0 &&
-                !(isMoveAnimationInProgress || isRedealPendingVisual || isRedealAnimationInProgress || GamePresentation.IsBusy))
+            // B5: un solo momento "tocca a te", quando il tavolo e' davvero pronto per il tocco (stesso controllo dei tocchi).
+            bool ready = AcceptsLocalInput;
+            if (ready != wasReady)
             {
-                var localMove = pendingLocalMove;
-                pendingLocalMove = null;
-                ExecuteMove(localMove);
+                wasReady = ready;
+                if (ready) PlayYourTurnCue();
+                if (cardViewManager != null) cardViewManager.RefreshMoveHints(); // l'alone segue il controllo, anche quando si chiude
             }
 
             TickTurnTimer();
@@ -1368,6 +1414,7 @@ namespace Project51.Unity
 
                     playedCardView.CardRenderer.enabled = false;
                     hiddenRenderers.Add(playedCardView.CardRenderer);
+                    cardViewManager.ClearSelection(); // T4: la carta tenuta sollevata fino all'eco parte da li' e la vista torna libera
 
                     Vector3 tableTarget = cardViewManager.GetNextTableCardPosition(gameState.Table.Count);
                     float tableScale = cardViewManager.GetTableCardScale(gameState.Table.Count + 1);
@@ -1487,7 +1534,7 @@ namespace Project51.Unity
                     }
                 }
 
-                if (isRedealPendingVisual)
+                if (isRedealPendingVisual && gen == stateGen) // una mossa vecchia non lascia copie nella distribuzione dello stato nuovo
                 {
                     pendingRedealVisualCopies.AddRange(visualCopies);
                 }
@@ -1546,7 +1593,6 @@ namespace Project51.Unity
 
             // Refresh valid moves for the next player
             RefreshValidMoves();
-            if (!isRedealPendingVisual) PlayYourTurnCue();
 
             // If next player is AI, execute their turn
             var provider = GameModeService.Current;
@@ -1571,7 +1617,7 @@ namespace Project51.Unity
             isRedealPendingVisual = true;
             isDealFlightPending = true;
             accusoAlreadyResolvedThisHand.Clear();
-            StartCoroutine(HandleNewHandsRevealSequence());
+            redealCoroutine = StartCoroutine(HandleNewHandsRevealSequence());
         }
 
         private System.Collections.IEnumerator HandleNewHandsRevealSequence()
@@ -1688,7 +1734,6 @@ namespace Project51.Unity
             }
 
             RefreshValidMoves();
-            PlayYourTurnCue();
 
             if (!IsHumanPlayerTurn)
             {
@@ -1716,7 +1761,7 @@ namespace Project51.Unity
             }
 
             // Durante il pugno dell'accuso il bot aspetta invece di perdere il turno.
-            if (GamePresentation.IsBusy)
+            if (GamePresentation.IsBusy || Holding)
             {
                 Invoke(nameof(ExecuteAITurn), 0.3f);
                 return;
@@ -1728,7 +1773,7 @@ namespace Project51.Unity
                 return;
             }
 
-            Move chosenMove = cirullaAI?.ChooseMove(gameState, gameState.CurrentPlayerIndex, currentValidMoves);
+            Move chosenMove = TutorialBotMove?.Invoke(currentValidMoves) ?? cirullaAI?.ChooseMove(gameState, gameState.CurrentPlayerIndex, currentValidMoves);
             
             if (chosenMove == null)
             {
@@ -1931,11 +1976,14 @@ namespace Project51.Unity
         }
 
         /// <summary>Avviso sonoro leggero quando tocca al giocatore di questo dispositivo.</summary>
+        private bool wasReady;
+
+        /// <summary>Tocca a te (B5, scelta utente 07/10): scritta "TOCCA A TE" sopra la mano, vibrazione leggera e suono, una volta.</summary>
         private void PlayYourTurnCue()
         {
-            if (gameState == null || gameState.RoundEnded || !IsHumanPlayerTurn) return;
-            if (!GameModeService.Current.IsLocalPlayer(CurrentPlayerIndex)) return;
             GameAudio.Play(SoundId.YourTurn);
+            GameFeedback.TryHaptic(false);
+            GamePresentation.ShowYourTurn();
         }
 
         /// <summary>

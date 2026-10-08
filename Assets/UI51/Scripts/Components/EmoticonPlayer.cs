@@ -8,6 +8,7 @@ namespace Project51.UI51
     /// Emoticon animata da un foglio 4x2 di 8 fotogrammi (SPEC §5-6): 0.9 s per l'andata 0..7, poi ritorno 7..0
     /// (CSS "steps infinite alternate", periodo 1.8 s). Still = solo il primo fotogramma (picker).
     /// Gira anche con la grafica ridotta: e' il contenuto, non un decoro. Indipendente dal timeScale.
+    /// Usato anche per le fiamme della Home (Ambient): li' e' un decoro e con la grafica ridotta resta fermo.
     /// </summary>
     [AddComponentMenu("UI51/Emoticon Player")]
     [RequireComponent(typeof(Image))]
@@ -18,6 +19,7 @@ namespace Project51.UI51
 
         [SerializeField] Sprite[] m_Frames = new Sprite[0];
         [SerializeField] bool m_Still;
+        [SerializeField, Tooltip("Decoro: fermo sul primo fotogramma con la grafica ridotta.")] bool m_Ambient;
         [SerializeField, Tooltip("Durata dell'andata 0->7 in secondi (CSS .9s).")] float m_Period = 0.9f;
 
         Image m_Image;
@@ -61,6 +63,7 @@ namespace Project51.UI51
         void Update()
         {
             if (m_Still || !hasFrames) return;
+            if (m_Ambient && GamePreferences.ReducedGraphics) { if (m_Shown != 0) Restart(); return; }
             m_Time += Time.unscaledDeltaTime;
             float period = GamePreferences.Scaled(m_Period);
             if (m_Time > period * 2f) m_Time %= period * 2f;

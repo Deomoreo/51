@@ -80,6 +80,15 @@ namespace Project51.Auth
         #endregion
         
         #region Public Methods
+
+        /// <summary>B10 (S3): cambio di account. L'XP locale e' solo la riserva dell'account in corso, mai da passare al prossimo.</summary>
+        public static void Clear()
+        {
+            PlayerPrefs.DeleteKey(KEY_EXP);
+            PlayerPrefs.DeleteKey(KEY_TOTAL_WINS);
+            PlayerPrefs.DeleteKey(KEY_TOTAL_GAMES);
+            PlayerPrefs.Save();
+        }
         
         /// <summary>
         /// Registra il risultato di una partita.

@@ -1,7 +1,6 @@
 using NUnit.Framework;
 using Project51.Auth;
 using Project51.Core;
-using UnityEngine;
 
 namespace Project51.Tests
 {
@@ -77,11 +76,23 @@ namespace Project51.Tests
         // iPhone 12 (1170x2532, area sicura alta 2391, 2.7121 px per unita'): finestra da 1848.6 a 872.2 px.
         [TestCase(0f, 0f)]        // tastiera chiusa o Editor
         [TestCase(600f, 0f)]      // tastiera piu' bassa della finestra
-        [TestCase(1008f, 62.07f)] // tastiera da 336 pt: sale di 50 + 12 di stacco
-        [TestCase(3000f, 188f)]   // misura assurda: si ferma al bordo alto dell'area sicura
+        [TestCase(1008f, 72.07f)] // tastiera da 336 pt: sale di 50 + 22 di stacco
+        [TestCase(3000f, 178f)]   // misura assurda: si ferma 22 sotto il bordo alto dell'area sicura
         public void KeyboardLift(float keyboardPx, float expected)
         {
-            Assert.AreEqual(expected, Project51.UIV2.Core.DeleteAccountModalV2.KeyboardLift(keyboardPx, 872.2f, 1848.6f, 2391f, 2.7121f), 0.1f);
+            Assert.AreEqual(expected, Project51.UI51.UI51Input.KeyboardLift(keyboardPx, 872.2f, 1848.6f, 2391f, 2.7121f), 0.1f);
+        }
+
+        // B24: nome utente solo lettere e cifre ASCII. B23: password sbagliata e account inesistente danno lo stesso messaggio.
+        [Test]
+        public void NameRuleAndLoginErrors()
+        {
+            Assert.IsTrue(Project51.UIV2.Core.AuthScreensV2.IsValidName("Mario77"));
+            Assert.IsFalse(Project51.UIV2.Core.AuthScreensV2.IsValidName("Niccolò"));
+            Assert.IsFalse(Project51.UIV2.Core.AuthScreensV2.IsValidName("mario rossi"));
+            string Msg(PlayFab.PlayFabErrorCode c) => PlayFabAuthService.GetUserFriendlyError(new PlayFab.PlayFabError { Error = c, ErrorMessage = "english" });
+            Assert.AreEqual(Msg(PlayFab.PlayFabErrorCode.AccountNotFound), Msg(PlayFab.PlayFabErrorCode.InvalidEmailOrPassword));
+            Assert.IsFalse(Msg(PlayFab.PlayFabErrorCode.Unknown).Contains("english"));
         }
 
         [TestCase("giocatore@mail.com", "g•••••@mail.com")]
@@ -96,25 +107,20 @@ namespace Project51.Tests
         [Test]
         public void MarkRegistered_TurnsTheSessionIntoARealLoginWithEmail()
         {
-            const string realKey = "Project51_HasRealLogin", registeredKey = "Project51_IsRegistered";
-            int savedReal = PlayerPrefs.GetInt(realKey, 0), savedRegistered = PlayerPrefs.GetInt(registeredKey, 0);
-            try
-            {
-                PlayerPrefs.SetInt(realKey, 0);
-                var auth = new PlayFabAuthService();
-                Assert.IsFalse(auth.HasRealLogin, "Control: guest before registering.");
+            var auth = new PlayFabAuthService();
+            Assert.IsFalse(auth.HasRealLogin, "Control: guest before registering.");
 
-                auth.MarkRegistered("giocatore@mail.com");
+            string shown = null;
+            auth.OnDisplayNameChanged += n => shown = n;
+            auth.MarkRegistered("giocatore@mail.com", "Mario");
 
-                Assert.IsTrue(auth.HasRealLogin, "Account UI (profile editor, delete account) is gated by this flag.");
-                Assert.AreEqual("giocatore@mail.com", auth.Email);
-            }
-            finally
-            {
-                PlayerPrefs.SetInt(realKey, savedReal);
-                PlayerPrefs.SetInt(registeredKey, savedRegistered);
-                PlayerPrefs.Save();
-            }
+            Assert.IsTrue(auth.HasRealLogin, "Account UI (profile editor, delete account) is gated by this flag.");
+            Assert.AreEqual("giocatore@mail.com", auth.Email);
+            Assert.AreEqual("Mario", auth.GetBestDisplayName(), "B13: the chosen name shows at once, not 'Ospite XXXX'.");
+            Assert.AreEqual("Mario", shown);
+
+            auth.Logout();
+            Assert.IsFalse(auth.HasRealLogin, "B9: after Esci the next session is a guest, never the account just left.");
         }
     }
 }

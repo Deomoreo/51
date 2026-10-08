@@ -44,8 +44,12 @@ namespace Project51.UIV2.Core
         private InGameSettingsV2 settings;
         private TurnController turn;
         private bool applicationPaused;
-        // ponytail: guardia per riferimento; un resync che rimanda la stessa fine smazzata come nuovo oggetto la conterebbe due volte.
-        private GameState countedState, recordedState;
+        // B7 (R2): un resync rimanda la stessa fine smazzata come oggetto nuovo, e a volte diversa (era divergente): si mostra di
+        // nuovo solo se cambia (shownKey), ma bonus e premio si contano una volta per smazzata e per partita, mai per stato.
+        private GameState recordedState;
+        private string shownKey;
+        private int countedRound;
+        private bool recorded;
         private int matchScope, matchAccusi, matchSettebelli, xpFrom = -1, xpTo;
         private bool guestXp;
         // Vittoria per abbandono (scelta dell'utente 01/10): senza piu' avversari umani al tavolo vince chi resta. Statici per RecordAbandon.
@@ -56,9 +60,17 @@ namespace Project51.UIV2.Core
         // Un avversario e' uscito mentre questa partita era in corso (non a fine partita: la rivincita col bot non vale); controllo in attesa del tavolo fermo.
         private bool opponentLeftMidMatch, forfeitCheck;
         public const int MaxForfeitRewards = 3; // come "abbandoni" in premioPartita (Server/CloudScript/51.js)
+        // #141: biglietto della partita in corso (id del server, inizioPartita) e id della partita sul telefono (allenamento: un
+        // biglietto per partita; senza biglietto: l'id del risultato). Statici: RecordAbandon e' statico. Le partite finite le ricorda
+        // RewardsService (mai lo stesso biglietto per due partite, anche dopo un riavvio).
+        private static string matchTicket, matchLocal;
+        private int verifyTries;
+        private bool ticketRequest;
+        private float nextTicketTry;
 
         private void Awake()
         {
+            matchTicket = null; // scena nuova: partita nuova o rientro, il server restituisce lo stesso biglietto se e' la stessa partita
             forfeitState = null;
             forfeitOpponent = null;
             forfeitActor = 0;
@@ -83,7 +95,11 @@ namespace Project51.UIV2.Core
         {
             if (Forfeit) return; // partita gia' chiusa per abbandono: il tavolo e' fermo
             // Avversari usciti durante la smazzata: alla sua fine vince chi resta (OpponentLeft lo fa subito dopo la prima).
-            if (forfeitState != state && CanForfeit(state)) { forfeitState = state; turn.Halt(); }
+            bool becomesForfeit = forfeitState != state && CanForfeit(state);
+            if (becomesForfeit) { forfeitState = state; turn.Halt(); }
+            string key = GameStateSerializer.Serialize(state);
+            if (!becomesForfeit && key == shownKey) return; // stessa fine smazzata rimandata da un resync: gia' mostrata (e contata)
+            shownKey = key;
             bool forfeit = forfeitState == state;
             autoAdvance.Cancel();
             captionSeconds = int.MinValue;
@@ -99,7 +115,7 @@ namespace Project51.UIV2.Core
             CountLocalBonuses(state);
             int winner = forfeit ? localEntry : order[0];
             wonMatch = finished && winner == localEntry;
-            if (finished && recordedState != state) RecordMatch(wonMatch);
+            if (finished && !recorded) RecordMatch(wonMatch, winner);
 
             if (finished)
             {
@@ -251,8 +267,14 @@ namespace Project51.UIV2.Core
 
         private int captionSeconds = int.MinValue; // ultimo conto scritto sotto PROSSIMA SMAZZATA
 
+        /// <summary>Partita finita e mostrata (anche senza pannello, nel tutorial), finche' non si va avanti.</summary>
+        public bool MatchOver => finished && shownState != null && !clicked;
+
         private void Reveal(int localEntry, int winner)
         {
+            // Test 8 (terzo giro 08/10): a fine tutorial solo la sua schermata finale (GIOCA ORA / VAI ALLA HOME), niente risultati sotto.
+            // La partita si chiude come sempre: MatchOver per il tutorial, Rematch (Next) per GIOCA ORA.
+            if (finished && Project51.Unity.UI.UI51TutorialView.Running) { GameAudio.Play(winner == localEntry ? SoundId.Victory : SoundId.Defeat); return; }
             var panel = finished ? MatchPanel : RoundPanel;
             panel.SetActive(true);
             if (!finished) autoAdvance.Start();
@@ -275,8 +297,8 @@ namespace Project51.UIV2.Core
         /// <summary>Scope e accusi del giocatore locale sommati sulle smazzate della partita (per il bonus XP).</summary>
         private void CountLocalBonuses(GameState state)
         {
-            if (countedState == state) return;
-            countedState = state;
+            if (state.RoundIndex == countedRound) return;
+            countedRound = state.RoundIndex;
             if (state.RoundIndex <= 1) matchScope = matchAccusi = matchSettebelli = 0;
             int local = GameModeService.Current.LocalPlayerIndex;
             if (local < 0 || local >= state.NumPlayers) return;
@@ -289,9 +311,12 @@ namespace Project51.UIV2.Core
         private ServerReward coinReward;
         private bool coinFailed;
 
-        private void RecordMatch(bool won)
+        private void RecordMatch(bool won, int winner)
         {
             recordedState = shownState;
+            recorded = true;
+            // B33: la partita guidata non conta (statistiche, XP, monete): niente riga delle ricompense.
+            if (Project51.Unity.UI.UI51TutorialView.Running) { xpFrom = -1; return; }
             opponentLeftMidMatch = forfeitCheck = false;
             ModerationService.MatchEnded();
             // La RIVINCITA e' una partita nuova: se nel frattempo e' arrivata una sospensione non si puo' iniziare (scelta dell'utente 01/10).
@@ -318,12 +343,75 @@ namespace Project51.UIV2.Core
             coinReward = null;
             coinFailed = false;
             if (!guest)
-                RewardsService.MatchReward(won, training, matchScope, matchAccusi,
-                    r => { if (cloud != null) cloud.ApplyServerStats(r); coinReward = r; if (this != null) ServerXp(r); },
-                    _ => { coinFailed = true; if (this != null) View.ShowCoins(null, true); },
-                    Forfeit ? forfeitOpponent ?? "" : null, Forfeit && PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : null, forfeitActor);
+            {
+                // #141/#142: biglietto della partita e dichiarazione del risultato (punti di tutti, vincitore, posto); se il biglietto non
+                // e' ancora arrivato si chiede adesso (risposta persa: il server da' lo stesso), senza (rete) vale l'id del telefono. Il
+                // risultato resta sul telefono finche' il server non da' una risposta definitiva (RewardsService.RetryMatches in Home);
+                // "in verifica" (si aspettano le altre persone) si ritenta qui dopo 10 e 30 s.
+                var claim = Declaration(shownState, won, winner);
+                verifyTries = 0;
+                Action<ServerReward> done = null;
+                done = r =>
+                {
+                    if (r.occupato || (r.partitaNonValida && !RewardsService.KeepsPending(r))) { Failed(cloud); return; }
+                    if (cloud != null) cloud.ApplyServerStats(r);
+                    coinReward = r;
+                    if (this == null) return;
+                    if (RewardsService.KeepsPending(r) && r.stato != "incompleta") { View.ShowCoins(r); RetryLater(claim, done); }
+                    else ServerXp(r);
+                };
+                Action<string> failed = _ => Failed(cloud);
+                if (matchTicket != null) { claim.partita = matchTicket; RewardsService.MatchReward(claim, done, failed); }
+                else RewardsService.OpenMatch(RoomName, matchLocal, t =>
+                {
+                    if (t.ok && !string.IsNullOrEmpty(t.partita)) claim.partita = t.partita;
+                    RewardsService.MatchReward(claim, done, failed);
+                }, _ => RewardsService.MatchReward(claim, done, failed));
+                matchTicket = matchLocal = null; // la rivincita chiede il suo
+            }
             forfeitOpponent = null; // la rivincita parte pulita
             forfeitActor = 0;
+        }
+
+        /// <summary>
+        /// Risultato dichiarato al server (#142 Fase A): punti finali di ogni concorrente, smazzate, concorrente vincente, posto del
+        /// giocatore, squadre, giocatori, rientri. Gli altri telefoni della partita mandano gli stessi numeri: il server confronta.
+        /// </summary>
+        private PendingMatch Declaration(GameState state, bool won, int winner)
+        {
+            matchLocal = matchLocal ?? NewLocalId();
+            var claim = new PendingMatch
+            {
+                locale = matchLocal, stanza = RoomName, vinta = won, abbandono = Forfeit, attore = forfeitActor, scope = matchScope,
+                accusi = matchAccusi, punti = state != null ? MatchScore.Totals(state) : new int[0], smazzate = state != null ? state.RoundIndex : 0,
+                vincitore = winner, posto = GameModeService.Current.LocalPlayerIndex, squadre = state != null && state.TeamMode,
+                giocatori = state != null ? state.NumPlayers : 0, rientri = Project51.Networking.NetworkGameController.Rejoins
+            };
+            Project51.Networking.NetworkGameController.Rejoins = 0;
+            return claim;
+        }
+
+        private static string NewLocalId() => Guid.NewGuid().ToString("N").Substring(0, 16);
+
+        /// <summary>"In verifica": nuovo tentativo dopo 10 s e dopo altri 30 s, poi ci pensa la Home.</summary>
+        private void RetryLater(PendingMatch claim, Action<ServerReward> done)
+        {
+            if (verifyTries >= 2) return;
+            StartCoroutine(RetryAfter(verifyTries++ == 0 ? 10f : 30f, claim, done));
+        }
+
+        private System.Collections.IEnumerator RetryAfter(float seconds, PendingMatch claim, Action<ServerReward> done)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            RewardsService.RetryMatch(claim.partita, claim.locale, done);
+        }
+
+        /// <summary>Premio non confermato (rete, server occupato, biglietto mancante): la riga lo dice, le statistiche si rileggono.</summary>
+        private void Failed(ProfileService cloud)
+        {
+            coinFailed = true;
+            cloud?.RefreshStatistics();
+            if (this != null) View.ShowCoins(null, true);
         }
 
         /// <summary>
@@ -347,13 +435,39 @@ namespace Project51.UIV2.Core
         {
             var turn = FindObjectOfType<TurnController>();
             var state = turn != null ? turn.GameState : null;
+            if (Project51.Unity.UI.UI51TutorialView.Running) return; // B33: lasciare il tutorial non e' un abbandono
             if (state == null || state == forfeitState || MatchScore.IsFinished(state, (GameSceneInitializer.ActiveConfig ?? new MatchConfig()).TargetScore)) return;
             if (disciplinary) ModerationService.Abandoned(); // conta solo online con altre persone e con un account
             else ModerationService.MatchEnded();
             if (PlayerProgressLocal.Instance != null) PlayerProgressLocal.Instance.RecordGameResult(false);
             var cloud = AuthBootstrapper.Instance != null ? AuthBootstrapper.Instance.Profile : null;
-            if (cloud != null && cloud.IsLoaded && AuthBootstrapper.Instance.PlayFabAuth != null && AuthBootstrapper.Instance.PlayFabAuth.HasRealLogin)
-                RewardsService.MatchQuit(cloud.ApplyServerStats);
+            // Anche col profilo non ancora caricato (ST1): la partita persa la conta il server, la cache non serve.
+            if (cloud != null && HasAccount) RewardsService.MatchQuit(matchTicket, cloud.ApplyServerStats);
+            matchTicket = matchLocal = null;
+        }
+
+        private static bool HasAccount => AuthBootstrapper.Instance != null && AuthBootstrapper.Instance.PlayFabAuth != null &&
+            AuthBootstrapper.Instance.PlayFabAuth.HasRealLogin;
+
+        private static string RoomName => GameModeService.Current.IsMultiplayer && PhotonNetwork.InRoom ? PhotonNetwork.CurrentRoom.Name : null;
+
+        /// <summary>
+        /// #141: a partita in corso (anche dopo un rientro) si chiede il biglietto al server, finche' non arriva (ogni 5 s). Niente per
+        /// ospiti e tutorial, che non sono premiati.
+        /// </summary>
+        private void EnsureTicket()
+        {
+            if (matchTicket != null || ticketRequest || recorded || Time.unscaledTime < nextTicketTry) return;
+            if (turn?.GameState == null || turn.GameState.RoundEnded || Project51.Unity.UI.UI51TutorialView.Running || !HasAccount) return;
+            ticketRequest = true;
+            matchLocal = matchLocal ?? NewLocalId();
+            RewardsService.OpenMatch(RoomName, matchLocal, r =>
+            {
+                ticketRequest = false;
+                if (this == null) return; // scena chiusa nel frattempo: la prossima lo richiede
+                if (r.ok && !string.IsNullOrEmpty(r.partita) && !recorded) matchTicket = r.partita;
+                else nextTicketTry = Time.unscaledTime + Mathf.Max(5f, r.attendi); // attendi: un biglietto nuovo al minuto
+            }, _ => { ticketRequest = false; nextTicketTry = Time.unscaledTime + 5f; });
         }
 
         /// <summary>Riga "+XP" e monete del fine partita.</summary>
@@ -417,13 +531,13 @@ namespace Project51.UIV2.Core
         private void RefreshContinue()
         {
             bool canAdvance = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
-            string label = NoRematch ? "TORNA ALLA HOME" : canAdvance ? (finished ? "RIVINCITA" : "PROSSIMA SMAZZATA") : "ATTENDI L'HOST";
-            // UI51: il conto sta sotto il pulsante ("Si riparte da sola tra N secondi"), solo per chi fa proseguire.
+            string label = NoRematch ? "TORNA ALLA HOME" : canAdvance ? (finished ? "RIVINCITA" : "PROSSIMA SMAZZATA") : "ATTENDI GLI ALTRI";
+            // UI51: il conto sta sotto il pulsante ("Prossima smazzata tra N secondi"), solo per chi fa proseguire.
             int seconds = canAdvance && autoAdvance.IsRunning ? Mathf.CeilToInt(autoAdvance.Remaining) : -1;
             if (!finished && seconds != captionSeconds)
             {
                 captionSeconds = seconds;
-                View.SetRoundCaption(seconds >= 0 ? "Si riparte da sola tra " + seconds + " secondi" : null);
+                View.SetRoundCaption(seconds >= 0 ? "Prossima smazzata tra " + seconds + (seconds == 1 ? " secondo" : " secondi") : null);
             }
             // UI51: senza rivincita resta solo "Torna alla Home" in fondo, non due pulsanti uguali.
             if (finished && Rematch.gameObject.activeSelf == NoRematch) Rematch.gameObject.SetActive(!NoRematch);
@@ -459,6 +573,9 @@ namespace Project51.UIV2.Core
         {
             if (forfeitCheck) CheckForfeit();
             RememberOpponentIds();
+            // Si gioca di nuovo dopo una partita registrata: e' la rivincita, si conta da capo.
+            if (recorded && turn?.GameState != null && !turn.GameState.RoundEnded) { recorded = false; countedRound = 0; }
+            EnsureTicket();
             bool visible = RoundPanel.activeInHierarchy || MatchPanel.activeInHierarchy;
             if (!visible) return;
             // Includes a just-promoted host: stale results must not start another round.
@@ -473,7 +590,7 @@ namespace Project51.UIV2.Core
             }
             if (!finished && RoundPanel.activeInHierarchy)
             {
-                bool blocked = applicationPaused || !Application.isFocused || AppLoading.IsCovering ||
+                bool blocked = applicationPaused || !Application.isFocused || AppLoading.IsCovering || Project51.Unity.UI.UI51TutorialView.Holding ||
                     (settings != null && (settings.IsOpen || settings.IsLeaveOpen)) || RoundPanel.GetComponent<CanvasGroup>().alpha < .99f;
                 bool authority = !GameModeService.Current.IsMultiplayer || GameModeService.Current.IsMasterClient;
                 // Background/resume must not consume the entire reading interval in one frame.

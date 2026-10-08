@@ -93,7 +93,8 @@ namespace Project51.Core
             Rules51.DealInitialCards(state);
 
             CurrentHandNumber = 1;
-            TotalHands = (DeckSize - state.Table.Count) / (CardsPerPlayerPerHand * state.NumPlayers);
+            // Dal mazzo rimasto: vale anche per il mazzo ridotto del tutorial (B33).
+            TotalHands = 1 + state.Deck.Count / (CardsPerPlayerPerHand * state.NumPlayers);
 
             foreach (var p in state.Players)
             { p.AccusiPoints = 0; p.RoundAccusiPoints = 0; p.RoundAccusiCount = 0; }

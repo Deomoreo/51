@@ -99,7 +99,14 @@ namespace Project51.UI51.EditorTools
             var level = UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(badge, "Value")), "1", FontFace.CinzelBold, 11f,
                 UI51Tokens.OnGold, TextAlignmentOptions.Center));
 
-            var info = UI51Build.Stretch(UI51Build.Child(account, "Info"), 70f, 0f, 0f, 0f);
+            // Valute a destra (mockup Home): pillole alte 26 una sopra l'altra, larghe quanto il numero.
+            var wallet = UI51Build.Place(UI51Build.Child(account, "Wallet"), new Vector2(1f, 0.5f), new Vector2(100f, 58f), Vector2.zero);
+            UI51Build.Column(wallet, 6f, null, TextAnchor.MiddleRight, true, true);
+            var coins = WalletPill(wallet, "Coins", "ic_coin", 15f, 15f, 7);
+            var gems = WalletPill(wallet, "Gems", "ic_gem", 11f, 14f, 8);
+            wallet.gameObject.SetActive(false);
+
+            var info = UI51Build.Stretch(UI51Build.Child(account, "Info"), 70f, 0f, 100f, 0f);
             UI51Build.Column(info, 4f, null, TextAnchor.MiddleLeft, true, true);
             var nameRt = UI51Build.Child(info, "Name");
             UI51Build.Layout(nameRt, -1f, 22f);
@@ -159,11 +166,29 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "accountGroup", account.gameObject);
                 UI51Build.Ref(so, "guestGroup", guest.gameObject);
                 UI51Build.Ref(so, "registerButton", registerButton);
+                UI51Build.Ref(so, "walletGroup", wallet.gameObject);
+                UI51Build.Ref(so, "coinsLabel", coins);
+                UI51Build.Ref(so, "gemsLabel", gems);
                 var buttons = so.FindProperty("avatarButtons");
                 buttons.arraySize = 2;
                 buttons.GetArrayElementAtIndex(0).objectReferenceValue = avatarButton;
                 buttons.GetArrayElementAtIndex(1).objectReferenceValue = guestAvatarButton;
             });
+        }
+
+        /// <summary>Pillola valuta del mockup Home: padding 0 10 0 left, gap 6, fondo navy 0.6, bordo oro 0.35, numero 12 extra bold.</summary>
+        internal static TextMeshProUGUI WalletPill(RectTransform wallet, string name, string icon, float iconW, float iconH, int left)
+        {
+            var pill = UI51Build.Child(wallet, name);
+            UI51Build.Layout(pill, -1f, 26f);
+            UI51Build.Row(pill, 6f, UI51Build.Pad(0, 10, 0, left), TextAnchor.MiddleLeft, true, true);
+            UI51Build.Solid(pill, UI51Tokens.WithAlpha(UI51Tokens.Navy, 0.6f), 13f, 1f, UI51Tokens.BorderGold);
+            var iconRt = UI51Build.Child(pill, "Icon");
+            UI51Build.Layout(iconRt, iconW, iconH);
+            UI51Build.Image(iconRt, UI51Build.Sprite("Common", icon), Color.white);
+            var valueRt = UI51Build.Child(pill, "Value");
+            UI51Build.Layout(valueRt, -1f, 16f);
+            return UI51Build.NoWrap(UI51Build.Text(valueRt, "0", FontFace.NunitoExtraBold, 12f, UI51Tokens.Cream, TextAlignmentOptions.MidlineLeft));
         }
 
         // --- Home: pulsanti laterali, tile, GIOCA

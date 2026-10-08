@@ -66,8 +66,9 @@ namespace Project51.UIV2.Animations
 
         private void ExpChanged(int total, int gained)
         {
+            // B36 (O2, scelta 07/10): solo le particelle. L'XP arriva anche dopo una sconfitta, che non vibra; la vittoria ha la sua.
             if (gained > 0 && Application.isFocused)
-                GameFeedback.Present(FeedbackKind.Reward, true, new Vector2(.5f, .78f));
+                GameFeedback.Present(FeedbackKind.Reward, false, new Vector2(.5f, .78f));
         }
 
         private void SceneLoaded(Scene scene, LoadSceneMode mode) { Clear(); BindProgress(); }

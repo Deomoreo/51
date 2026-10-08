@@ -41,15 +41,27 @@ namespace Project51.Auth
         private bool _isAuthConfigured;
         private float _connectionStartTime;
 
-        // Stanze separate per versione dell'app (via dell'utente, 30/09): ConnectUsingSettings sovrascrive GameVersion con
-        // AppSettings.AppVersion, vuota nell'asset, quindi versioni diverse finivano nella stessa stanza. Vale per ogni
-        // connessione (qui, MatchmakingManager).
+        // Stanze separate per protocollo: ConnectUsingSettings usa AppSettings.AppVersion (l'asset ha un valore vecchio), che Photon
+        // manda all'autenticazione. Messa prima della prima scena, quindi prima di ogni connessione (qui, MatchmakingManager) e
+        // valida anche per Reconnect / rientro, che riusano la stessa.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void MatchOnlySameAppVersion()
         {
             var settings = PhotonNetwork.PhotonServerSettings;
-            if (settings != null) settings.AppSettings.AppVersion = Application.version;
+            if (settings != null) settings.AppSettings.AppVersion = AppVersion;
         }
+
+        /// <summary>
+        /// Protocollo multiplayer (#154): due build si incontrano (ricerca partita, stanze per codice, presenza in Photon Chat) solo se e'
+        /// uguale. Si alza SOLO quando due build non possono piu' giocare insieme (regole, messaggi di rete, dati del CloudScript che la
+        /// partita richiede); non segue bundleVersion ne' i numeri di build, cosi' le build compatibili restano insieme.
+        /// Storia: TestFlight build 2 = "1.0.0" (Application.version, prima di questa costante); 3 = Build 3 (51 esatti -> 0, input e
+        /// rientro B3/B7/B8, biglietti di partita #141).
+        /// </summary>
+        public const int ProtocolVersion = 3;
+
+        /// <summary>Versione per Photon (PUN aggiunge "_" + la sua versione) e Photon Chat.</summary>
+        public static string AppVersion => "p" + ProtocolVersion;
 
         private void Awake()
         {

@@ -68,6 +68,7 @@ namespace Project51.Unity.UI
 
         private int today = 1;
         private bool claimed, claiming;
+        private bool known; // 26b: dati del server per l'account attuale (dopo Accedi la pagina non mostra ne' riscatta quelli di prima)
         private int shownSecond = -1;
         private Tween fade;
 
@@ -100,8 +101,11 @@ namespace Project51.Unity.UI
             if (this == null) return;
             var d = RewardsService.Daily;
             if (home != null) home.SetRewardsBadge(d != null && !d.riscattato ? 1 : 0);
-            if (d != null) Show(d.giorno, d.riscattato);
-            else if (IsOpen) Render();
+            if (d != null) { known = true; Show(d.giorno, d.riscattato); return; }
+            known = false;
+            today = 1;
+            claimed = false;
+            if (IsOpen) Render();
         }
 
         public void Close()
@@ -137,15 +141,17 @@ namespace Project51.Unity.UI
             UIAnim.Float(grandChest);
 
             claim.gameObject.SetActive(!claimed);
+            claim.interactable = known && !claiming;
             claimLabel.DOKill();
-            claimLabel.text = ClaimText;
+            // un aggiornamento a meta' riscatto non deve far sembrare perso il tocco; senza dati del server si aspetta
+            claimLabel.text = claiming || !known ? "…" : ClaimText;
             playAgain.gameObject.SetActive(claimed);
         }
 
         private void BindDay(UI51RewardDay d, int n, Reward r)
         {
-            bool isToday = n == today && !claimed, done = n < today || (n == today && claimed);
-            d.button.interactable = isToday;
+            bool isToday = n == today && !claimed && known, done = known && (n < today || (n == today && claimed));
+            d.button.interactable = isToday && !claiming;
             d.caption.text = isToday ? "OGGI" : "GIORNO " + n;
             d.caption.font = UI51Tokens.Font(isToday ? FontFace.CinzelBold : FontFace.CinzelSemiBold);
             d.caption.color = isToday ? UI51Tokens.Gold : UI51Tokens.CreamA(done ? 0.5f : 0.6f);
@@ -189,24 +195,44 @@ namespace Project51.Unity.UI
 
         private void Claim()
         {
-            if (claimed || claiming) return;
+            if (claimed || claiming || !known) return;
             claiming = true;
-            claimLabel.DOKill();
-            claimLabel.text = "…";
+            Render(); // "…" e pulsanti spenti finche' il server non risponde
+            // Secondo giro 08/10: si festeggia solo quello che il server ha dato davvero. Prima si festeggiava il premio previsto e, se il
+            // server diceva no, il premio tornava riscattabile: sembrava riscattato piu' volte.
             RewardsService.ClaimDaily(r =>
             {
                 claiming = false;
                 if (this == null) return;
-                claimLabel.text = ClaimText;
-                if (r.ok) RewardsService.PlaySound(r);
-                if (r.ok && (chest == null || !chest.Open(r))) Celebrate(r);
-                else if (!r.riscattato) Say("NON DISPONIBILE");
-                // Show arriva da DailyChanged (FromServer).
+                if (r.ok)
+                {
+                    claimed = true;
+                    RewardsService.PlaySound(r);
+                    if (chest == null || !chest.Open(r)) Celebrate(r);
+                    Render(); // Show arriva anche da DailyChanged (FromServer)
+                    return;
+                }
+                // Terzo giro 08/10: preso ma l'accredito non e' ancora confermato: il server lo ritenta (registro "Consegne").
+                if (r.inConsegna) UI51Toast.Show("Premio preso: arriva appena il server conferma");
+                if (r.riscattato) { claimed = true; Render(); return; } // gia' riscattato (altro tocco, altro telefono): TORNA A GIOCARE
+                Render();
+                Say(r.ospite ? "SOLO CON UN ACCOUNT" : "NON DISPONIBILE");
+                Resync();
             }, _ =>
             {
                 claiming = false;
-                if (this != null) Say("RIPROVA PIÙ TARDI");
+                if (this == null) return;
+                Render();
+                Say("RIPROVA PIÙ TARDI");
+                Resync();
             });
+        }
+
+        // B22 (M3): dopo un no o nessuna risposta, serie e saldo si rileggono dal server (il riscatto puo' essere passato lo stesso).
+        private static void Resync()
+        {
+            RewardsService.RefreshDaily(null, null);
+            WalletService.Refresh();
         }
 
         private void Say(string text)
@@ -216,7 +242,7 @@ namespace Project51.Unity.UI
             DOVirtual.DelayedCall(2f, () => claimLabel.text = ClaimText, true).SetTarget(claimLabel).SetLink(claimLabel.gameObject);
         }
 
-        /// <summary>Bagliore e premio che sale (1.9 s): il forziere (aperto dal server) o la valuta, col numero delle monete o gemme.</summary>
+        /// <summary>Bagliore e premio che sale (2.7 s): il forziere (aperto dal server) o la valuta, col numero delle monete o gemme.</summary>
         public void Celebrate(ServerReward r)
         {
             int kind = r.forzieri.Length > 0 ? (r.forzieri[0].colore == "verde" ? 2 : 3) : r.monete > 0 ? 0 : 1;
@@ -225,7 +251,7 @@ namespace Project51.Unity.UI
             celebration.SetActive(true);
             UIAnim.RewardBurst(burst);
             UIAnim.RewardRise(rise);
-            DOVirtual.DelayedCall(1.9f, () => celebration.SetActive(false), true).SetLink(celebration);
+            DOVirtual.DelayedCall(UIAnim.RewardRiseSeconds + 0.1f, () => celebration.SetActive(false), true).SetLink(celebration);
         }
 
         private void Update()

@@ -8,8 +8,11 @@ namespace Project51.Core
     {
         private static Random Rng = new Random();
 
-        /// <summary>Rimescolate ripetibili da qui in poi (il tutorial parte da una distribuzione nota).</summary>
-        public static void Reseed(int seed) => Rng = new Random(seed);
+        /// <summary>
+        /// B33: mazzo fisso in ordine di pesca (TutorialScript), al posto di quello mescolato, finche' resta impostato: niente
+        /// rimescolata ne' controllo dei due assi, mazziere l'ultimo posto (il bot). Lo imposta e lo toglie UI51TutorialView.
+        /// </summary>
+        public static List<Card> ScriptedDeck { get; set; }
 
         #region Game Creation & Deck Initialization
 
@@ -27,7 +30,7 @@ namespace Project51.Core
         public static GameState CreateNewGame(int numPlayers)
         {
             var state = new GameState(numPlayers);
-            state.DealerIndex = Rng.Next(numPlayers);
+            state.DealerIndex = ScriptedDeck != null ? numPlayers - 1 : Rng.Next(numPlayers);
             // Deal initial cards (this will initialize and shuffle internally)
             DealInitialCards(state);
             return state;
@@ -93,7 +96,7 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// Shuffles the deck using Fisher–Yates algorithm.
+        /// Shuffles the deck using Fisherâ€“Yates algorithm.
         /// </summary>
         private static void ShuffleDeck(GameState state)
         {
@@ -132,6 +135,8 @@ namespace Project51.Core
 
                 InitializeDeck(state);
                 ShuffleDeck(state);
+                var scripted = ScriptedDeck;
+                if (scripted != null) { state.Deck.Clear(); state.Deck.AddRange(scripted); }
 
                 // Deal 3 cards to each player, starting from the player to the left of the dealer (clockwise)
                 int firstPlayerIndex = (state.DealerIndex - 1 + state.NumPlayers) % state.NumPlayers;
@@ -152,7 +157,7 @@ namespace Project51.Core
 
                 // Check for two or more Aces on the table
                 int aceCount = state.Table.Count(c => c.IsAce);
-                if (aceCount < 2)
+                if (aceCount < 2 || scripted != null)
                 {
                     validDeal = true;
                 }
@@ -206,7 +211,7 @@ namespace Project51.Core
                     var equalMoves = GetEqualValueCaptures(state, playerIndex, card);
                     validMoves.AddRange(equalMoves);
 
-                    // Precedenza della carta uguale (SPEC §10.1): se in tavola c'e' la carta uguale si prende
+                    // Precedenza della carta uguale (SPEC Â§10.1): se in tavola c'e' la carta uguale si prende
                     // quella, niente somme ne' 15.
                     var sumMoves = equalMoves.Count > 0 ? new List<Move>() : GetSumToValueCaptures(state, playerIndex, card);
                     validMoves.AddRange(sumMoves);

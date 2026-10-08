@@ -156,7 +156,7 @@ namespace Project51.UIV2.Core
             if (panelMotion != null) panelMotion.CloseImmediate();
             else panel.SetActive(false);
             var bootstrapper = AuthBootstrapper.Instance;
-            if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
+            if (bootstrapper != null) bootstrapper.LogoutAndRestart();
             if (!AppLoading.LoadScene(AppFlowManager.SCENE_MAIN_MENU)) SceneManager.LoadScene(AppFlowManager.SCENE_MAIN_MENU);
         }
 

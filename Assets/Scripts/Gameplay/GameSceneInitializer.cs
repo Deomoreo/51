@@ -27,12 +27,10 @@ namespace Project51.Unity
         private MatchConfig _config;
 
         /// <summary>
-        /// Partita guidata (UI51 Fase 12): la prossima partita di allenamento parte da una distribuzione nota
-        /// (TutorialSeed: mazziere il bot; tu di mano con Asso di denari, 7 e 2 di bastoni; in tavolo Asso di bastoni,
-        /// Re di coppe, 4 di spade e 3 di coppe; nessun accuso, niente 15/30). La mette UI51TutorialView.Launch e la consuma StartGame.
+        /// Partita guidata (UI51 Fase 12, B33): la prossima partita di allenamento si gioca col copione di TutorialScript
+        /// (mazzo ridotto e totali di partenza). La mette UI51TutorialView.Launch e la consuma StartGame.
         /// </summary>
         public static bool Tutorial { get; set; }
-        public const int TutorialSeed = 759353;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetTutorial() => Tutorial = false;
@@ -469,9 +467,9 @@ namespace Project51.Unity
             // (prima veniva inviato una seconda volta anche da qui).
             bool tutorial = Tutorial && IsTrainingMode;
             Tutorial = false;
-            if (tutorial) Rules51.Reseed(TutorialSeed);
+            if (tutorial) Rules51.ScriptedDeck = TutorialScript.Deck1(); // la seconda la mette UI51TutorialView, che poi lo toglie
             turnController.StartNewGame();
-            if (tutorial) Rules51.Reseed(System.Environment.TickCount); // le smazzate dopo tornano casuali
+            if (tutorial) turnController.GameState.MatchTotals = (int[])TutorialScript.StartTotals.Clone();
         }
 
         private void EnsureResponsiveCamera()

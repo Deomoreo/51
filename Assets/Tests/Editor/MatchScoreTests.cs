@@ -150,6 +150,47 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void ExactTargetGoesBackToZeroAndOnlyAboveWins()
+        {
+            // 51 esatti da solo: non vince, riparte da 0; l'altro tiene i suoi punti.
+            var s = new GameState(2) { RoundEnded = true, MatchTotals = new[] { 45, 40 } };
+            s.Players[0].TotalScore = 6;
+            s.Players[1].TotalScore = 5;
+            Assert.IsFalse(MatchScore.IsFinished(s, 51));
+            var next = new GameState(2);
+            MatchScore.ContinueMatch(s, next, 51);
+            CollectionAssert.AreEqual(new[] { 0, 45 }, next.MatchTotals);
+
+            // 52 vince; 51 contro 53 vince il 53.
+            s.Players[0].TotalScore = 7;
+            Assert.IsTrue(MatchScore.IsFinished(s, 51));
+            s.Players[0].TotalScore = 6;
+            s.Players[1].TotalScore = 13;
+            Assert.IsTrue(MatchScore.IsFinished(s, 51));
+            CollectionAssert.AreEqual(new[] { 1 }, MatchScore.Leaders(s));
+
+            // Tutti e due a 51: tornano entrambi a 0 e si continua; il traguardo e' quello della partita, non 51 fisso.
+            s.Players[1].TotalScore = 11;
+            Assert.IsFalse(MatchScore.IsFinished(s, 51));
+            MatchScore.ContinueMatch(s, next = new GameState(2), 51);
+            CollectionAssert.AreEqual(new[] { 0, 0 }, next.MatchTotals);
+            MatchScore.ContinueMatch(s, next = new GameState(2), 71);
+            CollectionAssert.AreEqual(new[] { 51, 51 }, next.MatchTotals);
+        }
+
+        [Test]
+        public void TeamAtExactTargetGoesBackToZero()
+        {
+            var s = new GameState(4) { TeamMode = true, RoundEnded = true, MatchTotals = new[] { 41, 30 } };
+            int[] round = { 10, 3, 10, 3 }; // il punto di squadra sta su ogni compagno
+            for (int i = 0; i < 4; i++) s.Players[i].TotalScore = round[i];
+            Assert.IsFalse(MatchScore.IsFinished(s, 51));
+            var next = new GameState(4) { TeamMode = true };
+            MatchScore.ContinueMatch(s, next, 51);
+            CollectionAssert.AreEqual(new[] { 0, 33 }, next.MatchTotals);
+        }
+
+        [Test]
         public void TeamMatchTotalsUseOneEntryPerTeam()
         {
             var s = new GameState(4) { TeamMode = true, RoundEnded = true, MatchTotals = new[] { 10, 12 } };

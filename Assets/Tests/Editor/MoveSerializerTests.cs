@@ -36,5 +36,21 @@ namespace Project51.Tests
             Assert.IsNull(De("0|Denari:7"));
             Assert.IsNull(De("x|Denari:7|1"));
         }
+
+        // #151, falla nota e NON risolta: lo stato mandato dal Master Client a tutti (avvio, rientro, cambio Master) contiene le
+        // mani degli avversari e il mazzo, quindi un client modificato li legge. Questa prova fotografa la falla: quando #151
+        // filtra lo stato per destinatario deve fallire e va rovesciata (il destinatario vede solo la propria mano).
+        [Test]
+        public void HiddenCards_KnownLeak151_StateCarriesOpponentHandAndDeck()
+        {
+            var gs = new GameState(2);
+            gs.Deck.Add(new Card(Suit.Spade, 9));
+            gs.Players[0].Hand.Add(new Card(Suit.Denari, 1));
+            gs.Players[1].Hand.Add(new Card(Suit.Coppe, 5));
+            string wire = GameStateSerializer.Serialize(gs);
+            var seenByPlayer0 = GameStateSerializer.Deserialize(wire);
+            Assert.AreEqual(new Card(Suit.Coppe, 5), seenByPlayer0.Players[1].Hand[0], "mano dell'avversario in chiaro");
+            Assert.AreEqual(new Card(Suit.Spade, 9), seenByPlayer0.Deck[0], "mazzo in chiaro");
+        }
     }
 }

@@ -80,7 +80,7 @@ namespace Project51.UIV2.Screens
         }
 
         /// <summary>Avatar per l'id salvato nel profilo (nome dello sprite); id vuoto o sconosciuto = il primo.</summary>
-        public Sprite AvatarFor(string id) => avatars.Length > 0 ? avatars[AvatarIndex(id)] : null;
+        public Sprite AvatarFor(string id) => ProfileCosmetics.AvatarFor(avatars, id);
 
         public void Open(string avatarId, string frameId, string bannerId, int playerLevel, string playerName)
         {

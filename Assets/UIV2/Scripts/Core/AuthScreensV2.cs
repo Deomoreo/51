@@ -102,6 +102,7 @@ namespace Project51.UIV2.Core
             {
                 if (field != null) field.onValueChanged.AddListener(_ => RefreshRegisterForm());
             }
+            if (RegisterUsername != null) RegisterUsername.onValueChanged.AddListener(_ => { CancelInvoke(nameof(CheckName)); Invoke(nameof(CheckName), 0.6f); });
 
             ClearStatus();
             ResetRegisterForm();
@@ -196,7 +197,7 @@ namespace Project51.UIV2.Core
             if (loggingOut) return;
             loggingOut = true;
             var bootstrapper = AuthBootstrapper.Instance;
-            if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
+            if (bootstrapper != null) bootstrapper.LogoutAndRestart();
             if (!AppLoading.LoadScene(AppFlowManager.SCENE_MAIN_MENU)) SceneManager.LoadScene(AppFlowManager.SCENE_MAIN_MENU);
         }
 
@@ -287,7 +288,8 @@ namespace Project51.UIV2.Core
             string password = RegisterPassword != null ? RegisterPassword.text ?? string.Empty : string.Empty;
             string confirm = RegisterConfirm != null ? RegisterConfirm.text ?? string.Empty : string.Empty;
 
-            bool complete = username.Length >= 3 && LooksLikeEmail(email)
+            bool taken = username == takenName;
+            bool complete = username.Length >= 3 && IsValidName(username) && !taken && LooksLikeEmail(email)
                 && password.Length >= MinimumPasswordLength && confirm == password && termsAccepted;
             if (RegisterSubmit != null) RegisterSubmit.interactable = complete;
 
@@ -295,11 +297,45 @@ namespace Project51.UIV2.Core
             // deve gia' sembrare sbagliato.
             if (complete) { Clear(RegisterStatus); return; }
             if (username.Length > 0 && username.Length < 3) { SetStatus(RegisterStatus, "Il nome utente deve avere almeno 3 caratteri.", true); return; }
+            if (!IsValidName(username)) { SetStatus(RegisterStatus, "Nel nome utente solo lettere e numeri, senza spazi né accenti.", true); return; }
+            if (taken) { SetStatus(RegisterStatus, "Questo nome utente è già preso: scegline un altro.", true); return; }
             if (email.Length > 0 && !LooksLikeEmail(email)) { SetStatus(RegisterStatus, "Controlla l'indirizzo email.", true); return; }
             if (password.Length > 0 && password.Length < MinimumPasswordLength) { SetStatus(RegisterStatus, "La password deve avere almeno " + MinimumPasswordLength + " caratteri.", true); return; }
             if (confirm.Length > 0 && confirm != password) { SetStatus(RegisterStatus, "Le due password non coincidono.", true); return; }
             if (!termsAccepted && username.Length > 0 && password.Length > 0) { SetStatus(RegisterStatus, "Accetta i Termini per continuare.", false); return; }
             Clear(RegisterStatus);
+        }
+
+        private string takenName;
+
+        /// <summary>B24 (N1): come lo accetta PlayFab per lo Username (fino a 20, qui solo lettere e cifre senza accenti).</summary>
+        public static bool IsValidName(string value)
+        {
+            foreach (char c in value ?? string.Empty)
+                if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9')) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// B24 (N1): mentre si scrive (0.6 s dopo l'ultimo tasto) chiede a PlayFab se il nome e' di un altro account.
+        /// Senza rete o senza sessione non blocca: decide comunque la registrazione sul server.
+        /// </summary>
+        private void CheckName()
+        {
+            string name = Text(RegisterUsername);
+            var auth = AuthBootstrapper.Instance?.PlayFabAuth;
+            if (name.Length < 3 || !IsValidName(name) || auth == null || !auth.IsLoggedIn) return;
+            PlayFabClientAPI.GetAccountInfo(new GetAccountInfoRequest { Username = name }, r =>
+            {
+                if (this == null || Text(RegisterUsername) != name) return;
+                takenName = r.AccountInfo != null && r.AccountInfo.PlayFabId != auth.PlayFabId ? name : null;
+                RefreshRegisterForm();
+            }, e =>
+            {
+                if (this == null || e.Error != PlayFabErrorCode.AccountNotFound || takenName != name) return;
+                takenName = null; // libero (un errore di rete non cambia nulla)
+                RefreshRegisterForm();
+            });
         }
 
         /// <summary>Controllo minimo: una chiocciola in mezzo e un punto dopo, col resto attorno.</summary>

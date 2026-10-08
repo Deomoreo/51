@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 using Project51.Core;
 using System.Collections.Generic;
 using System.Linq;
@@ -254,6 +255,7 @@ namespace Project51.Unity
                     cardView.SetOutline(AccusedGold, treAssi || (accused && players.Count != 2) ? AccusedOutline : 0f);
                     cardView.SetGlow(false, null, default);
                     cardView.Tapped = accused ? new System.Action<CardView>(OnAccusedCardTapped) : null;
+                    cardView.SetResting(false); // la vista puo' arrivare dalla propria mano (resync, rivincita)
                     Vector3 position;
                     float baseRotation = 0f;
 
@@ -289,7 +291,7 @@ namespace Project51.Unity
                         cardView.SetPosition(position);
                         cardView.SetBaseSortingOrder(20 + i);
                         cardView.IsClickable = false;
-                        cardView.EnableHover = accused;
+                        cardView.EnableHover = false; // B27 (A1): il tocco apre il visore, niente sollevamento sotto al velo
                         continue;
                     }
 
@@ -351,7 +353,7 @@ namespace Project51.Unity
                     }
 
                     cardView.IsClickable = false;
-                    cardView.EnableHover = accused;
+                    cardView.EnableHover = false; // B27 (A1): il tocco apre il visore, niente sollevamento sotto al velo
                 }
 
                 if (hasAccuso)
@@ -964,6 +966,13 @@ namespace Project51.Unity
             }
         }
 
+        /// <summary>Ferma i tween in volo sulle carte (stato nuovo dal master durante un'animazione).</summary>
+        public void KillCardTweens()
+        {
+            foreach (var view in activeCardViews.Values)
+                if (view != null) view.transform.DOKill();
+        }
+
         // Allow external callers (e.g., context menus) to force an immediate UI refresh
         public void ForceRefresh()
         {
@@ -1075,6 +1084,7 @@ namespace Project51.Unity
                     cardView.SetMoveHint(false, null);
                     cardView.SetOutline(default, 0f); // carta accusata appena giocata
                     cardView.Tapped = null;
+                    cardView.SetResting(false);
                     if (card.IsMatta) cardView.ClearMattaTransform();
 
                     // Difensivo: una carta riposizionata sul tavolo deve sempre essere visibile,
@@ -1174,6 +1184,20 @@ namespace Project51.Unity
             && turnController.IsHumanPlayerTurn
             && GameModeService.Current.IsLocalPlayer(turnController.CurrentPlayerIndex);
 
+        /// <summary>Gioca un altro (anche il compagno a coppie): la propria mano non conta finche' il turno non torna.</summary>
+        private bool OthersTurn =>
+            turnController != null && turnController.GameState != null && !turnController.GameState.RoundEnded
+            && turnController.CurrentPlayerIndex >= 0 && !GameModeService.Current.IsLocalPlayer(turnController.CurrentPlayerIndex);
+
+        /// <summary>Tocco sulla propria mano mentre gioca un altro (Test 6, terzo giro 08/10): posto di chi gioca, per il cenno sul banner.</summary>
+        public static event System.Action<int> OffTurnHandTapped;
+
+        // Tapped arriva solo a carta non giocabile (CardView.OnMouseUpAsButton); al proprio turno col tavolo occupato resta il silenzio.
+        private void OnHandTappedOffTurn(CardView view)
+        {
+            if (OthersTurn) OffTurnHandTapped?.Invoke(turnController.CurrentPlayerIndex);
+        }
+
         /// <summary>
         /// Renders the human player's hand with fan layout.
         /// </summary>
@@ -1230,7 +1254,9 @@ namespace Project51.Unity
                 // Bordo d'oro solo per i miei Tre assi; altrimenti lo toglie a una vista arrivata dal tavolo
                 // o dalla mano accusata di un altro (rivincita, resync).
                 cardView.SetOutline(AccusedGold, treAssi ? AccusedOutline : 0f);
-                cardView.Tapped = null;
+                // Test 6 (terzo giro 08/10): fuori turno la mano e' un poco spenta e un tocco fa un cenno sul banner di chi gioca.
+                cardView.SetResting(OthersTurn);
+                cardView.Tapped = OnHandTappedOffTurn;
 
                 if (TryGetBannerHandCenter(0, out var handCenter, out _))
                 {
@@ -1263,15 +1289,15 @@ namespace Project51.Unity
         /// <summary>
         /// Impostazioni in partita, "Suggerimenti mosse": nel proprio turno le carte in mano che fanno
         /// una presa hanno un bagliore dietro. Fuori turno, o con l'opzione spenta, nessun bagliore.
-        /// Le altre carte in mano, nel proprio turno, hanno un alone oro tenue che pulsa (non con la grafica ridotta).
+        /// Le altre carte in mano, nel proprio turno, hanno un alone oro che pulsa (fermo con la grafica ridotta).
         /// </summary>
         private void ApplyMoveHints(List<Card> handCards)
         {
             if (handCards == null) return;
-            bool myTurn = IsMyTurnToPlay && !suppressNewCardVisibility
-                && turnController.GameState != null && !turnController.GameState.RoundEnded;
+            // B5: alone e suggerimenti solo quando il tocco conta davvero (non durante distribuzione e finestra accuso).
+            bool myTurn = turnController.AcceptsLocalInput && !suppressNewCardVisibility;
             bool active = GamePreferences.MoveHints && myTurn;
-            bool turnGlow = myTurn && !GamePreferences.ReducedGraphics;
+            bool turnGlow = myTurn; // giro Android 08/10: anche con la grafica ridotta (sul tablet lento il turno non si vedeva), li' fermo
             // Calcolate qui dalle regole: il refresh arriva prima che TurnController aggiorni le sue
             // mosse valide per il nuovo turno.
             var captures = active
@@ -1287,7 +1313,7 @@ namespace Project51.Unity
         }
 
         // Alfa = intensita' massima dell'alone (CardView.LateUpdate): piu' tenue del suggerimento.
-        private static readonly Color TurnGlowColor = new Color(1f, 0.85f, 0.45f, 0.5f);
+        private static readonly Color TurnGlowColor = new Color(1f, 0.85f, 0.45f, 0.7f); // giro Android 08/10: era .5
 
         /// <summary>Alone oro attorno alle carte che il mazziere sta per prendere (accuso 15/30).</summary>
         public void SetDealerAccusoGlow(IReadOnlyList<CardView> views, bool on)
@@ -1300,6 +1326,9 @@ namespace Project51.Unity
         }
 
         private static readonly Color DealerAccusoGlowColor = new Color(1f, 0.8f, 0.35f);
+
+        /// <summary>TurnController: il controllo "posso giocare adesso" e' cambiato, l'alone della mano si riallinea.</summary>
+        public void RefreshMoveHints() => OnGamePreferencesChanged();
 
         private void OnGamePreferencesChanged()
         {
@@ -1389,7 +1418,7 @@ namespace Project51.Unity
 
         private void OnHumanCardDoubleClicked(CardView clickedCardView)
         {
-            if (!IsMyTurnToPlay) return;
+            if (turnController == null || !turnController.AcceptsLocalInput) return; // B3: letto al tocco
             turnController.OnPlayerDoubleClick(clickedCardView.Card);
         }
 
@@ -1465,7 +1494,7 @@ namespace Project51.Unity
         /// </summary>
         private void OnHumanCardClicked(CardView clickedCardView)
         {
-            if (!IsMyTurnToPlay)
+            if (turnController == null || !turnController.AcceptsLocalInput) // B3: tavolo occupato o mossa gia' mandata
             {
                 // silent: not local player's turn
                 return;
@@ -1526,8 +1555,7 @@ namespace Project51.Unity
                     if (chosen == null) chosen = captureMoves[0];
 
                     turnController.ExecuteMove(chosen);
-                    foreach (var kv in activeCardViews)
-                        kv.Value?.SetSelected(false);
+                    AfterLocalMove(chosen.PlayedCard);
                     return;
                 }
 
@@ -1539,6 +1567,24 @@ namespace Project51.Unity
 
             // Otherwise (only PlayOnly moves), execute the first
             turnController.ExecuteMove(movesForCard[0]);
+            AfterLocalMove(movesForCard[0].PlayedCard);
+        }
+
+        /// <summary>
+        /// Build 3 T4: online la carta mandata resta sollevata finche' il server non rimanda la mossa (su 4G non sembra un tocco perso);
+        /// la abbassa ExecuteMoveWithAnimation (ClearSelection). Mossa non partita o fuori linea: tutto giu' come prima.
+        /// </summary>
+        private void AfterLocalMove(Card played)
+        {
+            bool waitEcho = GameModeService.Current.IsMultiplayer && turnController != null && !turnController.AcceptsLocalInput
+                && !turnController.IsBusy;
+            foreach (var kv in activeCardViews)
+                kv.Value?.SetSelected(waitEcho && kv.Key.Equals(played));
+        }
+
+        /// <summary>Abbassa ogni carta sollevata (inizio dell'animazione di una mossa).</summary>
+        public void ClearSelection()
+        {
             foreach (var kv in activeCardViews)
                 kv.Value?.SetSelected(false);
         }
@@ -1609,6 +1655,7 @@ namespace Project51.Unity
                         if (idx >= 0 && idx < uniqueMoves.Count)
                         {
                             turnController.ExecuteMove(uniqueMoves[idx]);
+                            AfterLocalMove(playedCard);
                         }
                     },
                     hoveredIndex => HighlightAlternative(uniqueMoves, hoveredIndex, null),

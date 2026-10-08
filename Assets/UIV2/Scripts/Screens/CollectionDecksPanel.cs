@@ -29,6 +29,7 @@ namespace Project51.UIV2.Screens
         {
             if (deckCardPrefab == null || gridContainer == null) return;
             var card = Instantiate(deckCardPrefab, gridContainer);
+            Project51.UIV2.Animations.UIV2MotionInstaller.AddHaptics(card.gameObject); // 63b
             card.Bind(deck);
             card.OnActionPressed += data => OnDeckActionPressed?.Invoke(data);
             _spawned.Add(card);

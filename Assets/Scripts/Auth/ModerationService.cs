@@ -95,9 +95,12 @@ namespace Project51.Auth
 
         private static void Fetch(Action<ServerReportOutcome[], bool> onDone)
         {
-            RewardsService.Call("moderazione", null, r =>
+            var args = WithSession(null);
+            RewardsService.Call("moderazione", args, r =>
             {
                 checkedAt = Time.unscaledTime;
+                if (Elsewhere(r, args)) return;
+                DeviceModeration.SyncClock(r.ora);
                 Apply(r);
                 Done(onDone, r.esiti != null && r.esiti.Length > 0 ? r.esiti : null);
             }, null);
@@ -118,13 +121,85 @@ namespace Project51.Auth
         {
             if (!Playing) { onDone?.Invoke(); return; }
             if (Time.unscaledTime - checkedAt < freshSeconds) { onDone?.Invoke(); return; }
-            RewardsService.Call("moderazione", new Dictionary<string, object> { { "stato", true } }, r =>
+            var args = WithSession(new Dictionary<string, object> { { "stato", true } });
+            RewardsService.Call("moderazione", args, r =>
             {
                 checkedAt = Time.unscaledTime;
-                if (IsGuest) { DeviceModeration.SyncClock(r.ora); GuestRefresh(false, r); }
+                if (Elsewhere(r, args)) return; // niente onDone: non si entra nella partita
+                DeviceModeration.SyncClock(r.ora);
+                if (IsGuest) GuestRefresh(false, r);
                 else Apply(r);
                 onDone?.Invoke();
             }, _ => onDone?.Invoke());
+        }
+
+        // B14 (S1): la sessione di questo login. La prima chiamata la scrive sul server ("nuova"), le altre la confrontano. Ospiti esclusi.
+        // Secondo giro 08/10 (scelta dell'utente): vince la sessione GIA' attiva (session in 51.js). Il login chiede l'account (Claim)
+        // prima di entrare; il battito (Beat, ogni 30 s ovunque) tiene vivo l'affitto; Esci lo libera (Release). Il dispositivo fa
+        // rientrare subito lo stesso telefono dopo un crash.
+        private static string announcedSession;
+        private static string Device => SystemInfo.deviceUniqueIdentifier;
+
+        private static Dictionary<string, object> WithSession(Dictionary<string, object> args)
+        {
+            string session = Registered ? Auth.SessionId : null;
+            if (session == null) return args;
+            args = args ?? new Dictionary<string, object>();
+            args["sessione"] = session;
+            args["dispositivo"] = Device;
+            if (session != announcedSession) args["nuova"] = true;
+            return args;
+        }
+
+        /// <summary>
+        /// Login con un account: entra solo se il server lo da' a questa sessione. onDone(occupato, secondi che mancano se l'altro e' spento).
+        /// Senza risposta si entra lo stesso: il battito decide dopo (al massimo l'altro telefono resta dentro e questo esce).
+        /// </summary>
+        public static void Claim(string session, Action<bool, int> onDone)
+        {
+            var args = new Dictionary<string, object> { { "sessione", session }, { "dispositivo", Device }, { "nuova", true } };
+            RewardsService.Call("sessione", args, r =>
+            {
+                if (!r.occupato) announcedSession = session;
+                onDone(r.occupato, r.secondi);
+            }, _ => onDone(false, 0));
+        }
+
+        /// <summary>Battito della sessione dell'account: ogni 30 s (anche al tavolo) e al ritorno dal background (AuthBootstrapper).</summary>
+        public static void Beat()
+        {
+            if (!Registered || Auth.SessionId == null) return;
+            var args = WithSession(null);
+            RewardsService.Call("sessione", args, r => Elsewhere(r, args), null);
+        }
+
+        /// <summary>Esci: l'account torna subito libero per un altro telefono (senza, dopo 90 s senza battiti).</summary>
+        public static void Release()
+        {
+            if (!Registered || Auth.SessionId == null) return;
+            RewardsService.Call("sessione", new Dictionary<string, object> { { "sessione", Auth.SessionId }, { "dispositivo", Device }, { "fine", true } },
+                null, null);
+        }
+
+        /// <summary>Testo per chi prova a entrare con un account in uso.</summary>
+        public static string BusyText(int seconds) => seconds > 0
+            ? $"Account già in uso su un altro dispositivo. Se è spento, riprova tra {seconds} secondi."
+            : "Account già in uso su un altro dispositivo.";
+
+        /// <summary>
+        /// L'account e' stato preso da un altro telefono mentre questo era sparito (affitto scaduto), o non era libero all'ingresso: si
+        /// esce come con Esci, con un avviso. Mai al tavolo: li' si finisce la partita e si esce al prossimo arrivo in Home.
+        /// </summary>
+        private static bool Elsewhere(ServerReward r, Dictionary<string, object> args)
+        {
+            if (args != null && args.ContainsKey("nuova") && r != null && !r.occupato && Auth != null && (string)args["sessione"] == Auth.SessionId)
+                announcedSession = Auth.SessionId;
+            if (r == null || !(r.altrove || r.occupato) || PhotonNetwork.InRoom || AuthBootstrapper.Instance == null) return false;
+            Project51.Unity.UI.UI51Toast.Show(r.occupato ? BusyText(r.secondi) : "Account in uso su un altro dispositivo",
+                Project51.Unity.UI.UI51Toast.Kind.Error);
+            AuthBootstrapper.Instance.LogoutAndRestart();
+            if (!Project51.Core.AppLoading.LoadScene(AppFlowManager.SCENE_MAIN_MENU)) UnityEngine.SceneManagement.SceneManager.LoadScene(AppFlowManager.SCENE_MAIN_MENU);
+            return true;
         }
 
         // Sanzioni dell'ospite sul dispositivo, piu' quelle prese dalla sua sessione di oggi sul server (portate una volta sola).

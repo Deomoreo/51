@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using Project51.Core;
 using System.Collections.Generic;
@@ -346,26 +347,76 @@ namespace Project51.Tests
 
         #region Tutorial
 
-        /// <summary>
-        /// La partita guidata (UI51TutorialView) racconta queste carte: stessa sequenza di TurnController.StartNewGame
-        /// (CreateNewGame(2), poi DealInitialCards in StartSmazzata). Se cambia la distribuzione va cercato un seme nuovo.
-        /// </summary>
+        // B33: il copione del tutorial si gioca davvero (una sola presa per ogni carta guidata, niente scelte) e racconta
+        // 51 esatti -> 0 nella prima smazzata e la vittoria nella seconda, qualunque cosa faccia il giocatore nei turni liberi.
         [Test]
-        public void TutorialSeed_DealsTheCardsTheTutorialTalksAbout()
+        public void TutorialScript_PlaysExact51ThenAWin()
         {
-            GameState state;
             try
             {
-                Rules51.Reseed(Project51.Unity.GameSceneInitializer.TutorialSeed);
-                state = Rules51.CreateNewGame(2);
-                Rules51.DealInitialCards(state);
-            }
-            finally { Rules51.Reseed(System.Environment.TickCount); }
+                Rules51.ScriptedDeck = TutorialScript.Deck1();
+                var first = Rules51.CreateNewGame(2);
+                MatchScore.ContinueMatch(null, first, 51);
+                first.MatchTotals = (int[])TutorialScript.StartTotals.Clone();
+                var round = new RoundManager(first);
+                round.StartSmazzata();
+                Assert.AreEqual(1, first.DealerIndex, "mazziere il bot");
+                Assert.AreEqual(0, first.CurrentPlayerIndex, "di mano tu");
+                Assert.AreEqual(2, round.TotalHands);
+                AssertNoAccusi(first);
+                for (int i = 0; i < TutorialScript.Moves1.Length; i++)
+                {
+                    if (i == 6)
+                    {
+                        Assert.IsFalse(AccusiChecker.IsCirulla(first.Players[1].Hand) || AccusiChecker.IsDecino(first.Players[1].Hand));
+                        Assert.IsTrue(round.TryPlayerAccuso(0, AccusoType.Cirulla), "Accuso alla seconda mano");
+                    }
+                    PlayGuided(round, first, TutorialScript.Moves1[i]);
+                }
+                Assert.IsTrue(first.RoundEnded);
+                CollectionAssert.AreEqual(new[] { 50, 51 }, MatchScore.Totals(first));
+                Assert.IsFalse(MatchScore.IsFinished(first, 51));
 
-            Assert.AreEqual(1, state.DealerIndex, "mazziere il bot");
-            Assert.AreEqual(0, state.CurrentPlayerIndex, "di mano tu");
-            CollectionAssert.AreEqual(new[] { new Card(Suit.Denari, 1), new Card(Suit.Bastoni, 7), new Card(Suit.Bastoni, 2) }, state.Players[0].Hand);
-            CollectionAssert.AreEquivalent(new[] { new Card(Suit.Bastoni, 1), new Card(Suit.Coppe, 10), new Card(Suit.Spade, 4), new Card(Suit.Coppe, 3) }, state.Table);
+                for (int choice = 0; choice < 2; choice++)
+                {
+                    Rules51.ScriptedDeck = TutorialScript.Deck2();
+                    var second = Rules51.CreateNewGame(2);
+                    MatchScore.ContinueMatch(first, second, 51);
+                    CollectionAssert.AreEqual(new[] { 50, 0 }, second.MatchTotals, "il bot torna a 0");
+                    round = new RoundManager(second);
+                    round.StartSmazzata();
+                    Assert.AreEqual(0, second.DealerIndex);
+                    Assert.AreEqual(1, second.CurrentPlayerIndex);
+                    Assert.AreEqual(1, round.TotalHands);
+                    AssertNoAccusi(second);
+                    PlayGuided(round, second, TutorialScript.Moves2[0]);
+                    PlayGuided(round, second, TutorialScript.Moves2[1]);
+                    while (!second.RoundEnded)
+                    {
+                        var valid = Rules51.GetValidMoves(second, second.CurrentPlayerIndex);
+                        var move = second.CurrentPlayerIndex == 1 ? TutorialScript.BotMove(TutorialScript.Moves2, valid) : valid[Math.Min(choice, valid.Count - 1)];
+                        Assert.IsNotNull(move);
+                        round.ApplyMove(move);
+                    }
+                    Assert.IsTrue(MatchScore.IsFinished(second, 51), "scelta " + choice);
+                    Assert.Greater(MatchScore.Totals(second)[0], 51);
+                    Assert.Less(MatchScore.Totals(second)[1], MatchScore.Totals(second)[0]);
+                }
+            }
+            finally { Rules51.ScriptedDeck = null; }
+        }
+
+        static void PlayGuided(RoundManager round, GameState state, TutorialScript.Step step)
+        {
+            Assert.AreEqual(step.Player, state.CurrentPlayerIndex, step.Card.ToString());
+            var moves = Rules51.GetValidMoves(state, step.Player).Where(m => m.PlayedCard.Equals(step.Card)).ToList();
+            Assert.AreEqual(1, moves.Count, "una sola mossa con " + step.Card);
+            Assert.IsTrue(step.Matches(moves[0]), moves[0].ToString());
+            round.ApplyMove(moves[0]);
+        }
+
+        static void AssertNoAccusi(GameState state)
+        {
             Assert.IsNull(RoundManager.DealerAccusoFor(state.Table), "niente 15/30 del mazziere");
             foreach (var p in state.Players)
                 Assert.IsFalse(AccusiChecker.IsCirulla(p.Hand) || AccusiChecker.IsDecino(p.Hand), "niente accusi");

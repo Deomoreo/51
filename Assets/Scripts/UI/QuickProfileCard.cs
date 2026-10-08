@@ -24,6 +24,7 @@ namespace Project51.Unity.UI
             public Sprite Avatar;
             public int Frame, Style, Level, Games, Wins, Scope, Xp;
             public bool Stats, Self, Guest; // Guest: PlayFabId e' quello della sessione d'ospite
+            public bool ViewerGuest; // chi guarda e' un ospite: puo' solo silenziare (B12/E2), per la sessione
             public float Top; // bordo alto della scheda nel mockup (390x844)
         }
 
@@ -53,14 +54,16 @@ namespace Project51.Unity.UI
         [SerializeField] private TMP_Text xpLevel, xpText;
         [SerializeField] private RectTransform xpFill;
 
-        // Richieste gia' partite in questa sessione: riaprendo la scheda resta "inviata".
-        private static readonly HashSet<string> s_Added = new HashSet<string>(), s_Reported = new HashSet<string>();
+        // Richieste mandate (s_Friends: amici subito) e segnalazioni fatte da questo account in questa sessione: riaprendo la scheda
+        // restano. B17: di un solo account.
+        private static readonly HashSet<string> s_Added = new HashSet<string>(), s_Reported = new HashSet<string>(), s_Friends = new HashSet<string>();
+        private static string s_Owner;
         /// <summary>Motivi della segnalazione (scelta dell'utente 01/10), come i pulsanti del builder.</summary>
         public static readonly string[] ReasonIds = { ModerationService.ReasonEmoticon, ModerationService.ReasonName, ModerationService.ReasonGame };
         public static readonly string[] ReasonLabels = { "Emoticon offensive", "Nome offensivo", "Gioco scorretto" };
 
         private string playFabId;
-        private bool wired, guest;
+        private bool wired, guest, viewerGuest;
         private float[] nameY; // y costruite di nome e squadra
 
         public bool IsOpen => gameObject.activeSelf;
@@ -68,8 +71,11 @@ namespace Project51.Unity.UI
         public void Show(View v)
         {
             Wire();
+            string owner = AuthBootstrapper.Instance?.PlayFabAuth?.PlayFabId;
+            if (owner != s_Owner) { s_Owner = owner; s_Added.Clear(); s_Reported.Clear(); s_Friends.Clear(); }
             playFabId = v.Self ? null : v.PlayFabId;
             guest = v.Guest;
+            viewerGuest = v.ViewerGuest;
             content.anchoredPosition = new Vector2(0f, (CenterY - v.Top) * content.localScale.y);
             UI51Banners.Apply(banner, ProfileCosmetics.Banner(v.Style));
             if (v.Avatar != null) avatar.SetAvatar(v.Avatar);
@@ -130,12 +136,24 @@ namespace Project51.Unity.UI
                 string id = playFabId;
                 if (id == null) return;
                 addButton.interactable = false;
-                FriendsService.AddFriend(id, () => { s_Added.Add(id); RefreshActions(); }, () => addButton.interactable = true);
+                // Giro Android 08/10: e' una richiesta (l'altro accetta); amici subito solo se l'aveva gia' chiesta lui.
+                FriendsService.AddFriend(id, now =>
+                {
+                    s_Added.Add(id);
+                    if (now) s_Friends.Add(id);
+                    UI51Toast.Show(now ? "Ora siete amici" : "Richiesta d'amicizia inviata", UI51Toast.Kind.Success);
+                    if (this != null) RefreshActions();
+                }, error =>
+                {
+                    if (this == null) return;
+                    addButton.interactable = true;
+                    UI51Toast.Show(error, UI51Toast.Kind.Error);
+                });
             });
             muteButton.onClick.AddListener(() =>
             {
                 if (playFabId == null) return;
-                EmoticonMute.SetMuted(playFabId, !EmoticonMute.IsMuted(playFabId));
+                EmoticonMute.SetMuted(playFabId, !EmoticonMute.IsMuted(playFabId), guest);
                 RefreshActions();
             });
             reportButton.onClick.AddListener(() =>
@@ -206,9 +224,16 @@ namespace Project51.Unity.UI
             bool blocked = !guest && BlockList.IsBlocked(playFabId);
             // Bloccato: restano Segnala e Sblocca. Ospite: niente amicizia ne' blocco (il suo account dura una sessione).
             if (actionRow != null) actionRow.SetActive(!blocked);
-            addButton.gameObject.SetActive(!guest && !added);
+            // Ospite che guarda: solo "Silenzia emoticon" (niente amicizia, blocco ne' segnalazione dal suo account usa e getta).
+            var bottom = reportButton.transform.parent;
+            bottom.gameObject.SetActive(!viewerGuest);
+            var gap = bottom.parent != null ? bottom.parent.Find("Gap") : null;
+            if (gap != null) gap.gameObject.SetActive(!viewerGuest);
+            addButton.gameObject.SetActive(!guest && !viewerGuest && !added);
             addButton.interactable = true;
-            addedLabel.SetActive(!guest && added);
+            addedLabel.SetActive(!guest && !viewerGuest && added);
+            var addedText = addedLabel.GetComponentInChildren<TMP_Text>(true);
+            if (addedText != null) addedText.text = s_Friends.Contains(playFabId) ? "Tra i tuoi amici" : "Richiesta inviata";
             if (blockButton != null) blockButton.gameObject.SetActive(!guest);
             if (blockLabel != null) blockLabel.text = blocked ? "Sblocca giocatore" : "Blocca giocatore";
             muteLabel.text = EmoticonMute.IsMuted(playFabId) ? "Riattiva emoticon" : "Silenzia emoticon";

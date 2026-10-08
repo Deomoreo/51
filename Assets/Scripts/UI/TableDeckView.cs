@@ -41,7 +41,7 @@ namespace Project51.Unity.UI
             m_Turn = FindObjectOfType<TurnController>();
             if (m_Canvas.worldCamera == null) m_Canvas.worldCamera = Camera.main;
             var deck = CardDecks.LoadForMatch();
-            var back = deck != null ? deck.Back : Resources.Load<Sprite>("Cards/CardBack");
+            var back = deck != null ? deck.Back : null;
             if (back != null && m_Back != null && m_Stack != null)
             {
                 m_Back.sprite = back;

@@ -42,16 +42,19 @@ namespace Project51.UIV2.Screens
         [SerializeField] private TMP_Text xpHintLabel;
         [SerializeField] private Button editButton;
         [SerializeField] private Button loginButton;
+        [SerializeField] private Button retryButton; // B19: caricamento dell'account fallito
 
         public event Action OnSettingsPressed;
         public event Action OnRegisterPressed;
         public event Action OnEditPressed;
         public event Action OnLoginPressed;
+        public event Action OnRetryPressed;
 
         private void Awake()
         {
             if (editButton != null) editButton.onClick.AddListener(() => OnEditPressed?.Invoke());
             if (loginButton != null) loginButton.onClick.AddListener(() => OnLoginPressed?.Invoke());
+            if (retryButton != null) retryButton.onClick.AddListener(() => OnRetryPressed?.Invoke());
             if (settingsButton != null) settingsButton.onClick.AddListener(() => OnSettingsPressed?.Invoke());
             if (registerButton != null && registerButton.Button != null) registerButton.Button.onClick.AddListener(() => OnRegisterPressed?.Invoke());
         }
@@ -89,13 +92,23 @@ namespace Project51.UIV2.Screens
                 UI51Banners.Apply(banner, ProfileCosmetics.Banner(ProfileCosmetics.BannerIndex(data.BannerId)));
                 banner.borderColor = UI51Tokens.BorderGoldSoft; // il bordo resta quello dei pannelli
             }
-            if (levelLabel != null) levelLabel.text = data.Level.ToString();
-            if (titleLabel != null) titleLabel.text = $"{levelPrefix} {data.Level}";
+            string level = data.HasProgress ? data.Level.ToString() : "—"; // B19: progressi dell'account non caricati
+            if (levelLabel != null) levelLabel.text = level;
+            if (titleLabel != null) titleLabel.text = $"{levelPrefix} {level}";
             if (idLabel != null) idLabel.text = string.IsNullOrEmpty(data.PlayerId) ? string.Empty : "ID " + data.PlayerId;
             if (xpHintLabel != null)
                 xpHintLabel.text = data.HasProgress && data.XpMax > 0
                     ? $"Ancora {Mathf.Max(0, data.XpMax - data.XpCurrent)} XP per il livello {data.Level + 1}"
                     : string.Empty;
+            // B19: caricamento fallito -> RIPROVA al posto del testo a destra, il motivo sotto; in caricamento resta il testo.
+            bool retry = retryButton != null && data.CanRetry && !data.IsGuest;
+            if (retryButton != null) retryButton.gameObject.SetActive(retry);
+            if (retry)
+            {
+                if (xpLabel != null) xpLabel.text = string.Empty;
+                if (xpHintLabel != null) xpHintLabel.text = "Progressi non caricati";
+            }
+            else if (!data.HasProgress && !data.IsGuest && xpLabel != null) xpLabel.text = "Caricamento…";
         }
 
         public void SetXp(int current, int max, int nextLevel)

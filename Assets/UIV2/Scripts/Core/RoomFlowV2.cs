@@ -364,7 +364,8 @@ namespace Project51.UIV2.Core
                     {
                         Name = players[i].IsLocal ? "Tu" : string.IsNullOrEmpty(players[i].NickName) ? "Giocatore" : players[i].NickName,
                         Tag = players[i].IsMasterClient ? "HOST" : null,
-                        Portrait = players[i].IsLocal && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar : view.Portrait(i),
+                        Portrait = players[i].IsLocal && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar
+                            : HomeV2Integration.AvatarOf(players[i]) ?? view.Portrait(i),
                         Ally = ally,
                     };
                 else if ((BotMask & (1 << i)) != 0)
@@ -427,17 +428,18 @@ namespace Project51.UIV2.Core
                 int index = slot == me ? 0 : mine ? ally++ : foe++;
                 if (index >= seats.Length) continue;
                 seats[index] = bot ? SeatInfo("Bot " + (slot + 1), "Computer", slot, mine)
-                    : SeatInfo(players[slot].IsLocal ? "Tu" : players[slot].NickName, LookDetail(players[slot]), slot, mine, players[slot].IsLocal);
+                    : SeatInfo(players[slot].IsLocal ? "Tu" : players[slot].NickName, LookDetail(players[slot]), slot, mine, players[slot]);
             }
             bool twoRows = f != GameFormat.OneVsOne;
             SearchView.SetSeats(true, twoRows ? 2 : 1, f == GameFormat.TwoVsTwo ? new[] { "LA TUA SQUADRA", "AVVERSARI" } : null, seats);
         }
 
-        private UI51SeatCard.Info SeatInfo(string name, string detail, int slot, bool ally, bool local = false) => new UI51SeatCard.Info
+        private UI51SeatCard.Info SeatInfo(string name, string detail, int slot, bool ally, Photon.Realtime.Player player = null) => new UI51SeatCard.Info
         {
             Name = string.IsNullOrEmpty(name) ? "Giocatore" : name,
             Detail = detail,
-            Portrait = local && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar : SearchView.Portrait(slot),
+            Portrait = player != null && player.IsLocal && HomeV2Integration.LocalAvatar != null ? HomeV2Integration.LocalAvatar
+                : HomeV2Integration.AvatarOf(player) ?? SearchView.Portrait(slot),
             Ally = ally,
         };
 

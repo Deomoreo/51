@@ -60,6 +60,24 @@ public class K5TableTests
         Object.DestroyImmediate(go);
     }
 
+    // B26: la matta trasformata ha bordo e scritta finche' dura, il suggerimento ha il suo bordo; nessuno resta dopo.
+    [Test]
+    public void MattaMarkerAndHintBorderComeAndGo()
+    {
+        InitializeCard();
+        var view = cardObject.GetComponent<CardView>();
+        cardObject.SetActive(false); // niente coroutine del giro in EditMode
+        bool On(string name) => cardObject.GetComponentsInChildren<Transform>(true).Any(t => t.name == name && t.gameObject.activeSelf);
+        view.ShowMattaTransform(sprite, null);
+        Assert.IsTrue(On("MattaTag") && On("MattaOutline"));
+        view.ClearMattaTransform();
+        Assert.IsFalse(On("MattaTag") || On("MattaOutline"));
+        view.SetMoveHint(true, null);
+        Assert.IsTrue(On("HintOutline"));
+        view.SetGlow(true, null, Color.yellow); // alone del turno: il bordo azzurro sparisce
+        Assert.IsFalse(On("HintOutline"));
+    }
+
     [Test]
     public void HiddenOriginalDoesNotLeaveShadowDuringFlight()
     {

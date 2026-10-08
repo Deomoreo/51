@@ -7,17 +7,17 @@ using UnityEngine;
 namespace Project51.EditorTools
 {
     /// <summary>
-    /// Musica ed effetti da Assets/Audio (pacchetti audio v01-v03): impostazioni di importazione dei README
-    /// (in Design/sorgenti/Audio con i master e le alternative non usate),
-    /// libreria Resources/Audio/SoundLibrary con i volumi di partenza, misura di inizio e colpo di ogni file.
-    /// Rilanciabile: i volumi gia' ritoccati nella libreria restano, cambiano solo i file.
+    /// Musica ed effetti dal pacchetto audio v07 (B34; i file v01-v03 restano in Assets/Audio, non usati): impostazioni di
+    /// importazione dei README, libreria Resources/Audio/SoundLibrary con i valori di Docs/Unity_mapping_recommendations.csv,
+    /// misura di inizio e colpo di ogni file.
+    /// Rilanciabile: con gli stessi file i volumi gia' ritoccati nella libreria restano; quando cambia il file si riparte dai valori qui.
     /// </summary>
     public static class SoundLibraryBuilder
     {
-        private const string AudioDir = "Assets/Audio/";
+        private const string AudioDir = "Assets/Audio/51_Audio_v07_FINAL_CANDIDATE/";
         private const string LibraryDir = "Assets/Resources/Audio";
         private const string LibraryPath = LibraryDir + "/SoundLibrary.asset";
-        private const string MusicFile = "home_theme_loop.ogg";
+        private const string MusicFile = "Music/home_theme_loop.ogg";
 
         private struct Entry
         {
@@ -46,29 +46,31 @@ namespace Project51.EditorTools
             }
         }
 
-        // Volumi di partenza dai README del pacchetto audio.
+        // Valori di Docs/Unity_mapping_recommendations.csv del pacchetto v07.
         private static readonly Entry[] Entries =
         {
-            new Entry(SoundId.UiClick, 0.45f, 0.03f, 0.05f, "ui_click.wav"),
-            new Entry(SoundId.UiBack, 0.5f, 0f, 0.05f, "ui_back.wav"),
-            new Entry(SoundId.UiTab, 0.5f, 0.02f, 0.03f, "ui_tab.wav"),
-            new Entry(SoundId.UiConfirm, 0.6f, 0f, 0.2f, "ui_confirm_02.wav"),
-            new Entry(SoundId.UiError, 0.55f, 0f, 0.2f, "ui_error.wav"),
-            new Entry(SoundId.PopupOpen, 0.5f, 0f, 0.15f, "popup_open.wav"),
-            new Entry(SoundId.PopupClose, 0.5f, 0f, 0.15f, "popup_close.wav"),
-            new Entry(SoundId.Notification, 0.5f, 0f, 0.5f, "notification_soft.wav"),
-            new Entry(SoundId.CardPlay, 0.65f, 0.04f, 0.05f, "card_play_01.wav", "card_play_02.wav", "card_play_03.wav").LastPeak(),
-            new Entry(SoundId.CardCapture, 0.7f, 0.03f, 0.1f, "card_capture_01.wav", "card_capture_02.wav", "card_capture_03.wav"),
-            new Entry(SoundId.CardDeal, 0.6f, 0f, 0.2f, "card_deal_3.wav"),
-            new Entry(SoundId.CardDealLong, 0.6f, 0f, 0.2f, "card_deal_6.wav"),
-            new Entry(SoundId.Scopa, 0.85f, 0f, 1f, "scopa.wav"),
-            new Entry(SoundId.Accuso, 0.9f, 0f, 0.25f, "accuso_01.wav", "accuso_02.wav", "accuso_03.wav"),
-            new Entry(SoundId.YourTurn, 0.55f, 0f, 0.5f, "your_turn.wav"),
-            new Entry(SoundId.MatchStart, 0.8f, 0f, 1f, "match_start.wav"),
-            new Entry(SoundId.Victory, 0.9f, 0f, 1f, "victory_short.wav"),
-            new Entry(SoundId.Defeat, 0.8f, 0f, 1f, "defeat.wav"),
-            new Entry(SoundId.RewardCoin, 0.75f, 0.03f, 0.08f, "reward_coin.wav"),
-            new Entry(SoundId.RewardGem, 0.78f, 0f, 0.2f, "reward_gem.wav"),
+            new Entry(SoundId.UiClick, 0.45f, 0f, 0.05f, "SFX/UI/ui_click.wav"),
+            new Entry(SoundId.UiBack, 0.5f, 0f, 0.05f, "SFX/UI/ui_back.wav"),
+            new Entry(SoundId.UiTab, 0.5f, 0f, 0.03f, "SFX/UI/ui_tab.wav"),
+            new Entry(SoundId.UiConfirm, 0.58f, 0f, 0.15f, "SFX/UI/ui_confirm_01.wav", "SFX/UI/ui_confirm_02.wav", "SFX/UI/ui_confirm_03.wav"),
+            new Entry(SoundId.UiError, 0.55f, 0f, 0.2f, "SFX/UI/ui_error.wav"),
+            new Entry(SoundId.PopupOpen, 0.48f, 0f, 0.15f, "SFX/UI/popup_open.wav"),
+            new Entry(SoundId.PopupClose, 0.48f, 0f, 0.15f, "SFX/UI/popup_close.wav"),
+            new Entry(SoundId.Notification, 0.48f, 0f, 0.5f, "SFX/Events/notification_soft.wav"),
+            new Entry(SoundId.CardPlay, 0.65f, 0.015f, 0.05f, "SFX/Gameplay/card_play_01.wav", "SFX/Gameplay/card_play_02.wav",
+                "SFX/Gameplay/card_play_03.wav", "SFX/Gameplay/card_play_04.wav", "SFX/Gameplay/card_play_05.wav").LastPeak(),
+            new Entry(SoundId.CardCapture, 0.7f, 0.01f, 0.1f, "SFX/Gameplay/card_capture_01.wav", "SFX/Gameplay/card_capture_02.wav",
+                "SFX/Gameplay/card_capture_03.wav", "SFX/Gameplay/card_capture_04.wav"),
+            new Entry(SoundId.CardDeal, 0.6f, 0f, 0.2f, "SFX/Gameplay/card_deal_3.wav"),
+            new Entry(SoundId.CardDealLong, 0.6f, 0f, 0.2f, "SFX/Gameplay/card_deal_6.wav"),
+            new Entry(SoundId.Scopa, 0.82f, 0f, 1f, "SFX/Gameplay/scopa_01.wav", "SFX/Gameplay/scopa_02.wav", "SFX/Gameplay/scopa_03.wav"),
+            new Entry(SoundId.Accuso, 0.86f, 0f, 0.25f, "SFX/Events/accuso_01.wav", "SFX/Events/accuso_02.wav", "SFX/Events/accuso_03.wav"),
+            new Entry(SoundId.YourTurn, 0.6f, 0f, 0.5f, "SFX/Events/your_turn.wav"),
+            new Entry(SoundId.MatchStart, 0.78f, 0f, 1f, "SFX/Events/match_start.wav"),
+            new Entry(SoundId.Victory, 0.88f, 0f, 1f, "SFX/Events/victory_short.wav"),
+            new Entry(SoundId.Defeat, 0.76f, 0f, 1f, "SFX/Events/defeat.wav"),
+            new Entry(SoundId.RewardCoin, 0.72f, 0.02f, 0.08f, "SFX/Rewards/reward_coin.wav"),
+            new Entry(SoundId.RewardGem, 0.75f, 0f, 0.2f, "SFX/Rewards/reward_gem.wav"),
         };
 
         [MenuItem("Tools/Audio/Build Sound Library")]
@@ -87,6 +89,9 @@ namespace Project51.EditorTools
             foreach (var entry in Entries)
             {
                 var previous = library.Get(entry.Id);
+                // Stesso primo file di prima: restano i valori ritoccati a mano; file nuovo (v07): i valori qui sopra.
+                if (previous != null && (previous.Variants == null || previous.Variants.Length == 0 || previous.Variants[0].Clip == null
+                    || AssetDatabase.GetAssetPath(previous.Variants[0].Clip) != AudioDir + entry.Files[0])) previous = null;
                 var sound = new SoundLibrary.Sound
                 {
                     Id = entry.Id,

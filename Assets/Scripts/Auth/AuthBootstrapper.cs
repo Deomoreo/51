@@ -96,7 +96,13 @@ namespace Project51.Auth
             // Il proprio aspetto come proprieta' Photon, per gli altri al tavolo.
             Profile.OnProfileLoaded += PublishLook;
             Profile.OnProfileUpdated += PublishLook;               // editor profilo e livello dopo la partita
-            PlayFabAuth.OnDisplayNameChanged += _ => PublishLook(); // "gioca come ospite" e logout alzano solo questo
+            PlayFabAuth.OnDisplayNameChanged += name =>
+            {
+                PublishLook(); // "gioca come ospite" e logout alzano solo questo
+                // B13 (S2): il nome nuovo arriva agli altri subito (Photon lo sincronizza nella stanza), non al prossimo collegamento.
+                // Solo col Photon di questo account: dopo "Accedi" quello vecchio sta per cadere, all'uscita il nome resta vuoto.
+                if (name != null && PhotonOnThisAccount) PhotonNetwork.NickName = PlayFabAuth.GetBestDisplayName();
+            };
 
             // Trova o crea PhotonAuthConnector
             _photonConnector = FindObjectOfType<PhotonAuthConnector>();
@@ -110,14 +116,27 @@ namespace Project51.Auth
         
         private void Start()
         {
-            // If the user is not in a real-login state, treat guest as ephemeral: generate a new guest next launch.
-            if (PlayFabAuth != null && !PlayFabAuth.HasRealLogin)
-            {
-                PlayFabAuth.ResetGuestDeviceId();
-            }
-
             // Avvia il processo di autenticazione automaticamente
             StartAuthentication();
+        }
+
+        // Secondo giro 08/10: battito della sessione dell'account ogni 30 s ovunque (Home e tavolo, tempo reale) e al ritorno dal
+        // background. Tiene l'account a questo telefono; se il telefono sparisce, dopo 90 s senza battiti un altro puo' entrare.
+        const float SessionBeatSeconds = 30f;
+        private float _nextBeat = SessionBeatSeconds;
+
+        private void Update()
+        {
+            if (Time.unscaledTime < _nextBeat) return;
+            _nextBeat = Time.unscaledTime + SessionBeatSeconds;
+            ModerationService.Beat();
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused) return;
+            _nextBeat = Time.unscaledTime + SessionBeatSeconds;
+            ModerationService.Beat();
         }
         
         private void OnDestroy()
@@ -158,12 +177,15 @@ namespace Project51.Auth
         /// </summary>
         public void PublishLook()
         {
+            // #9 (giro Android 08/10): avatar, cornice e banner anche nel profilo PlayFab, per gli amici (solo se cambiati).
+            if (HasRealProfile) FriendsService.PublishLook(PlayFabAuth.PlayFabId, Profile.AvatarId, Profile.FrameId, Profile.BannerId);
             var local = PhotonNetwork.LocalPlayer;
             if (local == null) return;
             // Entrando o uscendo dalla stanza Photon rifiuta l'invio con un errore in console: ci pensa il prossimo OnJoinedRoom.
             if (PhotonNetwork.CurrentRoom != null && !PhotonNetwork.InRoom) return;
             local.SetCustomProperties(HasRealProfile
-                ? LookProps(Profile.FrameId, Profile.BannerId, Profile.XP, Profile.TotalGames, Profile.Wins, Profile.TotalScope, PlayFabAuth.PlayFabId)
+                ? LookProps(Profile.FrameId, Profile.BannerId, Profile.XP, Profile.TotalGames, Profile.Wins, Profile.TotalScope, PlayFabAuth.PlayFabId,
+                    avatar: Profile.AvatarId)
                 : LookProps(null, null, 0, 0, 0, 0, null, PlayFabAuth != null && PlayFabAuth.IsLoggedIn ? PlayFabAuth.PlayFabId : null));
         }
 
@@ -172,7 +194,7 @@ namespace Project51.Auth
         /// (Photon le toglie). Le legge ProfileCosmetics.ReadLook / ReadStats.
         /// </summary>
         public static ExitGames.Client.Photon.Hashtable LookProps(string frame, string banner, int xp, int games, int wins, int scope, string playFabId,
-            string guestId = null)
+            string guestId = null, string avatar = null)
         {
             bool real = frame != null;
             return new ExitGames.Client.Photon.Hashtable
@@ -184,6 +206,7 @@ namespace Project51.Auth
                 { ProfileService.LookWinsKey, real ? (object)wins : null },
                 { ProfileService.LookScopeKey, real ? (object)scope : null },
                 { ProfileService.LookIdKey, real && !string.IsNullOrEmpty(playFabId) ? playFabId : null },
+                { ProfileService.LookAvatarKey, real && !string.IsNullOrEmpty(avatar) ? avatar : null },
                 // Ospite: solo l'ID della sessione, per poterlo segnalare (scelta dell'utente 01/10: anche gli ospiti si sanzionano).
                 { ProfileService.LookGuestIdKey, !real && !string.IsNullOrEmpty(guestId) ? guestId : null },
             };
@@ -196,8 +219,7 @@ namespace Project51.Auth
         public void RebindPhoton()
         {
             if (FriendsChat.Instance != null) Destroy(FriendsChat.Instance.gameObject);
-            RewardsService.Reset();
-            ModerationService.Reset();
+            ResetAccountCaches();
             if (PlayFabAuth == null || _photonConnector == null) return;
             // Subito fuori da Photon e senza le credenziali vecchie, compreso il biglietto che PhotonNetwork.Reconnect riusa (senza
             // l'indirizzo del master non riparte): finche' il token nuovo non arriva si resta scollegati, mai di nuovo con l'account di prima.
@@ -265,12 +287,22 @@ namespace Project51.Auth
             _rebindCoroutine = null;
         }
 
-        public void LogoutAndRestart(bool clearRealAccountFlag = false)
+        /// <summary>B10 (S3): cambio di account (Accedi, Esci). Niente di quello caricato per l'account di prima resta in memoria.</summary>
+        private void ResetAccountCaches()
         {
-            // Amici (Photon Chat): via la connessione col vecchio account; Ensure() ne crea una nuova al prossimo uso.
-            if (FriendsChat.Instance != null) Destroy(FriendsChat.Instance.gameObject);
             RewardsService.Reset();
             ModerationService.Reset();
+            WalletService.Reset();
+            Profile?.Reset();
+            PlayerProgressLocal.Clear();
+        }
+
+        public void LogoutAndRestart()
+        {
+            ModerationService.Release(); // l'account torna subito libero per un altro telefono
+            // Amici (Photon Chat): via la connessione col vecchio account; Ensure() ne crea una nuova al prossimo uso.
+            if (FriendsChat.Instance != null) Destroy(FriendsChat.Instance.gameObject);
+            ResetAccountCaches();
             if (_rebindCoroutine != null) { StopCoroutine(_rebindCoroutine); _rebindCoroutine = null; }
             PhotonNetwork.NetworkingClient.MasterServerAddress = null; // il biglietto dell'account vecchio non deve riportarlo dentro
 
@@ -288,15 +320,7 @@ namespace Project51.Auth
             }
             catch { }
 
-            if (PlayFabAuth != null)
-            {
-                PlayFabAuth.Logout();
-                if (clearRealAccountFlag)
-                {
-                    PlayFabAuth.ClearRealLoginFlag();
-                    PlayFabAuth.ClearRegisteredFlag();
-                }
-            }
+            PlayFabAuth?.Logout();
 
             StartAuthentication();
         }

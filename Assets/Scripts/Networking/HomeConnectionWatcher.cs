@@ -37,6 +37,7 @@ namespace Project51.Networking
             // Un account (non l'ospite) entra con "Accedi" dopo l'avvio: il rientro va provato da li'.
             if (auth.PlayFabAuth != null) auth.PlayFabAuth.OnLoginSuccess += OnAccountChanged;
             if (auth.IsReady) { UI51ServiceScreen.Check(); TryRejoin(); }
+            // B14 (sessione unica): il battito ogni 30 s e al ritorno dal background ora sta in AuthBootstrapper, anche al tavolo.
         }
 
         private void OnAccountChanged(string _) => TryRejoin();
@@ -80,6 +81,8 @@ namespace Project51.Networking
             rejoin = null;
             UI51ConnectionOverlay.Hide();
             ModerationService.RejoinFinished(false);
+            // B6 (R3): prima l'overlay spariva senza dire niente.
+            UI51Toast.Show("Non è stato possibile rientrare nella partita", UI51Toast.Kind.Error);
         }
 
         private static bool SameAccount =>

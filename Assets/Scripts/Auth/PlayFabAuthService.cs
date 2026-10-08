@@ -32,18 +32,14 @@ namespace Project51.Auth
     /// 
     /// SICUREZZA:
     /// - I token PlayFab/Photon NON vengono salvati in chiaro su disco
-    /// - SessionTicket Ë mantenuto solo in memoria
-    /// - DeviceUniqueIdentifier Ë sufficientemente sicuro per guest login
+    /// - SessionTicket √® mantenuto solo in memoria
+    /// - DeviceUniqueIdentifier √® sufficientemente sicuro per guest login
     /// - Per dati sensibili usa PlayFab Player Data con permesso "Private"
     /// </summary>
     public class PlayFabAuthService
     {
         // Costanti
-        private const string DEVICE_ID_KEY = "Project51_DeviceId";
-        private const string SESSION_GUEST_ID_KEY = "Project51_SessionGuestId";
         private const string GUEST_NICKNAME_PREFIX = "Ospite ";
-        internal const string IS_REGISTERED_KEY = "Project51_IsRegistered";
-        private const string HAS_REAL_LOGIN_KEY = "Project51_HasRealLogin";
         
         // Stato
         public string PlayFabId { get; private set; }
@@ -56,73 +52,42 @@ namespace Project51.Auth
         public string Email { get; private set; }
         
         /// <summary>
-        /// True se l'utente ha registrato username/email/password (non solo guest).
-        /// Salvato in PlayerPrefs per persistenza.
+        /// Vero solo dopo "Accedi" o "Registrati" in questa esecuzione (B9): la sessione di prima e' sempre un ospite usa e getta.
+        /// Prima era un flag salvato sul telefono, letto come se descrivesse la sessione in corso.
         /// </summary>
-        public bool IsRegistered
-        {
-            get => PlayerPrefs.GetInt(IS_REGISTERED_KEY, 0) == 1;
-            private set
-            {
-                PlayerPrefs.SetInt(IS_REGISTERED_KEY, value ? 1 : 0);
-                if (value)
-                    PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
-                PlayerPrefs.Save();
-            }
-        } // Closing brace for IsRegistered property
+        public bool HasRealLogin { get; private set; }
 
-        public bool HasRealLogin => PlayerPrefs.GetInt(HAS_REAL_LOGIN_KEY, 0) == 1;
+        /// <summary>B14 (S1): id nuovo a ogni login vero (Accedi, Registrati); il server tiene l'ultimo, gli altri telefoni escono.</summary>
+        public string SessionId { get; private set; }
 
-        /// <summary>Registrazione riuscita dall'interfaccia: da qui l'account e' un login vero, con email nota.</summary>
-        public void MarkRegistered(string email)
+        // B9 (S3): CustomId dell'ospite nascosto, solo in memoria e nuovo dopo ogni uscita: non puo' mai essere un account vero
+        // (prima un id salvato poteva riportare dentro l'account registrato da quella sessione, o l'account del dispositivo).
+        private string sessionGuestId;
+
+        /// <summary>
+        /// Registrazione riuscita dall'interfaccia: da qui l'account e' un login vero, con email nota. B13 (S2): il nome scelto vale
+        /// subito (e' lo Username, unico, quello che il prossimo login mostrerebbe), senza aspettare UpdateDisplayName.
+        /// </summary>
+        public void MarkRegistered(string email, string username = null)
         {
-            IsRegistered = true;
+            HasRealLogin = true;
+            SessionId = Guid.NewGuid().ToString("N");
             Email = email;
-        }
-
-        public void ClearRealLoginFlag()
-        {
-            PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 0);
-            PlayerPrefs.Save();
-        }
-
-        public void ClearRegisteredFlag()
-        {
-            PlayerPrefs.SetInt(IS_REGISTERED_KEY, 0);
-            PlayerPrefs.Save();
-        }
-
-        public void ResetGuestDeviceId()
-        {
-            PlayerPrefs.DeleteKey(DEVICE_ID_KEY);
-            PlayerPrefs.DeleteKey(SESSION_GUEST_ID_KEY);
-            PlayerPrefs.Save();
-            Debug.Log("[PlayFabAuth] Guest device id reset");
-        }
-
-        private string GetOrCreateSessionGuestId()
-        {
-            string id = PlayerPrefs.GetString(SESSION_GUEST_ID_KEY, string.Empty);
-            if (!string.IsNullOrEmpty(id))
-                return id;
-
-            id = Guid.NewGuid().ToString("N");
-            PlayerPrefs.SetString(SESSION_GUEST_ID_KEY, id);
-            PlayerPrefs.Save();
-            return id;
+            if (string.IsNullOrWhiteSpace(username)) return;
+            DisplayName = username;
+            OnDisplayNameChanged?.Invoke(DisplayName);
         }
 
         /// <summary>
         /// Forces the current session to use a guest identity.
         /// Clears DisplayName so GetBestDisplayName() returns "Ospite XXXX".
-        /// Also clears HasRealLogin and IsRegistered local flags.
+        /// Also clears HasRealLogin.
         /// Call this when the user explicitly chooses "Play as Guest".
         /// </summary>
         public void ForceGuestIdentity()
         {
             DisplayName = null;
-            ClearRealLoginFlag();
-            ClearRegisteredFlag();
+            HasRealLogin = false;
             OnDisplayNameChanged?.Invoke(null);
             Debug.Log($"[PlayFabAuth] Forced guest identity. Name will be: {GetBestDisplayName()}");
         }
@@ -135,10 +100,6 @@ namespace Project51.Auth
             if (!string.IsNullOrWhiteSpace(PlayFabId))
                 return GUEST_NICKNAME_PREFIX + ShortId(PlayFabId);
 
-            string deviceId = GetOrCreateDeviceId();
-            if (!string.IsNullOrWhiteSpace(deviceId))
-                return GUEST_NICKNAME_PREFIX + ShortId(deviceId);
-
             return GUEST_NICKNAME_PREFIX.TrimEnd();
         }
 
@@ -149,28 +110,19 @@ namespace Project51.Auth
         public event Action<string> OnLoginSuccess;
         
         /// <summary>
-        /// Esegue il login guest usando CustomID.
-        /// Crea automaticamente un nuovo account se non esiste.
+        /// Esegue il login guest usando CustomID: un account usa e getta, lo stesso fino alla prossima uscita (Logout).
         /// </summary>
         /// <param name="onSuccess">Callback con PlayFabId.</param>
         /// <param name="onError">Callback con messaggio di errore.</param>
         public void LoginAsGuest(Action<string> onSuccess = null, Action<string> onError = null)
         {
-            // Guest should be ephemeral unless the user performed a real login.
-            // Use a per-session random id when HasRealLogin is false.
-            string deviceId = HasRealLogin ? GetOrCreateDeviceId() : GetOrCreateSessionGuestId();
-            
-            Debug.Log($"[PlayFabAuth] Attempting guest login with device ID: {deviceId.Substring(0, 8)}...");
-            
+            if (sessionGuestId == null) sessionGuestId = Guid.NewGuid().ToString("N");
+            Debug.Log("[PlayFabAuth] Attempting guest login");
+
             var request = new LoginWithCustomIDRequest
             {
-                CustomId = deviceId,
-                CreateAccount = true, // Crea account se non esiste
-                InfoRequestParameters = new GetPlayerCombinedInfoRequestParams
-                {
-                    GetPlayerProfile = true,
-                    GetUserAccountInfo = true
-                }
+                CustomId = sessionGuestId,
+                CreateAccount = true
             };
             
             PlayFabClientAPI.LoginWithCustomID(request,
@@ -183,37 +135,13 @@ namespace Project51.Auth
         {
             PlayFabId = result.PlayFabId;
             SessionTicket = result.SessionTicket;
-
-            var profile = result.InfoResultPayload?.PlayerProfile;
-            var accountInfo = result.InfoResultPayload?.AccountInfo;
-
-            bool hasUsername = !string.IsNullOrEmpty(accountInfo?.Username);
-            bool hasEmail = accountInfo?.PrivateInfo?.Email != null;
-            bool serverHasRealAccount = hasUsername || hasEmail;
-
-            // HasRealLogin is a LOCAL flag. It is cleared on explicit logout.
-            // If the server says the account has username/email but the local flag
-            // is false, it means the user explicitly logged out and chose to
-            // re-enter as guest. In that case we must NOT show the old registered
-            // name or treat them as registered.
-            if (serverHasRealAccount && HasRealLogin)
-            {
-                // Returning registered user (no logout happened).
-                DisplayName = profile?.DisplayName ?? accountInfo?.Username;
-                IsRegistered = true;
-                Email = accountInfo?.PrivateInfo?.Email;
-            }
-            else
-            {
-                // First-time guest OR user explicitly logged out.
-                // Force guest identity regardless of what PlayFab returns.
-                DisplayName = null;
-                Email = null;
-            }
+            DisplayName = null;
+            Email = null;
+            HasRealLogin = false;
 
             OnDisplayNameChanged?.Invoke(DisplayName);
 
-            Debug.Log($"[PlayFabAuth] Guest login successful ({(DisplayName == null ? "guest" : "registered")})");
+            Debug.Log("[PlayFabAuth] Guest login successful");
             onSuccess?.Invoke(PlayFabId);
             OnLoginSuccess?.Invoke(PlayFabId);
         }
@@ -301,20 +229,20 @@ namespace Project51.Auth
         }
         
         /// <summary>
-        /// Effettua il logout. Mantiene il device ID per futuro login.
+        /// Effettua il logout. Il prossimo LoginAsGuest e' un ospite nuovo; l'SDK dimentica il biglietto del vecchio account.
         /// </summary>
         public void Logout()
         {
+            HasRealLogin = false; // prima dell'evento: chi lo ascolta (PublishLook) non deve vedere l'account vecchio come vero
+            SessionId = null;
+            sessionGuestId = null;
+            PlayFabClientAPI.ForgetAllCredentials();
             PlayFabId = null;
             SessionTicket = null;
             PhotonCustomAuthToken = null;
             DisplayName = null;
             Email = null;
             OnDisplayNameChanged?.Invoke(null);
-            
-            // NON cancelliamo il device ID, cosÏ il prossimo login riprende lo stesso account guest
-            // NON cancelliamo IsRegistered, rimane per identificare se era gi‡ registrato
-            
             Debug.Log("[PlayFabAuth] Logged out");
         }
         
@@ -344,6 +272,11 @@ namespace Project51.Auth
                 return;
             }
             
+            // B23 (I1): dopo troppi tentativi si aspetta (il tempo detto da PlayFab, altrimenti 60 s) senza chiamare il server.
+            string key = email.Trim().ToLowerInvariant();
+            int wait = Mathf.Max(SecondsLeft(key), SecondsLeft(""));
+            if (wait > 0) { onError?.Invoke($"Troppi tentativi: riprova tra {wait} s"); return; }
+
             bool byEmail = email.Contains("@");
             Debug.Log($"[PlayFabAuth] Attempting {(byEmail ? "email" : "username")} login");
             
@@ -353,38 +286,29 @@ namespace Project51.Auth
                 GetUserAccountInfo = true
             };
             
+            // Secondo giro 08/10 (scelta dell'utente): l'account entra solo se non e' gia' in uso su un altro telefono. Se lo e', si
+            // torna all'ospite di prima e chi era dentro resta dentro.
             Action<LoginResult> success = result =>
             {
-                // Aggiorna stato come in LoginAsGuest
-                PlayFabId = result.PlayFabId;
-                SessionTicket = result.SessionTicket;
-                
-                var profile = result.InfoResultPayload?.PlayerProfile;
-                var accountInfo = result.InfoResultPayload?.AccountInfo;
-                
-                DisplayName = profile?.DisplayName ?? accountInfo?.Username ?? "Player";
-                Email = accountInfo?.PrivateInfo?.Email ?? (byEmail ? email : null);
-                OnDisplayNameChanged?.Invoke(DisplayName);
-                
-                // L'utente ha fatto login con email o nome utente => e' registrato
-                IsRegistered = true;
-                PlayerPrefs.SetInt(HAS_REAL_LOGIN_KEY, 1);
-                PlayerPrefs.Save();
-                
-                Debug.Log("[PlayFabAuth] Login successful");
-                
-                // Prima l'evento: HomeConnectionWatcher deve far partire il rientro in partita prima che onSuccess entri in Home
-                // (li' un segno di partita in corso senza rientro conta come abbandono).
-                OnLoginSuccess?.Invoke(PlayFabId);
-                onSuccess?.Invoke(PlayFabId);
+                string session = Guid.NewGuid().ToString("N");
+                ModerationService.Claim(session, (busy, seconds) =>
+                {
+                    if (!busy) { EnterAccount(result, session, byEmail ? email : null, onSuccess); return; }
+                    Debug.Log("[PlayFabAuth] Account in uso su un altro dispositivo: login rifiutato");
+                    RestoreGuest(() => onError?.Invoke(ModerationService.BusyText(seconds)));
+                });
             };
             Action<PlayFabError> failure = error =>
             {
-                string errorMsg = GetUserFriendlyError(error);
                 Debug.LogError($"[PlayFabAuth] Login failed: {error.ErrorMessage}");
-                onError?.Invoke(errorMsg);
+                // Troppe password sbagliate: per quell'account. Troppe richieste dal telefono: per tutti, il tempo che dice PlayFab.
+                if (error.Error == PlayFabErrorCode.FailedLoginAttemptRateLimitExceeded)
+                    loginBlockedUntil[key] = Time.unscaledTime + (error.RetryAfterSeconds ?? 60);
+                else if (error.Error == PlayFabErrorCode.APIClientRequestRateLimitExceeded || error.Error == PlayFabErrorCode.APIConcurrentRequestLimitExceeded)
+                    loginBlockedUntil[""] = Time.unscaledTime + (error.RetryAfterSeconds ?? 10);
+                onError?.Invoke(GetUserFriendlyError(error));
             };
-            
+
             if (byEmail)
                 PlayFabClientAPI.LoginWithEmailAddress(new LoginWithEmailAddressRequest
                     { Email = email, Password = password, InfoRequestParameters = info }, success, failure);
@@ -392,30 +316,82 @@ namespace Project51.Auth
                 PlayFabClientAPI.LoginWithPlayFab(new LoginWithPlayFabRequest
                     { Username = email, Password = password, InfoRequestParameters = info }, success, failure);
         }
+
+        /// <summary>Login rifiutato (account in uso): l'SDK torna sull'ospite di prima (stesso CustomId), per l'app non e' mai cambiato.</summary>
+        private void RestoreGuest(Action done)
+        {
+            if (sessionGuestId == null) sessionGuestId = Guid.NewGuid().ToString("N");
+            PlayFabClientAPI.LoginWithCustomID(new LoginWithCustomIDRequest { CustomId = sessionGuestId, CreateAccount = true }, r =>
+            {
+                PlayFabId = r.PlayFabId;
+                SessionTicket = r.SessionTicket;
+                done();
+            }, e =>
+            {
+                Debug.LogWarning("[PlayFabAuth] Ritorno all'ospite fallito: " + e.ErrorMessage);
+                done();
+            });
+        }
+
+        private void EnterAccount(LoginResult result, string session, string typedEmail, Action<string> onSuccess)
+        {
+            // Aggiorna stato come in LoginAsGuest
+            PlayFabId = result.PlayFabId;
+            SessionTicket = result.SessionTicket;
+            
+            var profile = result.InfoResultPayload?.PlayerProfile;
+            var accountInfo = result.InfoResultPayload?.AccountInfo;
+            
+            DisplayName = profile?.DisplayName ?? accountInfo?.Username ?? "Player";
+            Email = accountInfo?.PrivateInfo?.Email ?? typedEmail;
+            HasRealLogin = true; // prima dell'evento (S4): chi lo ascolta vede gia' l'account vero
+            SessionId = session;
+            OnDisplayNameChanged?.Invoke(DisplayName);
+            // B13 (N2): account registrato senza nome visibile (aggiornamento fallito alla registrazione): lo si ripara ora.
+            if (string.IsNullOrEmpty(profile?.DisplayName) && !string.IsNullOrEmpty(accountInfo?.Username))
+                UpdateDisplayName(accountInfo.Username, null, e => Debug.LogWarning("[PlayFabAuth] Display name repair failed: " + e));
+            
+            Debug.Log("[PlayFabAuth] Login successful");
+            
+            // Prima l'evento: HomeConnectionWatcher deve far partire il rientro in partita prima che onSuccess entri in Home
+            // (li' un segno di partita in corso senza rientro conta come abbandono).
+            OnLoginSuccess?.Invoke(PlayFabId);
+            onSuccess?.Invoke(PlayFabId);
+        }
         
+        private readonly System.Collections.Generic.Dictionary<string, float> loginBlockedUntil = new System.Collections.Generic.Dictionary<string, float>();
+
+        private int SecondsLeft(string key) =>
+            loginBlockedUntil.TryGetValue(key, out float until) ? Mathf.CeilToInt(until - Time.unscaledTime) : 0;
+
         /// <summary>
-        /// Converte errori PlayFab in messaggi user-friendly in italiano.
+        /// Converte errori PlayFab in messaggi user-friendly in italiano. B23 (I1): credenziali sbagliate o account inesistente danno lo
+        /// stesso messaggio (non si scopre se un account esiste); mai il testo inglese di PlayFab (resta nel log).
         /// </summary>
-        internal static string GetUserFriendlyError(PlayFabError error)
+        public static string GetUserFriendlyError(PlayFabError error)
         {
             switch (error.Error)
             {
                 case PlayFabErrorCode.InvalidEmailAddress:
                     return "Email non valida";
                 case PlayFabErrorCode.InvalidPassword:
-                    return "Password non corretta";
                 case PlayFabErrorCode.InvalidEmailOrPassword:
-                    return "Email o password non corretti";
                 case PlayFabErrorCode.InvalidUsernameOrPassword:
-                    return "Nome utente o password non corretti";
+                case PlayFabErrorCode.AccountNotFound:
+                    return "Email/nome utente o password non corretti";
+                case PlayFabErrorCode.FailedLoginAttemptRateLimitExceeded:
+                    return $"Troppi tentativi con la password sbagliata: riprova tra {error.RetryAfterSeconds ?? 60} s o usa Password dimenticata?";
+                case PlayFabErrorCode.APIClientRequestRateLimitExceeded:
+                case PlayFabErrorCode.APIConcurrentRequestLimitExceeded:
+                    return "Troppe richieste ravvicinate: riprova tra qualche secondo";
+                case PlayFabErrorCode.ConnectionError:
+                    return "Connessione assente: controlla la rete";
                 case PlayFabErrorCode.EmailAddressNotAvailable:
-                    return "Questa email Ë gi‡ in uso";
+                    return "Questa email √® gi√† in uso";
                 case PlayFabErrorCode.UsernameNotAvailable:
-                    return "Questo username Ë gi‡ in uso";
+                    return "Questo username √® gi√† in uso";
                 case PlayFabErrorCode.InvalidUsername:
                     return "Username non valido (usa solo lettere e numeri)";
-                case PlayFabErrorCode.AccountNotFound:
-                    return "Account non trovato";
                 case PlayFabErrorCode.AccountBanned:
                     return "Account sospeso";
                 case PlayFabErrorCode.InvalidParams:
@@ -423,7 +399,7 @@ namespace Project51.Auth
                 case PlayFabErrorCode.ServiceUnavailable:
                     return "Servizio temporaneamente non disponibile, riprova";
                 default:
-                    return $"Errore: {error.ErrorMessage}";
+                    return "Qualcosa non ha funzionato. Riprova.";
             }
         }
         
@@ -434,41 +410,5 @@ namespace Project51.Auth
         // LinkGoogleAccount) e Sign in with Apple (LoginWithApple o LinkApple), piu' la configurazione su Play Console,
         // Apple Developer e PlayFab Add-ons.
         
-        #region Private Methods
-        
-        /// <summary>
-        /// Ottiene o crea un Device ID persistente.
-        /// Usa SystemInfo.deviceUniqueIdentifier se disponibile,
-        /// altrimenti genera un GUID salvato in PlayerPrefs.
-        /// </summary>
-        private string GetOrCreateDeviceId()
-        {
-            // Prima prova a recuperare un ID gi‡ salvato
-            string savedId = PlayerPrefs.GetString(DEVICE_ID_KEY, null);
-            
-            if (!string.IsNullOrEmpty(savedId))
-            {
-                return savedId;
-            }
-            
-            // Prova SystemInfo.deviceUniqueIdentifier
-            string deviceId = SystemInfo.deviceUniqueIdentifier;
-            
-            // Su alcune piattaforme/dispositivi potrebbe non essere disponibile
-            if (string.IsNullOrEmpty(deviceId) || deviceId == SystemInfo.unsupportedIdentifier)
-            {
-                // Fallback: genera un GUID
-                deviceId = Guid.NewGuid().ToString();
-                Debug.Log("[PlayFabAuth] Generated new device GUID (deviceUniqueIdentifier not available)");
-            }
-            
-            // Salva per persistenza
-            PlayerPrefs.SetString(DEVICE_ID_KEY, deviceId);
-            PlayerPrefs.Save();
-            
-            return deviceId;
-        }
-        
-        #endregion
     }
 }

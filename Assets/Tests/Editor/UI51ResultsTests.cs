@@ -53,9 +53,10 @@ namespace Project51.Tests
         [Test]
         public void RaceNoteCountsFromMeAtTwoAndFromTheLeaderAtFour()
         {
-            Assert.AreEqual("17 punti alla vittoria", ResultsSheet.RaceNote(new[] { 34, 40 }, 0, 51));
-            Assert.AreEqual("1 punto alla vittoria", ResultsSheet.RaceNote(new[] { 50, 40 }, 0, 51));
-            Assert.AreEqual("in testa: 11 punti alla vittoria", ResultsSheet.RaceNote(new[] { 34, 40, 12, 3 }, 2, 51));
+            Assert.AreEqual("18 punti alla vittoria", ResultsSheet.RaceNote(new[] { 34, 40 }, 0, 51));
+            Assert.AreEqual("2 punti alla vittoria", ResultsSheet.RaceNote(new[] { 50, 40 }, 0, 51));
+            Assert.AreEqual("51 esatti: si riparte da 0", ResultsSheet.RaceNote(new[] { 51, 40 }, 0, 51));
+            Assert.AreEqual("in testa: 12 punti alla vittoria", ResultsSheet.RaceNote(new[] { 34, 40, 12, 3 }, 2, 51));
             Assert.AreEqual("pari: si gioca ancora", ResultsSheet.RaceNote(new[] { 55, 55 }, 0, 51));
         }
     }

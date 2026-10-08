@@ -167,10 +167,14 @@ namespace Project51.Auth
         private static void SignOutAndClearLocalData()
         {
             foreach (var key in AccountPrefKeys) PlayerPrefs.DeleteKey(key);
+            // B12: i dati locali salvati per account.
+            string id = AuthBootstrapper.Instance?.PlayFabAuth?.PlayFabId;
+            if (!string.IsNullOrEmpty(id))
+                foreach (var prefix in new[] { "Collection.Emoticons.", EmoticonMute.Key, "Mail.ReadIds." }) PlayerPrefs.DeleteKey(prefix + id);
             PlayerPrefs.Save();
 
             var bootstrapper = AuthBootstrapper.Instance;
-            if (bootstrapper != null) bootstrapper.LogoutAndRestart(clearRealAccountFlag: true);
+            if (bootstrapper != null) bootstrapper.LogoutAndRestart();
         }
 
         private static void DevLog(string message)

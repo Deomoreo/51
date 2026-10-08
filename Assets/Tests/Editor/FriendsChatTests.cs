@@ -31,13 +31,25 @@ namespace Project51.Tests
         }
 
         [Test]
+        public void FriendLook_RoundTrip_AndOldAvatarOnlyFormat()
+        {
+            FriendsService.ParseLook(FriendsService.FormatLook("av_3", "smeraldo", "aurora"), out var a, out var f, out var b);
+            Assert.AreEqual(("av_3", "smeraldo", "aurora"), (a, f, b));
+            FriendsService.ParseLook("avatar:av_2", out a, out f, out b); // versioni prima del secondo giro Android
+            Assert.AreEqual(("av_2", (string)null, (string)null), (a, f, b));
+            FriendsService.ParseLook("https://x/y.png", out a, out f, out b);
+            Assert.IsNull(a);
+            Assert.IsNull(b);
+        }
+
+        [Test]
         public void LastSeen_HoursThenDays()
         {
-            Assert.AreEqual("Visto poco fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddMinutes(-20), Now));
-            Assert.AreEqual("Visto 1 ora fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddMinutes(-70), Now));
-            Assert.AreEqual("Visto 2 ore fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddHours(-2), Now));
-            Assert.AreEqual("Visto ieri", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddDays(-1), Now));
-            Assert.AreEqual("Visto 3 giorni fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddDays(-3), Now));
+            Assert.AreEqual("Ultimo accesso poco fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddMinutes(-20), Now));
+            Assert.AreEqual("Ultimo accesso 1 ora fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddMinutes(-70), Now));
+            Assert.AreEqual("Ultimo accesso 2 ore fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddHours(-2), Now));
+            Assert.AreEqual("Ultimo accesso ieri", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddDays(-1), Now));
+            Assert.AreEqual("Ultimo accesso 3 giorni fa", Project51.Unity.UI.UI51FriendsView.LastSeen(Now.AddDays(-3), Now));
         }
     }
 }

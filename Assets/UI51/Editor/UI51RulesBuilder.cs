@@ -74,18 +74,18 @@ namespace Project51.UI51.EditorTools
                 Intro = "Quando ricevi le carte puoi accusare: mostri la mano a tutti e prendi subito i punti. Hai 5 secondi per premere ACCUSA.",
                 Items = new[]
                 {
-                    new Item("Cirulla · 3 punti", "Tre carte con somma 9 o meno. La matta conta 1.",
+                    new Item("Accuso · 3 punti", "Tre carte con somma 9 o meno. La matta conta 1.",
                         new Example(null, "1 + 2 + 3 = 6", C(Suit.Bastoni, 1), C(Suit.Bastoni, 2), C(Suit.Spade, 3))),
                     new Item("Decino · 10 punti", "Tre carte dello stesso valore, oppure una coppia più la matta.",
                         new Example(null, "coppia di 6 + matta", C(Suit.Spade, 6), C(Suit.Denari, 6), C(Suit.Coppe, 7))),
                     new Item("15 o 30 del mazziere", "Se le 4 carte iniziali sul tavolo fanno 15 (1 punto) o 30 (2 punti), il mazziere le prende tutte. La matta vale da 1 a 10. È un accuso, non una scopa."),
                 },
-                Tip = "Se la mano è sia Cirulla che Decino vale il Decino. Un solo accuso a testa per mano.",
+                Tip = "Se la mano è sia Accuso che Decino vale il Decino. Un solo accuso a testa per mano.",
             },
             new Section
             {
                 Label = "Punteggio",
-                Intro = "Alla fine di ogni smazzata si contano i punti. Vince chi arriva per primo a 51.",
+                Intro = "Alla fine di ogni smazzata si contano i punti. Vince chi supera 51: chi chiude la smazzata con 51 esatti torna a 0.",
                 Rows = new[,]
                 {
                     { "Scope", "1 per ogni scopa" },
@@ -137,7 +137,7 @@ namespace Project51.UI51.EditorTools
             var start = Object.FindObjectOfType<StartScreenV2>(true);
             var welcome = BuildWelcome(panel.transform.parent);
             if (start != null && welcome != null)
-                UI51Build.Wire(start, so => { UI51Build.Ref(so, "Welcome", welcome); UI51Build.Ref(so, "Rules", rules); });
+                UI51Build.Wire(start, so => UI51Build.Ref(so, "Welcome", welcome));
             else Debug.LogError($"{Tag} Manca StartScreenV2 o un pezzo del Benvenuto: Benvenuto non collegato.");
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -155,8 +155,8 @@ namespace Project51.UI51.EditorTools
 
         /// <summary>
         /// Benvenuto (mockup Benvenuto) sopra a tutto, sullo sfondo nitido col gradiente: bagliore 320 e logo 170 a 220,
-        /// da 420 "Benvenuto al tavolo!" 24, "Conosci già la Cirulla?" 14, le due scelte (padding 16, raggio 18, cerchio 52) e la nota 11.
-        /// Il "+200" della prima scelta non c'è: il premio del tutorial non lo dà ancora il server.
+        /// da 420 "Benvenuto al tavolo!" 24, "Conosci già il 51?" 14, le due scelte (padding 16, raggio 18, cerchio 52) e la nota 11.
+        /// "+200" sulla prima scelta: il premio del tutorial (B32, una volta per account, lo dà il server).
         /// </summary>
         static UI51WelcomeView BuildWelcome(Transform parent)
         {
@@ -164,7 +164,8 @@ namespace Project51.UI51.EditorTools
             var glow = UI51Build.Sprite("Common", "Bagliore_morbido");
             var back = UI51Build.Sprite("Cards", "back_giada");
             var arrow = UI51Build.Sprite("Common", "ic_nav_back_cream");
-            if (bg == null || glow == null || back == null || arrow == null) return null;
+            var coin = UI51Build.Sprite("Common", "ic_coin");
+            if (bg == null || glow == null || back == null || arrow == null || coin == null) return null;
 
             var root = UI51Build.Stretch(UI51Build.Child(parent, "UI51Welcome"));
             root.gameObject.SetActive(true); // TMP su oggetti spenti lancia eccezioni
@@ -183,13 +184,23 @@ namespace Project51.UI51.EditorTools
             UI51Build.Stack(head, 6f, UI51Build.Pad(0, 0, 6, 0));
             UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(head, "Title"), "Benvenuto al tavolo!", FontFace.CinzelBold, 24f,
                 UI51Tokens.Cream, TextAlignmentOptions.Center)), -1f, 33f);
-            UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(head, "Sub"), "Conosci già la Cirulla?", FontFace.NunitoRegular, 14f,
+            UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(head, "Sub"), "Conosci già il 51?", FontFace.NunitoRegular, 14f,
                 UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center)), -1f, 19f);
 
             var teach = Option(body, "Teach", UI51Shape.Linear((UI51Tokens.GoldA(0.2f), 0f), (UI51Tokens.Rgba(12, 26, 50, 0.95f), 1f)), 2f,
-                UI51Tokens.Gold, "No, insegnami", "Una partita guidata di 3 minuti", 0.7f, out var teachCircle);
+                UI51Tokens.Gold, "No, insegnami", "Una partita guidata di 5 minuti", 0.7f, out var teachCircle);
             UI51Build.Shape(teachCircle, UI51Shape.Linear((UI51Tokens.GoldLight, 0f), (UI51Tokens.GoldDark, 1f)), 180f, UI51Tokens.Radii(26f), 0f, Color.clear);
             UI51Build.Image(UI51Build.Center(UI51Build.Child(teachCircle, "Icon"), 24f, 36f), back, Color.white, false, false);
+            // Pill "+200": alta 24, padding 0 9, raggio 12, oro .18, moneta 13, Nunito 800 11.
+            var pill = UI51Build.Child(teach.transform, "Reward");
+            UI51Build.Layout(pill, -1f, 24f, 0f);
+            UI51Build.Solid(pill, UI51Tokens.GoldA(0.18f), 12f);
+            UI51Build.Row(pill, 4f, UI51Build.Pad(0, 9, 0, 9), TextAnchor.MiddleCenter, true, true);
+            var pillCoin = UI51Build.Child(pill, "Coin");
+            UI51Build.Layout(pillCoin, 13f, 13f);
+            UI51Build.Image(pillCoin, coin, Color.white);
+            UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(pill, "Amount"), "+200", FontFace.NunitoExtraBold, 11f,
+                UI51Tokens.Gold, TextAlignmentOptions.Midline)), -1f, 15f);
             var play = Option(body, "Play", UI51Shape.Solid(UI51Tokens.Rgba(10, 22, 44, 0.85f)), 1f, UI51Tokens.GoldA(0.35f),
                 "Sì, voglio giocare", "Vai subito alla Home", 0.6f, out var playCircle);
             UI51Build.Solid(playCircle, UI51Tokens.WhiteA(0.06f), 26f, 1f, UI51Tokens.GoldA(0.35f));
@@ -245,10 +256,11 @@ namespace Project51.UI51.EditorTools
             var nonna = UI51Build.Sprite("Avatars", "av_8");
             var finger = UI51Build.Sprite("Common", "tutorial_finger");
             var glow = UI51Build.Sprite("Common", "Bagliore_morbido");
-            if (presentation == null || pill == null || accuso == null || avatarPrefab == null || nonna == null || finger == null || glow == null)
+            var coin = UI51Build.Sprite("Common", "ic_coin");
+            if (presentation == null || pill == null || accuso == null || avatarPrefab == null || nonna == null || finger == null || glow == null || coin == null)
             {
                 Debug.LogError($"{Tag} Manca un pezzo del tutorial (GamePresentationV2, ScorePill, AccusoButton/UI51Accuso, AvatarFrame, av_8, " +
-                               "tutorial_finger, Bagliore_morbido). Tutorial non costruito.");
+                               "tutorial_finger, Bagliore_morbido, ic_coin). Tutorial non costruito.");
                 return false;
             }
 
@@ -286,10 +298,11 @@ namespace Project51.UI51.EditorTools
 
             var bar = UI51Build.TopBand(UI51Build.Child(coach, "Bar"), 16f, 16f, 60f, 32f);
             var dotsRow = UI51Build.Child(bar, "Dots");
-            dotsRow.anchorMin = dotsRow.anchorMax = dotsRow.pivot = new Vector2(0f, 0.5f);
-            dotsRow.anchoredPosition = Vector2.zero;
-            dotsRow.sizeDelta = new Vector2(60f, 6f);
-            UI51Build.Row(dotsRow, 5f, null, TextAnchor.MiddleLeft, false, false);
+            // Build 3 #105: a destra accanto a Salta (a sinistra coprivano il mazzo del tavolo). 20 + 5 x 6 + 5 stacchi da 5 = 75.
+            dotsRow.anchorMin = dotsRow.anchorMax = dotsRow.pivot = new Vector2(1f, 0.5f);
+            dotsRow.anchoredPosition = new Vector2(-74f, 0f);
+            dotsRow.sizeDelta = new Vector2(75f, 6f);
+            UI51Build.Row(dotsRow, 5f, null, TextAnchor.MiddleRight, false, false);
             var dots = new UI51Shape[6];
             for (int i = 0; i < dots.Length; i++)
                 dots[i] = UI51Build.Solid(UI51Build.Size(UI51Build.Child(dotsRow, "Dot" + i), i == 0 ? 20f : 6f, 6f), Color.white, 3f);
@@ -364,7 +377,8 @@ namespace Project51.UI51.EditorTools
                 FontFace.NunitoExtraBold, 13f, 0f, UI51Tokens.Gold, "Salta e vai alla Home");
             UI51Build.Layout(homeRt, -1f, 44f);
 
-            // Fine: velo .78, bagliore 420 a 330, a 200 TUTORIAL COMPLETATO, "Sei pronto per il tavolo!", pulsante 54 e il link alle regole.
+            // Fine: velo .78, bagliore 420 a 330, a 200 TUTORIAL COMPLETATO, "Sei pronto per il tavolo!", la scheda "+200" (accesa da
+            // UI51TutorialView quando il server la paga), GIOCA ORA e VAI ALLA HOME.
             var doneRoot = UI51Build.Stretch(UI51Build.Child(safe, "Done"));
             doneRoot.gameObject.SetActive(true);
             UI51Build.Solid(UI51Build.Stretch(UI51Build.Child(doneRoot, "Veil"), -400f, -400f, -400f, -400f), UI51Tokens.Rgba(3, 7, 16, 0.78f), 0f, 0f, default, true);
@@ -379,11 +393,25 @@ namespace Project51.UI51.EditorTools
             UI51Build.Gap(doneHead, "Gap1", 10f);
             UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(doneHead, "Title"), "Sei pronto per il tavolo!", FontFace.CinzelBold, 26f,
                 UI51Tokens.Cream, TextAlignmentOptions.Center)), -1f, 35f);
-            UI51Build.Gap(doneHead, "Gap2", 36f); // gap 10 + margin-top 26 (le ricompense non ci sono)
-            var playButton = UI51AccessBuilder.GoldButton(doneHead, "Play", "GIOCA LA PRIMA PARTITA", 54f, 15f);
+            UI51Build.Gap(doneHead, "Gap2", 14f);
+            // Scheda 120x130, raggio 16, oro .1 e bordo oro .45; moneta 56 e "+200" Cinzel 17, gap 8 (la seconda scheda del mockup non c'è).
+            var reward = UI51Build.Child(doneHead, "Reward");
+            UI51Build.Layout(reward, -1f, 130f);
+            var rewardCard = UI51Build.Center(UI51Build.Child(reward, "Card"), 120f, 130f);
+            UI51Build.Solid(rewardCard, UI51Tokens.GoldA(0.1f), 16f, 1f, UI51Tokens.GoldA(0.45f));
+            UI51Build.Column(rewardCard, 8f, null, TextAnchor.MiddleCenter, true, true);
+            var rewardCoin = UI51Build.Child(rewardCard, "Coin");
+            UI51Build.Layout(rewardCoin, 56f, 56f);
+            UI51Build.Image(rewardCoin, coin, Color.white);
+            UI51Build.Layout(UI51Build.NoWrap(UI51Build.Text(UI51Build.Child(rewardCard, "Amount"), "+200", FontFace.CinzelBold, 17f,
+                UI51Tokens.Gold, TextAlignmentOptions.Center)), -1f, 23f);
+            UI51Build.Gap(doneHead, "GapReward", 26f);
+            // Giro Android 08/10: due scelte, nessuna partita lunga obbligata (prima solo "GIOCA LA PRIMA PARTITA" e il link alle regole).
+            var playButton = UI51AccessBuilder.GoldButton(doneHead, "Play", "GIOCA ORA", 54f, 15f);
             UI51Build.Gap(doneHead, "Gap3", 10f);
-            var rulesLink = UI51AccessBuilder.Link(doneHead, "Rules", "Leggi tutte le regole", FontFace.NunitoExtraBold, 13f, UI51Tokens.Gold,
-                TextAlignmentOptions.Center, 18f);
+            var stale = doneHead.Find("Rules");
+            if (stale != null) Object.DestroyImmediate(stale.gameObject);
+            var homeButton = UI51AccessBuilder.GhostButton(doneHead, "Home", "VAI ALLA HOME", 50f);
 
             var view = UI51Build.GetOrAdd<UI51TutorialView>(root);
             UI51Build.Wire(view, so =>
@@ -395,6 +423,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "done", doneRoot);
                 UI51Build.Ref(so, "doneBurst", burst);
                 UI51Build.Ref(so, "doneHead", doneHead);
+                UI51Build.Ref(so, "reward", reward);
                 UI51Build.Ref(so, "spot", spot);
                 UI51Build.Ref(so, "ring", ring);
                 UI51Build.Ref(so, "halo", halo);
@@ -413,7 +442,7 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Ref(so, "skipScrim", UI51Build.Button(scrim, scrim));
                 UI51Build.Ref(so, "skipHome", homeRt.GetComponent<Button>());
                 UI51Build.Ref(so, "play", playButton);
-                UI51Build.Ref(so, "rules", rulesLink);
+                UI51Build.Ref(so, "home", homeButton);
                 UI51Build.Ref(so, "scorePill", pill);
                 UI51Build.Ref(so, "accuso", accuso);
             });

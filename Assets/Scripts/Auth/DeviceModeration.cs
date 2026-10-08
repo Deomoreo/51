@@ -30,6 +30,9 @@ namespace Project51.Auth
         public static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds() + clockOffset;
         private static long clockOffset;
 
+        /// <summary>Come Now, per le date mostrate (ultimo accesso, posta): un telefono indietro non le fa sembrare "poco fa".</summary>
+        public static DateTime UtcNow => DateTime.UtcNow.AddSeconds(clockOffset);
+
         /// <summary>Spostare l'ora del telefono non accorcia le sanzioni: da qui si conta col server (ms da "moderazione").</summary>
         public static void SyncClock(long serverMs)
         {

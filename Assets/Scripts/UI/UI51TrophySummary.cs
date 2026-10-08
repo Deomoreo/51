@@ -32,6 +32,9 @@ namespace Project51.Unity.UI
             Bind();
         }
 
+        // All'avvio a freddo OnEnable puo' girare prima di AuthBootstrapper.Awake (stessa scena): senza questo restava a 0 fino alla partita.
+        private void Start() { if (profile == null) OnEnable(); }
+
         private void OnDisable()
         {
             if (profile != null) { profile.OnProfileLoaded -= Bind; profile.OnProfileUpdated -= Bind; }
@@ -41,7 +44,7 @@ namespace Project51.Unity.UI
         {
             if (this == null) return;
             int games = profile != null ? profile.TotalGames : 0, wins = profile != null ? profile.Wins : 0;
-            int scope = profile != null ? profile.TotalScope : 0, level = profile != null ? profile.Level : 1;
+            int scope = profile != null ? profile.TotalScope : 0, level = profile != null ? PlayerXp.LevelOf(profile.XP) : 1; // dall'XP, come la Home
             var all = Trophies.All;
             linkLabel.text = Trophies.CountEarned(games, wins, scope, level) + " / " + all.Length + " · Vedi tutti";
 

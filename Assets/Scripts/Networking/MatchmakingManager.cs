@@ -492,12 +492,14 @@ namespace Project51.Networking
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
-            if (CurrentConfig == null) return; // rientro dopo il riavvio dell'app (HomeConnectionWatcher): non e' un codice sbagliato
+            // Rientri (HomeConnectionWatcher dopo il riavvio, NetworkGameController al tavolo): li gestisce chi li ha chiesti, non sono un
+            // codice sbagliato ne' una sospensione. Solo un ingresso col codice (JoiningRoom) e' un errore del matchmaking.
+            if (CurrentConfig == null || State != MatchmakingState.JoiningRoom) return;
             if (RefusedByServer(returnCode)) return;
             Debug.LogWarning($"[Matchmaking] Join room failed: {message}");
             SetState(MatchmakingState.Idle);
             OnJoinFailed?.Invoke(returnCode); // prima di OnError: chi ascolta sa perche' (32758 codice, 32765 piena, 32764 chiusa)
-            OnError?.Invoke(returnCode == 32765 ? "La stanza è piena. Chiedi un altro codice." : returnCode == 32764 ? "La partita è già iniziata o la stanza è chiusa." : "Codice non valido o stanza non più disponibile.");
+            OnError?.Invoke(returnCode == 32765 ? "La stanza Ã¨ piena. Chiedi un altro codice." : returnCode == 32764 ? "La partita Ã¨ giÃ  iniziata o la stanza Ã¨ chiusa." : "Codice non valido o stanza non piÃ¹ disponibile.");
         }
 
         /// <summary>
@@ -546,18 +548,28 @@ namespace Project51.Networking
         public override void OnLeftRoom()
         {
             Debug.Log("[Matchmaking] Left room");
+            // Una caduta dentro una stanza chiama OnLeftRoom PRIMA di OnDisconnected: lo stato di prima serve a OnDisconnected.
+            stateBeforeLeave = State;
+            leftAt = Time.unscaledTime;
             SetState(MatchmakingState.Idle);
         }
+
+        private MatchmakingState stateBeforeLeave = MatchmakingState.Idle;
+        private float leftAt = -10f;
 
         public override void OnDisconnected(DisconnectCause cause)
         {
             Debug.Log($"[Matchmaking] Disconnected: {cause}");
-            
-            if (cause != DisconnectCause.DisconnectByClientLogic)
+            var was = State != MatchmakingState.Idle || Time.unscaledTime - leftAt > 1f ? State : stateBeforeLeave;
+            stateBeforeLeave = MatchmakingState.Idle;
+
+            // B6 (R3): solo una ricerca, creazione o attesa in corso e' un errore del matchmaking. Le cadute nella Home le mostra
+            // HomeConnectionWatcher, quelle al tavolo NetworkGameController: prima ogni caduta apriva la scheda "Ricerca 1v1 online".
+            if (cause != DisconnectCause.DisconnectByClientLogic && was != MatchmakingState.Idle && was != MatchmakingState.Starting)
             {
-                OnError?.Invoke($"Disconnesso: {cause}");
+                OnError?.Invoke("Connessione persa. Controlla la rete e riprova.");
             }
-            
+
             SetState(MatchmakingState.Idle);
         }
 

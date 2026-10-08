@@ -48,5 +48,17 @@ namespace Project51.Tests
             m.riscattato = true;
             Assert.AreEqual(string.Empty, MailService.ExpiryLabel(m, Now));
         }
+
+        [Test]
+        public void ClaimedGiftCountsAsReadWithoutOpening()
+        {
+            var gift = new MailMessage { id = Guid.NewGuid().ToString("N"), allegati = new[] { new MailGift { tipo = "monete", quantita = 10 } } };
+            var note = new MailMessage { id = Guid.NewGuid().ToString("N") };
+            var list = new System.Collections.Generic.List<MailMessage> { gift, note };
+            Assert.AreEqual(2, MailService.UnreadCount(list));
+            gift.riscattato = true; // "Raccogli tutto": riscattato senza aprirlo
+            Assert.AreEqual(1, MailService.UnreadCount(list), "B11 (M4): a claimed gift no longer keeps the Posta dot on.");
+            Assert.IsTrue(MailService.IsRead(gift));
+        }
     }
 }

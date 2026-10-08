@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -173,6 +174,17 @@ namespace Project51.UI51
             if (m_Low) UIAnim.Pulse(m_PulseRing, 9f, 0.8f, 0.8f);
             else if (m_Rival) UIAnim.Pulse(m_PulseRing, 8f, 1.4f, 0.7f);
             else UIAnim.Pulse(m_PulseRing);
+        }
+
+        /// <summary>
+        /// Test 6 (terzo giro 08/10): tocco sulla propria mano mentre gioca questo giocatore. Due onde piu' ampie dell'anello, poi il
+        /// respiro solito: dice di chi e' il turno senza suoni ne' avvisi. Con la grafica ridotta l'anello e' fermo: niente.
+        /// </summary>
+        public void Nudge()
+        {
+            if (!m_IsTurn || m_PulseRing == null || !isActiveAndEnabled) return;
+            var wave = UIAnim.Pulse(m_PulseRing, 14f, 0.7f, 0.9f);
+            if (wave != null) wave.SetLoops(4, LoopType.Yoyo).OnComplete(() => { if (m_IsTurn && this != null && isActiveAndEnabled) Pulse(); });
         }
 
         [Tooltip("Velo scuro con l'icona rossa del Wi-Fi barrato (mockup MomentoDisconnesso); opzionale, lo mette UI51TableBuilder.")]

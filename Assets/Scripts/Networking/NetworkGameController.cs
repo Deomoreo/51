@@ -191,6 +191,7 @@ namespace Project51.Networking
 
         private void Start()
         {
+            _roomName = PhotonNetwork.CurrentRoom != null ? PhotonNetwork.CurrentRoom.Name : null; // per RejoinRoom (B6)
             // Find TurnController
             turnController = FindObjectOfType<TurnController>();
             if (turnController == null)
@@ -235,7 +236,15 @@ namespace Project51.Networking
         /// (stessa foto stabile dei posti, vedi GameSceneInitializer._stableActorOrder).
         /// </summary>
         // Rientro dopo il riavvio dell'app: i 60 s del posto tenuto partono dall'ultima pausa durante la partita.
-        private void OnApplicationPause(bool paused) => Project51.Auth.ModerationService.Paused(paused);
+        private void OnApplicationPause(bool paused)
+        {
+            Project51.Auth.ModerationService.Paused(paused);
+            // B6 (R3): su iOS la caduta si vede solo al ritorno; i secondi del posto contano dalla pausa, non da quel momento.
+            if (paused) _pausedAt = Time.unscaledTime;
+            else _resumedAt = Time.unscaledTime;
+        }
+
+        private float _pausedAt = -1f, _resumedAt = -1f;
         private void OnApplicationQuit() => Project51.Auth.ModerationService.Paused(true);
 
         public override void OnPlayerLeftRoom(Photon.Realtime.Player otherPlayer)
@@ -270,8 +279,10 @@ namespace Project51.Networking
             if (gsi.IsRemovedForInactivity(leftPlayerIndex)) return; // avvisato gia' da RPC_SeatInactive
             // IsInactive: disconnessione (puo' rientrare entro PlayerTtl); altrimenti ha lasciato la partita.
             // Mockup MomentoDisconnesso: avviso breve col suo avatar, l'icona resta sul banner finche' non rientra.
+            // X2: stesso nome dei banner e forme neutre.
+            string name = Project51.UIV2.Core.GameSocialV2.PlayerName(leftPlayerIndex);
             GamePresentation.ShowPlayerNotice(leftPlayerIndex, otherPlayer.IsInactive
-                ? $"{otherPlayer.NickName} si è disconnesso" : $"{otherPlayer.NickName} ha lasciato la partita",
+                ? $"{name}: connessione persa" : $"{name} ha lasciato il tavolo",
                 otherPlayer.IsInactive ? "Gioca un bot finché non rientra" : "Al suo posto gioca un bot", true);
         }
 
@@ -290,7 +301,7 @@ namespace Project51.Networking
             if (logNetworkMoves)
                 Debug.Log($"<color=green>[NET] Player {newPlayer.NickName} rejoined seat {seat}.</color>");
             gsi.MarkPlayerReconnected(seat);
-            GamePresentation.ShowPlayerNotice(seat, $"{newPlayer.NickName} è rientrato in partita", null, false);
+            GamePresentation.ShowPlayerNotice(seat, $"{Project51.UIV2.Core.GameSocialV2.PlayerName(seat)} è di nuovo al tavolo", null, false);
         }
 
         #region Reconnection
@@ -312,7 +323,9 @@ namespace Project51.Networking
             if (_reconnectCoroutine != null) return;
 
             Debug.LogWarning($"[NET] Disconnected mid-match ({cause}): trying to rejoin for {RejoinWindowSeconds}s.");
-            _seatDeadline = Time.unscaledTime + RejoinWindowSeconds;
+            bool afterPause = _pausedAt >= 0f && _resumedAt >= _pausedAt && Time.unscaledTime - _resumedAt < 5f;
+            _seatDeadline = (afterPause ? _pausedAt : Time.unscaledTime) + RejoinWindowSeconds;
+            _awaitingRejoinState = false;
             _reconnectCoroutine = StartCoroutine(ReconnectAndRejoinLoop());
         }
 
@@ -327,12 +340,17 @@ namespace Project51.Networking
             while (Time.unscaledTime < _seatDeadline && !PhotonNetwork.InRoom)
             {
                 bool idle = PhotonNetwork.NetworkClientState == Photon.Realtime.ClientState.Disconnected;
-                if (idle && attempt >= MaxRejoinAttempts) break;
-                if (idle && Time.unscaledTime >= nextAttempt)
+                // B6 (R3): un rientro rifiutato riporta Photon al master server (non a Disconnected): da li' si riprova con RejoinRoom,
+                // come fa la Home. Prima il ciclo restava fermo su "Tentativo 1 di 5" fino allo scadere del posto.
+                bool onMaster = PhotonNetwork.Server == Photon.Realtime.ServerConnection.MasterServer && PhotonNetwork.IsConnectedAndReady
+                    && !PhotonNetwork.InRoom && !string.IsNullOrEmpty(_roomName);
+                if ((idle || onMaster) && attempt >= MaxRejoinAttempts) break;
+                if ((idle || onMaster) && Time.unscaledTime >= nextAttempt)
                 {
                     attempt++;
                     nextAttempt = Time.unscaledTime + 3f;
-                    PhotonNetwork.ReconnectAndRejoin();
+                    if (idle) PhotonNetwork.ReconnectAndRejoin();
+                    else PhotonNetwork.RejoinRoom(_roomName);
                 }
                 UI51ConnectionOverlay.ShowReconnecting(Mathf.Max(1, attempt), MaxRejoinAttempts, Mathf.CeilToInt(_seatDeadline - Time.unscaledTime));
                 yield return new WaitForSecondsRealtime(0.25f);
@@ -378,25 +396,80 @@ namespace Project51.Networking
                 _reconnectCoroutine = null;
             }
             Debug.Log("<color=green>[NET] Rejoined the match room.</color>");
-            turnController.SetConnected(true);
-            UI51ConnectionOverlay.Hide();
-            GamePresentation.ShowConnectionNotice("Sei di nuovo in partita!", 2.5f);
 
             var gsi = FindObjectOfType<GameSceneInitializer>();
             gsi?.SyncSeatsWithRoom();
             // Tolto per inattivita' mentre eravamo fuori (RPC_SeatInactive non arriva a chi non c'e'): si esce come allora.
-            if (gsi != null && gsi.IsRemovedForInactivity(GameModeService.Current.LocalPlayerIndex)) { turnController.LeaveForInactivity(); return; }
+            if (gsi != null && gsi.IsRemovedForInactivity(GameModeService.Current.LocalPlayerIndex))
+            {
+                UI51ConnectionOverlay.Hide(); // l'uscita puo' chiedere una conferma: l'overlay la coprirebbe
+                turnController.LeaveForInactivity();
+                return;
+            }
             if (PhotonNetwork.IsMasterClient)
             {
                 // Tutti gli altri sono usciti: questo client e' l'autorita', riparte da dove era.
+                FinishRejoin();
                 turnController.OnBecameMasterClient();
                 FindObjectOfType<Project51.UIV2.Core.MatchResultsV2>()?.CheckOpponentsAfterRejoin();
             }
             else
             {
+                // B8 (R1): tavolo bloccato (overlay sopra, tempo fermo) finche' non arriva lo stato del master; la richiesta si ripete.
                 _checkOpponentsOnState = true;
-                RequestResync();
+                _awaitingRejoinState = true;
+                UI51ConnectionOverlay.ShowSyncing();
+                if (_rejoinStateCoroutine != null) StopCoroutine(_rejoinStateCoroutine);
+                _rejoinStateCoroutine = StartCoroutine(RequestRejoinStateUntilReceived());
             }
+        }
+
+        private string _roomName;
+        private bool _awaitingRejoinState;
+        private Coroutine _rejoinStateCoroutine;
+
+        /// <summary>Rientri riusciti dall'ultima partita registrata: va nel risultato dichiarato al server (#142, categoria "rete").</summary>
+        public static int Rejoins;
+
+        /// <summary>Rientro completo: tempo del turno di nuovo attivo, overlay via, avviso.</summary>
+        private void FinishRejoin()
+        {
+            _awaitingRejoinState = false;
+            Rejoins++;
+            if (_rejoinStateCoroutine != null) { StopCoroutine(_rejoinStateCoroutine); _rejoinStateCoroutine = null; }
+            turnController.SetConnected(true);
+            UI51ConnectionOverlay.Hide();
+            GamePresentation.ShowConnectionNotice("Sei di nuovo in partita!", 2.5f);
+        }
+
+        /// <summary>Chiede lo stato al master ogni 1,5 s; se non arriva entro 15 s (o scade il posto) il rientro non e' riuscito.</summary>
+        private System.Collections.IEnumerator RequestRejoinStateUntilReceived()
+        {
+            float until = Mathf.Max(Time.unscaledTime + 15f, _seatDeadline);
+            while (_awaitingRejoinState && PhotonNetwork.InRoom && Time.unscaledTime < until)
+            {
+                RequestResync();
+                yield return new WaitForSecondsRealtime(1.5f);
+            }
+            _rejoinStateCoroutine = null;
+            if (!_awaitingRejoinState) yield break;
+            _awaitingRejoinState = false;
+            // L'overlay resta (tavolo fermo) fino al menu; l'avviso sta sopra.
+            UI51Toast.Show("Impossibile rientrare nella partita", UI51Toast.Kind.Error);
+            yield return new WaitForSecondsRealtime(2.5f);
+            UI51ConnectionOverlay.Hide();
+            AppFlowManager.GoToMainMenu();
+        }
+
+        /// <summary>
+        /// B6 (R3): rientro al tavolo rifiutato. 32746 = il vecchio collegamento e' ancora attivo per il server (~10 s): si riprova.
+        /// Ogni altro codice (posto o stanza non piu' disponibili) chiude subito i tentativi con "Impossibile rientrare".
+        /// </summary>
+        public override void OnJoinRoomFailed(short returnCode, string message)
+        {
+            if (_reconnectCoroutine == null) return;
+            Debug.LogWarning($"[NET] Rejoin refused ({returnCode}): {message}");
+            if (returnCode != Photon.Realtime.ErrorCode.JoinFailedFoundActiveJoiner) _seatDeadline = Time.unscaledTime;
         }
 
         #endregion
@@ -427,6 +500,7 @@ namespace Project51.Networking
             {
                 return; // Non sono io il nuovo master: nient'altro da fare da questo lato.
             }
+            if (_awaitingRejoinState) FinishRejoin(); // aspettavamo lo stato dal master: ora l'autorita' siamo noi
 
             if (logNetworkMoves)
                 Debug.Log($"<color=orange>[NET] Master Client migrated to me ({(newMasterClient != null ? newMasterClient.NickName : "?")}) - resuming authoritative duties.</color>");
@@ -736,6 +810,8 @@ namespace Project51.Networking
         [PunRPC]
         private void RPC_ReceiveInitialGameState(string gameStateJson, PhotonMessageInfo info)
         {
+            // Lo stato completo lo manda solo il master (R1): un altro telefono non puo' riscrivere mani e punteggi.
+            if (info.Sender == null || !info.Sender.IsMasterClient) return;
             if (logNetworkMoves)
                 Debug.Log($"<color=yellow>[NET] Receiving initial GameState from Master ({gameStateJson.Length} chars)</color>");
             
@@ -755,6 +831,7 @@ namespace Project51.Networking
             turnController.SetNetworkGameState(gameState);
             if (logNetworkMoves)
                 Debug.Log("<color=green>[NET] GameState applied to TurnController!</color>");
+            if (_awaitingRejoinState) FinishRejoin();
             if (Project51.Auth.ModerationService.RejoinedAfterRestart)
             {
                 // Di nuovo al tavolo dopo il riavvio: la partita torna di questa esecuzione e chi e' assente gioca col bot.

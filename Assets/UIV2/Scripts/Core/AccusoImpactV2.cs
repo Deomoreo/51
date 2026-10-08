@@ -106,7 +106,12 @@ namespace Project51.UIV2.Core
                 onDone?.Invoke();
             });
             if (CardsRow != null && CardsRow.gameObject.activeSelf)
-                foreach (RectTransform card in CardsRow) UIAnim.Flip(card);
+                foreach (RectTransform card in CardsRow)
+                {
+                    UIAnim.Flip(card);
+                    var tag = card.Find("Matta");
+                    if (tag != null) tag.gameObject.SetActive(false);
+                }
             // Colpo al 45% della caduta del pugno; la matta si gira quando le carte sono gia' visibili.
             impactCall = DOTween.Sequence().SetUpdate(true)
                 .InsertCallback(GamePreferences.Scaled(0.27f), Impact)
@@ -133,6 +138,8 @@ namespace Project51.UIV2.Core
             Paced(card.DOScaleX(0f, 0.14f).SetUpdate(true).OnComplete(() =>
             {
                 card.GetComponent<Image>().sprite = target;
+                var tag = card.parent != null ? card.parent.Find("Matta") : null;
+                if (tag != null) tag.gameObject.SetActive(true); // B26 (A3): resta scritto che e' la matta
                 Paced(card.DOScaleX(1f, 0.14f).SetUpdate(true));
                 Paced(card.DOPunchScale(Vector3.one * 0.18f, 0.45f, 4, 0.6f).SetDelay(0.14f).SetUpdate(true));
             }));

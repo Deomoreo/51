@@ -11,9 +11,8 @@ namespace Project51.UIV2.Core
     {
         public CanvasGroup View;
         public AuthUIController AuthUI;
-        [Tooltip("UI51 Fase 12: Benvenuto al primo ingresso e Regole al ritorno da \"Leggi tutte le regole\" del tutorial.")]
+        [Tooltip("UI51 Fase 12: Benvenuto al primo ingresso.")]
         public Project51.Unity.UI.UI51WelcomeView Welcome;
-        public Project51.Unity.UI.UI51RulesView Rules;
         [Tooltip("UI51 Fase 11, moderazione: Esito segnalazione e Gioco online sospeso all'arrivo in Home (solo account veri).")]
         public Project51.Unity.UI.UI51ReportOutcomeView ReportOutcome;
         public Project51.Unity.UI.UI51SuspensionView Suspension;
@@ -52,12 +51,7 @@ namespace Project51.UIV2.Core
             if (this == null) return; // rientro al tavolo finito prima: MainMenu non c'e' piu'
             entered = true; AuthUI.HideAuthUI();
             View.alpha = 0; View.blocksRaycasts = false; View.interactable = false;
-            if (Project51.Unity.UI.UI51TutorialView.OpenRulesOnReturn && Rules != null)
-            {
-                Project51.Unity.UI.UI51TutorialView.OpenRulesOnReturn = false;
-                Rules.Open();
-            }
-            else if (Welcome != null && Project51.Unity.UI.UI51WelcomeView.Pending) Welcome.Open();
+            if (Welcome != null && Project51.Unity.UI.UI51WelcomeView.Pending) Welcome.Open();
             else if (LevelUp != null && Project51.Unity.UI.UI51LevelUpView.Pending) LevelUp.Open();
             ModerationService.Refresh((outcome, showSuspension) =>
             {
@@ -65,6 +59,10 @@ namespace Project51.UIV2.Core
                 if (outcome != null && ReportOutcome != null) ReportOutcome.Open(outcome);
                 else if (showSuspension && Suspension != null) Suspension.Open();
             });
+            // Anche i premi rimasti in consegna (terzo giro 08/10); poi (#141) i risultati di partita rimasti senza conferma del server,
+            // dopo "inizio" perche' passano dallo stesso lucchetto del giocatore.
+            RewardsService.Start(RewardsService.RetryMatches);
+            RewardsService.RetryTutorial();
         }
         private void OnDestroy()
         {

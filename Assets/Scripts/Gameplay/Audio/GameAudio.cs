@@ -38,6 +38,21 @@ namespace Project51.Unity
         private SoundId pendingUi;
         private int pendingUiPriority = -1;
         private float nextButtonScan;
+        // B35 (AU2): livello della musica senza abbassamento, e abbassamento (1 = niente) che dura quanto l'effetto che lo chiede.
+        private float musicLevel, duck = 1f, duckTarget = 1f, duckUntil;
+
+        /// <summary>Quanto si abbassa la musica sotto un effetto: circa -5 dB su scopa e accuso, -8 dB su vittoria e sconfitta.</summary>
+        public static float DuckFor(SoundId id)
+        {
+            switch (id)
+            {
+                case SoundId.Scopa:
+                case SoundId.Accuso: return 0.56f;
+                case SoundId.Victory:
+                case SoundId.Defeat: return 0.4f;
+                default: return 1f;
+            }
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -185,9 +200,12 @@ namespace Project51.Unity
             int index = 0;
             if (sound.Variants.Length > 1)
             {
-                lastVariant.TryGetValue(id, out int previous);
-                index = Random.Range(0, sound.Variants.Length - 1);
-                if (index >= previous) index++; // mai la stessa variante due volte di fila
+                if (!lastVariant.TryGetValue(id, out int previous)) index = Random.Range(0, sound.Variants.Length); // la prima volta tutte
+                else
+                {
+                    index = Random.Range(0, sound.Variants.Length - 1);
+                    if (index >= previous) index++; // mai la stessa variante due volte di fila
+                }
             }
             lastVariant[id] = index;
             var variant = sound.Variants[index];
@@ -219,6 +237,15 @@ namespace Project51.Unity
             else
             {
                 source.PlayDelayed(-offset);
+            }
+
+            // Effetti che si sovrappongono: vince l'abbassamento piu' forte e la fine piu' lontana, non si sommano.
+            float gain = DuckFor(id);
+            if (gain < 1f)
+            {
+                float end = now + Mathf.Max(0f, -offset) + (variant.Clip.length - Mathf.Max(0f, offset)) / Mathf.Max(0.5f, source.pitch);
+                duckTarget = now >= duckUntil ? gain : Mathf.Min(duckTarget, gain);
+                duckUntil = Mathf.Max(duckUntil, end);
             }
         }
 
@@ -265,11 +292,16 @@ namespace Project51.Unity
 
             bool atTable = SceneManager.GetActiveScene().name == AppFlowManager.SCENE_GAME;
             float target = GameAudioPreferences.MusicEnabled ? (atTable ? library.MusicVolumeTable : library.MusicVolumeHome) : 0f;
-            float step = Time.unscaledDeltaTime / Mathf.Max(0.05f, library.MusicFadeSeconds);
-            music.volume = Mathf.MoveTowards(music.volume, target, step);
+            // B35 (AU2): il passo e' una frazione del volume piu' alto, cosi' MusicFadeSeconds e' davvero la durata della dissolvenza.
+            float dt = Time.unscaledDeltaTime;
+            float range = Mathf.Max(0.01f, Mathf.Max(library.MusicVolumeHome, library.MusicVolumeTable));
+            musicLevel = Mathf.MoveTowards(musicLevel, target, dt * range / Mathf.Max(0.05f, library.MusicFadeSeconds));
+            if (Time.unscaledTime >= duckUntil) duckTarget = 1f;
+            duck = Mathf.MoveTowards(duck, duckTarget, dt / (duckTarget < duck ? 0.08f : 0.8f)); // giu' in fretta, su piano
+            music.volume = musicLevel * duck;
 
             if (target > 0f && !music.isPlaying) music.Play();
-            else if (target <= 0f && music.volume <= 0f && music.isPlaying) music.Pause();
+            else if (target <= 0f && musicLevel <= 0f && music.isPlaying) music.Pause();
         }
 
         private void HookButtons()

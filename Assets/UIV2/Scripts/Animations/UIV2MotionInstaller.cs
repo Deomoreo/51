@@ -45,9 +45,12 @@ namespace Project51.UIV2.Animations
             return true;
         }
 
-        public static int Apply(GameObject root)
+        /// <summary>
+        /// Vibrazione leggera al tocco sui pulsanti di root (non sfondi/velo). Build 3 (63b): la chiamano anche le istanze create dopo il
+        /// caricamento della scena (avvisi in Resources, carte della Collezione), che il passaggio per scena non vede.
+        /// </summary>
+        public static void AddHaptics(GameObject root)
         {
-            int added = 0;
             foreach (var button in root.GetComponentsInChildren<UnityEngine.UI.Button>(true))
             {
                 string lower = button.name.ToLowerInvariant();
@@ -55,6 +58,15 @@ namespace Project51.UIV2.Animations
                     !lower.Contains("overlay") && !lower.Contains("dimbackground") &&
                     button.GetComponent<DismissOnBackdrop>() == null && button.GetComponent<UIV2HapticButton>() == null)
                     button.gameObject.AddComponent<UIV2HapticButton>();
+            }
+        }
+
+        public static int Apply(GameObject root)
+        {
+            int added = 0;
+            AddHaptics(root);
+            foreach (var button in root.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+            {
                 if (!ShouldAnimate(button) || button.GetComponent<UIV2ButtonFeedback>() != null) continue;
                 button.gameObject.AddComponent<UIV2ButtonFeedback>();
                 added++;

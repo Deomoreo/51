@@ -38,15 +38,16 @@ namespace Project51.Core
         }
 
         /// <summary>
-        /// La partita finisce quando la smazzata e' conclusa e un solo concorrente e' in testa con
-        /// almeno il traguardo. A pari merito sopra il traguardo si gioca un'altra smazzata.
+        /// La partita finisce quando la smazzata e' conclusa e un solo concorrente e' in testa oltre il
+        /// traguardo (51 esatti non bastano: si torna a 0, vedi ContinueMatch). A pari merito sopra il
+        /// traguardo si gioca un'altra smazzata.
         /// </summary>
         public static bool IsFinished(GameState state, int target)
         {
             if (state == null || !state.RoundEnded) return false;
             var totals = Totals(state);
             int best = totals.Max();
-            return best >= target && totals.Count(t => t == best) == 1;
+            return best > target && totals.Count(t => t == best) == 1;
         }
 
         /// <summary>Concorrenti in testa (piu' di uno a pari merito).</summary>
@@ -76,7 +77,8 @@ namespace Project51.Core
                 next.RoundIndex = 1;
                 return;
             }
-            next.MatchTotals = Totals(previous);
+            // Regola del 51 (Build 3, B30): chi chiude la smazzata con il traguardo esatto riparte da 0.
+            next.MatchTotals = Totals(previous).Select(t => t == target ? 0 : t).ToArray();
             next.RoundIndex = previous.RoundIndex + 1;
             next.DealerIndex = (previous.DealerIndex - 1 + next.NumPlayers) % next.NumPlayers;
         }

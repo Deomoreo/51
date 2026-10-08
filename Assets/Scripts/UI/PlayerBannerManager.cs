@@ -21,6 +21,8 @@ namespace Project51.Unity.UI
 
         [Tooltip("Ritratti per posto assoluto (uguali su tutti i client). Assegnati in GameScene.")]
         [SerializeField] private Sprite[] seatAvatars = new Sprite[0];
+        [Tooltip("B20: gli 8 avatar del profilo (UI51/Art/Avatars), per chi ha un account. Bot e ospiti tengono seatAvatars.")]
+        [SerializeField] private Sprite[] profileAvatars = new Sprite[0];
 
         [Tooltip("UI51: stessi indici di banners. Dove c'e' un banner UI51 quello storico resta solo come ancora delle carte. Assegnati da Tools/UI51/Build Fase 5.")]
         [SerializeField] private Project51.UI51.PlayerBanner[] ui51Banners = new Project51.UI51.PlayerBanner[0];
@@ -60,8 +62,27 @@ namespace Project51.Unity.UI
             InvokeRepeating(nameof(Refresh), 0.2f, 0.2f);
         }
 
-        private void OnEnable() => CardViewManager.AccusedHandTapped += OpenAccused;
-        private void OnDisable() => CardViewManager.AccusedHandTapped -= OpenAccused;
+        private void OnEnable()
+        {
+            CardViewManager.AccusedHandTapped += OpenAccused;
+            CardViewManager.OffTurnHandTapped += NudgeTurn;
+        }
+
+        private void OnDisable()
+        {
+            CardViewManager.AccusedHandTapped -= OpenAccused;
+            CardViewManager.OffTurnHandTapped -= NudgeTurn;
+        }
+
+        // Test 6 (terzo giro 08/10): tocchi sulla mano fuori turno -> cenno sul banner di chi gioca, al massimo uno ogni 0,8 s.
+        private float nextNudge;
+
+        private void NudgeTurn(int seat)
+        {
+            if (Time.unscaledTime < nextNudge) return;
+            nextNudge = Time.unscaledTime + 0.8f;
+            UI51BannerForPlayer(seat)?.Nudge();
+        }
 
         private void Refresh()
         {
@@ -212,8 +233,8 @@ namespace Project51.Unity.UI
                     view.Stats = ProfileCosmetics.ReadStats(owner.CustomProperties, out view.Games, out view.Wins, out view.Scope, out view.PlayFabId);
                     // Un ospite si puo' silenziare e segnalare (2.55), non aggiungere ne' bloccare: il suo account dura una sessione.
                     if (view.PlayFabId == null && (view.PlayFabId = ProfileCosmetics.GuestId(owner.CustomProperties)) != null) view.Guest = true;
-                    // Aggiungi amico / Segnala partono dal mio account: da ospite niente pulsanti.
-                    if (auth == null || auth.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin) view.PlayFabId = null;
+                    // Aggiungi amico / Segnala partono dal mio account: da ospite solo "Silenzia emoticon" (B12/E2).
+                    view.ViewerGuest = auth == null || auth.PlayFabAuth == null || !auth.PlayFabAuth.HasRealLogin;
                 }
             }
 
@@ -368,8 +389,26 @@ namespace Project51.Unity.UI
             });
         }
 
-        /// <summary>Ritratto del giocatore p, lo stesso del suo banner (ruota del sorteggio).</summary>
-        internal Sprite SeatAvatar(int p) => seatAvatars.Length > 0 ? seatAvatars[p % seatAvatars.Length] : null;
+        /// <summary>
+        /// Ritratto del giocatore p, lo stesso ovunque (banner, profilo rapido, sorteggio, risultati). B20: un account mostra l'avatar
+        /// scelto (io dal mio profilo, gli altri da quello che pubblicano); bot, ospiti e versioni vecchie il ritratto del posto.
+        /// </summary>
+        internal Sprite SeatAvatar(int p)
+        {
+            string id = null;
+            if (GameModeService.Current.IsLocalPlayer(p))
+            {
+                var auth = Project51.Auth.AuthBootstrapper.Instance;
+                if (auth != null && auth.HasRealProfile) id = auth.Profile.AvatarId ?? "";
+            }
+            else if (GameModeService.Current.IsHumanPlayer(p))
+            {
+                var owner = GameSocialV2.PlayerAt(p);
+                if (owner != null) id = ProfileCosmetics.ReadAvatar(owner.CustomProperties);
+            }
+            if (id != null && profileAvatars.Length > 0) return ProfileCosmetics.AvatarFor(profileAvatars, id);
+            return seatAvatars.Length > 0 ? seatAvatars[p % seatAvatars.Length] : null;
+        }
 
         /// <summary>Banner UI51 del posto relativo (0 io, 1 sinistra, 2 alto, 3 destra); null se il posto non ne ha.</summary>
         public Project51.UI51.PlayerBanner UI51Banner(int slot)
@@ -392,7 +431,7 @@ namespace Project51.Unity.UI
         {
             banner.SetName(GetDisplayName(p));
             // AvatarFrame.SetAvatar rifa' il ritaglio a ogni chiamata: solo quando il ritratto cambia.
-            var avatar = seatAvatars.Length > 0 ? seatAvatars[p % seatAvatars.Length] : null;
+            var avatar = SeatAvatar(p);
             if (avatar != null && avatar != ui51Avatars[slot] && banner.avatar != null)
             {
                 ui51Avatars[slot] = avatar;
@@ -400,7 +439,8 @@ namespace Project51.Unity.UI
             }
             int local = GameModeService.Current.LocalPlayerIndex;
             // Mockup MomentiPartita: anello blu quando tocca a un altro, oro al proprio turno.
-            banner.SetTurn(p == turnController.CurrentPlayerIndex, p != local);
+            // B5: il proprio banner si accende quando il tocco conta davvero, come la scritta TOCCA A TE.
+            banner.SetTurn(p == turnController.CurrentPlayerIndex && (p != local || turnController.AcceptsLocalInput), p != local);
             if (initializer == null) initializer = FindObjectOfType<GameSceneInitializer>();
             banner.SetOffline(initializer != null && initializer.IsDisconnected(p));
             banner.SetCaptures(turnController.GetDisplayedCapturedCount(p));
@@ -500,7 +540,7 @@ namespace Project51.Unity.UI
             if (matchCardBack == null)
             {
                 var deck = CardDecks.LoadForMatch();
-                matchCardBack = deck != null ? deck.Back : Resources.Load<Sprite>("Cards/CardBack");
+                matchCardBack = deck != null ? deck.Back : null;
             }
             return matchCardBack;
         }
@@ -516,9 +556,8 @@ namespace Project51.Unity.UI
                     var name = auth != null && auth.PlayFabAuth != null ? auth.PlayFabAuth.GetBestDisplayName() : null;
                     return string.IsNullOrEmpty(name) ? "Tu" : name;
                 }
-                return GameSocialV2.PlayerName(playerIndex); // nickname vero dell'avversario online
             }
-            return $"Bot {playerIndex + 1}";
+            return GameSocialV2.PlayerName(playerIndex); // nickname vero dell'avversario online, anche scollegato (Build 3 X2); "Bot N" i bot
         }
     }
 }

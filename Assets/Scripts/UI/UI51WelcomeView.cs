@@ -24,12 +24,16 @@ namespace Project51.Unity.UI
 
         public void Open()
         {
-            PlayerPrefs.SetInt(SeenKey, 1);
-            PlayerPrefs.Save();
             gameObject.SetActive(true);
             UIAnim.FadeIn((RectTransform)transform, 0.3f);
         }
 
-        private void Close() => gameObject.SetActive(false);
+        // Visto solo dopo una scelta: se l'app si chiude col Benvenuto aperto, torna al prossimo ingresso.
+        private void Close()
+        {
+            PlayerPrefs.SetInt(SeenKey, 1);
+            PlayerPrefs.Save();
+            gameObject.SetActive(false);
+        }
     }
 }

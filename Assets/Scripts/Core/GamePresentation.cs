@@ -23,6 +23,9 @@ namespace Project51.Core
         /// <summary>Scopa del giocatore (mockup MomentoScopa).</summary>
         public static event Action<int> Scopa;
         public static void ShowScopa(int player)=>Scopa?.Invoke(player);
+        /// <summary>Tocca al giocatore di questo telefono e il tavolo e' pronto (B5): scritta TOCCA A TE.</summary>
+        public static event Action YourTurn;
+        public static void ShowYourTurn()=>YourTurn?.Invoke();
         public static bool ShowRound(GameState state,Action next,Action menu)
         {if(RoundResults==null)return false;RoundResults.Invoke(state,next,menu);return true;}
         public static void CloseResults()=>HideResults?.Invoke();
@@ -34,6 +37,6 @@ namespace Project51.Core
         public static void MarkBusy(float seconds)=>busyUntil=Mathf.Max(busyUntil,Time.unscaledTime+seconds);
         private static float busyUntil;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset(){OpenEmoticons=null;RoundResults=null;HideResults=null;EmoticonReceived=null;AccusoReceived=null;ConnectionNotice=null;PlayerNotice=null;HandDealt=null;Scopa=null;busyUntil=0;}
+        private static void Reset(){OpenEmoticons=null;RoundResults=null;HideResults=null;EmoticonReceived=null;AccusoReceived=null;ConnectionNotice=null;PlayerNotice=null;HandDealt=null;Scopa=null;YourTurn=null;busyUntil=0;}
     }
 }

@@ -59,6 +59,15 @@ namespace Project51.Tests
             Assert.AreEqual(0.08f, loudest, 0.001f);
         }
 
+        // B35: la musica si abbassa solo sotto i momenti forti, di piu' a fine partita.
+        [Test]
+        public void MusicDucksOnlyUnderBigMoments()
+        {
+            Assert.AreEqual(1f, GameAudio.DuckFor(SoundId.CardPlay));
+            Assert.Less(GameAudio.DuckFor(SoundId.Scopa), 1f);
+            Assert.Less(GameAudio.DuckFor(SoundId.Victory), GameAudio.DuckFor(SoundId.Accuso));
+        }
+
         [Test]
         public void LibraryHasEverySound()
         {

@@ -132,7 +132,7 @@ MonoBehaviour:
   opponentHandScreenDownOffsetRatio: 0.04
   sideOpponentAdditionalScreenDownOffsetRatio: 0.05
   capturedPileScreenDownOffsetRatio: 0.035
-  defaultCardBack: {fileID: 499053320, guid: 7c63ca9c3a5a497448179fb17d73ee8d, type: 3}
+  defaultCardBack: {fileID: 21300000, guid: 6518112790442a74da71312c1f641526, type: 3}
   mattaHaloSprite: {fileID: 0}
   moveHintGlowSprite: {fileID: 0}
   moveSelectionUI: {fileID: 0}

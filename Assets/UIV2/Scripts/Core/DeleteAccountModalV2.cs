@@ -57,27 +57,15 @@ namespace Project51.UIV2.Core
         public static bool IsConfirmWord(string typed) =>
             string.Equals((typed ?? "").Trim(), ConfirmWord, System.StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Stacco tra i pulsanti e la tastiera, in unita' di progetto.</summary>
-        public const float KeyboardGap = 12f;
-
-        /// <summary>
-        /// Di quanto deve salire la finestra (unita' di progetto) perche' il suo bordo basso stia sopra la tastiera.
-        /// Misure in pixel dal basso dello schermo; unit = pixel per unita'. Mai oltre il bordo alto dell'area sicura.
-        /// </summary>
-        public static float KeyboardLift(float keyboardPx, float bottomPx, float topPx, float safeTopPx, float unit)
-        {
-            if (keyboardPx <= 0f || unit <= 0f) return 0f;
-            float wanted = (keyboardPx - bottomPx) / unit + KeyboardGap;
-            float room = (safeTopPx - topPx) / unit - KeyboardGap;
-            return Mathf.Clamp(wanted, 0f, Mathf.Max(0f, room));
-        }
-
         private void Awake()
         {
             Cancel.onClick.AddListener(Close);
             Danger.onClick.AddListener(Advance);
             Ok.onClick.AddListener(Acknowledge);
             if (ConfirmInput != null) ConfirmInput.onValueChanged.AddListener(_ => RefreshDanger());
+            // Qui sale la finestra intera (anche i pulsanti, LateUpdate), non solo il campo.
+            var style = ConfirmInput != null ? ConfirmInput.GetComponent<Project51.UI51.UI51Input>() : null;
+            if (style != null) style.LiftPanel = false;
         }
 
         /// <summary>Primo passo: dalla voce "Elimina account" delle Impostazioni.</summary>
@@ -190,14 +178,14 @@ namespace Project51.UIV2.Core
         private float lift;
 
         // Tastiera del telefono: la finestra sale quanto basta e torna giu' quando la tastiera si chiude.
-        // Nell'Editor la tastiera non esiste (altezza 0): nessun effetto. Da provare su un telefono vero.
+        // Nell'Editor la tastiera non esiste (altezza 0): nessun effetto. Altezza come i campi (UI51Input.KeyboardHeight, anche Android).
         private void LateUpdate()
         {
             if (ConfirmInput == null || Modal == null || Modal.Frame == null || Modal.Group == null) return;
             if (Modal.Group.alpha < 1f) return; // apertura o chiusura in corso: la posizione e' di AnimatedModalV2
             var frame = Modal.Frame;
             float target = 0f;
-            float keyboard = TouchScreenKeyboard.visible ? TouchScreenKeyboard.area.height : 0f;
+            float keyboard = Project51.UI51.UI51Input.KeyboardHeight(ConfirmInput.isFocused);
             if (keyboard > 0f && frame.rect.height > 0f)
             {
                 var canvas = frame.GetComponentInParent<Canvas>();
@@ -206,7 +194,7 @@ namespace Project51.UIV2.Core
                 float bottom = RectTransformUtility.WorldToScreenPoint(cam, corners[0]).y;
                 float top = RectTransformUtility.WorldToScreenPoint(cam, corners[1]).y;
                 float unit = (top - bottom) / frame.rect.height;
-                target = KeyboardLift(keyboard, bottom - lift * unit, top - lift * unit, UnityEngine.Screen.safeArea.yMax, unit);
+                target = Project51.UI51.UI51Input.KeyboardLift(keyboard, bottom - lift * unit, top - lift * unit, UnityEngine.Screen.safeArea.yMax, unit);
             }
             if (Mathf.Abs(target - lift) < 0.5f) return;
             // Toccare un pulsante chiude la tastiera: se la finestra scendesse sotto il dito, il tocco andrebbe perso.

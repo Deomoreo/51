@@ -56,6 +56,7 @@ namespace Project51.Unity.UI
                 s_Instance = Instantiate(prefab);
                 s_Instance.name = prefab.name;
                 DontDestroyOnLoad(s_Instance.gameObject);
+                Project51.UIV2.Animations.UIV2MotionInstaller.AddHaptics(s_Instance.gameObject); // 63b: vibra come gli altri pulsanti
                 return s_Instance;
             }
         }
@@ -63,6 +64,15 @@ namespace Project51.Unity.UI
         /// <summary>Card "Riconnessione…". seatSeconds &lt; 0 = fuori partita (niente riquadro del posto).</summary>
         public static void ShowReconnecting(int attempt, int maxAttempts, int seatSeconds) =>
             Instance?.Reconnecting(attempt, maxAttempts, seatSeconds);
+
+        /// <summary>Di nuovo nella stanza, si aspetta lo stato del tavolo dal master (B8): la card resta e blocca i tocchi.</summary>
+        public static void ShowSyncing()
+        {
+            var o = Instance;
+            if (o == null) return;
+            o.Reconnecting(1, 1, -1);
+            o.attemptLabel.text = "Collegato · aggiorno il tavolo…";
+        }
 
         /// <summary>Card "Nessuna connessione" con RIPROVA e l'uscita del contesto (partita o Home).</summary>
         public static void ShowError(bool inGame, Action onRetry, Action onExit) => Instance?.Error(inGame, onRetry, onExit);
@@ -104,7 +114,7 @@ namespace Project51.Unity.UI
             attemptLabel.text = "Tentativo " + attempt + " di " + maxAttempts;
             seatBox.SetActive(seatSeconds >= 0);
             if (seatSeconds >= 0)
-                seatLabel.text = "Il tuo posto al tavolo resta tuo per <color=#F3C969><b>" + seatSeconds + "s</b></color>. Gli altri giocatori ti aspettano.";
+                seatLabel.text = "Intanto gioca un bot al tuo posto: rientra entro <color=#F3C969><b>" + seatSeconds + "s</b></color> per riprenderlo.";
         }
 
         private void Error(bool inGame, Action retryAction, Action exitAction)

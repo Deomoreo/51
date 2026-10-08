@@ -132,11 +132,17 @@ namespace Project51.UIV2.Core
         public static string PlayerName(int player)
         {
             if(GameModeService.Current.IsLocalPlayer(player))return "Tu";
-            if(GameModeService.Current.IsBotPlayer(player))return "Bot "+(player+1);
             var p=PlayerAt(player);
             var name=p!=null?(p.NickName??string.Empty).Replace("<",string.Empty).Trim():string.Empty; // nome scelto dall'altro giocatore: niente tag rich text; vuoto = "Giocatore N"
-            return name.Length>0?name:"Giocatore "+(player+1);
+            // Build 3 X2: chi si scollega o lascia il tavolo resta col suo nome (il bot gioca al suo posto), come nell'avviso; "Bot N" solo i bot veri.
+            var room=Photon.Pun.PhotonNetwork.CurrentRoom?.Name;
+            if(room!=namesRoom){namesRoom=room;System.Array.Clear(seatNames,0,seatNames.Length);}
+            if(room!=null&&player>=0&&player<seatNames.Length){if(name.Length>0)seatNames[player]=name;else name=seatNames[player]??string.Empty;}
+            if(name.Length>0)return name;
+            return GameModeService.Current.IsBotPlayer(player)?"Bot "+(player+1):"Giocatore "+(player+1);
         }
+        private static string namesRoom;
+        private static readonly string[] seatNames=new string[4];
         private static GameSceneInitializer seatMap;
         /// <summary>Giocatore Photon al posto assoluto player, anche inattivo nella finestra di rientro; null fuori stanza o
         /// prima che il roster sia fissato. Senza allocazioni: gira a 5 Hz per posto.</summary>
@@ -153,6 +159,13 @@ namespace Project51.UIV2.Core
             var p=PlayerAt(player);if(p==null)return null;
             Project51.UIV2.Data.ProfileCosmetics.ReadStats(p.CustomProperties,out _,out _,out _,out string id);return id;
         }
+        /// <summary>Id con cui si silenzia il giocatore al posto player: l'account, o la sessione d'ospite (come il profilo rapido).</summary>
+        public static string MuteIdAt(int player)
+        {
+            var p=PlayerAt(player);if(p==null)return null;
+            Project51.UIV2.Data.ProfileCosmetics.ReadStats(p.CustomProperties,out _,out _,out _,out string id);
+            return id??Project51.UIV2.Data.ProfileCosmetics.GuestId(p.CustomProperties);
+        }
         private int Seat(int player)
         {
             if(turns==null)turns=FindObjectOfType<TurnController>(); // un'emoticon arrivata prima del primo Update: 1v1, non 4 posti
@@ -162,7 +175,7 @@ namespace Project51.UIV2.Core
         {
             if(index<0||index>=Sprites.Length)return;
             // "Silenzia emoticon" del profilo rapido: niente suono ne' nuvoletta per quel giocatore (questo dispositivo).
-            if(!GameModeService.Current.IsLocalPlayer(player)&&Project51.Auth.EmoticonMute.IsMuted(PlayFabIdAt(player)))return;
+            if(!GameModeService.Current.IsLocalPlayer(player)&&Project51.Auth.EmoticonMute.IsMuted(MuteIdAt(player)))return;
             int seat=Seat(player);
             if(!GameModeService.Current.IsLocalPlayer(player))GameAudio.Play(SoundId.Notification,sync:GameAudio.Sync.Onset);
             // UI51: la mia sale dal banner e sparisce (una nuova riparte da capo), quella di un altro sta 3,2 s al posto del suo avatar.
@@ -197,7 +210,7 @@ namespace Project51.UIV2.Core
                 bool show=showCards&&hand!=null&&i<hand.Count;AccusoCards[i].transform.parent.gameObject.SetActive(show);
                 if(show&&cv!=null)AccusoCards[i].sprite=cv.GetSpriteForCard(hand[i]);
             }
-            string name=type==AccusoType.Decino?"DECINO":type==AccusoType.Cirulla?"CIRULLA":"ACCUSO";
+            string name=type==AccusoType.Decino?"DECINO":"ACCUSO"; // X1: la Cirulla nei testi si chiama Accuso
             float unit=0f;
             int points=(turns?.GameState?.Rules??MatchRules.Default).AccusoPoints(type==AccusoType.Decino?10:3);
             // Centro del tavolo sullo schermo e px per unita' del mockup, ridotti sui telefoni bassi (RevealScale).

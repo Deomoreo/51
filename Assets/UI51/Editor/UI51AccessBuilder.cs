@@ -164,13 +164,14 @@ namespace Project51.UI51.EditorTools
             UI51Build.NoWrap(UI51Build.Text(title, "Crea il tuo account", FontFace.CinzelBold, 20f, UI51Tokens.Cream, TextAlignmentOptions.Center));
             var subtitle = UI51Build.Child(safe, "Subtitle");
             UI51Build.TopBand(subtitle, 20f, 20f, 257f, 16f);
-            UI51Build.NoWrap(UI51Build.Text(subtitle, "Unisciti alla sfida di Cirulla-51", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center));
+            UI51Build.NoWrap(UI51Build.Text(subtitle, "Unisciti alla sfida del 51", FontFace.NunitoRegular, 12f, UI51Tokens.CreamA(0.7f), TextAlignmentOptions.Center));
 
             var sheet = Sheet(safe, UI51Build.Pad(24, 22, 22, 22), 12f, UI51Shape.Linear(
                 (UI51Tokens.Rgba(8, 17, 34, 0.35f), 0f), (UI51Tokens.Rgba(7, 15, 30, 0.88f), 0.2f),
                 (UI51Tokens.Rgba(5, 11, 23, 0.97f), 1f)));
 
             ui.Username = BuildInput(sheet, "Username", "Nome utente", UI51Build.Sprite("Common", "ic_person_cream"), TMP_InputField.ContentType.Standard, 48f);
+            ui.Username.characterLimit = 20; // B24 (N1): limite di PlayFab per lo Username
             ui.Email = BuildInput(sheet, "Email", "Email", UI51Build.Sprite("Common", "ic_mail"), TMP_InputField.ContentType.EmailAddress, 48f);
             ui.Password = BuildInput(sheet, "Password", "Password", UI51Build.Sprite("Common", "ic_lock_cream"), TMP_InputField.ContentType.Password, 48f);
             ui.Confirm = BuildInput(sheet, "Confirm", "Conferma password", UI51Build.Sprite("Common", "ic_lock_cream"), TMP_InputField.ContentType.Password, 48f);
@@ -585,6 +586,21 @@ namespace Project51.UI51.EditorTools
                 UI51Build.Shape(UI51Build.Stretch(UI51Build.Child(root, "Overlay")), overlay, 180f, Vector4.zero, 0f, Color.clear);
             else if (old != null) old.gameObject.SetActive(false);
 
+            // Fiamme dei bracieri sopra al velo (sono luce): solo sullo sfondo nitido, allineate all'artwork come Bg.
+            var oldFlames = root.Find("Flames");
+            if (oldFlames != null) UnityEngine.Object.DestroyImmediate(oldFlames.gameObject);
+            if (bgSprite != null && bgSprite.name == "home_bg_base")
+            {
+                Project51.EditorTools.HomeAmbientBuilder.ImportFlames();
+                var flames = UI51Build.Stretch(UI51Build.Child(root, "Flames"));
+                var flamesFit = UI51Build.GetOrAdd<AspectRatioFitter>(flames);
+                flamesFit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+                flamesFit.aspectRatio = fitter.aspectRatio;
+                var below = overlay != null ? root.Find("Overlay") : bg;
+                flames.SetSiblingIndex(below.GetSiblingIndex() + 1);
+                Project51.EditorTools.HomeAmbientBuilder.AddFlames(flames);
+            }
+
             var safe = UI51Build.Child(root, "Safe");
             var fit = UI51Build.GetOrAdd<DesignCanvasFit>(safe);
             fit.Reference = UI51Tokens.ReferenceResolution;
@@ -698,6 +714,8 @@ namespace Project51.UI51.EditorTools
             field.customCaretColor = true;
             field.caretColor = UI51Tokens.Gold;
             field.selectionColor = UI51Tokens.GoldA(0.35f);
+            field.onFocusSelectAll = false; // Build 3 I4 (anche UI51Input.Awake)
+            field.shouldHideMobileInput = true;
 
             var input = UI51Build.GetOrAdd<UI51Input>(rt);
             UI51Build.Wire(input, so =>

@@ -23,8 +23,6 @@ namespace Project51.UIV2.Animations
         [SerializeField, Min(0f), Tooltip("Secondi di vantaggio: elementi mai sincronizzati")] private float phase;
         [SerializeField, Min(0f), Tooltip(">0 = solo andata (stella cadente): alpha sale e torna, poi pausa in secondi")] private float pause;
 
-        private static readonly int StillId = Shader.PropertyToID("_UIV2Still");
-
         private Tween motion;
         private Vector2 restPosition;
         private Vector3 restEuler, restScale;
@@ -46,7 +44,6 @@ namespace Project51.UIV2.Animations
         private void Refresh()
         {
             bool wanted = Application.isPlaying && !GamePreferences.ReducedGraphics;
-            Shader.SetGlobalFloat(StillId, GamePreferences.ReducedGraphics ? 1f : 0f); // shader UIV2/FlameWobble
             if (wanted == (motion != null)) return;
             if (!wanted) { Stop(); return; }
 

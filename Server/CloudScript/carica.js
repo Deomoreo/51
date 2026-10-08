@@ -19,4 +19,4 @@ var src = fs.readFileSync(path.join(dir, "51.js"), "utf8");
 if (src.indexOf('var HOOK = "__HOOK__";') < 0) throw new Error("51.js: segnaposto __HOOK__ non trovato");
 fs.writeFileSync(path.join(dir, "51.carica.js"), src.replace('var HOOK = "__HOOK__";', 'var HOOK = "' + hook + '";'));
 console.log("Da caricare su PlayFab: Server/CloudScript/51.carica.js\nPannello Photon, Webhooks:");
-console.log("  PathCreate RoomCreated" + hook + "\n  PathJoin RoomJoined" + hook + "\n  PathClose RoomClosed\n  PathBeforeJoin e PathLeave: vuoti");
+console.log("  PathCreate RoomCreated" + hook + "\n  PathJoin RoomJoined" + hook + "\n  PathLeave RoomLeft" + hook + "\n  PathClose RoomClosed\n  PathBeforeJoin: vuoto");

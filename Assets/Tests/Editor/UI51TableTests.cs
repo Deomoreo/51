@@ -495,6 +495,16 @@ namespace Project51.Tests
             Assert.IsNull(id);
             Assert.IsNull(ProfileCosmetics.GuestId(props), "un account non e' un ospite");
 
+            // B20: l'avatar scelto viaggia con l'aspetto; ospite e valori strani niente (si tiene il ritratto del posto).
+            Assert.AreEqual("av_3", ProfileCosmetics.ReadAvatar(AuthBootstrapper.LookProps("oro", "notte", 0, 0, 0, 0, "ID", avatar: "av_3")));
+            Assert.IsNull(ProfileCosmetics.ReadAvatar(AuthBootstrapper.LookProps(null, null, 0, 0, 0, 0, null, "G", "av_3")));
+            Assert.IsNull(ProfileCosmetics.ReadAvatar(new System.Collections.Hashtable { { ProfileService.LookAvatarKey, 7 } }));
+            var sprites = new[] { Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.zero), Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), Vector2.zero) };
+            sprites[0].name = "avatar_1"; sprites[1].name = "av_2";
+            Assert.AreSame(sprites[1], ProfileCosmetics.AvatarFor(sprites, "av_2"));
+            Assert.AreSame(sprites[0], ProfileCosmetics.AvatarFor(sprites, "default"), "mai scelto = il primo, come la Home");
+            foreach (var s in sprites) Object.DestroyImmediate(s);
+
             // Scritte da un altro client: tipi sbagliati e valori fuori misura non passano.
             var bad = new System.Collections.Hashtable
             {

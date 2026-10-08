@@ -43,6 +43,15 @@ namespace Project51.Tests
             Assert.AreEqual(0, failures);
         }
 
+        // #154: il protocollo non segue la versione dell'app e non torna mai a quello della TestFlight build 2 ("1.0.0").
+        [Test]
+        public void AppVersion_IsTheProtocolOnly()
+        {
+            Assert.AreEqual("p" + PhotonAuthConnector.ProtocolVersion, PhotonAuthConnector.AppVersion);
+            StringAssert.DoesNotContain(Application.version, PhotonAuthConnector.AppVersion);
+            Assert.GreaterOrEqual(PhotonAuthConnector.ProtocolVersion, 3);
+        }
+
         [Test]
         public void DropAfterConnected_RaisesNothing()
         {

@@ -1,3 +1,4 @@
+using System.Linq;
 using Project51.UIV2.Core;
 using Project51.Unity.UI;
 using TMPro;
@@ -102,7 +103,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Fit(pill, true, false);
 
             var mine = Segment(pill, "Mine", 14, "TU", 9f, UI51Tokens.CreamA(0.6f), "0", 17f, UI51Tokens.Cream);
-            var target = Segment(pill, "Target", 11, "A", 8f, UI51Tokens.GoldA(0.85f), "51", 14f, UI51Tokens.Gold);
+            var target = Segment(pill, "Target", 11, "OLTRE", 8f, UI51Tokens.GoldA(0.85f), "51", 14f, UI51Tokens.Gold);
             var rival = Segment(pill, "Rival", 14, "AVVERSARIO", 9f, UI51Tokens.CreamA(0.6f), "0", 17f, UI51Tokens.Cream);
             var targetRt = (RectTransform)target[0].transform.parent;
             UI51Build.Image(targetRt, null, UI51Tokens.GoldA(0.14f), false, false);
@@ -157,18 +158,18 @@ namespace Project51.UI51.EditorTools
         static void BuildBanners(PlayerBannerManager manager, Transform seatLocal, Transform seatTop, Transform seatLeft, Transform seatRight,
             GameObject ownPrefab, GameObject rivalPrefab, GameObject sidePrefab, GameObject morePrefab)
         {
-            // Proprio: scope a destra, 26x40, sporgono di 8 + 13 per carta (la prima e' sopra); "+N" fino a 80 dal bordo.
-            var own = Banner(seatLocal, ownPrefab, 0f, 186f, morePrefab, new Vector2(186f + 80f, 13f), new Vector2(4f, -26f),
+            // Proprio: scope a destra, 26x40, sporgono di 8 + 13 per carta (la prima e' sopra); "+N" fino a 72 dal bordo
+            // (B28: a 80 toccava l'anello di ACCUSA; la quarta carta finisce a 47, il "+N" largo 22 parte da 50).
+            var own = Banner(seatLocal, ownPrefab, 0f, 186f, morePrefab, new Vector2(186f + 72f, 13f), new Vector2(4f, -26f),
                 i => new Vector3(186f + 8f + 13f * i - 26f, 5f, i % 2 == 0 ? -3f : 4f), new Vector2(26f, 40f), true);
             // In alto: scope sopra al banner, 24x37 (mockup: due carte a 70 e 83), le altre verso sinistra.
             var rival = Banner(seatTop, rivalPrefab, 0.5f, 120f, morePrefab, new Vector2(131f, -24f), new Vector2(-29f, 13f),
                 i => new Vector3(83f - 13f * i, -13f, i % 2 == 0 ? 3f : -4f), new Vector2(24f, 37f), true);
-            // Lati (Fase 6, Partita4 compatta): verticali 64x100. Scopa coricata 37x24 a 26 dall'alto che sporge di 14 verso
-            // l'esterno (carta 24x37 girata di 90), le altre 13 piu' in giu'; "+N" sotto la quarta; gettone 30 sopra l'angolo esterno.
-            var left = Banner(seatLeft, sidePrefab, 0.5f, 64f, morePrefab, new Vector2(23f, 91f), new Vector2(0f, -30f),
-                i => new Vector3(-7.5f, 19.5f + 13f * i, i % 2 == 0 ? 90f : 94f), new Vector2(24f, 37f), true, 100f);
-            var right = Banner(seatRight, sidePrefab, 0.5f, 64f, morePrefab, new Vector2(78f, 91f), new Vector2(40f, -30f),
-                i => new Vector3(47.5f, 19.5f + 13f * i, i % 2 == 0 ? 90f : 86f), new Vector2(24f, 37f), true, 100f);
+            // Lati (Fase 6, Partita4 compatta): verticali 64x100, gettone 30 sopra l'angolo esterno. Scope: SideScopeCard (B28).
+            var left = Banner(seatLeft, sidePrefab, 0.5f, 64f, morePrefab, SideMoreAt(true), new Vector2(0f, -30f),
+                i => SideScopeCard(i, true), new Vector2(24f, 37f), true, 100f);
+            var right = Banner(seatRight, sidePrefab, 0.5f, 64f, morePrefab, SideMoreAt(false), new Vector2(40f, -30f),
+                i => SideScopeCard(i, false), new Vector2(24f, 37f), true, 100f);
 
             own.SetName("Tu");
             own.SetLevel(1);
@@ -184,6 +185,8 @@ namespace Project51.UI51.EditorTools
                 var seats = new[] { own, left, rival, right }; // 0 locale, 1 sinistra, 2 alto, 3 destra
                 list.arraySize = seats.Length;
                 for (int i = 0; i < seats.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = seats[i];
+                // B20: avatar del profilo per chi ha un account, gli stessi dell'editor del profilo.
+                UI51Build.SetArray(so, "profileAvatars", UI51MetaBuilder.AvatarNames.Select(n => UI51Build.Sprite("Avatars", n)).ToArray());
             });
         }
 
@@ -329,11 +332,12 @@ namespace Project51.UI51.EditorTools
             var camera = Camera.main;
             var blur = UI51Build.Sprite("Backgrounds", "home_bg_blur");
             var sun = UI51Build.Sprite("Common", "Sun_fix");
-            var cardBack = Resources.Load<Sprite>("Cards/CardBack");
+            var defaultDeck = Project51.Core.CardDecks.Load(Project51.Core.CardDecks.DefaultId);
+            var cardBack = defaultDeck != null ? defaultDeck.Back : null;
             if (ambient == null || fitter == null || felt == null || camera == null || blur == null || sun == null || cardBack == null)
             {
                 Debug.LogError($"{Tag} Manca un pezzo del tavolo (GameBackground con GameBackgroundFitter, TableFeltRenderer, Main Camera, " +
-                               "home_bg_blur, Sun_fix, Resources/Cards/CardBack). Tavolo non toccato.");
+                               "home_bg_blur, Sun_fix, dorso del mazzo napoletano). Tavolo non toccato.");
                 return;
             }
 
@@ -657,6 +661,7 @@ namespace Project51.UI51.EditorTools
                     UI51Tokens.Radii(11f), 2f, UI51Tokens.Gold, false,
                     new UI51Shadow(0f, 0f, 18f, UI51Tokens.GoldA(0.55f)), new UI51Shadow(0f, 8f, 16f, UI51Tokens.BlackA(0.5f)));
                 faces[i] = UI51Build.Image(UI51Build.Stretch(UI51Build.Child(card, "Face")), null, Color.white, false, false);
+                AddMattaTag(card);
             }
 
             UI51Build.Wire(controller, so =>
@@ -719,8 +724,8 @@ namespace Project51.UI51.EditorTools
             // 4 sotto la pillola del punteggio. Ai lati (Fase 6): le carte coricate fino alla quarta e 30 dentro al banner.
             var hits = new[]
             {
-                ScopeHit(own, manager, 0, 180f, 0f, 86f, 50f), ScopeHit(left, manager, 1, -14f, 22f, 44f, 72f),
-                ScopeHit(top, manager, 2, 44f, -24f, 87f, 49f), ScopeHit(right, manager, 3, 34f, 22f, 44f, 72f),
+                ScopeHit(own, manager, 0, 180f, 0f, 86f, 50f), ScopeHit(left, manager, 1, SideHit(true).x, SideHit(true).y, SideHit(true).z, SideHit(true).w),
+                ScopeHit(top, manager, 2, 44f, -24f, 87f, 49f), ScopeHit(right, manager, 3, SideHit(false).x, SideHit(false).y, SideHit(false).z, SideHit(false).w),
             };
 
             var viewer = UI51Build.Stretch(UI51Build.Child(canvas, "UI51ScopeViewer"));
@@ -1208,7 +1213,7 @@ namespace Project51.UI51.EditorTools
             for (int i = 0; i < medalSprites.Length; i++)
                 medalIcons[i] = UI51Build.Image(UI51Build.Size(UI51Build.Child(medals, "Medal" + i), 34f, 34f), medalSprites[i], Color.white).gameObject;
 
-            // Altri giocatori con account: Aggiungi amico (oro) / Richiesta inviata, Silenzia emoticon; sotto Segnala in rosso.
+            // Altri giocatori con account: Aggiungi amico (oro) / Tra i tuoi amici, Silenzia emoticon; sotto Segnala in rosso.
             var actions = UI51Build.Child(card, "Actions");
             UI51Build.Stack(actions, 0f, UI51Build.Pad(14, 0, 0, 0));
             var row = UI51Build.Child(actions, "Row");
@@ -1219,7 +1224,7 @@ namespace Project51.UI51.EditorTools
             UI51Build.Layout(add, -1f, 38f, 1f);
             var added = UI51Build.Child(row, "Added");
             UI51Build.Solid(added, Color.clear, 12f, 1f, UI51Tokens.GoldA(0.5f));
-            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(added, "Label")), "Richiesta inviata",
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(added, "Label")), "Tra i tuoi amici",
                 FontFace.NunitoExtraBold, 12f, UI51Tokens.Gold, TextAlignmentOptions.Center));
             UI51Build.Layout(added, -1f, 38f, 1f);
             var mute = UI51Build.Child(row, "Mute");
@@ -1584,6 +1589,51 @@ namespace Project51.UI51.EditorTools
         static void Center(Transform t, float x, float y) => ((RectTransform)t).anchoredPosition = new Vector2(x, -y) * UI51Build.Unit;
 
         /// <summary>Rettangolo in coordinate del mockup: origine in alto a sinistra del genitore, y in giu', gradi orari come in CSS.</summary>
+        /// <summary>
+        /// B26 (A3): cartellino viola "MATTA" in fondo a una carta dell'accuso (4 giocatori), spento; AccusoImpactV2.FlipMatta
+        /// lo accende sulla matta dopo il giro. Stesso viola del bordo della matta sulle carte del tavolo (CardView).
+        /// </summary>
+        public static void AddMattaTag(RectTransform card)
+        {
+            var tag = UI51Build.Place(UI51Build.Child(card, "Matta"), new Vector2(0.5f, 0f), new Vector2(58f, 16f), new Vector2(0f, 12f));
+            UI51Build.Solid(tag, UI51Tokens.Hex("#C06CF0"), 8f, 1f, UI51Tokens.WhiteA(0.6f), false, new UI51Shadow(0f, 2f, 4f, UI51Tokens.BlackA(0.4f)));
+            UI51Build.NoWrap(UI51Build.Text(UI51Build.Stretch(UI51Build.Child(tag, "Text")), "MATTA", FontFace.NunitoExtraBold, 10f,
+                Color.white, TextAlignmentOptions.Center));
+            tag.gameObject.SetActive(false);
+        }
+
+        // B28 (scelta dell'utente 07/10, scostandosi dal mockup): ai lati le scope uscivano verso il bordo dello schermo, una fessura di 14.
+        // Ora salgono sopra al banner verso il tavolo, dritte: sporgono di 20, passo 17; il gettone del mazziere resta nell'angolo esterno.
+        const float SideRise = 20f, SideStep = 17f;
+
+        /// <summary>Scopa i dei banner laterali: sinistra, alto (negativo = sopra al banner), gradi.</summary>
+        static Vector3 SideScopeCard(int i, bool left) =>
+            new Vector3(left ? 28f + SideStep * i : 12f - SideStep * i, -SideRise, i % 2 == 0 ? 3f : -4f);
+
+        /// <summary>"+N" (angolo in alto a destra) dopo la quarta carta, verso il tavolo.</summary>
+        static Vector2 SideMoreAt(bool left) =>
+            left ? new Vector2(28f + 3f * SideStep + 24f + 24f, -18f) : new Vector2(12f - 3f * SideStep - 2f, -18f);
+
+        /// <summary>Area di tocco: carte, "+N" e la fascia alta del banner (x, y, larghezza, altezza).</summary>
+        static Vector4 SideHit(bool left) => left ? new Vector4(24f, -24f, 106f, 40f) : new Vector4(-66f, -24f, 104f, 40f);
+
+        /// <summary>B28: rimette carte, "+N" e area di tocco delle scope di un posto laterale (scena gia' costruita).</summary>
+        public static void RelayoutSideScope(Transform seat, bool left)
+        {
+            var scope = seat.Find("UI51Banner/Scope") as RectTransform;
+            if (scope == null) { Debug.LogError(Tag + " Manca UI51Banner/Scope in " + seat.name); return; }
+            for (int i = 0; i < 4; i++)
+            {
+                var at = SideScopeCard(i, left);
+                if (scope.Find("Card" + i) is RectTransform card) Box(card, at.x, at.y, 24f, 37f, at.z);
+            }
+            var more = SideMoreAt(left);
+            foreach (Transform child in scope)
+                if (child.GetComponent<UI51Badge>() != null) ((RectTransform)child).anchoredPosition = new Vector2(more.x, -more.y);
+            var hit = SideHit(left);
+            if (scope.Find("UI51ScopeHit") is RectTransform area) Box(area, hit.x, hit.y, hit.z, hit.w);
+        }
+
         static RectTransform Box(RectTransform rt, float left, float top, float w, float h, float degrees = 0f)
         {
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);

@@ -25,6 +25,7 @@ namespace Project51.UIV2.Core
             var size = max - min;
             var scale = Mathf.Min(size.x / Reference.x, size.y / Reference.y);
             rect.sizeDelta = Fill && scale > 0f ? size / scale : Reference;
+            // La tastiera non sposta Safe (terzo giro Android 08/10): sale solo il modulo del campo, UI51Input.
             rect.anchoredPosition = (min + max) * .5f - parent.rect.center;
             rect.localScale = Vector3.one * scale;
         }
